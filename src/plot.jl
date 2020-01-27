@@ -1,6 +1,8 @@
-using .Plots
+# using .Plots
 # FIXME: using StatsBase
 
+using Plots
+unicodeplots()
 function raster(p)
     fire = p.records[:fire]
     x, y = SNNFloat[], SNNFloat[]

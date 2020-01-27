@@ -1,3 +1,9 @@
+using Statistics
+
+using Plots
+
+unicodeplots()
+# @everywhere using PmapProgressmeter
 @with_kw struct HHParameter
     Cm::SNNFloat = 1uF * cm^(-2) * 20000um^2
     gl::SNNFloat = 5e-5siemens * cm^(-2) * 20000um^2
@@ -16,12 +22,12 @@ end
 @with_kw mutable struct HH
     param::HHParameter = HHParameter()
     N::SNNInt = 100
-    v::Vector{SNNFloat} = param.El .+ 5(randn(N) .- 1)
+    v::Vector{SNNFloat} = param.El .+ 5(ones(N) .- 1)
     m::Vector{SNNFloat} = zeros(N)
     n::Vector{SNNFloat} = zeros(N)
     h::Vector{SNNFloat} = ones(N)
-    ge::Vector{SNNFloat}  = (1.5randn(N) .+ 4) .* 10nS
-    gi::Vector{SNNFloat}  = (12randn(N) .+ 20) .* 10nS
+    ge::Vector{SNNFloat}  = zeros(N).*10nS # (1.5randn(N) .+ 4) .* 10nS
+    gi::Vector{SNNFloat}  = zeros(N).*10nS # (12randn(N) .+ 20) .* 10nS
     fire::Vector{Bool} = zeros(Bool, N)
     I::Vector{SNNFloat} = zeros(N)
     records::Dict = Dict()
