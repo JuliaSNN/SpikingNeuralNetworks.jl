@@ -3,9 +3,19 @@ module SpikingNeuralNetworks
 const SNN = SpikingNeuralNetworks
 
 using SparseArrays
-using Reexport
-using Parameters
-using Requires
+try	
+    using Reexport
+	using Parameters
+	using Requires
+
+catch
+	import Pkg; Pkg.add("Reexport")
+	import Pkg; Pkg.add("Parameters")
+	import Pkg; Pkg.add("Requires")
+	using Reexport
+	using Parameters
+	using Requires
+end
 #using Unitful
 #using Unitful.DefaultSymbols
 #@reexport using Utils

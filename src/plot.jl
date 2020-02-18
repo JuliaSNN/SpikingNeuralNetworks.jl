@@ -1,6 +1,8 @@
-using .Plots
+using Plots
 # FIXME: using StatsBase
-
+#using Plots
+#using UnicodePlots
+unicodeplots()
 function raster(p)
     fire = p.records[:fire]
     x, y = SNNFloat[], SNNFloat[]
@@ -49,6 +51,7 @@ function windowsize(p)
     W = round(SNNInt, 0.5p.N / mean(A)) # filter window, unit=1
 end
 
+#=
 function density(p, sym)
     X = getrecord(p, sym)
     t = 1:length(X)
@@ -65,7 +68,7 @@ function density(p, sym)
     is_unix() && run(`xdg-open $(p.filename)`)
     p
 end
-
+=#
 function rateplot(p, sym)
     r = getrecord(p, sym)
     R = hcat(r...)
