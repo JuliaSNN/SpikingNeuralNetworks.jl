@@ -10,17 +10,17 @@ julia:
   - 1.4
 
 python:
-  - 3.5
+  - 3.6
 
 notifications:
   email: false
 
 
 install:
-- pip install -U pip
-- pip install --upgrade pip
-- pip install -U matplotlib
-- pip install -U git+https://github.com/russelljjarvis/NeuronunitOpt@master
+- pip3 install pip
+- pip3 install --upgrade pip
+- pip3 install matplotlib
+- pip3 install git+https://github.com/russelljjarvis/NeuronunitOpt@master
 - julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
 
 script: 
