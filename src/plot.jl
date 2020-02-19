@@ -1,7 +1,15 @@
-# using .Plots
-# FIXME: using StatsBase
+try
+   using Plots
+catch
+   import Pkg; Pkg.add("Plots")
+   Pkg.add("UnicodePlots")
+   using Plots
+end
 
-using Plots
+
+# FIXME: using StatsBase
+#using Plots
+#using UnicodePlots
 unicodeplots()
 function raster(p)
     fire = p.records[:fire]
