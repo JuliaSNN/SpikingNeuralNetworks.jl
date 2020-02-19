@@ -9,7 +9,7 @@ catch
     Pkg.add("PyCall")
     Pkg.add("UnicodePlots")
     Pkg.build("PyCall")
-
+end
 SNN = SpikingNeuralNetworks.SNN
 
 py"""
