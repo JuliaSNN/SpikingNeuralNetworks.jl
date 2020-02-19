@@ -1,3 +1,6 @@
+#include("../src/SpikingNeuralNetworks.jl")
+#using Pkg
+#Pkg.add("Reexport")
 using SpikingNeuralNetworks
 SNN = SpikingNeuralNetworks
 # varinfo()

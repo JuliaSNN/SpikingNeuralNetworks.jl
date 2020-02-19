@@ -23,7 +23,7 @@ function sim!(P, C; dt = 0.1ms, duration = 10ms)
         if cnt1> 3*size/4 # if cnt1 > delay
            P[1].I[1] = 0.0 
         end 
-        if cnt1> 1*size/4 # if cnt1 < duration
+        if cnt1< 1*size/4 # if cnt1 < duration
            P[1].I[1] = 0.0 
         end 
   
