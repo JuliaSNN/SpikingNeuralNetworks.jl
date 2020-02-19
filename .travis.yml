@@ -18,4 +18,6 @@ notifications:
 
 
 script: # the default script is equivalent to the following
+- pip install matplotlib
+- pip install -e . git+https://github.com/russelljjarvis/NeuronunitOpt@master
 - julia examples/local_hh_neuron.jl

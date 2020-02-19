@@ -8,11 +8,16 @@ catch
     using Pkg
     Pkg.add("PyCall")
     Pkg.add("UnicodePlots")
+    Pkg.add("Conda")
+    using Conda
+    Conda.add("matplotlib")
     Pkg.build("PyCall")
+    
     using PyCall
     using UnicodePlots
 end
 SNN = SpikingNeuralNetworks.SNN
+
 py"""
 import matplotlib
 import matplotlib.pyplot as plt
