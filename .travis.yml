@@ -2,7 +2,6 @@
 language: julia
 
 os:
-  - osx
   - linux
 
 julia:
@@ -11,24 +10,18 @@ julia:
   - 1.4
 
 python:
-  - 3.5
+  - 3.6
 
 notifications:
   email: false
 
 
-script: # the default script is equivalent to the following
-- julia examples/local_hh_neuron.jl
 install:
-- sudo apt-get update
-- wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-- bash miniconda.sh -b -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- hash -r
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
-- conda info -a
-- pip install -U pip
-- pip install --upgrade pip
-- conda install matplotlib
-- pip install -U git+https://github.com/russelljjarvis/NeuronunitOpt@master
+- pip3 install pip
+- pip3 install --upgrade pip
+- pip3 install matplotlib
+- pip3 install git+https://github.com/russelljjarvis/NeuronunitOpt@master
+- julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
+
+script: 
+- julia examples/local_hh_neuron.jl
