@@ -1,9 +1,16 @@
 include("../src/SpikingNeuralNetworks.jl")
 include("../src/units.jl")
 include("../src/plot.jl")
-using UnicodePlots
+try
+    using UnicodePlots
+    using PyCall
+catch
+    using Pkg
+    Pkg.add("PyCall")
+    Pkg.add("UnicodePlots")
+    Pkg.build("PyCall")
+
 SNN = SpikingNeuralNetworks.SNN
-using PyCall
 
 py"""
 import matplotlib
@@ -11,28 +18,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 matplotlib.get_backend()
 """
-#=
-E = SNN.HH(;N = 1)
-N1 = 130000
-E.ge = (1.5ones(N1) .+ 4) .* 10nS
-E.gi = (12ones(N1) .+ 20) .* 10nS
-E.I = [-0.282nA]
-SNN.monitor(E, [:v])
-SNN.sim!([E], []; dt = 0.015ms, delay=100ms, stimulus_duration=1000ms, duration = 1300ms)
-SNN.vecplot(E, :v) |> display
-E = SNN.HH(;N = 1)
-E.I = [0.025552nA]
-
-
-
-E.records = Dict()
-
-SNN.monitor(E, [:v])
-SNN.sim!([E], []; dt = 0.015ms, delay=100ms, stimulus_duration=1000ms, duration = 1300ms)
-SNN.vecplot(E, :v) |> display
-vm_julia = SNN.getrecord(E, :v)
-=#
-using PyCall
 py"""
 from neuronunit import tests
 from neuronunit.tests import fi
