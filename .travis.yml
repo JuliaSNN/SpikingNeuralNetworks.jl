@@ -22,4 +22,4 @@ notifications:
 install:
 - docker build -t spike .
 script:
-- docker run spike /bin/bash/julia local_hh_neuron.jl
+- docker run spike julia local_hh_neuron.jl
