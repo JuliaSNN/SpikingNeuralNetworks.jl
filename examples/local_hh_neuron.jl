@@ -85,8 +85,6 @@ JHH1 = {k:(v-0.01*v) for k,v in JHH.items()}
 JHH2 = {k:(v+0.01*v) for k,v in JHH.items()}
 ranges = {k:[v-0.01*v,v+0.01*v] for k,v in copy.copy(JHH).items()}
 
-import pdb
-pdb.set_trace()
 """
 #
 ranges = py"ranges"
@@ -171,7 +169,6 @@ for tests in cell_tests.values():
 """
 sc = py"scores"
 @show(sc)
-#println()
 popsize = 200
 nbGenerations = 100
 
@@ -196,7 +193,7 @@ nbGenerations = 100
 ranges = py"ranges"
 H = values(ranges)
 #nsga(popsize, nbGen, init_fun, z, H, fCV = CV, pMut = 0.1)
-
+"""
 
 popsize = 200
 nbGenerations = 100
@@ -240,3 +237,4 @@ catch
    associate_references!(P, references)
    Q = similar(P)
 end
+"""

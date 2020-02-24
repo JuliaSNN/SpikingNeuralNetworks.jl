@@ -1,7 +1,9 @@
 using PyCall
-@pyimport numpy
+neuronunit = pyimport("neuronunit")
+#om = neuronunit#.optimisation.optimization.management
+#neuronunit = pyimport("neuronunit")
+
 #] add https://github.com/AStupidBear/SpikingNeuralNetworks.jl
-using Pkg
 
 # Pkg.add("https://github.com/AStupidBear/SpikingNeuralNetworks.jl")
 
@@ -26,7 +28,17 @@ SNN.sim!([E], []; dt = 0.01, duration = 102)
 
 SNN.vecplot(E, :v) |> display
 
-
+#=
+using Pkg
+try
+   using UnicodePlotsi
+   #using NSGAII
+catch
+   Pkg.add("UnicodePlots")
+   #Pkg.add("NSGAII")
+   using UnicodePlots
+   #using NSGAII
+end
 
 using NSGAII, vOptSpecific, vOptGeneric, GLPK, GLPKMathProgInterface, PyPlot
 m = vModel(solver = GLPKSolverMIP())
@@ -63,3 +75,4 @@ f2 = map(y -> y[2], Y_N)
 xlabel("z1") ; ylabel("z2")
 p = plot(f1,f2,"kx", markersize = "2", label="exact")
 legend() ; display(p)
+=#
