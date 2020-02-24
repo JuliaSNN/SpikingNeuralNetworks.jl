@@ -6,8 +6,8 @@
 end
 
 @with_kw mutable struct IZ
-    param::IZParameter = IZParameter()
-    N::SNNInt = 100
+    param::IZParameter = IZParameter(a,b,c,d)
+    N::SNNInt = 1
     v::Vector{SNNFloat} = fill(-65.0, N)
     u::Vector{SNNFloat} = param.b * v
     fire::Vector{Bool} = zeros(Bool, N)

@@ -126,10 +126,14 @@ class SimpleModel(sciunit.Model,
         Main.eval("SNN.monitor(E2, [:v])")
         Main.dur = current["duration"]
         Main.current = current
-        Main.temp_current = float(amp)*10.0
+        Main.delay = float(current["delay"])
+        Main.temp_current = float(amp)
         Main.eval("E2.I = [deepcopy(temp_current)*pA]")
-        Main.eval("@show(E2.I)")        
-        Main.eval('SNN.sim!([E2], []; dt = 0.015*ms, delay=current["delay"]*ms,stimulus_duration=1000ms,simulation_duration = 1300*ms)')
+        Main.eval("@show(E2.I)")
+        Main.eval('SNN.sim!([E2], []; dt = 0.015, delay=delay,stimulus_duration=1000,simulation_duration = 1300)')
+        #print('gets here')
+        #Main.eval('SNN.sim!([E2], []; dt = 0.015*ms, delay=current["delay"]*ms,stimulus_duration=1000*ms,simulation_duration = 1300*ms)')
+        
         Main.eval("v = SNN.getrecord(E2, :v)")
         v = Main.v
         Main.eval('SNN.vecplot(E2, :v) |> display')
