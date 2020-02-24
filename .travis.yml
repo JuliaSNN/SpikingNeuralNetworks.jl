@@ -1,6 +1,9 @@
 
 language: julia
 
+services:
+  - docker
+
 os:
   - linux
 
