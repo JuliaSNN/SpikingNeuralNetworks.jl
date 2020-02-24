@@ -20,11 +20,6 @@ notifications:
 
 
 install:
-- pip install pip
-- pip install --upgrade pip
-- pip install matplotlib
-- pip install git+https://github.com/russelljjarvis/NeuronunitOpt@master
-- julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
 - docker build -t spike .
 script:
 - docker run spike /bin/bash/julia local_hh_neuron.jl
