@@ -74,7 +74,7 @@ ADD . SpikingNeuralNetworks
 WORKDIR SpikingNeuralNetworks/examples
 RUN python simple_with_injection.py
 RUN julia install.jl
-
+RUN julia local_hh_neuron.jl
 USER $NB_UID
 
 
