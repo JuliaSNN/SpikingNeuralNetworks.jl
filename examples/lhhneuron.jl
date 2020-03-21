@@ -16,5 +16,5 @@ non_dom = NSGAIII.fast_non_dominated_sort!(scores)[1]
 pop = setdiff(pop, non_dom)
 HHNSGA.plot_pop(scores)
 =#
-@show(genes)
+@show(pop)
 @show(scores)
