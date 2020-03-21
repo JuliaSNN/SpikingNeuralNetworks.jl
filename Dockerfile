@@ -58,7 +58,7 @@ RUN conda clean --all -f -y && \
 RUN julia -e 'import Pkg; Pkg.update()' && \
     (test $TEST_ONLY_BUILD || julia -e 'import Pkg; Pkg.add("HDF5")') && \
     julia -e "using Pkg; pkg\"add IJulia\"; pkg\"precompile\"" && \
-    julia -e "using Pkg; pkg\"add PyCall \"; pkg\"precompile\"" && \ 
+    julia -e "using Pkg; pkg\"add PyCall \"; pkg\"precompile\"" && \
     # move kernelspec out of home \
     mv $HOME/.local/share/jupyter/kernels/julia* $CONDA_DIR/share/jupyter/kernels/ && \
     chmod -R go+rx $CONDA_DIR/share/jupyter && \
@@ -69,12 +69,20 @@ RUN python -c "import julia; julia.install()"
 RUN echo "redo"
 RUN /opt/conda/bin/pip install rickpy
 RUN /opt/conda/bin/pip install git+https://github.com/scidash/sciunit@dev
-RUN /opt/conda/bin/pip install git+https://github.com/russelljjarvis/NeuronunitOpt
+RUN echo "Redo"
+WORKDIR $HOME/work
+RUN git clone -b unittest https://github.com/russelljjarvis/NeuronunitOpt
+WORKDIR NeuronunitOpt
+RUN /opt/conda/bin/pip install -e .
+WORKDIR $HOME/work
+# RUN /opt/conda/bin/pip install git+https://github.com/russelljjarvis/NeuronunitOpt
 ADD . SpikingNeuralNetworks
 WORKDIR SpikingNeuralNetworks/examples
+RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAIII.jl\")"
+
+
 RUN python simple_with_injection.py
 RUN julia install.jl
-RUN julia local_hh_neuron.jl
+
+RUN julia lhhneuron.jl
 USER $NB_UID
-
-
