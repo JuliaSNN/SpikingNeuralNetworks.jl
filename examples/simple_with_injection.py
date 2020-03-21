@@ -5,7 +5,7 @@ import sciunit.capabilities as scap
 import neuronunit.capabilities as cap
 import neuronunit.capabilities.spike_functions as sf
 import quantities as pq
-from elephant.spike_train_generation import threshold_detection	
+from elephant.spike_train_generation import threshold_detection
 def Id(t,delay,duration,tmax,amplitude):
     if 0.0 < t < delay:
         return 0.0
@@ -39,7 +39,7 @@ class SimpleModel(sciunit.Model,
 
         self._backend = self
         self.backend = backend
-        
+
     def set_run_params(self,t_stop=None):
         #if 'tmax' in self.params.keys():
         #    self.t_stop=self.params['tmax']
@@ -112,7 +112,7 @@ class SimpleModel(sciunit.Model,
         amp = float(c['amplitude'])#.rescale('uA')
         tmax =1.3#00
         tmin = 0.0
-        DT = 0.01
+        DT = 0.025
         T = np.linspace(tmin, tmax, int(tmax/DT))
         Iext_ = []
         for t in T:
@@ -130,15 +130,15 @@ class SimpleModel(sciunit.Model,
         Main.temp_current = float(amp)
         Main.eval("E2.I = [deepcopy(temp_current)*pA]")
         Main.eval("@show(E2.I)")
-        Main.eval('SNN.sim!([E2], []; dt = 0.015, delay=delay,stimulus_duration=1000,simulation_duration = 1300)')
+        Main.eval('SNN.sim!([E2], []; dt ='+str(DT)+'*ms, delay=delay,stimulus_duration=1000,simulation_duration = 1300)')
         #print('gets here')
         #Main.eval('SNN.sim!([E2], []; dt = 0.015*ms, delay=current["delay"]*ms,stimulus_duration=1000*ms,simulation_duration = 1300*ms)')
-        
+
         Main.eval("v = SNN.getrecord(E2, :v)")
         v = Main.v
         Main.eval('SNN.vecplot(E2, :v) |> display')
         self.vM = AnalogSignal(v,units = pq.mV,sampling_period = DT * pq.ms)
-        print("done one.")
+        #print("done one.")
         return self.vM
     def get_membrane_potential(self):
         return self.vM
@@ -158,5 +158,3 @@ class SimpleModel(sciunit.Model,
         vm = self.get_membrane_potential(**run_params)
         waveforms = sf.get_spike_waveforms(vm)
         return waveforms
-
-
