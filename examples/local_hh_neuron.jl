@@ -17,15 +17,9 @@ module HHNSGA
         using OrderedCollections
 
     end
-    include("../src/SpikingNeuralNetworks.jl")
     import Pkg; Pkg.add("ProgressMeter")
-    #Pkg.add(PackageSpec(path="/opt/julia/dev/NSGAIII.jl"))
-    #Pkg.add()
     using NSGAIII
     export NSGAIII
-    #include("/opt/julia/dev/NSGAIII.jl/src/NSGAIII.jl")
-    include("../src/units.jl")
-    include("../src/plot.jl")
     export nS
     using Pkg
     Pkg.resolve()
@@ -45,8 +39,11 @@ module HHNSGA
         using PyCall
         using UnicodePlots
     end
-    export SNN
+    include("../src/SpikingNeuralNetworks.jl")
+    include("../src/units.jl")
+    include("../src/plot.jl")
     SNN = SpikingNeuralNetworks.SNN
+    export SNN
 
     using Random
     py"""
