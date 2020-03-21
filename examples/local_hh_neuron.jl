@@ -168,8 +168,8 @@ module HHNSGA
         return SA
     """
 
-
-    function init_function3()
+    
+    function references_for_H()
         py"""
         grid = ParameterGrid(ranges)
         genes = []
@@ -178,18 +178,6 @@ module HHNSGA
         """
         genes = py"genes"
         return genes
-    end
-
-    export init_function
-    function init_function(x)
-        println(x)
-        py"""
-        import random
-        lower_list = [v[0] for k,v in ranges.items()]
-        upper_list = [v[1] for k,v in ranges.items()]
-        genes_out = [random.uniform(lower, upper) for lower, upper in zip(lower_list, upper_list)]
-        """
-        return py"genes_out"#,py"genes_out_dic"
     end
     export init_function2
     function init_function2(x)
@@ -217,12 +205,6 @@ module HHNSGA
         # The slow part can it be done in parallel.
         contents = py"z_py"(py"evaluate",god)
         contents = [ convert(Float64,c) for c in contents ]
-
-        #y = convert(Tuple64,content)
-        #using NSGAIII
-        #yy = NSGAIII.indiv(y)
-        #print(y)
-        #x.y = y
         return contents
     end
 
