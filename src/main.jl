@@ -7,7 +7,7 @@ function sim!(P, C, dt)
     #end
 end
 
-function sim!(P, C; dt = 0.1ms, simulation_duration = 1300ms, delay = 300ms,stimulus_duration=1000ms)
+function sim!(P, C; dt = 0.25ms, simulation_duration = 1300ms, delay = 300ms,stimulus_duration=1000ms)
 
     temp = deepcopy(P[1].I)
     cnt = 0

@@ -8,20 +8,25 @@ include("../src/plot.jl")
 try
     using UnicodePlots
     using PyCall
-    using NSGAIII
+    using NSGAII
 catch
-    using Pkg
-    Pkg.add("PyCall")
+    import Pkg
+    Pkg.clone("https://github.com/gsoleilhac/NSGAII.jl")
+    Pkg.add("ProgressMeter")
     Pkg.add("UnicodePlots")
-    #Pkg.add("Conda")
-    #using Conda
-    #Conda.add("matplotlib")
+    Pkg.add("Plots")
+    Pkg.add("OrderedCollections")
+    Pkg.add("PyCall")
     Pkg.build("PyCall")
-    Pkg.clone("https://github.com/gsoleilhac/NSGAIII.jl")
+    #Pkg.clone("https://github.com/gsoleilhac/NSGAIII.jl")
+    Pkg.clone("https://github.com/gsoleilhac/NSGAII.jl")
     using PyCall
     using UnicodePlots
 end
 SNN = SpikingNeuralNetworks.SNN
+using UnicodePlots
+using PyCall
+using NSGAII
 
 py"""
 import matplotlib
@@ -47,6 +52,7 @@ except:
 
 
 """
+#=
 simple = py"SimpleModel()"
 
 py"""
@@ -87,4 +93,4 @@ H1=[values(ranges)]
 current_params = py"rt.params"
 print(current_params)
 simple.attrs = py"JHH"
-
+=#

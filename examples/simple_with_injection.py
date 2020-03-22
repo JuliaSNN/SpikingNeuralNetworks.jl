@@ -136,7 +136,7 @@ class SimpleModel(sciunit.Model,
 
         Main.eval("v = SNN.getrecord(E2, :v)")
         v = Main.v
-        Main.eval('SNN.vecplot(E2, :v) |> display')
+        #Main.eval('SNN.vecplot(E2, :v) |> display')
         self.vM = AnalogSignal(v,units = pq.mV,sampling_period = DT * pq.ms)
         #print("done one.")
         return self.vM
