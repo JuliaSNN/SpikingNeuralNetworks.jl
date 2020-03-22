@@ -180,7 +180,7 @@ module HHNSGA
             return genes_out, genes_out_dic
         """
         genes_out, genes_out_dic = py"one"(x)
-        return genes_out#, genes_out_dic#py"genes_out",py"genes_out_dic"
+        return genes_out
     end
 
     export z
@@ -189,6 +189,8 @@ module HHNSGA
         #x = genes_out
         # The slow part can it be done in parallel.
         contents = py"z_py"(py"evaluate",god)
+        # fCV)
+
         #contents = [ convert(Float64,c) for c in contents ]
         return contents
     end

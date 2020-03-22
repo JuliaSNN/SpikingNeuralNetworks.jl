@@ -13,11 +13,11 @@ export SNN
 include("../src/SpikingNeuralNetworks.jl")
 include("../src/units.jl")
 include("../src/plot.jl")
+#SNN = SpikingNeuralNetworks.SNN
+
 =#
-SNN = SpikingNeuralNetworks.SNN
 scores = pmap(HHNSGA.z,pop)
 
-NSGAII.create_indiv(x, fdecode, z, fCV)
 #=
 NSGAIII.indiv(copy(pop[1]),HHNSGA.z)
 
@@ -27,4 +27,13 @@ pop = setdiff(pop, non_dom)
 HHNSGA.plot_pop(scores)
 =#
 @show(pop)
-#@show(scores)
+@show(scores)
+try
+   pop2 = Any[]
+   for x in pop
+      pop2.append(NSGAII.create_indiv(x, HHNSGA.init_function2, HHNSGA.z))
+   end
+catch
+   @show(pop)
+   @show(scores)
+end
