@@ -4,3 +4,5 @@ This project glues together three repositories (two Julia, one python) with the 
 
 [![Build Status](https://travis-ci.org/russelljjarvis/SpikingNeuralNetworks.jl.svg?branch=master)](https://travis-ci.org/russelljjarvis/SpikingNeuralNetworks.jl)
 
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/russelljjarvis/SpikingNeuralNetworks.jl/master)
