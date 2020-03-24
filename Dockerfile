@@ -47,7 +47,6 @@ USER $NB_UID
 RUN conda clean --all -f -y && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
-
 # Add Julia packages. Only add HDF5 if this is not a test-only build since
 # it takes roughly half the entire build time of all of the images on Travis
 # to add this one package and often causes Travis to timeout.
@@ -78,11 +77,17 @@ WORKDIR $HOME/work
 # RUN /opt/conda/bin/pip install git+https://github.com/russelljjarvis/NeuronunitOpt
 ADD . SpikingNeuralNetworks
 WORKDIR SpikingNeuralNetworks/examples
-RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAIII.jl\")"
+RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAII.jl\")"
 
 
 RUN python simple_with_injection.py
 RUN julia install.jl
 
 RUN julia lhhneuron.jl
+
+RUN conda clean --all -f -y && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
+USER root chown -R jovyan $HOME
+
 USER $NB_UID
