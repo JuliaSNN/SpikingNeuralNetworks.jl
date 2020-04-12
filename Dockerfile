@@ -80,7 +80,7 @@ WORKDIR SpikingNeuralNetworks/examples
 RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAII.jl\")"
 
 
-RUN python simple_with_injection.py
+# RUN python simple_with_injection.py
 RUN julia install.jl
 
 RUN julia lhhneuron.jl
