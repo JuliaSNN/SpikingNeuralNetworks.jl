@@ -10,7 +10,7 @@ module HHNSGA
         using PyCall
         using NSGAII
         export NSGAII
-        export nS
+        #export nS
 
     catch
         include("install.jl")
@@ -27,6 +27,10 @@ module HHNSGA
     import copy
     from neuronunit.optimisation import algorithms
     from neuronunit.optimisation import optimisations
+    from neuronunit.optimisation.optimization_management import TSD
+    from neuronunit.optimisation.optimization_management import OptMan
+    import joblib
+
     import matplotlib
     import matplotlib.pyplot as plt
     import numpy as np
@@ -50,13 +54,16 @@ module HHNSGA
 
 
     """
-
     simple = py"SimpleModel()"
-
     py"""
     import pickle
     import numpy as np
-    #from neuronunit.tests.fi import RheobaseTestP
+    import random
+    from sciunit.scores.collections import ScoreArray
+    from sciunit import TestSuite
+    import sciunit
+
+    from neuronunit.tests.fi import RheobaseTestP
     from collections import OrderedDict
     cell_tests = pickle.load(open('multicellular_constraints.p','rb'))
     for test in cell_tests.values():
@@ -64,7 +71,7 @@ module HHNSGA
             temp_test = {k:v for k,v in test.items()}
             break
     rt = temp_test["Rheobase test"]
-
+    #rtp = RheobaseTestP(rt.observation)
     JHH = {
     'Vr': -68.9346,
     'Cm': 0.0002,
@@ -77,51 +84,61 @@ module HHNSGA
     'Vt': -63.0
     }
 
-    ranges = OrderedDict({k:[v-0.01*np.abs(v),v+0.01*np.abs(v)] for k,v in copy.copy(JHH).items()})
+    ranges = OrderedDict({k:[v-0.5*np.abs(v),v+0.5*np.abs(v)] for k,v in copy.copy(JHH).items()})
     N = len(JHH)
     model = SimpleModel()
     """
     N = py"N"
-
-    #
     ranges = py"ranges"
     H1=[values(ranges)]
-
     current_params = py"rt.params"
-    #print(current_params)
     simple.attrs = py"JHH"
-
     py"""
     def evaluate(test,god):
         model = SimpleModel()
         model.attrs = god
         rt = test['Rheobase test']
+        #rtp = RheobaseTestP(rt.observation)
 
         rheo = rt.generate_prediction(model)
-
-        from sciunit.scores.collections import ScoreArray
-        from sciunit import TestSuite
-        import sciunit
         scores_ = []
 
         for key, temp_test in test.items():
-            if key == 'Rheobase test':
-                temp_test.score_type = sciunit.scores.ZScore
+            #if key == 'Rheobase test':
+            temp_test.score_type = sciunit.scores.ZScore
             if key in ['Injected current AP width test', 'Injected current AP threshold test', 'Injected current AP amplitude test', 'Rheobase test']:
-                rt.params['amplitude'] = rheo['value']
+                temp_test.params['amplitude'] = rheo['value']
+            if temp_test.name == "InjectedCurrentAPWidthTest":
+                temp_test.params['amplitude'] = rheo['value']
+            if temp_test.name == "InjectedCurrentAPThresholdTest":
+                temp_test.params['amplitude'] = rheo['value']
+            if temp_test.name == "InjectedCurrentAPThresholdTest":
+                temp_test.params['amplitude'] = rheo['value']
+            if temp_test.name == "RheobaseTest":
+                temp_test.params['amplitude'] = rheo['value']
+
 
             try:
                 score = temp_test.judge(model)
                 score = np.abs(score.log_norm_score)
 
             except:
-                score = 100#np.inf
+                try:
+                    score = np.abs(float(score.raw_score))
+                except:
+                    score = 100#np.inf
             if isinstance(score, sciunit.scores.incomplete.InsufficientDataScore):
                 score = 100#np.inf
+            if score == 100:
+                print(temp_test.name)
+                print(temp_test.params['amplitude'])
+                #import pdb
+                #pdb.set_trace()
             scores_.append(score)
         tt = TestSuite(list(test.values()))
         SA = ScoreArray(tt, scores_)
         errors = tuple(SA.values,)
+
 
         return errors
     """
@@ -152,26 +169,42 @@ module HHNSGA
         py"""
         def one(x):
             if str('x') in locals():
-
                 genes_out = x
                 genes_out_dic = OrderedDict({k:genes_out[i] for i,k in enumerate(ranges.keys()) })
-
             else:
-                import random
                 lower_list = [v[0] for k,v in ranges.items()]
                 upper_list = [v[1] for k,v in ranges.items()]
                 genes_out = [random.uniform(lower, upper) for lower, upper in zip(lower_list, upper_list)]
                 genes_out_dic = OrderedDict({k:genes_out[i] for i,k in enumerate(ranges.keys()) })
+
             return genes_out, genes_out_dic
         """
-        genes_out, genes_out_dic = py"one"(x)
-        return genes_out, genes_out_dic#py"genes_out",py"genes_out_dic"
-    end
+        decoded = x
 
+        try
+           decoded = NSGAII.decode(x, HHNSGA.bc)
+        catch
+           decoded = x
+           println("no")
+        end
+        genes_out, genes_out_dic = py"one"(decoded)
+        #@show(genes_out)
+
+        bincoded = NSGAII.encode(genes_out, bc)
+        #@show(bincoded)
+        return bincoded, genes_out_dic#py"genes_out",py"genes_out_dic"
+    end
+    py"""
+    lower_list = [v[0] for k,v in ranges.items()]
+    upper_list = [v[1] for k,v in ranges.items()]
+    #print(len(lower_list))
+    """
+
+    const bc = BinaryCoding(9, [:Int,:Int,:Int,:Int,:Int,:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
     export init_function
-    function init_function(x)
+    function init_function()
         py"""
-        def one(x):
+        def one():
             import random
             lower_list = [v[0] for k,v in ranges.items()]
             upper_list = [v[1] for k,v in ranges.items()]
@@ -179,8 +212,11 @@ module HHNSGA
             genes_out_dic = OrderedDict({k:genes_out[i] for i,k in enumerate(ranges.keys()) })
             return genes_out, genes_out_dic
         """
-        genes_out, genes_out_dic = py"one"(x)
-        return genes_out
+        genes_out, genes_out_dic = py"one"()
+        #@show(genes_out)
+        bincoded = NSGAII.encode(genes_out, bc)
+        #@show(bincoded)
+        return bincoded
     end
 
     export z
@@ -189,9 +225,8 @@ module HHNSGA
         #x = genes_out
         # The slow part can it be done in parallel.
         contents = py"z_py"(py"evaluate",god)
-        # fCV)
-
-        #contents = [ convert(Float64,c) for c in contents ]
+        @show(contents)
+        println("gene fitness calculated")
         return contents
     end
 

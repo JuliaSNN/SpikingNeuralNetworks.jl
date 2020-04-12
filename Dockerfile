@@ -68,7 +68,7 @@ RUN python -c "import julia; julia.install()"
 RUN echo "redo"
 RUN /opt/conda/bin/pip install rickpy
 RUN /opt/conda/bin/pip install git+https://github.com/scidash/sciunit@dev
-RUN echo "Redo"
+RUN echo "Redo 1"
 WORKDIR $HOME/work
 RUN git clone -b unittest https://github.com/russelljjarvis/NeuronunitOpt
 WORKDIR NeuronunitOpt

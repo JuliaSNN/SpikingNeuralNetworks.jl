@@ -18,6 +18,16 @@ def Id(t,delay,duration,tmax,amplitude):
     else:
         return 0.0
 
+import julia
+jl = julia.Julia()
+from julia import Main
+
+#Main.eval('include("../src/SpikingNeuralNetworks.jl")')
+#Main.eval('include("../src/units.jl")')
+#Main.eval('include("../src/plot.jl")')
+#Main.eval('SNN = SpikingNeuralNetworks.SNN')
+
+
 # from sciunit.models.runnable import RunnableModel
 # probably runnable is the julia crasher
 class SimpleModel(sciunit.Model,
@@ -32,10 +42,8 @@ class SimpleModel(sciunit.Model,
         """
         self.attrs = attrs
         self.vm = None
-        import julia
-        jl = julia.Julia()
-        from julia import Main
-        self.Main = Main
+        #self.Main = Main
+
 
         self._backend = self
         self.backend = backend
@@ -64,9 +72,9 @@ class SimpleModel(sciunit.Model,
         }
         if not len(attrs):
             attrs = JHH
-        Main = self.Main
+        #Main = self.Main
 
-        #Main.eval("SNN.HH(;N = 1)")
+        Main.eval("SNN.HH(;N = 1)")
         Main.attrs = attrs
         Main.eval('param = SNN.HHParameter(;El =  attrs["El"], Ek = attrs["EK"], En = attrs["ENa"], gl = attrs["gl"], gk = attrs["gK"], gn = attrs["gNa"])')#', N = attrs["N"])')
         self.attrs.update(attrs)
@@ -77,7 +85,7 @@ class SimpleModel(sciunit.Model,
         Main.eval('E2 = SNN.HH(;N = 1)')
         Main.eval('E2.param = param')
         Main.eval("N = Int32(1)")
-        Main.eval("@show(N)")
+        #Main.eval("@show(N)")
         Main.eval('E2.v = ones(N).*attrs["Vr"]')
         Main.eval("E2.m = zeros(N)")
         Main.eval("E2.n = zeros(N)")
@@ -119,9 +127,6 @@ class SimpleModel(sciunit.Model,
             Iext_.append(Id(t,delay,duration,tmax,amp))
         self.attrs['N'] = len(Iext_)
         self.set_attrs(self.attrs)
-
-
-        Main = self.Main
         Main.eval('pA = 0.001nA')
         Main.eval("SNN.monitor(E2, [:v])")
         Main.dur = current["duration"]
@@ -129,16 +134,14 @@ class SimpleModel(sciunit.Model,
         Main.delay = float(current["delay"])
         Main.temp_current = float(amp)
         Main.eval("E2.I = [deepcopy(temp_current)*pA]")
-        Main.eval("@show(E2.I)")
+        #Main.eval("@show(E2.I)")
         Main.eval('SNN.sim!([E2], []; dt ='+str(DT)+'*ms, delay=delay,stimulus_duration=1000,simulation_duration = 1300)')
-        #print('gets here')
         #Main.eval('SNN.sim!([E2], []; dt = 0.015*ms, delay=current["delay"]*ms,stimulus_duration=1000*ms,simulation_duration = 1300*ms)')
 
         Main.eval("v = SNN.getrecord(E2, :v)")
         v = Main.v
         #Main.eval('SNN.vecplot(E2, :v) |> display')
         self.vM = AnalogSignal(v,units = pq.mV,sampling_period = DT * pq.ms)
-        #print("done one.")
         return self.vM
     def get_membrane_potential(self):
         return self.vM
@@ -151,6 +154,11 @@ class SimpleModel(sciunit.Model,
     def get_spike_train(self):
         thresh = threshold_detection(self.vM)
         return thresh
+    def _backend_run(self):
+        results['vm'] = self.vM.magnitude
+        results['t'] = self.vM.times
+
+        return results
 
 
     def get_APs(self, **run_params):
