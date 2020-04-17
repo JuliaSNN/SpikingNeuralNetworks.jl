@@ -21,23 +21,16 @@ def Id(t,delay,duration,tmax,amplitude):
 import julia
 jl = julia.Julia()
 from julia import Main
-
-#Main.eval('include("../src/SpikingNeuralNetworks.jl")')
-#Main.eval('include("../src/units.jl")')
-#Main.eval('include("../src/plot.jl")')
-#Main.eval('SNN = SpikingNeuralNetworks.SNN')
-
-
 # from sciunit.models.runnable import RunnableModel
 # probably runnable is the julia crasher
-class SimpleModel(sciunit.Model,
+class IZModel(sciunit.Model,
                   cap.ReceivesSquareCurrent,
                   cap.ProducesActionPotentials,
                   cap.ProducesMembranePotential,
                   scap.Runnable):
     """A model which produces a frozen membrane potential waveform."""
 
-    def __init__(self,attrs={},backend="JULIA_HH"):
+    def __init__(self,attrs={},backend="JULIA_IZ"):
         """Create an instace of a model that produces a static waveform.
         """
         self.attrs = attrs
@@ -59,46 +52,21 @@ class SimpleModel(sciunit.Model,
     def set_stop_time(self,tmax=1300*pq.ms):
         self.tmax = tmax
     def set_attrs(self, attrs):
-        JHH = {
-            'Vr': -68.9346,
-            'Cm': 0.0002,
-            'gl': 1.0 * 1e-5,
-            'El': -65.0,
-            'EK': -90.0,
-            'ENa': 50.0,
-            'gNa': 0.02,
-            'gK': 0.006,
-            'Vt': -63.0
+        JUIZI = {
+            'a': 0.02,
+            'b': 0.2,
+            'c': -65,
+            'd': 8,
         }
         if not len(attrs):
-            attrs = JHH
-        #Main = self.Main
+            attrs = JUIZI
 
-        Main.eval("SNN.HH(;N = 1)")
         Main.attrs = attrs
-        Main.eval('param = SNN.HHParameter(;El =  attrs["El"], Ek = attrs["EK"], En = attrs["ENa"], gl = attrs["gl"], gk = attrs["gK"], gn = attrs["gNa"])')#', N = attrs["N"])')
+        Main.eval('param = SNN.IZParameter(;a =  attrs["a"], b = attrs["b"], c = attrs["c"], d = attrs["d"])')
         self.attrs.update(attrs)
-
-
         Main.N_ = attrs["N"]
-
-        Main.eval('E2 = SNN.HH(;N = 1)')
-        Main.eval('E2.param = param')
+        Main.eval('E2 = SNN.IZ(;N = 1, param = param)')
         Main.eval("N = Int32(1)")
-        #Main.eval("@show(N)")
-        Main.eval('E2.v = ones(N).*attrs["Vr"]')
-        Main.eval("E2.m = zeros(N)")
-        Main.eval("E2.n = zeros(N)")
-        Main.eval("E2.h = ones(N)")
-        #Main.eval('include("../src/units.jl")')
-        Main.eval("E2.ge = (ones(N) .+ 4)")# .* 10nS")
-        Main.eval("E2.gi = (ones(N) .+ 20)")# .* 10nS")
-        Main.eval("E2.ge = E2.ge.*10nS")
-        Main.eval("E2.gi = E2.gi.*10nS")
-
-        Main.eval("E2.fire = zeros(Bool, N)")
-        Main.eval('E2.records = Dict()')
-
 
 
 
@@ -117,10 +85,10 @@ class SimpleModel(sciunit.Model,
             c = current
         duration = float(c['duration'])#.rescale('ms'))
         delay = float(c['delay'])#.rescale('ms'))
-        amp = float(c['amplitude'])#.rescale('uA')
-        tmax =1.3#00
+        amp = 1000000.0*float(c['amplitude'])#.rescale('uA')
+        tmax = 1.3#00
         tmin = 0.0
-        DT = 0.025
+        DT = 0.25
         T = np.linspace(tmin, tmax, int(tmax/DT))
         Iext_ = []
         for t in T:
@@ -134,13 +102,10 @@ class SimpleModel(sciunit.Model,
         Main.delay = float(current["delay"])
         Main.temp_current = float(amp)
         Main.eval("E2.I = [deepcopy(temp_current)*pA]")
-        #Main.eval("@show(E2.I)")
         Main.eval('SNN.sim!([E2], []; dt ='+str(DT)+'*ms, delay=delay,stimulus_duration=1000,simulation_duration = 1300)')
-        #Main.eval('SNN.sim!([E2], []; dt = 0.015*ms, delay=current["delay"]*ms,stimulus_duration=1000*ms,simulation_duration = 1300*ms)')
-
         Main.eval("v = SNN.getrecord(E2, :v)")
+        #Main.eval("SNN.vecplot(E2, :v) |> display")
         v = Main.v
-        #Main.eval('SNN.vecplot(E2, :v) |> display')
         self.vM = AnalogSignal(v,units = pq.mV,sampling_period = DT * pq.ms)
         return self.vM
     def get_membrane_potential(self):
