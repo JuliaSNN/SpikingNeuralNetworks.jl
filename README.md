@@ -21,30 +21,9 @@ docker run -it nuopt /bin/bash
 
 # Advantages
 * Appeals to interest in AP shape, electrophysiology and Rheobase current injection value. 
-* 
-* Relatively fast, but with little administrative overhead. Optionally no C/NEURON building required.
-<img src="docs/numba.png" width="200" height="150" /> <img src="docs/dask_logo.png" width="175" height="125" /> <img src="docs/deap.png" width="200" height="150" />
-
+* Relatively fast, but with little administrative overhead.
 * Feature extraction routines: AllenSDK, Druckman, Elephant.
-* Simulator Backends: brian2, Allen-GLIF, NEURON, PyNN
-
-``` BASH
-docker pull russelljarvis/efel_allen_dm
-docker run russelljarvis/efel_allen_dm neuronunit/examples/use_edt.py
-```
-
-# Optimization specific:
-
- Assumptions, the environment for running this notebook was arrived at by building a dedicated docker file.
-
- https://cloud.docker.com/repository/registry-1.docker.io/russelljarvis/nuo
- or more recently:
- https://cloud.docker.com/u/russelljarvis/repository/docker/russelljarvis/network_unit_opt
- You can run use dockerhub to get the appropriate file, and launch this notebook using Kitematic.
-
-# Import libraries
-To keep the standard running version of minimal and memory efficient, not all available packages are loaded by default. In the cell below I import a mixture common python modules, and custom developed modules associated with NeuronUnit (NU) development
-#!pip install dask distributed seaborn
+* Simulator Backends: Julia
 #!bash after_install.sh
 
 
