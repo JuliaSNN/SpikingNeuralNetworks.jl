@@ -70,6 +70,7 @@ RUN /opt/conda/bin/pip install rickpy
 RUN /opt/conda/bin/pip install git+https://github.com/scidash/sciunit@dev
 RUN echo "Redo 1"
 WORKDIR $HOME/work
+RUN echo "redo"
 RUN git clone -b unittest https://github.com/russelljjarvis/NeuronunitOpt
 WORKDIR NeuronunitOpt
 RUN /opt/conda/bin/pip install -e .
@@ -83,11 +84,11 @@ RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAII.jl\")"
 # RUN python simple_with_injection.py
 RUN julia install.jl
 
-RUN julia lhhneuron.jl
+#RUN julia lhhneuron.jl
+
+USER root chown -R jovyan $HOME
 
 RUN conda clean --all -f -y && \
     fix-permissions $CONDA_DIR && \
     fix-permissions /home/$NB_USER
-USER root chown -R jovyan $HOME
-
 USER $NB_UID
