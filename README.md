@@ -1,6 +1,6 @@
 # A Julia port of [NeuronUnitOpt](https://github.com/russelljjarvis/NeuronunitOpt)
 
-This project glues together four repositories with the in order to optimise spiking neural [models evaluated in Julia](https://github.com/AStupidBear/SpikingNeuralNetworks.jl) optimized against experimental data via a [julia genetic algorith optimization](https://github.com/gsoleilhac/NSGAII.jl/).
+A toolchain to optimise spiking neural [models evaluated in Julia](https://github.com/AStupidBear/SpikingNeuralNetworks.jl) against experimental data via a [genetic algorith optimization](https://github.com/gsoleilhac/NSGAII.jl/).
 
 [![Build Status](https://travis-ci.org/russelljjarvis/SpikingNeuralNetworks.jl.svg?branch=master)](https://travis-ci.org/russelljjarvis/SpikingNeuralNetworks.jl)
 
