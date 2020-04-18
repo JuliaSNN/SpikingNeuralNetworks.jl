@@ -6,12 +6,22 @@ A toolchain to optimise spiking neural [models evaluated in Julia](https://githu
 
 ![NeuronUnit Logo](https://raw.githubusercontent.com/scidash/assets/master/logos/neuronunit/NeuronUnitBlack2.png)
 
+# Docker is used to 
+ensure Julia/Python interoperability. 
+
 # Installation:
 ```
 git clone https://github.com/russelljjarvis/NeuronUnitOpt.jl
 cd NeuronUnitOpt.jl
 docker build -t nuopt .
+```
+
+# Getting Started:
+```
 docker run -it nuopt /bin/bash
+cd work/NeuronUnitOpt.jl/examples/
+julia
+include("lhhneuron.jl")
 ```
 # Description
 * A Julia+Python model-data optimization toolchain derived from ***neuronunit*** and tightly interfaced with other community supported modules, levarging standard workflows in: feature extraction, data scraping and model simulation. 
