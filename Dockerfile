@@ -78,6 +78,8 @@ WORKDIR $HOME/work
 ADD . SpikingNeuralNetworks
 WORKDIR SpikingNeuralNetworks
 RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAII.jl\")"
+RUN ls -ltr *.jl
+RUN pwd
 RUN julia install.jl
 
 
