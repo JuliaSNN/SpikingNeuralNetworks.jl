@@ -29,7 +29,7 @@ end
 include("src/SpikingNeuralNetworks.jl")
 include("src/units.jl")
 include("src/plot.jl")
-using SpikingNeur
+using SpikingNeuralNetworks
 SNN = SpikingNeuralNetworks.SNN
 using UnicodePlots
 using PyCall
