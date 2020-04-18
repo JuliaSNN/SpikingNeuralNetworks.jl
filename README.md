@@ -35,7 +35,6 @@ include("lhhneuron.jl")
 * Relatively fast, but with little administrative overhead.
 * Feature extraction routines: AllenSDK, Druckman, Elephant.
 * Simulator Backends: Julia
-#!bash after_install.sh
 
 
 # Broad Aims:
