@@ -75,8 +75,8 @@ WORKDIR NeuronunitOpt
 RUN /opt/conda/bin/pip install -e .
 WORKDIR $HOME/work
 # RUN /opt/conda/bin/pip install git+https://github.com/russelljjarvis/NeuronunitOpt
-ADD . SpikingNeuralNetworks
-WORKDIR SpikingNeuralNetworks
+ADD . NeuronUnitOpt.jl
+WORKDIR NeuronUnitOpt.jl
 RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAII.jl\")"
 RUN ls -ltr *.jl
 RUN pwd
