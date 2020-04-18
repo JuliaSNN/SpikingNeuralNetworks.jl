@@ -78,12 +78,7 @@ WORKDIR $HOME/work
 ADD . SpikingNeuralNetworks
 WORKDIR SpikingNeuralNetworks/examples
 RUN julia -e "using Pkg;Pkg.clone(\"https://github.com/gsoleilhac/NSGAII.jl\")"
-
-
-# RUN python simple_with_injection.py
 RUN julia install.jl
-
-RUN julia lhhneuron.jl
 
 RUN conda clean --all -f -y && \
     fix-permissions $CONDA_DIR && \
