@@ -6,8 +6,9 @@ A toolchain that facilitates optimization of spiking neuronal [models evaluated 
 
 ![NeuronUnit Logo](https://raw.githubusercontent.com/scidash/assets/master/logos/neuronunit/NeuronUnitBlack2.png)
 
-# Docker is used to 
-ensure Julia/Python interoperability. 
+Currently Julia/Python interoperability is hard. I imagine this will improve again soon.
+# For now Docker is used. 
+The Docker environment functions to ensure Julia/Python interoperability. 
 
 # Installation:
 ```
