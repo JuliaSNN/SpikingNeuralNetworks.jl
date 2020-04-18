@@ -5,10 +5,6 @@ end
 
 function sim!(P, C; dt = 0.25ms, simulation_duration = 1300ms, delay = 300ms,stimulus_duration=1000ms)
     temp = deepcopy(P[1].I)
-    cnt = 0
-    for t = 0ms:dt:simulation_duration
-        cnt+=1
-    end
     size = simulation_duration/dt
     cnt1 = 0
     for t = 0ms:dt:simulation_duration
