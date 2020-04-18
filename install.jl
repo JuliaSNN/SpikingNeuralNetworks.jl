@@ -1,8 +1,8 @@
 
 
-include("../src/SpikingNeuralNetworks.jl")
-include("../src/units.jl")
-include("../src/plot.jl")
+include("src/SpikingNeuralNetworks.jl")
+include("src/units.jl")
+include("src/plot.jl")
 try
     using UnicodePlots
     using PyCall
