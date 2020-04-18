@@ -1,8 +1,4 @@
 
-
-include("src/SpikingNeuralNetworks.jl")
-include("src/units.jl")
-include("src/plot.jl")
 try
     using UnicodePlots
     using PyCall
@@ -28,6 +24,12 @@ catch
     using PyCall
     using UnicodePlots
 end
+
+
+include("src/SpikingNeuralNetworks.jl")
+include("src/units.jl")
+include("src/plot.jl")
+using SpikingNeur
 SNN = SpikingNeuralNetworks.SNN
 using UnicodePlots
 using PyCall
