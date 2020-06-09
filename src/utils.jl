@@ -209,8 +209,8 @@ macro snn_kw(str)
 
     # Constructor accepts field values and type params as kwargs
     ctor_kws = Expr(:parameters,
-                    map(snn_kw_str_kws, str_fields)...,
-                    map(snn_kw_str_kws_types, ctor_params)...)
+                    map(snn_kw_str_kws_types, ctor_params)...,
+                    map(snn_kw_str_kws, str_fields)...)
     ctor_sig = Expr(:call, str_name, ctor_kws)
     ctor_call = if length(str_params) > 0
         Expr(:curly, str_name, first.(str_params)...)
@@ -227,3 +227,66 @@ macro snn_kw(str)
         $(esc(ctor))
     end
 end
+
+"A wrapper around a hierarchy of `ArrayPartition`s, whose `Base.similar`
+method preserves aliased arrays."
+struct Remapper{T,S,X<:ArrayPartition{T,S}} <: AbstractVector{T}
+    x::X
+end
+Base.similar(r::Remapper) = aliasapply(Base.similar, r)
+Base.similar(r::Remapper, ::Type{T}) where T = similar(r) # FIXME
+Base.similar(r::Remapper, ::Type{T}, dims::Dims) where T = similar(r) # FIXME
+
+aliasapply(f, r::Remapper, d=IdDict{Any,Any}()) =
+    Remapper(aliasapply(f, r.x, d))
+aliasapply(f, p::ArrayPartition, d) =
+    ArrayPartition(map(x->aliasapply(f, x, d), p.x)...)
+aliasapply(f, x, d) = get!(d, x) do
+    f(x)
+end
+
+lookthrough(bc::Base.Broadcast.Broadcasted{T}) where T =
+    Base.Broadcast.Broadcasted{T}(bc.f, map(lookthrough, bc.args), bc.axes)
+lookthrough(x::Remapper) = x.x
+lookthrough(x) = x
+lookthrough(bc::Base.Broadcast.Broadcasted{T}, idx) where T =
+    Base.Broadcast.Broadcasted{T}(bc.f, map(x->lookthrough(x,idx), bc.args), bc.axes)
+lookthrough(x::Remapper, idx) = lookthrough(x.x, idx)
+lookthrough(x::ArrayPartition, idx) = x.x[idx]
+lookthrough(x, idx) = x
+aliasapply!(f, r::Remapper, args...; d=Set{Any}()) =
+    aliasapply!(f, r.x, map(x->lookthrough(x), args)...; d=d)
+function aliasapply!(f, p::ArrayPartition, args...; d)
+    for idx in 1:length(p.x)
+        aliasapply!(f, p.x[idx], map(x->lookthrough(x,idx), args)...; d=d)
+    end
+end
+function aliasapply!(f, x, args...; d)
+    (x in d) && return # Already applied
+    push!(d, x)
+    x .= f.(args...)
+end
+
+struct RemapperStyle <: Base.Broadcast.AbstractArrayStyle{1} end
+RemapperStyle(::Val{N}) where N = RemapperStyle()
+Base.Broadcast.BroadcastStyle(::Type{<:Remapper}) = RemapperStyle()
+function Base.copyto!(r::Remapper, bc::Base.Broadcast.Broadcasted)
+    aliasapply!(bc.f, r, bc.args...)
+    r
+end
+function Base.similar(bc::Base.Broadcast.Broadcasted{RemapperStyle,Axes,F,Args}, ::Type{ElType}, ::Any) where {Axes,F,Args,ElType}
+    ridx = findfirst(x->x isa Remapper, bc.args)
+    r = bc.args[ridx]
+    similar(r)
+end
+
+Base.eltype(::Type{R}) where {R<:Remapper{T,S,X} where {T,S}} where {X} = eltype(X)
+LinearAlgebra.norm(r::Remapper) = LinearAlgebra.norm(r.x)
+Base.iterate(r::Remapper, x...) = iterate(r.x, x...)
+Base.copy(r::Remapper) = aliasapply(copy, r)
+Base.zero(r::Remapper) = aliasapply(zero, r)
+Base.size(r::Remapper) = size(r.x)
+Base.length(r::Remapper) = length(r.x)
+Base.getindex(r::Remapper, i::Int) = getindex(r.x, i)
+Base.setindex!(r::Remapper, val, i::Int) = setindex!(r.x, val, i)
+Base.IndexStyle(::Type{Remapper}) = IndexStyle(r.x)

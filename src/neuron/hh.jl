@@ -32,15 +32,15 @@ function integrate!(p::HH, param::HHParameter, dt::Float32)
     @unpack Cm, gl, El, Ek, En, gn, gk, Vt, τe, τi, Ee, Ei = param
     @inbounds for i = 1:N
         m[i] += dt * (0.32f0 * (13f0 - v[i] + Vt) / (exp((13f0 - v[i] + Vt) / 4f0) - 1f0) * (1f0 - m[i]) -
-        0.28f0 * (v[i] - Vt - 40f0) / (exp((v[i] - Vt - 40f0) / 5f0) - 1f0) * m[i])
+                0.28f0 * (v[i] - Vt - 40f0) / (exp((v[i] - Vt - 40f0) / 5f0) - 1f0) * m[i])
         n[i] += dt * (0.032f0 * (15f0 - v[i] + Vt) / (exp((15f0 - v[i] + Vt) / 5f0) - 1f0) * (1f0 - n[i]) -
-        0.5f0 * exp((10f0 - v[i] + Vt) / 40f0) * n[i])
+                0.5f0 * exp((10f0 - v[i] + Vt) / 40f0) * n[i])
         h[i] += dt * (0.128f0 * exp((17f0 - v[i] + Vt) / 18f0) * (1f0 - h[i]) -
-        4f0 / (1f0 + exp((40f0 - v[i] + Vt) / 5f0)) * h[i])
-        v[i] += dt / Cm * ( I[i] + gl * (El - v[i]) + ge[i] * (Ee - v[i]) + gi[i] * (Ei - v[i]) +
-        gn * m[i]^3 * h[i] * (En - v[i]) + gk * n[i]^4 * (Ek - v[i]) )
-        ge[i] += dt * -ge[i] / τe
-        gi[i] += dt * -gi[i] / τi
+                4f0 / (1f0 + exp((40f0 - v[i] + Vt) / 5f0)) * h[i])
+        v[i] = dt / Cm * ( I[i] + gl * (El - v[i]) + ge[i] * (Ee - v[i]) + gi[i] * (Ei - v[i]) +
+                gn * m[i]^3 * h[i] * (En - v[i]) + gk * n[i]^4 * (Ek - v[i]) )
+        ge[i] = dt * -ge[i] / τe
+        gi[i] = dt * -gi[i] / τi
     end
     @inbounds for i = 1:N
         fire[i] = v[i] > -20f0

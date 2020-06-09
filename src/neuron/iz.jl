@@ -14,18 +14,27 @@ end
     I::VFT = zeros(N)
     records::Dict = Dict()
 end
+vars(iz::IZ) = (:v=>iz.v, :u=>iz.u)
 
-function integrate!(p::IZ, param::IZParameter, dt::Float32)
-    @unpack N, v, u, fire, I = p
-    @unpack a, b, c, d = param
-    @inbounds for i = 1:N
-        v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
-        v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
-        u[i] += dt * (a * (b * v[i] - u[i]))
-    end
-    @inbounds for i = 1:N
-        fire[i] = v[i] > 30f0
-        v[i] = ifelse(fire[i], c, v[i])
-        u[i] += ifelse(fire[i], d, 0f0)
-    end
+function integrate!(_du, _u, p::IZ, t)
+    @unpack a, b, c, d = p.param
+    I = p.I
+    v, u = _u.x
+    dv, du = _du.x
+    dv .= 0.5 .* ((0.04f0 .* (v .^2)) .+ (5f0 .* v) .+ 140f0 .- u .+ I)
+    dv .+= 0.5 .* ((0.04f0 .* ((dv .+ v) .^2)) .+ (5f0 .* (dv .+ v)) .+ 140f0 .- u .+ I)
+    du .= a .* (b .* v - u)
+end
+
+function condition(iz::IZ, u)
+    v, u = u.x
+    any(_v->_v > 30f0, v)
+end
+
+function affect!(iz::IZ, u)
+    v, u = u.x
+    F = v .> 30f0
+    v[F] .= iz.param.c
+    u[F] .+= iz.param.d
+    iz.fire .= F
 end

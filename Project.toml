@@ -3,7 +3,10 @@ uuid = "9d8b7fda-1049-58bc-9481-071a9f369938"
 version = "0.1.0"
 
 [deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
@@ -12,9 +15,9 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 Reexport = "0.2"
-Requires = "0.5, 1"
+Requires = "1"
 UnPack = "1"
-Unitful = "0.17, 0.18, 1"
+Unitful = "1"
 julia = "1"
 
 [extras]

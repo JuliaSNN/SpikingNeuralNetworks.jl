@@ -8,6 +8,9 @@ using SparseArrays
 using Reexport
 using Requires
 using UnPack
+using OrdinaryDiffEq
+#using DifferentialEquations
+using RecursiveArrayTools
 #using Unitful
 #using Unitful.DefaultSymbols
 #@reexport using Utils
