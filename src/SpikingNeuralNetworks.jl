@@ -11,7 +11,6 @@ using Requires
 using UnPack
 using OrdinaryDiffEq
 using DifferentialEquations
-using Parameters
 using RecursiveArrayTools
 #using Unitful
 #using Unitful.DefaultSymbols
