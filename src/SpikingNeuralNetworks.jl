@@ -1,6 +1,7 @@
 module SpikingNeuralNetworks
 
 export SNN
+
 const SNN = SpikingNeuralNetworks
 
 using LinearAlgebra
@@ -8,6 +9,9 @@ using SparseArrays
 using Reexport
 using Requires
 using UnPack
+using OrdinaryDiffEq
+using DifferentialEquations
+using RecursiveArrayTools
 #using Unitful
 #using Unitful.DefaultSymbols
 #@reexport using Utils

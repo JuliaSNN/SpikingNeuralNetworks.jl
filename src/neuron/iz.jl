@@ -15,17 +15,19 @@ end
     records::Dict = Dict()
 end
 
-function integrate!(p::IZ, param::IZParameter, dt::Float32)
-    @unpack N, v, u, fire, I = p
-    @unpack a, b, c, d = param
-    @inbounds for i = 1:N
-        v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
-        v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
-        u[i] += dt * (a * (b * v[i] - u[i]))
-    end
-    @inbounds for i = 1:N
-        fire[i] = v[i] > 30f0
-        v[i] = ifelse(fire[i], c, v[i])
-        u[i] += ifelse(fire[i], d, 0f0)
-    end
+function integrate!(dv, v, p, t)
+    @unpack a, b, c, d, I = p
+    dv.x[1] .= 0.04f0 .* v.x[1] .^2 .+ 5f0 .* v.x[1] .+ 140f0 .- v.x[2] .+ I
+    dv.x[2] .= a .* (b .* v.x[1] - v.x[2])
 end
+
+function fire(v,t,integrator)
+    any(30f0 .- v.x[1] .> 0)
+end
+
+function affect!(integrator)
+    F = integrator.u.x[1] .- 30f0 .> 0
+    integrator.u.x[1][F] .= integrator.p.c
+    integrator.u.x[2][F] .+= integrator.p.d
+end
+
