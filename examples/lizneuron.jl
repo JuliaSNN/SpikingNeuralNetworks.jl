@@ -1,3 +1,5 @@
+using PackageCompiler
+
 try
     using NSGAII
 catch
@@ -11,13 +13,15 @@ end
 include("local_iz_neuron.jl")
 using NSGAII
 include("../src/units.jl")
+
 using .HHNSGA
-#=
+
+
 function fdecode(x)
    decoded = NSGAII.decode(x, HHNSGA.bc)
    return decoded
 end
-=#
+
 using Plots
 unicodeplots()
 
@@ -31,7 +35,7 @@ end
 #@bp
 @time repop = NSGAII.nsga(4,4,HHNSGA.z,HHNSGA.init_function)#, fplot = plot_pop)
 @time best = sort(repop, by = ind -> ind.y[1])[end];
-@time worst = sort(repop, by = ind -> ind.y[1])[end];
+@time worst = sort(repop, by = ind -> ind.y[1])[1];
 
 @time decoded = fdecode(best.pheno)
 println("z = $(x1.y)")

@@ -64,7 +64,7 @@ class IZModel(sciunit.Model,
         Main.attrs = attrs
         Main.eval('param = SNN.IZParameter(;a =  attrs["a"], b = attrs["b"], c = attrs["c"], d = attrs["d"])')
         self.attrs.update(attrs)
-        Main.N_ = attrs["N"]
+        #Main.N_ = attrs["N"]
         Main.eval('E2 = SNN.IZ(;N = 1, param = param)')
         Main.eval("N = Int32(1)")
 
@@ -93,7 +93,6 @@ class IZModel(sciunit.Model,
         Iext_ = []
         for t in T:
             Iext_.append(Id(t,delay,duration,tmax,amp))
-        self.attrs['N'] = len(Iext_)
         self.set_attrs(self.attrs)
         Main.eval('pA = 0.001nA')
         Main.eval("SNN.monitor(E2, [:v])")
