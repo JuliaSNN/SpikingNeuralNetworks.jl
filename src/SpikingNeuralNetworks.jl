@@ -3,7 +3,7 @@ module SpikingNeuralNetworks
 const SNN = SpikingNeuralNetworks
 
 using SparseArrays
-try	
+try
     using Reexport
     using Parameters
     using Requires
@@ -33,6 +33,9 @@ include("neuron/if2.jl")
 include("neuron/noisy_if.jl")
 include("neuron/poisson.jl")
 include("neuron/iz.jl")
+include("neuron/iz_more_param.jl")
+include("neuron/adexp.jl")
+
 include("neuron/hh.jl")
 include("neuron/rate.jl")
 

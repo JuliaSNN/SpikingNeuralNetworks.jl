@@ -1,4 +1,7 @@
-
+using Pkg
+Pkg.update()
+ENV["PYTHON_JL_RUNTIME_PYTHON"] = Sys.which("python")
+Pkg.build("PyCall")
 module HHNSGA
     using Pkg
     using Plots
@@ -16,15 +19,19 @@ module HHNSGA
     include("../src/SpikingNeuralNetworks.jl")
     include("../src/units.jl")
     include("../src/plot.jl")
+
     SNN = SpikingNeuralNetworks.SNN
+    #create_sysimage(:SNN, sysimage_path="sys_SpikingNeuralNetworksso", precompile_execution_file="precompile_SpikingNeuralNetworks.jl")
+
     using Random
+    using PyCall
     py"""
     import copy
     from neuronunit.optimisation import algorithms
     from neuronunit.optimisation import optimisations
     from neuronunit.optimisation.optimization_management import TSD
     from neuronunit.optimisation.optimization_management import OptMan
-    from neuronunit.optimisation import make_sim_tests
+    #from neuronunit.optimisation import make_sim_tests
     import matplotlib
     import matplotlib.pyplot as plt
     import numpy as np
@@ -64,9 +71,9 @@ module HHNSGA
 
     from neuronunit.tests.fi import RheobaseTestP
     from collections import OrderedDict
-    from neuronunit import get_neab
-    import pdb
-    pdb.set_trace()
+    #from neuronunit import get_neab
+    #import pdb
+    #pdb.set_trace()
     cell_tests = pickle.load(open('multicellular_constraints.p','rb'))
     for test in cell_tests.values():
         if "Rheobase test" in test.keys():
@@ -96,10 +103,12 @@ module HHNSGA
     from izhi import IZModel
 
     def evaluate(test,god):
-        model = IZModel()
+        model = IZModel(attrs=god)
         model.attrs = god
         rt = test['Rheobase test']
+
         rheo = rt.generate_prediction(model)
+
         scores_ = []
         test = {k:v for k,v in test.items() if v.observation is not None}
         for temp_test in test.values():
@@ -155,7 +164,7 @@ module HHNSGA
 
 
         model_type="RAW"
-        from neuronunit.optimisation import make_sim_tests
+        #from neuronunit.optimisation import make_sim_tests
         fps = ['a','b','c','d']
         #sim_tests, OM, target = make_sim_tests.test_all_objective_test(fps,model_type=model_type)
         SA = evaluate(tests,god)
@@ -165,33 +174,38 @@ module HHNSGA
 
     export transdict
     function transdict(x)
+        bc = BinaryCoding(4, [:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
+
         py"""
         def map_dict(x):
             genes_out = x
-            #genes_out_dic = OrderedDict({k:genes_out[i] for i,k in enumerate(ranges.keys()) })
-            return genes_out#, genes_out_dic
+            genes_out_dic = OrderedDict({k:genes_out[i] for i,k in enumerate(ranges.keys()) })
+            return genes_out, genes_out_dic
         """
         decoded = x
 
         try
-           decoded = NSGAII.decode(x, HHNSGA.bc)
+           decoded = NSGAII.decode(x,bc)
         catch
            decoded = x
         end
-        genes_out = py"map_dict"(decoded)
-        bincoded = NSGAII.encode(genes_out, bc)
-        return bincoded, genes_out_dic
+        _,god_dict = py"map_dict"(decoded)
+        #bincoded = NSGAII.encode(genes_out, bc)
+        return god_dict#, genes_out_dic
     end
     py"""
     lower_list = [v[0] for k,v in ranges.items()]
     upper_list = [v[1] for k,v in ranges.items()]
     """
 
-    const bc = BinaryCoding(4, [:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
     export init_function
     function init_function()
+        #const
+        bc = BinaryCoding(4, [:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
+
         py"""
         def pheno_map():
+
             lower_list = [v[0] for k,v in ranges.items()]
             upper_list = [v[1] for k,v in ranges.items()]
             gene_out = [random.uniform(lower, upper) for lower, upper in zip(lower_list, upper_list)]
@@ -199,11 +213,13 @@ module HHNSGA
             return gene_out#, gene_out_dic
         """
         gene_out = py"pheno_map"()
-        @time bincoded = NSGAII.encode(gene_out, bc)
+        bincoded = NSGAII.encode(gene_out, bc)
         return bincoded
     end
 
     function references_for_H()
+        bc = BinaryCoding(4, [:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
+
         py"""
         from sklearn.model_selection import ParameterGrid
         grid = ParameterGrid(ranges)
@@ -225,9 +241,10 @@ module HHNSGA
 
     export z
     function z(x)
-        genes_out,god = transdict(x)
+        god = transdict(x)
         contents = py"z_py"(py"evaluate",god)
         return contents
     end
 
 end
+#create_sysimage(:HHNSGA, sysimage_path="sys_HHNSGA.so", precompile_execution_file="precompile_HHNSGA.jl")

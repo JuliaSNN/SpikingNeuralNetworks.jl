@@ -1,17 +1,21 @@
+using Pkg
+Pkg.update()
 
 try
     using UnicodePlots
     using PyCall
     using NSGAII
     using OrderedCollections
-    using Plotly
+    #using Plotly
 catch
-    import Pkg
-    Pkg.add("Plotly")
+    #import Pkg
+    #Pkg.add("Plotly")
     import Pkg; Pkg.add("Plots")
     import Pkg; Pkg.add("UnicodePlots")
     Pkg.add("OrderedCollections")
 
+    #Pkg.add("PackageCompiler.jl")
+    #Pkg.clone("https://github.com/JuliaCN/Py2Jl.jl")
     Pkg.clone("https://github.com/gsoleilhac/NSGAII.jl")
     Pkg.add("ProgressMeter")
     Pkg.add("UnicodePlots")
@@ -21,10 +25,11 @@ catch
     Pkg.build("PyCall")
     #Pkg.clone("https://github.com/gsoleilhac/NSGAIII.jl")
     #Pkg.clone("https://github.com/JuliaCN/Py2Jl.jl")
-    using PyCall
-    using UnicodePlots
-end
 
+end
+Pkg.update()
+using PyCall
+using UnicodePlots
 
 include("src/SpikingNeuralNetworks.jl")
 include("src/units.jl")
@@ -33,6 +38,7 @@ using UnicodePlots
 using PyCall
 using NSGAII
 SNN = SpikingNeuralNetworks.SNN
+#=
 py"""
 import matplotlib
 import matplotlib.pyplot as plt
@@ -95,7 +101,8 @@ using OrderedCollections
 ranges = OrderedDict(py"ranges")
 H1=[values(ranges)]
 
-current_params = py"rt.params"
+current_params = py"rt.params"a
 print(current_params)
 simple.attrs = py"JHH"
+=#
 =#
