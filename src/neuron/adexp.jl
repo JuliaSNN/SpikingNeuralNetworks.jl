@@ -25,40 +25,39 @@ end
                                         v_reset,
                                         spike_delta)
     N::SNNInt = 1
+    cnt::SNNInt = 2
     v::Vector{SNNFloat} = fill(param.v_rest, N)
     w::Vector{SNNFloat} = zeros(N)
     fire::Vector{Bool} = zeros(Bool, N)
     I::Vector{SNNFloat} = zeros(N)
+    spike_raster::Vector{SNNInt} = zeros(N)
     records::Dict = Dict()
 end
 
 function integrate!(p::AD, param::ADEXParameter, dt::SNNFloat)
-    @unpack N, v, w, fire, I = p
+    @unpack N, cnt, v, w, fire, I,spike_raster = p
     @unpack a,b,cm,v_rest,tau_m,tau_w,v_thresh,delta_T,v_spike,v_reset,spike_delta = param
-    v[1] = v_rest
-    w[1] += b
-
-    if fire[1]
+    if spike_raster[cnt-1] == 1 || fire[1]
       v[1] = v_reset
       w[1] += b
     end
-
     dv  = (((v_rest-v[1]) +
             delta_T*exp((v[1] - v_thresh)/delta_T))/tau_m +
             (I[1] - w[1])/cm) *dt
     v[1] += dv
     w[1] += dt * (a*(v[1] - v_rest) - w[1])/tau_w * dt
+
+
     fire[1] = v[1] > v_thresh
 
     if v[1]>v_thresh
         fire[1] = 1 # v[1] > vPeak
         v[1] = spike_delta
+        spike_raster[cnt] = 1
 
+    else
+        spike_raster[cnt] = 0
     end
 
-    #    spike_raster[i] = 1
-    #else
-    #    spike_raster[i] = 0
-    #end
-    #return N, v, w, fire, I
+    cnt+=1
 end

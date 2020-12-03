@@ -24,20 +24,20 @@ v_spike::SNNFloat = -40.0
 v_reset::SNNFloat = -70.6
 spike_delta::SNNFloat = 30
 =#
-param = SNN.ADEXParameter(;a = 12, b = 0.18,
-    cm = 0.291,
+param = SNN.ADEXParameter(;a = 14, b = 0.18,
+    cm = 1,
     v_rest=-70.6,
-    tau_m=9.3667,
+    tau_m=10.3667,
     tau_w=144.0,
     v_thresh=20.0,
-    delta_T=0.25,
+    delta_T=5.25,
     v_spike = -70.6,
     v_reset = -70.6,
     spike_delta = -70.6)
     #@unpack a,b,cm,v_rest,tau_m,tau_w,v_thresh,delta_T,v_spike,spike_delta = param
 
 Etest = SNN.AD(;N = 1, param)
-Etest.I = [390.0015]
+Etest.I = [29.0015]
 SNN.monitor(Etest, [:v,:I])
 #SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
 SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
@@ -48,15 +48,16 @@ param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=100.0, vr
 Etest = SNN.IZ_more(;N = 1, param)
 Etest.I = [230.0015]
 SNN.monitor(Etest, [:v,:I])
+SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+
 SNN.vecplot(Etest, :v) |> display
 
-Etest = SNN.IZ_more(;N = 1, param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=90.0, vr=-65.0, k=1.6, vt=-62.0, vPeak=20.0))#, C=1))
+Etest = SNN.IZ_more(;N = 1, param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=90.0, vr=-65.0, k=1.6, vt=-62.0, vPeak=20.0))
 Etest.I = [36.0015]
 
-
+SNN.monitor(Etest, [:v,:I])
 SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
 #SNN.vecplot(Etest, :v) |> display
-SNN.monitor(Etest, [:v,:I])
 
 
 SNN.vecplot(Etest, :I) |> display
