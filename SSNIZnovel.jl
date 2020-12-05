@@ -9,58 +9,54 @@ unicodeplots()
 
 
 SNN = SpikingNeuralNetworks
-#=
-a::SNNFloat = 4.0
-b::SNNFloat = 0.0805
-v_reset::SNNFloat = 2
-cm::SNNFloat = 0.281
-v_rest::SNNFloat = -70.6
-tau_m::SNNFloat = 9.3667
-tau_w::SNNFloat = 144.0
-v_thresh::SNNFloat = -50.4
-delta_T::SNNFloat = 2.0
-v_reset::SNNFloat = -70.6
-v_spike::SNNFloat = -40.0
-v_reset::SNNFloat = -70.6
-spike_delta::SNNFloat = 30
-=#
-param = SNN.ADEXParameter(;a = 14, b = 0.18,
-    cm = 1,
-    v_rest=-70.6,
-    tau_m=10.3667,
-    tau_w=144.0,
-    v_thresh=20.0,
-    delta_T=5.25,
-    v_spike = -70.6,
-    v_reset = -70.6,
-    spike_delta = -70.6)
-    #@unpack a,b,cm,v_rest,tau_m,tau_w,v_thresh,delta_T,v_spike,spike_delta = param
+adparam = SNN.ADEXParameter(;a = 6.050246708405076, b = 7.308480222357973,
+    cm = 803.1019662706587,
+    v_rest= -63.22881649139353,
+    tau_m=19.73777028610565,
+    tau_w=351.0551915202058,
+    v_thresh=-39.232165554444265,
+    delta_T=6.37124632135508,
+    v_spike = -36.58205819488362,
+    v_reset = -59.18792270568965,
+    spike_delta = 16.33506432689027)
+E = SNN.AD(;N = 1, param)
+E.I = [795.57128906]
+#{'value': array(460.57128906) * pA}
 
-Etest = SNN.AD(;N = 1, param)
-Etest.I = [29.0015]
 SNN.monitor(Etest, [:v,:I])
 #SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
 SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
 SNN.vecplot(Etest, :v) |> display
 
+Ne = 1000;
+Ni = 600#int(200.0*(10.0/8.0))
+#E = SNN.IZ(;N = Ne, param = SNN.IZParameter(;a = 0.02, b = 0.2, c = -65, d = 8));#, C=1))
+#I = SNN.IZ(;N = Ni, param = SNN.IZParameter(;a = 0.1, b = 0.2, c = -65, d = 2));#, C=1))
 
-param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=100.0, vr=-65.0, k=4.0, vt=-50.0, vPeak=20.0)
-Etest = SNN.IZ_more(;N = 1, param)
-Etest.I = [230.0015]
-SNN.monitor(Etest, [:v,:I])
-SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=100.0, vr=-65.0, k=4.0, vt=-50.0, vPeak=20.0, cellnumber=7)
+E = SNN.IZ_more(;N = 1, param)
+#E = SNN.IZ_more(;N = 1, param)
+E.I = [190.0015]
+SNN.monitor(E, [:v,:I])
 
-SNN.vecplot(Etest, :v) |> display
+SNN.sim!([E],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+SNN.vecplot(E, :v) |> display
 
-Etest = SNN.IZ_more(;N = 1, param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=90.0, vr=-65.0, k=1.6, vt=-62.0, vPeak=20.0))
-Etest.I = [36.0015]
+param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=90.0, vr=-65.0, k=1.6, vt=-62.0, vPeak=20.0, cellnumber=6)
+E = SNN.IZ_more(;N = Ne, param)
 
-SNN.monitor(Etest, [:v,:I])
-SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
-#SNN.vecplot(Etest, :v) |> display
+param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65.0, d = 8.0, C=190.0, vr=-75.0, k=1.6, vt=-62.0, vPeak=20.0, cellnumber=5)
+
+I = SNN.IZ_more(;N = Ni, param)
+I.I = [160.0015]
+
+SNN.monitor(I, [:v,:I])
+SNN.sim!([I],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+SNN.vecplot(I, :v) |> display
 
 
-SNN.vecplot(Etest, :I) |> display
+
+SNN.vecplot(I, :I) |> display
 
 Etest =SNN.IZ(;N = 1, param = SNN.IZParameter(;a = 0.02, b = 0.2, c = -65, d = 8))#, C=1))
 Etest.I = [3.1]
@@ -68,11 +64,8 @@ SNN.monitor(Etest, [:v])
 SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=1000ms)
 SNN.vecplot(Etest, :v) |> display
 
-Etest = SNN.IZ_more(;N = 1, param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65, d = 8, C=1, vr=-70))
+#Etest = SNN.IZ_more(;N = 1, param = SNN.IZParameter_more(;a = 0.02, b = 0.2, c = -65, d = 8, C=1, vr=-70))
 
-Ne = 1000;      Ni = 600#int(200.0*(10.0/8.0))
-E = SNN.IZ(;N = Ne, param = SNN.IZParameter(;a = 0.02, b = 0.2, c = -65, d = 8));#, C=1))
-I = SNN.IZ(;N = Ni, param = SNN.IZParameter(;a = 0.1, b = 0.2, c = -65, d = 2));#, C=1))
 
 EE = SNN.SpikingSynapse(E, E, :v; σ = 0.25,  p = 0.25);
 EI = SNN.SpikingSynapse(E, I, :v; σ = 0.25,  p = 0.25);
@@ -83,8 +76,11 @@ II = SNN.SpikingSynapse(I, I, :v; σ = -1.0, p = 0.25);
 #EI = SNN.SpikingSynapse(E, I, :v; σ = 1,  p = 1);
 #IE = SNN.SpikingSynapse(I, E, :v; σ = -1.0, p = 1);
 #II = SNN.SpikingSynapse(I, I, :v; σ = -1.0, p = 1);
+println(size(E.N),size(E.N))
+
 P = [E, I];
 C = [EE, EI, IE, II];
+println("passed !!!")
 
 SNN.monitor([E, I], [:fire])
 for t = 1:2000
