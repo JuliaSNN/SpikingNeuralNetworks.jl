@@ -1,3 +1,11 @@
+"""
+Julia SNN Implementation of AdExp Neuron.
+[Adaptive_exponential_integrate and fire neuron](http://www.scholarpedia.org/article/Adaptive_exponential_integrate-and-fire_model)
+Dr. Wulfram Gerstner
+Romain Brette, Ecole Normale Supérieure, Paris, France
+"""
+
+
 @snn_kw struct ADEXParameter{FT=Float32}
     a::FT = 4.0
     b::FT = 0.0805
@@ -30,8 +38,8 @@ function integrate!(p::AD, param::ADEXParameter, dt::Float32)
     @unpack a,b,cm,v_rest,tau_m,tau_w,v_thresh,delta_T,v_spike,v_reset,spike_delta = param
     @inbounds for i = 1:N
         if spike_raster[cnt] == 1 || fire[i]
-          v[i] = v_reset
-          w[i] += b
+            v[i] = v_reset
+            w[i] += b
         end
         dv  = (((v_rest-v[i]) +
                 delta_T*exp((v[i] - v_thresh)/delta_T))/tau_m +
@@ -48,5 +56,5 @@ function integrate!(p::AD, param::ADEXParameter, dt::Float32)
             spike_raster[cnt] = 0
         end
     end
-    cnt+=1
+    p.cnt+=1
 end
