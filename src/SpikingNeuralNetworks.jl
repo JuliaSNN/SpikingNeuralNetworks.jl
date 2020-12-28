@@ -17,6 +17,7 @@ include("neuron/if2.jl")
 include("neuron/noisy_if.jl")
 include("neuron/poisson.jl")
 include("neuron/iz.jl")
+include("neuron/adexp.jl")
 include("neuron/hh.jl")
 include("neuron/rate.jl")
 
