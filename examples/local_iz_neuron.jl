@@ -14,6 +14,11 @@ module HHNSGA
     export NSGAII
 
     export SNN
+    Pkg.add(url="https://github.com/Datseris/SpikeSynchrony.jl")
+    using SpikeSynchrony
+    #import Pkg;
+    Pkg.add("OrderedCollections")
+    Pkg.add("NSGAII")#` to install the NSGAII package.
 
 
     include("../src/SpikingNeuralNetworks.jl")
@@ -21,17 +26,10 @@ module HHNSGA
     include("../src/plot.jl")
 
     SNN = SpikingNeuralNetworks.SNN
-    #create_sysimage(:SNN, sysimage_path="sys_SpikingNeuralNetworksso", precompile_execution_file="precompile_SpikingNeuralNetworks.jl")
-
     using Random
     using PyCall
     py"""
     import copy
-    from neuronunit.optimisation import algorithms
-    from neuronunit.optimisation import optimisations
-    from neuronunit.optimisation.optimization_management import TSD
-    from neuronunit.optimisation.optimization_management import OptMan
-    #from neuronunit.optimisation import make_sim_tests
     import matplotlib
     import matplotlib.pyplot as plt
     import numpy as np
@@ -40,18 +38,6 @@ module HHNSGA
     import os
     sys.path.append(os.getcwd())
     """
-    py"""
-    from neuronunit import tests
-    from neuronunit.tests import fi
-    from izhi import IZModel
-    from neo import AnalogSignal
-    import quantities as pqu
-    try:
-       from julia import Main
-    except:
-       import julia
-       julia.install()
-       from julia import Main
     Main.include("../src/SpikingNeuralNetworks.jl")
     Main.eval("SNN = SpikingNeuralNetworks.SNN")
 
