@@ -261,7 +261,7 @@ function zz_(param)
     #print(param[5])
     #print(param)
     #println("fail")
-    SNN.sim!([E], []; dt =1*ms, delay=ALLEN_DELAY,stimulus_duration=ALLEN_DURATION,simulation_duration = ALLEN_DURATION+ALLEN_DELAY+500ms)
+    SNN.sim!([E], []; dt =1*ms, delay=ALLEN_DELAY,stimulus_duration=ALLEN_DURATION,simulation_duration = ALLEN_DURATION+ALLEN_DELAY+443ms)
     #v = SNN.getrecord(E, :v)
     #SNN.vecplot(E, :v) |> display
     #function loss(E,ngt_spikes,ground_spikes)
@@ -328,8 +328,9 @@ cb = Evolutionary.ConstraintBounds(lower,upper,lower,upper)
 selections = [:roulette=>rouletteinv, :sus=>susinv, :rank=>ranklinear(1.5)]
 crossovers = [:discrete=>discrete, :intermediate0=>intermediate(0.), :intermediate0_25=>intermediate(0.5), :line=>line(0.2)]
 mutations = [:domrng0_5=>domainrange(fill(0.5,4)), :uniform=>uniform(3.0), :gaussian=>gaussian(0.6)]
-etas = [0.1,.25,0.5,0.75,0.9]
+etas = [0.25,0.35,0.5,0.75]#,0.8]
 global temp_GA
+global meta_param_dict = Dict()
 for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) in etas
     xn == :discrete && (mn == :uniform || mn == :gaussian) && continue # bad combination
     xn == :line && mn == :gaussian && continue # bad combination
@@ -353,12 +354,22 @@ for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) i
     )
     #print(result)
     fitness = minimum(result)
-    println("GA:$(sn):$(xn):$(mn):ɛ=$ɛ) => F: $(minimum(result)), C: $(Evolutionary.iterations(result))")
+    meta_param_dict[:fitness] = Dict()
+    meta_param_dict[:fitness][:"sn"] = sn
+    meta_param_dict[:fitness][:"xn"] = xn
+    meta_param_dict[:fitness][:"mn"] = mn
+    meta_param_dict[:fitness][:"ɛ"] = ɛ
+
+    println("GA:$(sn):$(xn):$(mn):ɛ=$ɛ) => F: $(minimum(result))")# C: $(Evolutionary.iterations(result))")
 
     extremum = Evolutionary.minimizer(result)
+    meta_param_dict[:fitness][:"extremum"] = extremum
+
     checkmodel(extremum)
     plot(vmgtt[:],vmgtv[:]) |> display
 end
+save("meta_param_dict.jld", "meta_param_dict", meta_param_dict)#,"vmgtt",vmgtt, "ngt_spikes", ngt_spikes,"gt_spikes",gt_spikes)
+
 #=
 function plot_pop(pop)
     pop = filter(indiv -> indiv.rank <= 1, pop) #keeps only the non-dominated solutions
