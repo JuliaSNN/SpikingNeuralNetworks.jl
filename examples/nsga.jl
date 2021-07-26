@@ -329,8 +329,8 @@ selections = [:roulette=>rouletteinv, :sus=>susinv, :rank=>ranklinear(1.5)]
 crossovers = [:discrete=>discrete, :intermediate0=>intermediate(0.), :intermediate0_25=>intermediate(0.5), :line=>line(0.2)]
 mutations = [:domrng0_5=>domainrange(fill(0.5,4)), :uniform=>uniform(3.0), :gaussian=>gaussian(0.6)]
 etas = [0.25,0.35,0.5,0.75]#,0.8]
-global temp_GA
-global meta_param_dict = Dict()
+#temp_GA
+meta_param_dict = Dict()
 for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) in etas
     xn == :discrete && (mn == :uniform || mn == :gaussian) && continue # bad combination
     xn == :line && mn == :gaussian && continue # bad combination
@@ -350,7 +350,7 @@ for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) i
     println()
 
     result = Evolutionary.optimize(zz_, initd, temp_GA,
-        Evolutionary.Options(iterations=19, successive_f_tol=25, show_trace=false, store_trace=false)
+        Evolutionary.Options(iterations=12, successive_f_tol=25, show_trace=false, store_trace=false)
     )
     #print(result)
     fitness = minimum(result)
@@ -364,11 +364,11 @@ for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) i
 
     extremum = Evolutionary.minimizer(result)
     meta_param_dict[:fitness][:"extremum"] = extremum
+    save("meta_param_dict.jld", "meta_param_dict", meta_param_dict)#,"vmgtt",vmgtt, "ngt_spikes", ngt_spikes,"gt_spikes",gt_spikes)
 
-    checkmodel(extremum)
-    plot(vmgtt[:],vmgtv[:]) |> display
+    #checkmodel(extremum)
+    #plot(vmgtt[:],vmgtv[:]) |> display
 end
-save("meta_param_dict.jld", "meta_param_dict", meta_param_dict)#,"vmgtt",vmgtt, "ngt_spikes", ngt_spikes,"gt_spikes",gt_spikes)
 
 #=
 function plot_pop(pop)
@@ -582,7 +582,7 @@ end
 
 #println(garray)
 #aa = zero(eltype(first(garray)))
-#println(aa)
+ #println(aa)
 #nd = NonDifferentiable1(zz,first(garray))
 #println(nd)
 #(method::GA, options, objfun, population)
