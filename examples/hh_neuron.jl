@@ -1,3 +1,4 @@
+using Plots
 using SpikingNeuralNetworks
 SNN = SpikingNeuralNetworks
 include("../src/units.jl")

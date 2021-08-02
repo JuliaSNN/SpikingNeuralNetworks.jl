@@ -1,14 +1,19 @@
-@with_kw struct IF2Parameter <: AbstractIFParameter
-    Ee::SNNFloat = 0mV
-    Ei::SNNFloat = 0mV
+@snn_kw struct IF2Parameter{FT=Float32} <: AbstractIFParameter
+    Ee::FT = 0mV
+    Ei::FT = 0mV
 end
 
-@with_kw mutable struct IF2 <: AbstractIF
+@snn_kw mutable struct IF2 <: AbstractIF
     param::IF2Parameter = IF2Parameter()
-    N::SNNInt = 100
+    N::Int32 = 100
 end
 
-function integrate!(p::IF2, param::IF2Parameter, dt::SNNFloat)
+"""
+[Integrate-And-Fire Neuron](https://neuronaldynamics.epfl.ch/online/Ch1.S3.html)
+"""
+IF2
+
+function integrate!(p::IF2, param::IF2Parameter, dt::Float32)
     @unpack N = p
     @unpack Ee, Ei = param
     @inbounds for i = 1:N

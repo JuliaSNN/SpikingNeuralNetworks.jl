@@ -11,6 +11,4 @@ for t = 1:N
     E2.v[N - t + 1] = 100
     SNN.train!([E1, E2], [EE], 0.5ms, (t - 1) * 0.5ms)
 end
-#SNN.raster([E1, E2]) |> display
 ΔW = EE.records[:W][end]
-#plot(ΔW) |> display

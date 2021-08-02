@@ -1,4 +1,6 @@
-using Plots, SNN; plotly(); #reload("SNN")
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 S = SNN.Rate(;N = 200)
 SS = SNN.PINningSynapse(S, S; σ = 1.5, p = 1.0)
@@ -16,4 +18,4 @@ for (i, t) in enumerate(ts)
     SNN.train!(P, C, 0.1ms, t)
 end
 
-SNN.vecplot(SS, :g); plot!(f.(ts)) |> gui
+SNN.vecplot(SS, :g); plot!(f.(ts))

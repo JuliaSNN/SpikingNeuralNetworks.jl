@@ -1,4 +1,6 @@
-using Plots, SNN
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 N = 100
 E1 = SNN.IF(;N = N)
@@ -13,6 +15,6 @@ for t = 1:N
     E2.v[N - t + 1] = 100
     SNN.train!([E1, E2], [EE], 0.5ms, (t - 1) * 0.5ms)
 end
-SNN.raster([E1, E2]) |> display
+SNN.raster([E1, E2])
 ΔW = EE.records[:W][end]
-plot(ΔW) |> display
+plot(ΔW)

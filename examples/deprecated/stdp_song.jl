@@ -1,4 +1,6 @@
-using Plots, SNN; plotly()
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 inputs = SNN.Poisson(;N = 1000)
 inputs.param = SNN.PoissonParameter(;rate = 15Hz)
@@ -11,11 +13,11 @@ S.param = SNN.SpikingSynapseParameter(;Wmax = 0.01)
 
 P = [inputs, neurons]; C = [S]
 
-# histogram(S.W / S.param.Wmax; nbins = 20) |> gui
+# histogram(S.W / S.param.Wmax; nbins = 20)
 # SNN.monitor(S, [(:W, [1, 2])])
 @time SNN.train!(P, C; duration = 100second)
 
-scatter(S.W / S.param.Wmax) |> gui
-histogram(S.W / S.param.Wmax; nbins = 20) |> gui
-# plot(hcat(SNN.getrecord(S, :W)...)' / S.param.Wmax) |> gui
-# heatmap(full(sparse(S.I, S.J, S.W / S.param.Wmax))) |> gui
+scatter(S.W / S.param.Wmax)
+histogram(S.W / S.param.Wmax; nbins = 20)
+# plot(hcat(SNN.getrecord(S, :W)...)' / S.param.Wmax)
+# heatmap(full(sparse(S.I, S.J, S.W / S.param.Wmax)))

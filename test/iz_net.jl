@@ -15,4 +15,3 @@ for t = 1:1000
     I.I .= 2randn(Ni)
     SNN.sim!(P, C, 1ms)
 end
-#SNN.raster(P) |> display

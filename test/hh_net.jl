@@ -9,4 +9,3 @@ C = [EE, EI, IE, II]
 
 SNN.monitor(E, [(:v, [1, 10, 100])])
 SNN.sim!(P, C; dt = 0.01ms, duration = 100ms)
-#SNN.vecplot(E, :v) |> display

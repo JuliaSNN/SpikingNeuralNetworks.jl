@@ -1,4 +1,6 @@
-using Plots, SNN; plotly(); reload("SNN")
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 S = SNN.Rate(;N = 200)
 SS = SNN.FLSynapse(S, S; σ = 1.5, p = 1.0)
@@ -21,4 +23,4 @@ for t in 1440ms:0.1ms:1700ms
 end
 
 plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["f" "z"]);
-vline!([1440ms/0.1ms], color = :cyan, label = "") |> gui
+vline!([1440ms/0.1ms], color = :cyan, label = "")

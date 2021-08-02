@@ -1,39 +1,38 @@
-using Statistics
-
-using Plots
-
-unicodeplots()
-# @everywhere using PmapProgressmeter
-@with_kw struct HHParameter
-    Cm::SNNFloat = 1uF * cm^(-2) * 20000um^2
-    gl::SNNFloat = 5e-5siemens * cm^(-2) * 20000um^2
-    El::SNNFloat = -65mV
-    Ek::SNNFloat = -90mV
-    En::SNNFloat = 50mV
-    gn::SNNFloat = 100msiemens * cm^(-2) * 20000um^2
-    gk::SNNFloat = 30msiemens * cm^(-2) * 20000um^2
-    Vt::SNNFloat = -63mV
-    τe::SNNFloat = 5ms
-    τi::SNNFloat = 10ms
-    Ee::SNNFloat = 0mV
-    Ei::SNNFloat = -80mV
+@snn_kw struct HHParameter{FT=Float32}
+    Cm::FT = 1uF * cm^(-2) * 20000um^2
+    gl::FT = 5e-5siemens * cm^(-2) * 20000um^2
+    El::FT = -65mV
+    Ek::FT = -90mV
+    En::FT = 50mV
+    gn::FT = 100msiemens * cm^(-2) * 20000um^2
+    gk::FT = 30msiemens * cm^(-2) * 20000um^2
+    Vt::FT = -63mV
+    τe::FT = 5ms
+    τi::FT = 10ms
+    Ee::FT = 0mV
+    Ei::FT = -80mV
 end
 
-@with_kw mutable struct HH
+@snn_kw mutable struct HH{VFT=Vector{Float32},VBT=Vector{Bool}}
     param::HHParameter = HHParameter()
-    N::SNNInt = 100
-    v::Vector{SNNFloat} = param.El .+ 5(ones(N) .- 1)
-    m::Vector{SNNFloat} = zeros(N)
-    n::Vector{SNNFloat} = zeros(N)
-    h::Vector{SNNFloat} = ones(N)
-    ge::Vector{SNNFloat}  = zeros(N).*10nS # (1.5randn(N) .+ 4) .* 10nS
-    gi::Vector{SNNFloat}  = zeros(N).*10nS # (12randn(N) .+ 20) .* 10nS
-    fire::Vector{Bool} = zeros(Bool, N)
-    I::Vector{SNNFloat} = zeros(N)
+    N::Int32 = 100
+    v::VFT = param.El .+ 5(randn(N) .- 1)
+    m::VFT = zeros(N)
+    n::VFT = zeros(N)
+    h::VFT = ones(N)
+    ge::VFT  = (1.5randn(N) .+ 4) .* 10nS
+    gi::VFT  = (12randn(N) .+ 20) .* 10nS
+    fire::VBT = zeros(Bool, N)
+    I::VFT = zeros(N)
     records::Dict = Dict()
 end
 
-function integrate!(p::HH, param::HHParameter, dt::SNNFloat)
+"""
+[Hodgkin–Huxley Neuron](https://en.wikipedia.org/wiki/Hodgkin%E2%80%93Huxley_model)
+"""
+HH
+
+function integrate!(p::HH, param::HHParameter, dt::Float32)
     @unpack N, v, m, n, h, ge, gi, fire, I = p
     @unpack Cm, gl, El, Ek, En, gn, gk, Vt, τe, τi, Ee, Ei = param
     @inbounds for i = 1:N

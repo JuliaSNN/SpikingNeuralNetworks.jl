@@ -1,4 +1,6 @@
-using Plots, SNN
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 Ne = 800;      Ni = 200
 E = SNN.IZ(;N = Ne, param = SNN.IZParameter(;a = 0.02, b = 0.2, c = -65, d = 8))
@@ -17,4 +19,4 @@ for t = 1:1000
     I.I .= 2randn(Ni)
     SNN.sim!(P, C, 1ms)
 end
-SNN.raster(P) |> display
+SNN.raster(P)

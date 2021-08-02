@@ -1,4 +1,6 @@
-using Plots, SNN
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 E = SNN.IF(;N = 3200, param = SNN.IFParameter(;El = -49mV))
 I = SNN.IF(;N = 800, param = SNN.IFParameter(;El = -49mV))
@@ -11,5 +13,5 @@ C = [EE, EI, IE, II]
 
 SNN.monitor([E, I], [:fire])
 SNN.sim!(P, C; duration = 1second)
-SNN.raster(P) |> display
+SNN.raster(P)
 SNN.train!(P, C; duration = 1second)

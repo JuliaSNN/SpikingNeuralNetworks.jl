@@ -1,49 +1,40 @@
 struct PINningSynapseParameter
 end
 
-@with_kw mutable struct PINningSynapse
+@snn_kw mutable struct PINningSynapse{MFT=Matrix{Float32},VFT=Vector{Float32}}
     param::PINningSynapseParameter = PINningSynapseParameter()
-    colptr::Vector{SNNInt} # column pointer of sparse W
-    I::Vector{SNNInt}      # postsynaptic index of W
-    W::Vector{SNNFloat}  # synaptic weight
-    rI::Vector{SNNFloat} # postsynaptic rate
-    rJ::Vector{SNNFloat} # presynaptic rate
-    g::Vector{SNNFloat}  # postsynaptic conductance
-    P::Vector{SNNFloat}  # <rᵢrⱼ>⁻¹
-    q::Vector{SNNFloat}  # P * r
-    f::Vector{SNNFloat}  # postsynaptic traget
+    W::MFT  # synaptic weight
+    rI::VFT # postsynaptic rate
+    rJ::VFT # presynaptic rate
+    g::VFT  # postsynaptic conductance
+    P::MFT  # <rᵢrⱼ>⁻¹
+    q::VFT  # P * r
+    f::VFT  # postsynaptic traget
     records::Dict = Dict()
 end
 
-function PINningSynapse(pre, post; σ = 1.5, p = 0.0, α = 1)
-    w = σ / √(p * pre.N) * sprandn(post.N, pre.N, p)
-    rowptr, colptr, I, J, index, W = dsparse(w)
+"""
+[PINing Sparse Synapse](https://www.ncbi.nlm.nih.gov/pubmed/26971945)
+"""
+PINningSynapse
+
+function PINningSynapse(pre, post; σ = 1.5, p = 0.0, α = 1, kwargs...)
     rI, rJ, g = post.r, pre.r, post.g
-    P = α .* (I .== J)
+    W = σ * 1 / √pre.N * randn(post.N, pre.N) # normalized recurrent weight
+    P = α * I(post.N) # initial inverse of C = <rr'>
     f, q = zeros(post.N), zeros(post.N)
-    PINningSynapse(;@symdict(colptr, I, W, rI, rJ, g, P, q, f)...)
+    PINningSynapse(;@symdict(W, rI, rJ, g, P, q, f)..., kwargs...)
 end
 
 function forward!(c::PINningSynapse, param::PINningSynapseParameter)
-    fill!(q, zero(SNNFloat))
-    fill!(g, zero(SNNFloat))
-    @inbounds for j in 1:(length(colptr) - 1)
-        rJj = rJ[j]
-        for s = colptr[j]:(colptr[j+1] - 1)
-            i = I[s]
-            g[i] += W[s] * rJj
-            q[i] += P[s] * rJj
-        end
-    end
+    @unpack W, rI, rJ, g, P, q = c
+    mul!(q, P, rJ)
+    mul!(g, W, rJ)
 end
 
-function plasticity!(c::PINningSynapse, param::PINningSynapseParameter, dt::SNNFloat, t::SNNFloat)
+function plasticity!(c::PINningSynapse, param::PINningSynapseParameter, dt::Float32, t::Float32)
+    @unpack W, rI, g, P, q, f = c
     C = 1 / (1 + dot(q, rI))
-    @inbounds for j in 1:(length(colptr) - 1)
-        for s in colptr[j]:(colptr[j+1] - 1)
-            i = I[s]
-            P[s] += -C * q[i] * q[j]
-            W[s] += C * (f[i] - g[i]) * q[j]
-        end
-    end
+    BLAS.ger!(C, f - g, q, W)
+    BLAS.ger!(-C, q, q, P)
 end

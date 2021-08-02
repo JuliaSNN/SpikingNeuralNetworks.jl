@@ -1,13 +1,21 @@
-@with_kw struct NoisyIFParameter <: AbstractIFParameter
-    σ::SNNFloat = 0
+@snn_kw struct NoisyIFParameter{FT=Float32} <: AbstractIFParameter
+    σ::FT = 0
 end
 
-@with_kw mutable struct NoisyIF <: AbstractIF
+@snn_kw mutable struct NoisyIF{VFT=Vector{Float32}} <: AbstractIF
     param::NoisyIFParameter = NoisyIFParameter()
-    randncache::Vector{SNNFloat} = randn(N)
+    N::Int32 = 100
+    randncache::VFT = randn(N)
 end
 
-function integrate!(p::NoisyIF, param::NoisyIFParameter, dt::SNNFloat)
+"""
+Noisy Integrate-And-Fire Neuron
+"""
+NoisyIF
+
+function integrate!(p::NoisyIF, param::NoisyIFParameter, dt::Float32)
+    @unpack N, randncache = p
+    @unpack σ = param
     randn!(randncache)
     @inbounds for i = 1:N
         v[i] += dt * (ge[i] + gi[i] - (v[i] - El) + I[i] + σ / √dt * randncache[i]) / τm

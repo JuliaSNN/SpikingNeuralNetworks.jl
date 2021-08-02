@@ -1,8 +1,9 @@
 name = "SpikingNeuralNetworks"
 uuid = "9d8b7fda-1049-58bc-9481-071a9f369938"
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
@@ -10,13 +11,16 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 WaspNet = "c0b53cd3-4946-4106-b8e7-91971464ade9"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+UnPack = "1"
+julia = "1"
 Parameters = "0.12"
 Reexport = "0.2"
-Requires = "0.5"
+Requires = "0.5, 1"
 Unitful = "0.17"
-julia = "1"
+
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

@@ -1,26 +1,30 @@
-@with_kw struct IZParameter
-    a::SNNFloat = 0.01
-    b::SNNFloat = 0.2
-    c::SNNFloat = -65
-    d::SNNFloat = 2
-
+@snn_kw struct IZParameter{FT=Float32}
+    a::FT = 0.01
+    b::FT = 0.2
+    c::FT = -65
+    d::FT = 2
 end
 
-@with_kw mutable struct IZ
-    param::IZParameter = IZParameter(a,b,c,d)
-    N::SNNInt = 1
-    v::Vector{SNNFloat} = fill(param.c, N)
-    u::Vector{SNNFloat} = param.b * v
-    fire::Vector{Bool} = zeros(Bool, N)
-    I::Vector{SNNFloat} = zeros(N)
+@snn_kw mutable struct IZ{VFT=Vector{Float32},VBT=Vector{Bool}}
+    param::IZParameter = IZParameter()
+    N::Int32 = 100
+    v::VFT = fill(-65.0, N)
+    u::VFT = param.b * v
+    fire::VBT = zeros(Bool, N)
+    I::VFT = zeros(N)
     records::Dict = Dict()
 end
 
-function integrate!(p::IZ, param::IZParameter, dt::SNNFloat)
+"""
+[Izhikevich Neuron](https://www.izhikevich.org/publications/spikes.htm)
+"""
+IZ
+
+function integrate!(p::IZ, param::IZParameter, dt::Float32)
     @unpack N, v, u, fire, I = p
     @unpack a, b, c, d = param
     @inbounds for i = 1:N
-        #v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
+        v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
         v[i] += 0.5f0dt * (0.04f0v[i]^2 + 5f0v[i] + 140f0 - u[i] + I[i])
         u[i] += dt * (a * (b * v[i] - u[i]))
     end

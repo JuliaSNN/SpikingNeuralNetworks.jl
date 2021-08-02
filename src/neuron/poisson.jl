@@ -1,16 +1,23 @@
-@with_kw struct PoissonParameter
-    rate::SNNFloat = 1Hz
+@snn_kw struct PoissonParameter{FT=Float32}
+    rate::FT = 1Hz
 end
 
-@with_kw mutable struct Poisson
+@snn_kw mutable struct Poisson{VFT=Vector{Float32},VBT=Vector{Bool}}
     param::PoissonParameter = PoissonParameter()
-    N::SNNInt = 100
-    randcache::Vector{SNNFloat} = rand(N)
-    fire::Vector{Bool} = zeros(Bool, N)
+    N::Int32 = 100
+    randcache::VFT = rand(N)
+    fire::VBT = zeros(Bool, N)
     records::Dict = Dict()
 end
 
-function integrate!(p::Poisson, param::PoissonParameter, dt::SNNFloat)
+"""
+[Poisson Neuron](https://www.cns.nyu.edu/~david/handouts/poisson.pdf)
+"""
+Poisson
+
+function integrate!(p::Poisson, param::PoissonParameter, dt::Float32)
+    @unpack N, randcache, fire = p
+    @unpack rate = param
     prob = rate * dt
     rand!(randcache)
     @inbounds for i = 1:N

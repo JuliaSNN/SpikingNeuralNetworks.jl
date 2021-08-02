@@ -1,16 +1,26 @@
-@with_kw struct ADEXParameter
-    a::SNNFloat = 4.0
-    b::SNNFloat = 0.0805
-    cm::SNNFloat = 0.281
-    v_rest::SNNFloat = -70.6
-    tau_m::SNNFloat = 9.3667
-    tau_w::SNNFloat = 144.0
-    v_thresh::SNNFloat = -50.4
-    delta_T::SNNFloat = 2.0
-    v_spike::SNNFloat = -40.0
-    v_reset::SNNFloat = -70.6
-    spike_delta::SNNFloat = 30
+"""
+Julia SNN Implementation of AdExp Neuron.
+[Adaptive_exponential_integrate and fire neuron](http://www.scholarpedia.org/article/Adaptive_exponential_integrate-and-fire_model)
+Dr. Wulfram Gerstner
+Romain Brette, Ecole Normale Supérieure, Paris, France
+"""
+
+
+@snn_kw struct ADEXParameter{FT=Float32}
+    a::FT = 4.0
+    b::FT = 0.0805
+    cm::FT = 0.281
+    v_rest::FT = -70.6
+    tau_m::FT = 9.3667
+    tau_w::FT = 144.0
+    v_thresh::FT = -50.4
+    delta_T::FT = 2.0
+    v_spike::FT = -40.0
+    v_reset::FT = -70.6
+    spike_delta::FT = 30
 end
+@snn_kw mutable struct AD{VFT=Vector{Float32},VBT=Vector{Bool}}
+    param::ADEXParameter = ADEXParameter()
 
 @with_kw mutable struct AD
     param::ADEXParameter = ADEXParameter(a,

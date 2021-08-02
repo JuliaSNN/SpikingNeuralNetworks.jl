@@ -9,5 +9,4 @@ C = [EE, EI, IE, II]
 
 SNN.monitor([E, I], [:fire])
 SNN.sim!(P, C; duration = 1second)
-#SNN.raster(P) |> display
 SNN.train!(P, C; duration = 1second)

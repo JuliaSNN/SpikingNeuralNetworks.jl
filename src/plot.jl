@@ -13,7 +13,7 @@ using UnicodePlots
 unicodeplots()
 function raster(p)
     fire = p.records[:fire]
-    x, y = SNNFloat[], SNNFloat[]
+    x, y = Float32[], Float32[]
     for t = eachindex(fire)
         for n in findall(fire[t])
             push!(x, t)
@@ -24,8 +24,8 @@ function raster(p)
 end
 
 function raster(P::Array)
-    y0 = SNNInt[0]
-    X = SNNFloat[]; Y = SNNFloat[]
+    y0 = Int32[0]
+    X = Float32[]; Y = Float32[]
     for p in P
         x, y = raster(p)
         append!(X, x)
@@ -64,7 +64,7 @@ end
 
 function windowsize(p)
     A = sum.(p.records[:fire]) / length(p.N)
-    W = round(SNNInt, 0.5p.N / mean(A)) # filter window, unit=1
+    W = round(Int32, 0.5p.N / mean(A)) # filter window, unit=1
 end
 
 function density(p, sym)
@@ -112,7 +112,7 @@ end
 function if_curve(model, current; neuron = 1, dt = 0.1ms, duration = 1second)
     E = model(neuron)
     monitor(E, [:fire])
-    f = SNNFloat[]
+    f = Float32[]
     for I = current
         clear_records(E)
         E.I = [I]

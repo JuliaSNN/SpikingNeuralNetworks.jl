@@ -19,4 +19,3 @@ for t = 0:T
     RZ.I =  [(0.5T < t < 0.6T) ? 10mV : 0mV]
     SNN.sim!(P, [], 0.1ms)
 end
-#SNN.vecplot(P, :v) |> display

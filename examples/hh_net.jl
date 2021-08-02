@@ -1,4 +1,6 @@
-using Plots, SNN
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 E = SNN.HH(;N = 3200)
 I = SNN.HH(;N = 800)

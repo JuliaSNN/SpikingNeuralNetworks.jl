@@ -1,4 +1,6 @@
-using Plots, SNN; plotly(); reload("SNN")
+using Plots
+using SpikingNeuralNetworks
+SNN.@load_units
 
 ear = SNN.Rate(;N = 2)
 ear.r = zeros(ear.N) # exp(- (0:ear.N-1).^2 / 10^2)
@@ -19,4 +21,4 @@ for (i, t) in enumerate(ts)
     SNN.train!(P, C, 0.1ms, t)
 end
 
-SNN.vecplot(ppc_ppc, :g); plot!(f.(ts)) |> gui
+SNN.vecplot(ppc_ppc, :g); plot!(f.(ts))
