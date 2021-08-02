@@ -26,7 +26,7 @@ function integrate!(p::IZ, param::IZParameter, dt::SNNFloat)
     end
 
     @inbounds for i = 1:N
-        fire[i] = v[i] > 30f0
+        fire[i] = v[i] > 0f0#30f0
         v[i] = ifelse(fire[i], c, v[i])
         u[i] += ifelse(fire[i], d, 0f0)
     end

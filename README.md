@@ -7,8 +7,19 @@ A toolchain that facilitates optimization of spiking neuronal [models evaluated 
 ![NeuronUnit Logo](https://raw.githubusercontent.com/scidash/assets/master/logos/neuronunit/NeuronUnitBlack2.png)
 
 Currently Julia/Python interoperability is hard. I imagine this will improve again soon.
-# For now Docker is used. 
-The Docker environment functions to ensure Julia/Python interoperability. 
+# For now Docker is used.
+The Docker environment functions to ensure Julia/Python interoperability.
+
+
+## Installation Developer
+If you plan to change a fork of the repository you may want to install like this:
+```
+git clone https://github.com/AStupidBear/SpikingNeuralNetworks.jl.git
+```
+
+```julia
+] dev .
+```
 
 # Installation:
 ```
@@ -25,13 +36,13 @@ julia
 include("lhhneuron.jl")
 ```
 # Description
-* A Julia+Python model-data optimization toolchain derived from ***neuronunit*** and tightly interfaced with other community supported modules, levarging standard workflows in: feature extraction, data scraping and model simulation. 
+* A Julia+Python model-data optimization toolchain derived from ***neuronunit*** and tightly interfaced with other community supported modules, levarging standard workflows in: feature extraction, data scraping and model simulation.
 * A collection of compact, parsimonious biological neuronal models, implemented in community supported python modules and  tightly integrated into a fast data driven muliti-objective optimization routine (deap, numba, dask etc).
 * Neo, elephant, interoperability ships with the most minimal install. A wide range of feature extraction, data source, and interfaces and simulator backend support: NeuroML-DB, NeurML, Allen-SDK, PyNN and NEURON are provided with an easy to use [Docker container]().
  A wide range of interfaces and simulator backend support: Allen-SDK, PyNN and NEURON are provided with an [easy to use Docker container](https://github.com/russelljjarvis/docker-stacks-returned/blob/scidash/efel_dm/Dockerfile).
 
 # Advantages
-* Appeals to interest in AP shape, electrophysiology and Rheobase current injection value. 
+* Appeals to interest in AP shape, electrophysiology and Rheobase current injection value.
 * Relatively fast, but with little administrative overhead.
 * Feature extraction routines: AllenSDK, Druckman, Elephant.
 * Simulator Backends: Julia

@@ -9,8 +9,8 @@ using Plots
 
 # FIXME: using StatsBase
 #using Plots
-#using UnicodePlots
-#unicodeplots()
+using UnicodePlots
+unicodeplots()
 function raster(p)
     fire = p.records[:fire]
     x, y = SNNFloat[], SNNFloat[]
@@ -53,6 +53,14 @@ function vecplot(P::Array, sym)
     N = length(plts)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
+
+function custom_vm(vmgt)
+    y = vmgt
+    x = 1:length(vmgt)
+    plot(x, y, leg = :none,xaxis=("t", extrema(x)),yaxis=(string("v"), extrema(y)), size = (600, 400), layout = (1, 1))
+    plot(Plots.fakedata(50,5),w=3)
+end
+
 
 function windowsize(p)
     A = sum.(p.records[:fire]) / length(p.N)
