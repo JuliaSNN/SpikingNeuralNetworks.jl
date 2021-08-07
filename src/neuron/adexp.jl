@@ -15,14 +15,13 @@ Romain Brette, Ecole Normale Supérieure, Paris, France
     tau_w::FT = 144.0
     v_thresh::FT = -50.4
     delta_T::FT = 2.0
-    v_spike::FT = -40.0
     v_reset::FT = -70.6
-    spike_delta::FT = 30
+    spike_height::FT = 30
 end
 @snn_kw mutable struct AD{VFT=Vector{Float32},VBT=Vector{Bool}}
-    param::ADEXParameter = ADEXParameter()
-
-@with_kw mutable struct AD
+    #    param::ADEXParameter = ADEXParameter()
+    #end
+    #@with_kw mutable struct AD
     param::ADEXParameter = ADEXParameter(a,
                                         b,
                                         cm,
@@ -31,9 +30,8 @@ end
                                         tau_w,
                                         v_thresh,
                                         delta_T,
-                                        v_spike,
                                         v_reset,
-                                        spike_delta)
+                                        spike_height)
     N::SNNInt = 1
     cnt::SNNInt = 2
     v::Vector{SNNFloat} = fill(param.v_rest, N)
@@ -46,7 +44,7 @@ end
 
 function integrate!(p::AD, param::ADEXParameter, dt::SNNFloat)
     @unpack N, cnt, v, w, fire, I,spike_raster = p
-    @unpack a,b,cm,v_rest,tau_m,tau_w,v_thresh,delta_T,v_spike,v_reset,spike_delta = param
+    @unpack a,b,cm,v_rest,tau_m,tau_w,v_thresh,delta_T,v_reset,spike_height = param
     if spike_raster[cnt-1] == 1 || fire[1]
       v[1] = v_reset
       w[1] += b
@@ -62,7 +60,7 @@ function integrate!(p::AD, param::ADEXParameter, dt::SNNFloat)
 
     if v[1]>v_thresh
         fire[1] = 1 # v[1] > vPeak
-        v[1] = spike_delta
+        v[1] = spike_height
         spike_raster[cnt] = 1
 
     else

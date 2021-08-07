@@ -7,17 +7,53 @@ using LinearAlgebra
 using NSGAII
 using SpikeSynchrony
 include("../src/SpikingNeuralNetworks.jl")
-include("../src/units.jl")
+include("../src/unit.jl")
 SNN = SpikingNeuralNetworks
 using Evolutionary, Test, Random
 using Plots
 import DataStructures
 using JLD
 using Evolutionary, Test, Random
+#Pkg.add(url="https://github.com/JuliaObjects/ConstructionBaseExtras.jl")
 
+#Pkg.add(url="https://github.com/JuliaObjects/ConstructionBase.jl")
+#using Plots
+
+
+using CuArrays
+using GPUifyLoops
+
+using ConstructionBase
+using ConstructionBaseExtras
 using Debugger
 unicodeplots()
 
+SNN = SpikingNeuralNetworks
+adparam = SNN.ADEXParameter(;a = 6.050246708405076, b = 7.308480222357973,
+    cm = 803.1019662706587,
+    v_rest= -63.22881649139353,
+    tau_m=19.73777028610565,
+    tau_w=351.0551915202058,
+    v_thresh=-39.232165554444265,
+    delta_T=6.37124632135508,
+    v_spike = -36.58205819488362,
+    v_reset = -59.18792270568965,
+    spike_delta = 16.33506432689027)
+
+E = SNN.AD(;N = 1, param=adparam)
+E.I = [795.57128906]
+#{'value': array(460.57128906) * pA}
+# -
+
+SNN.monitor(E, [:v,:I])
+#SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+SNN.sim!([E],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+SNN.vecplot(E, :v) |> display
+
+
+py"""
+from neo import AnalogSignal
+"""
 
 if isfile("ground_truth.jld")
     vmgtv = load("ground_truth.jld","vmgtv")
@@ -311,7 +347,22 @@ function checkmodel(param)
     #v = SNN.getrecord(E, :v)
     vec = SNN.vecplot(E, :v)
 
-    vec |> display
+    py"""
+    from neo import AnalogSignal
+    #from neo import AnalogSignal
+    import quantities as pq
+    #import julia
+    #julia.setup()
+    vm2=[]
+    vm2.append(0)
+    """
+
+    vec2=py"AnalogSignal("vec",units=pq.mV,sampling_rate=1.0*pq.Hz)"
+
+    vec2 |> display
+    vec
+
+
 end
 
 
@@ -330,46 +381,73 @@ crossovers = [:discrete=>discrete, :intermediate0=>intermediate(0.), :intermedia
 mutations = [:domrng0_5=>domainrange(fill(0.5,4)), :uniform=>uniform(3.0), :gaussian=>gaussian(0.6)]
 etas = [0.25,0.35,0.5,0.75]#,0.8]
 #temp_GA
-meta_param_dict = Dict()
-for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) in etas
-    xn == :discrete && (mn == :uniform || mn == :gaussian) && continue # bad combination
-    xn == :line && mn == :gaussian && continue # bad combination
-    temp_GA = GA(
-        populationSize = 10,
-        ɛ = ɛ,
-        selection = ss,
-        crossover = xovr,
-        mutation = ms
-        #ɛ = 0.125,
-        #selection = ranklinear(1.5),
-        #crossover = line(0.25),
-        #mutation = gaussian(0.125)
-    )
-    println()
-    println("GA:$(sn):$(xn):$(mn):ɛ=$ɛ) => F before crash...")
-    println()
-
-    result = Evolutionary.optimize(zz_, initd, temp_GA,
-        Evolutionary.Options(iterations=12, successive_f_tol=25, show_trace=false, store_trace=false)
-    )
-    #print(result)
-    fitness = minimum(result)
-    meta_param_dict[:fitness] = Dict()
-    meta_param_dict[:fitness][:"sn"] = sn
-    meta_param_dict[:fitness][:"xn"] = xn
-    meta_param_dict[:fitness][:"mn"] = mn
-    meta_param_dict[:fitness][:"ɛ"] = ɛ
-
-    println("GA:$(sn):$(xn):$(mn):ɛ=$ɛ) => F: $(minimum(result))")# C: $(Evolutionary.iterations(result))")
-
-    extremum = Evolutionary.minimizer(result)
-    meta_param_dict[:fitness][:"extremum"] = extremum
-    save("meta_param_dict.jld", "meta_param_dict", meta_param_dict)#,"vmgtt",vmgtt, "ngt_spikes", ngt_spikes,"gt_spikes",gt_spikes)
-
-    #checkmodel(extremum)
-    #plot(vmgtt[:],vmgtv[:]) |> display
+function twiny(sp::Plots.Subplot)
+    sp[:top_margin] = max(sp[:top_margin], 30Plots.px)
+    plot!(sp.plt, inset = (sp[:subplot_index], bbox(0,0,1,1)))
+    twinsp = sp.plt.subplots[end]
+    twinsp[:xaxis][:mirror] = true
+    twinsp[:background_color_inside] = RGBA{Float64}(0,0,0,0)
+    Plots.link_axes!(sp[:yaxis], twinsp[:yaxis])
+    twinsp
 end
+#twiny(plt::Plots.Plot = current()) = twiny(plt[1])
+#A
+#CHOLECYSTITIS
 
+
+function dontdo
+    meta_param_dict = Dict()
+    for (sn,ss) in selections, (xn,xovr) in crossovers, (mn,ms) in mutations, (ɛ) in etas
+        xn == :discrete && (mn == :uniform || mn == :gaussian) && continue # bad combination
+        xn == :line && mn == :gaussian && continue # bad combination
+        temp_GA = GA(
+            populationSize = 10,
+            ɛ = ɛ,
+            selection = ss,
+            crossover = xovr,
+            mutation = ms
+            #ɛ = 0.125,
+            #selection = ranklinear(1.5),
+            #crossover = line(0.25),
+            #mutation = gaussian(0.125)
+        )
+        println()
+        println("GA:$(sn):$(xn):$(mn):ɛ=$ɛ) => F before crash...")
+        println()
+
+        result = Evolutionary.optimize(zz_, initd, temp_GA,
+            Evolutionary.Options(iterations=12, successive_f_tol=25, show_trace=false, store_trace=false)
+        )
+        #print(result)
+        fitness = minimum(result)
+        meta_param_dict[:fitness] = Dict()
+        meta_param_dict[:fitness][:"sn"] = sn
+        meta_param_dict[:fitness][:"xn"] = xn
+        meta_param_dict[:fitness][:"mn"] = mn
+        meta_param_dict[:fitness][:"ɛ"] = ɛ
+
+        println("GA:$(sn):$(xn):$(mn):ɛ=$ɛ) => F: $(minimum(result))")# C: $(Evolutionary.iterations(result))")
+
+        extremum = Evolutionary.minimizer(result)
+        meta_param_dict[:fitness][:"extremum"] = extremum
+        save("meta_param_dict.jld", "meta_param_dict", meta_param_dict)#,"vmgtt",vmgtt, "ngt_spikes", ngt_spikes,"gt_spikes",gt_spikes)
+
+        vec = checkmodel(extremum)
+        #py"vvec" = vec
+        #py"""
+        #print(vecc)
+        #print(type(vecc))
+        #ass = AnalogSignal(vvec)
+        #"""
+        plot(vec)|> display
+
+        plot(vmgtt[:],vmgtv[:])|> display
+        #, label = "randData", ylabel = "Y axis",color = :red, legend = :topleft, grid = :off, xlabel = "Numbers Rand")
+        #p = twiny()
+        #plot!(p,vec, label = "log(x)", legend = :topright, box = :on, grid = :off, xlabel = "Log values") |> display
+
+    end
+end
 #=
 function plot_pop(pop)
     pop = filter(indiv -> indiv.rank <= 1, pop) #keeps only the non-dominated solutions

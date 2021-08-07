@@ -28,9 +28,9 @@ const SNNInt = Int32
 const SNNFloat = Float32
 # srand(1000)
 include("unit.jl")
-include("units.jl")
+#include("units.jl")
 include("main.jl")
-include("utils.jl")
+include("util.jl")
 
 include("neuron/if.jl")
 include("neuron/if2.jl")
