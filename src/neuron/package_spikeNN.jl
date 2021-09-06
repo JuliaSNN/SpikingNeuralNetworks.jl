@@ -11,7 +11,7 @@ mutable struct LIF{VT<:Real, IT<:Integer} <: AbstractCell
     R::VT
 end
 
-mutable struct ADEXP{VT<:Real, IT<:Integer}
+mutable struct ADEXP{VT<:Real, IT<:Integer} <: AbstractCell
     
     # {VFT=Vector{Float32},VBT=Vector{Bool}}  <: AbstractCell
     # required fields
@@ -61,19 +61,9 @@ end
     spike_height::FT = 30
 end
 
-Base.show(io::IO, ::MIME"text/plain", neuron::LIF) =
-    print(io, """LIF:
-                     voltage: $(neuron.voltage)
-                     current: $(neuron.current)
-                     τm:      $(neuron.τm)
-                     vreset:  $(neuron.vreset)
-                     R:       $(neuron.R)""")
-Base.show(io::IO, neuron::LIF) =
-    print(io, "LIF(voltage = $(neuron.voltage), current = $(neuron.current))")
-
 """
-    LIF(τm, vreset, vth, R = 1.0)
-Create a LIF neuron with zero initial voltage and empty current queue.
+LIF(τm, vreset, vth, R = 1.0)
+Create a ADEXP neuron with zero initial voltage and empty current queue.
 """
 LIF(τm::Real, vreset::Real, R::Real = 1.0) = LIF{Float32, Int}(vreset, 0, 0, τm, vreset, R)
 
@@ -176,3 +166,14 @@ function reset!(neurons::T) where T<:AbstractArray{<:LIF}
     neurons.voltage .= neurons.vreset
     neurons.current .= 0
 end
+
+Base.show(io::IO, ::MIME"text/plain", neuron::LIF) =
+    print(io, """LIF:
+                     voltage: $(neuron.voltage)
+                     current: $(neuron.current)
+                     τm:      $(neuron.τm)
+                     vreset:  $(neuron.vreset)
+                     R:       $(neuron.R)
+    """)
+Base.show(io::IO, neuron::LIF) =
+    print(io, "LIF(voltage = $(neuron.voltage), current = $(neuron.current))")
