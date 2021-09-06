@@ -11,8 +11,18 @@ mutable struct LIF{VT<:Real, IT<:Integer} <: AbstractCell
     R::VT
 end
 
-mutable struct ADexp{VFT=Vector{Float32},VBT=Vector{Bool}}  <: AbstractCell
+mutable struct ADEXP{VT<:Real, IT<:Integer}
+    
+    # {VFT=Vector{Float32},VBT=Vector{Bool}}  <: AbstractCell
+    # required fields
+    voltage::VT
+    current::VT
 
+    # model specific fields
+    lastt::IT
+    τm::VT
+    vreset::VT
+    R::VT
     #    param::ADEXParameter = ADEXParameter()
     #end
     #@with_kw mutable struct AD
