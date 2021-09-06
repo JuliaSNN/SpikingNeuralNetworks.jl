@@ -1,15 +1,4 @@
-"""
-    LIF
-A leaky-integrate-fire neuron described by the following differential equation
-``\\frac{\\mathrm{d}v}{\\mathrm{d}t} = \\frac{R}{\\tau} I - \\lambda``
-# Fields
-- `voltage::VT`: membrane potential
-- `current::VT`: injected (unprocessed) current
-- `lastt::IT`: the last time this neuron processed a spike
-- `τm::VT`: membrane time constant
-- `vreset::VT`: reset voltage potential
-- `R::VT`: resistive constant (typically = 1)
-"""
+
 mutable struct LIF{VT<:Real, IT<:Integer} <: AbstractCell
     # required fields
     voltage::VT
@@ -20,6 +9,46 @@ mutable struct LIF{VT<:Real, IT<:Integer} <: AbstractCell
     τm::VT
     vreset::VT
     R::VT
+end
+
+mutable struct ADexp{VFT=Vector{Float32},VBT=Vector{Bool}}  <: AbstractCell
+
+    #    param::ADEXParameter = ADEXParameter()
+    #end
+    #@with_kw mutable struct AD
+    param::ADEXParameter = ADEXParameter(a,
+                                        b,
+                                        cm,
+                                        v_rest,
+                                        tau_m,
+                                        tau_w,
+                                        v_thresh,
+                                        delta_T,
+                                        v_reset,
+                                        spike_height)
+    N::SNNInt = 1
+    cnt::SNNInt = 2
+    v::Vector{SNNFloat} = fill(param.v_rest, N)
+    w::Vector{SNNFloat} = zeros(N)
+    fire::Vector{Bool} = zeros(Bool, N)
+    I::Vector{SNNFloat} = zeros(N)
+    spike_raster::Vector{SNNInt} = zeros(N)
+    records::Dict = Dict()
+end
+
+
+
+@snn_kw struct ADEXParameter{FT=Float32}
+    a::FT = 4.0
+    b::FT = 0.0805
+    cm::FT = 0.281
+    v_rest::FT = -70.6
+    tau_m::FT = 9.3667
+    tau_w::FT = 144.0
+    v_thresh::FT = -50.4
+    delta_T::FT = 2.0
+    v_reset::FT = -70.6
+    spike_height::FT = 30
 end
 
 Base.show(io::IO, ::MIME"text/plain", neuron::LIF) =
