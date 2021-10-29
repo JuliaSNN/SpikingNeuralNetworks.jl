@@ -34,7 +34,7 @@ end
 
 @testset "Constructors" begin
 @testset "Type parameters" begin
-    for Model in (SNN.HH, SNN.IF, SNN.IF2, SNN.IZ, SNN.NoisyIF, SNN.Poisson, SNN.Rate)
+    for Model in (SNN.HH, SNN.IF, SNN.IF2, SNN.IZ, SNN.NoisyIF, SNN.Poisson, SNN.Rate, SNN.AD)
         test_typeparams(Model)
     end
     test_typeparams(SNN.RateSynapse; args=(SNN.Rate(),SNN.Rate()))

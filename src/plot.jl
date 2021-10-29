@@ -1,6 +1,8 @@
-using .Plots
+using Plots
 # FIXME: using StatsBase
-
+#using Plots
+using UnicodePlots
+unicodeplots()
 function raster(p)
     fire = p.records[:fire]
     x, y = Float32[], Float32[]

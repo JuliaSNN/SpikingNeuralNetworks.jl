@@ -1,0 +1,14 @@
+
+
+NSGAII
+OrderedCollections
+Plotly
+Pkg.clone("https://github.com/gsoleilhac/NSGAII.jl")
+ProgressMeter
+UnicodePlots
+Plots
+OrderedCollections
+PyCall
+UnicodePlots
+SNN
+NSGAII
