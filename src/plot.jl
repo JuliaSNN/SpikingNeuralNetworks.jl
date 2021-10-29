@@ -1,4 +1,4 @@
-using .Plots
+using Plots
 # FIXME: using StatsBase
 
 function raster(p)
