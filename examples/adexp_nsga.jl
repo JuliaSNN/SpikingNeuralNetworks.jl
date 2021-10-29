@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ENV["PYTHON_JL_RUNTIME_PYTHON"] = Sys.which("python")
 using Pkg
 using PyCall
@@ -6,9 +7,13 @@ using LinearAlgebra
 #using UnicodePlots
 using NSGAII
 using SpikeSynchrony
-include("../src/SpikingNeuralNetworks.jl")
-include("../src/units.jl")
+#include("../src/SpikingNeuralNetworks.jl")
+#include("../src/units.jl")
+
+using SpikingNeuralNetworks
 SNN = SpikingNeuralNetworks
+SNN.@load_units
+
 using Evolutionary, Test, Random
 using Plots
 import DataStructures
@@ -16,12 +21,9 @@ using JLD
 using Evolutionary, Test, Random
 #Pkg.add(url="https://github.com/JuliaObjects/ConstructionBaseExtras.jl")
 
-#Pkg.add(url="https://github.com/JuliaObjects/ConstructionBase.jl")
-#using Plots
+# Pkg.add(url="https://github.com/JuliaObjects/ConstructionBase.jl")
+# using Plots
 
-
-using CuArrays
-using GPUifyLoops
 
 using ConstructionBase
 using ConstructionBaseExtras
@@ -29,6 +31,7 @@ using Debugger
 unicodeplots()
 
 SNN = SpikingNeuralNetworks
+#=
 adparam = SNN.ADEXParameter(;a = 6.050246708405076, b = 7.308480222357973,
     cm = 803.1019662706587,
     v_rest= -63.22881649139353,
@@ -39,6 +42,18 @@ adparam = SNN.ADEXParameter(;a = 6.050246708405076, b = 7.308480222357973,
     v_spike = -36.58205819488362,
     v_reset = -59.18792270568965,
     spike_delta = 16.33506432689027)
+=#
+adparam = SNN.ADEXParameter(;a = 6.050246708405076, b = 7.308480222357973,
+    cm = 803.1019662706587,
+    v0= -63.22881649139353,
+    τ_m=19.73777028610565,
+    τ_w=351.0551915202058,
+    θ=-39.232165554444265,
+    delta_T=6.37124632135508,
+    v_reset = -59.18792270568965,
+    spike_delta = 16.33506432689027)
+
+
 
 E = SNN.AD(;N = 1, param=adparam)
 E.I = [795.57128906]
@@ -47,7 +62,7 @@ E.I = [795.57128906]
 
 SNN.monitor(E, [:v,:I])
 #SNN.sim!([Etest],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
-SNN.sim!([E],[0],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
+SNN.sim!([E],dt = 0.25ms, simulation_duration = 2000ms, delay = 500ms,stimulus_duration=2000ms)
 SNN.vecplot(E, :v) |> display
 
 
@@ -323,15 +338,15 @@ function z(x::AbstractVector)
 end
 
 
-#function rastrigin(x::AbstractVector{T}) where {T <: AbstractFloat}
+# function rastrigin(x::AbstractVector{T}) where {T <: AbstractFloat}
 #    n = length(x)
 #    return 10n + sum([ x[i]^2 - 10cos(convert(T,2π*x[i])) for i in 1:n ])
-#end
+# end
 
-#function rastrigin(x::AbstractVector{T}) where {T <: AbstractFloat}
+# function rastrigin(x::AbstractVector{T}) where {T <: AbstractFloat}
 #    n = length(x)
 #    return 10n + sum([ x[i]^2 - 10cos(convert(T,2π*x[i])) for i in 1:n ])
-#end
+# end
 
 function checkmodel(param)
     CH = SNN.IZParameter(;a = param[1], b = param[2], c = param[3], d = param[4])
@@ -485,8 +500,8 @@ function crossover!(ind_a, ind_b, child_a, child_b)
     two_point_crossover!(ind_a.x, ind_b.x, child_a.x, child_b.x)
 end
 
-#default_mutation!(p::Vector{Int}) = rand_swap!(p)
-#default_mutation!(b::T) where T<:AbstractVector{Bool} = rand_flip!(b)
+# default_mutation!(p::Vector{Int}) = rand_swap!(p)
+# default_mutation!(b::T) where T<:AbstractVector{Bool} = rand_flip!(b)
 
 function rand_flip!(bits)
     print(typeof(bits))
@@ -502,22 +517,22 @@ end
 #rand_flip!(ind.x)
 
 
-#nsga_max(popsize, nbgen, z, init, fCV = CV, fcross = one_point_crossover!)
-#nsga_max(popsize, nbgen, z, init, fCV = CV, fplot = plot_pop, plotevery = 5)
-#popsize = 10
-#nbgen = 10
-#seed = initf(10)
-#pf = nsga_max(popsize, nbgen, z, bc, pmut = 0.85, plotevery = 5,seed=seed, fcross = crossover!)#, fCV = ConstraintVioloation)#fmut = rand_flip!)#, fplot = plot_pop, plotevery = 1)#, fCV = CV)
-#model = NSGAII.decode!(pf[1].x,bc)
-#println(model.p)
-#checkmodel(model.p)
-#init = () -> NSGAII.BinaryCodedIndiv(bitrand(bc.nbbitstotal), zeros(bc.nbvar))
-#ind = init()
-#re_model = NSGAII.decode!(ind.x,bc)
+# nsga_max(popsize, nbgen, z, init, fCV = CV, fcross = one_point_crossover!)
+# nsga_max(popsize, nbgen, z, init, fCV = CV, fplot = plot_pop, plotevery = 5)
+# popsize = 10
+# nbgen = 10
+# seed = initf(10)
+# pf = nsga_max(popsize, nbgen, z, bc, pmut = 0.85, plotevery = 5,seed=seed, fcross = crossover!)#, fCV = ConstraintVioloation)#fmut = rand_flip!)#, fplot = plot_pop, plotevery = 1)#, fCV = CV)
+# model = NSGAII.decode!(pf[1].x,bc)
+# println(model.p)
+# checkmodel(model.p)
+# init = () -> NSGAII.BinaryCodedIndiv(bitrand(bc.nbbitstotal), zeros(bc.nbvar))
+# ind = init()
+# re_model = NSGAII.decode!(ind.x,bc)
 
-#indiv -> (decode!(indiv, bc) ; z(indiv.p))
-#println(indiv.p)
-#_z = indiv -> (decode!(indiv, bc) ; z(indiv.p))
+# indiv -> (decode!(indiv, bc) ; z(indiv.p))
+# println(indiv.p)
+# _z = indiv -> (decode!(indiv, bc) ; z(indiv.p))
 
 
 #param = getproperty.(result[1], :x)
@@ -527,7 +542,7 @@ end
 options = Evolutionary.Options(iterations=10, abstol=1e-5)
 
 
-#bounds = ConstraintBounds(lower,upper,[],[])
+# bounds = ConstraintBounds(lower,upper,[],[])
 
 method = GA(populationSize=10, crossoverRate=0.8, mutationRate=0.05, selection=susinv)#, crossover=MILX(), mutation=MIPM(lx,ux))
 Random.seed!(10);
@@ -632,7 +647,7 @@ end
 =#
 
 
-#=
+# =
 
 function initd()
     population = initf(1)
@@ -653,23 +668,23 @@ end
 #constraints(z) = [sum(z[1:end-1]),z[2]]
 #state = Evolutionary.initial_state(GA_, options, z, garray[1])
 
-#Evolutionary.update_state!(z, constraints, state, garray[1], GA, 1)
+# Evolutionary.update_state!(z, constraints, state, garray[1], GA, 1)
 
-#selections = [:roulette=>rouletteinv, :sus=>susinv, :rank=>ranklinear(1.5)]
-#crossovers = [:discrete=>discrete, :intermediate0=>intermediate(0.), :intermediate0_25=>intermediate(0.5), :line=>line(0.2)]
-#mutations = [:domrng0_5=>domainrange(fill(0.5,N)), :uniform=>uniform(3.0), :gaussian=>gaussian(0.6)]
-
-
-#res2 = Evolutionary.optimize(z, bounds, method, options)
+# selections = [:roulette=>rouletteinv, :sus=>susinv, :rank=>ranklinear(1.5)]
+# crossovers = [:discrete=>discrete, :intermediate0=>intermediate(0.), :intermediate0_25=>intermediate(0.5), :line=>line(0.2)]
+# mutations = [:domrng0_5=>domainrange(fill(0.5,N)), :uniform=>uniform(3.0), :gaussian=>gaussian(0.6)]
 
 
-#result = Evolutionary.optimize(z, lower, upper, mthd, opts)
-#function optimize(f, lower, upper, method::M,
+# res2 = Evolutionary.optimize(z, bounds, method, options)
+
+
+# result = Evolutionary.optimize(z, lower, upper, mthd, opts)
+# function optimize(f, lower, upper, method::M,
 #                  options::Options = Options(;default_options(method)...)
 #                 ) where {M<:AbstractOptimizer}
 #    bounds = ConstraintBounds(lower,upper,[],[])
 #    optimize(f, bounds, method, options)
-#end
+# end
 
 
 @test minimum(result) ≈ 2.0 atol=1e-1
@@ -677,19 +692,19 @@ end
 
 f1(x) = 2*x[1]+x[2]
 
-#lx = [0.0, 0]
-#ux = [1.6, 1]
+# lx = [0.0, 0]
+# ux = [1.6, 1]
 
-#cons(x) = [1.25-x[1]^2-x[2], x[1]+x[2]]
-#lc = [-Inf, -Inf]
-#uc = [0.0, 1.6]
+# cons(x) = [1.25-x[1]^2-x[2], x[1]+x[2]]
+# lc = [-Inf, -Inf]
+# uc = [0.0, 1.6]
 
 tc = [Float64, Float64, Float64, Float64, Float64]
 c = MixedTypePenaltyConstraints(PenaltyConstraints(1e3, cb, z), tc)
 #c = MixedTypePenaltyConstraints(WorstFitnessConstraints(cb, cons), tc)
 #init = ()->Real[rand(Float64), rand(0:1)]
 
-#-----------------------------------------------------------------
+# -----------------------------------------------------------------
 
 f8(z) = sum((z[4:end-1].-1).^2) - log(z[end]+1) + sum((z[i]-i)^2 for i in 1:3)
 
@@ -862,7 +877,7 @@ end
 
 
 
-#bc = BinaryCoding(4, [:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
+# bc = BinaryCoding(4, [:Int,:Int,:Int,:Int], py"lower_list", py"upper_list")
 
 module HHNSGA
     #import Pkg;

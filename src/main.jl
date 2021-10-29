@@ -16,10 +16,10 @@ function sim!(P, dt)
         record!(p)
     end
 end
-function sim!(p, dt)
-    integrate!(p, p.param, Float32(dt))
-    record!(p)
-end
+#function sim!(p, dt)
+#    integrate!(p, p.param, Float32(dt))
+#    record!(p)
+#end
 
 
 hasproperty(x, s::Symbol) = s in fieldnames(typeof(x))
