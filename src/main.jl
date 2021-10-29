@@ -1,5 +1,3 @@
-#"dt", "simulation_duration", "delay", "stimulus_duration"
-
 
 
 function sim!(P, C, dt)
@@ -18,21 +16,14 @@ function sim!(P, dt)
         record!(p)
     end
 end
-
-#=
-function sim!(P, C; dt = 0.1ms, duration = 10ms)
-    sized = duration/dt
-    for p in P
-         if hasproperty(p, :spike_raster)
-              p.spike_raster::Vector{Int32} = zeros(trunc(Int, sized))
-         end
-         for t = 0ms:dt:duration
-              integrate!(p, p.param, Float32(dt))
-              record!(p)
-         end
-    end
+function sim!(p, dt)
+    integrate!(p, p.param, Float32(dt))
+    record!(p)
 end
-=#
+
+
+hasproperty(x, s::Symbol) = s in fieldnames(typeof(x))
+
 function sim!(P; dt = 0.25ms, simulation_duration = 1300ms, delay = 300ms,stimulus_duration=1000ms)
     temp = deepcopy(P[1].I)
     size = simulation_duration/dt

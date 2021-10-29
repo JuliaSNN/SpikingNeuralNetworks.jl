@@ -2,13 +2,33 @@ module SpikingNeuralNetworks
 
 export SNN
 const SNN = SpikingNeuralNetworks
-
-using LinearAlgebra
-using SparseArrays
 using Requires
 using UnPack
 
+using LinearAlgebra
+using SparseArrays
+try
+    using Reexport
+    using Parameters
+    using Requires
+
+catch
+    import Pkg; Pkg.add("Reexport")
+    import Pkg; Pkg.add("Parameters")
+    import Pkg; Pkg.add("Requires")
+    using Reexport
+    using Parameters
+    using Requires
+end
+#using Unitful
+#using Unitful.DefaultSymbols
+#@reexport using Utils
+
+const SNNInt = Int32
+const SNNFloat = Float32
+# srand(1000)
 include("unit.jl")
+#include("units.jl")
 include("main.jl")
 include("util.jl")
 
@@ -17,7 +37,9 @@ include("neuron/if2.jl")
 include("neuron/noisy_if.jl")
 include("neuron/poisson.jl")
 include("neuron/iz.jl")
+include("neuron/iz_more_param.jl")
 include("neuron/adexp.jl")
+
 include("neuron/hh.jl")
 include("neuron/rate.jl")
 
