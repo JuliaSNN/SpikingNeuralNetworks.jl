@@ -155,4 +155,8 @@ function train!(
     end
 end
 
+function train!(;model, dt = 0.1ms, duration = 10ms)
+    train!(collect(model.pop), collect(model.syn); dt = dt, duration = duration)
+end
+
 export sim!, train!

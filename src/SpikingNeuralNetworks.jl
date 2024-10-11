@@ -4,6 +4,7 @@ module SpikingNeuralNetworks
 SNN = SpikingNeuralNetworks
 export SNN
 
+using DrWatson
 using LinearAlgebra
 using SparseArrays
 using Requires

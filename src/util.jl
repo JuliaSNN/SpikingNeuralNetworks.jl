@@ -160,3 +160,33 @@ end
     x *= x
     return x
 end
+
+
+function merge_models(kwargs)
+    populations = Dict{String, Any}()
+    synapses = Dict{String,Any}()
+    for (k,v) in kwargs
+        @assert haskey(v, :pop) && haskey(v, :syn) "Each element must have a :pop and :syn field"
+        for (k1) in keys(v.pop)
+            push!(populations, "$(k)_$(k1)" => getfield(v.pop, k1))
+        end
+        for (k1) in keys(v.syn)
+            push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
+        end
+        if haskey(v, :norm) 
+            if isa(v.norm, NamedTuple)
+                for (k1) in keys(v.norm)
+                    push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
+                end
+            else
+                push!(synapses, "$(k)_norm" => getfield(v.syn, :norm))
+            end
+
+        end
+    end
+    pop = DrWatson.dict2ntuple(populations)
+    syn = DrWatson.dict2ntuple(synapses)
+    return (pop = pop, syn = syn)
+end
+
+export connect!, model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models
