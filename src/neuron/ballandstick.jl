@@ -137,9 +137,9 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
 				Δv_temp[_i] = Δv[_i]
 			end
 			update_ballandstick!(p, Δv, i, param, dt)
-			v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
-			v_d[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
-			w_s[i] += dt * ΔwAdEx(v_s[i], w_s[i], param)
+			@fastmath v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
+			@fastmath v_d[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
+			@fastmath w_s[i] += dt * (param.a * (v_s[i] - param.Er) - w_s[i]) / param.τw
 		end
 	end
 
@@ -212,10 +212,6 @@ function update_ballandstick!(
 		Δv[2] = ((-(v_d[i] + Δv[2] * dt) + Er) * d.gm[i] - is[2] + cs[1]) / d.C[i]
 	end
 
-end
-
-@inline @fastmath function ΔwAdEx(v::Float32, w::Float32, AdEx::AdExSoma)::Float32
-	return (AdEx.a * (v - AdEx.Er) - w) / AdEx.τw
 end
 
 export BallAndStick

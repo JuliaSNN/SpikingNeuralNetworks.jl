@@ -157,10 +157,10 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
 				Δv_temp[_i] = Δv[_i]
 			end
 			update_tripod!(p, Δv, i, param, dt)
-			v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
-			v_d1[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
-			v_d2[i] += 0.5 * dt * (Δv_temp[3] + Δv[3])
-			w_s[i] += dt * ΔwAdEx(v_s[i], w_s[i], param)
+			@fastmath v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
+			@fastmath v_d1[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
+			@fastmath v_d2[i] += 0.5 * dt * (Δv_temp[3] + Δv[3])
+			@fastmath w_s[i] += dt * (param.a * (v_s[i] - param.Er) - w_s[i]) / param.τw
 		end
 	end
 
@@ -241,7 +241,6 @@ function update_tripod!(
 		Δv[2] = ((-(v_d1[i] + Δv[2] * dt) + Er) * d1.gm[i] - is[2] + cs[1]) / d1.C[i]
 		Δv[3] = ((-(v_d2[i] + Δv[3] * dt) + Er) * d2.gm[i] - is[3] + cs[2]) / d2.C[i]
 	end
-
 end
 
 
@@ -256,9 +255,5 @@ end
 #                 - axial
 #         ) 
 # end ## external currents
-
-@inline @fastmath function ΔwAdEx(v::Float32, w::Float32, AdEx::AdExSoma)::Float32
-	return (AdEx.a * (v - AdEx.Er) - w) / AdEx.τw
-end
 
 export Tripod
