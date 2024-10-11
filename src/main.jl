@@ -159,4 +159,10 @@ function train!(;model, dt = 0.1ms, duration = 10ms)
     train!(collect(model.pop), collect(model.syn); dt = dt, duration = duration)
 end
 
+function sim!(;model, dt = 0.1ms, duration = 10ms)
+    sim!(collect(model.pop), collect(model.syn); dt = dt, duration = duration)
+end
+
+
+
 export sim!, train!
