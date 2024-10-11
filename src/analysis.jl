@@ -52,11 +52,41 @@ function firing_rate(P, τ; dt = 0.1ms)
     time_span = round(Int, size(spikes, 2) * dt)
     rates = zeros(P.N, time_span)
     L = round(Int, time_span - τ) * 10
+    my_spikes = Matrix{Int}(spikes)
     @fastmath @inbounds for s in axes(spikes, 1)
         T = round(Int, τ / dt)
-        rates[s, round(Int, τ)+1:end] = rollmean(spikes[s, :], T)[1:10:L] ./ (dt / 1000)
+        rates[s, round(Int, τ)+1:end] = trolling_mean((@view my_spikes[s,:]), T)[1:10:L] ./ (dt / 1000)
     end
     return rates
+end
+
+function rolling_mean(a, n::Int)
+    @assert 1<=n<=length(a)
+    out = similar(a, length(a)-n+1)
+    out[1] = sum(a[1:n])
+    for i in eachindex(out)[2:end]
+        out[i] = out[i-1]-a[i-1]+a[i+n-1]
+    end
+    return out ./n
+end
+
+function trolling_mean(a, n::Int)
+    @assert 1<=n<=length(a)
+    nseg=Threads.nthreads()
+    if nseg*n >= length(a)
+        return rolling_mean(a,n)
+    else
+        out = similar(a, length(a)-n+1)
+        lseg = (length(out)-1)÷nseg+1
+        segments = [(i*lseg+1, min(length(out),(i+1)*lseg)) for i in 0:nseg-1]
+        for (start, stop) in segments
+            out[start] = sum(a[start:start+n-1])
+            for i in start+1:stop
+                out[i] = out[i-1]-a[i-1]+a[i+n-1]
+            end
+        end
+        return out ./n
+    end
 end
 
 """
