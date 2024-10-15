@@ -1,5 +1,6 @@
-abstract type AbstractSynapseParameter end
-abstract type AbstractNeuronParameter end
+abstract type AbstractParameter end
+abstract type AbstractSynapseParameter <: AbstractParameter end
+abstract type AbstractNeuronParameter <: AbstractParameter end
 abstract type AbstractSynapse end
 abstract type AbstractNeuron end
 
