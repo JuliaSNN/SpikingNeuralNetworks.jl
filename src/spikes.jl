@@ -225,7 +225,7 @@ function get_isi(spiketimes::Spiketimes)
     return diff.(spiketimes)
 end
 
-get_isi(spiketimes::NNSpikes, pop::Symbol) = read(spiketimes, pop) |> x -> diff.(x)
+# get_isi(spiketimes::NNSpikes, pop::Symbol) = read(spiketimes, pop) |> x -> diff.(x)
 
 function get_CV(spikes::Spiketimes)
     intervals = get_isi(spikes;)
@@ -336,11 +336,11 @@ function CV_isi2(intervals::Vector{Float32})
     return isnan(_cv) ? 0.0 : _cv
 end
 
-function isi_cv(spikes::Vector{NNSpikes}; kwargs...)
-    spiketimes = merge_spiketimes(spikes; kwargs...)
-    @unpack tt = spikes[end]
-    return CV_isi2.(spiketimes)
-end
+# function isi_cv(spikes::Vector{NNSpikes}; kwargs...)
+#     spiketimes = merge_spiketimes(spikes; kwargs...)
+#     @unpack tt = spikes[end]
+#     return CV_isi2.(spiketimes)
+# end
 
 get_isi_cv(x::Spiketimes) = CV_isi2.(x)
 
