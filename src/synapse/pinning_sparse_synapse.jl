@@ -47,7 +47,7 @@ function plasticity!(
     c::PINningSparseSynapse,
     param::PINningSparseSynapseParameter,
     dt::Float32,
-    t::Float32,
+    T::Time,
 )
     @unpack colptr, I, W, rI, g, P, q, f = c
     C = 1 / (1 + dot(q, rI))

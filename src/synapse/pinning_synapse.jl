@@ -32,7 +32,7 @@ function forward!(c::PINningSynapse, param::PINningSynapseParameter)
     mul!(g, W, rJ)
 end
 
-function plasticity!(c::PINningSynapse, param::PINningSynapseParameter, dt::Float32)
+function plasticity!(c::PINningSynapse, param::PINningSynapseParameter, dt::Float32, T::Time)
     @unpack W, rI, g, P, q, f = c
     C = 1 / (1 + dot(q, rI))
     BLAS.ger!(C, f - g, q, W)

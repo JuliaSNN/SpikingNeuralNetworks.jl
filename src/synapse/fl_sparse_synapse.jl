@@ -49,7 +49,7 @@ function forward!(c::FLSparseSynapse, param::FLSparseSynapseParameter)
     end
 end
 
-function plasticity!(c::FLSparseSynapse, param::FLSparseSynapseParameter, dt::Float32)
+function plasticity!(c::FLSparseSynapse, param::FLSparseSynapseParameter, dt::Float32, T::Time)
     @unpack rI, P, q, w, f, z = c
     C = 1 / (1 + dot(q, rI))
     BLAS.axpy!(C * (f - z), q, w)

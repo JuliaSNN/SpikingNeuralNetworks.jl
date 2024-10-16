@@ -46,7 +46,7 @@ function plasticity!(
     c::SpikeRateSynapse,
     param::RateSynapseParameter,
     dt::Float32,
-    t::Float32,
+    T::Time,
 )
     @unpack colptr, I, W, rI, rJ, g = c
     @unpack lr = param

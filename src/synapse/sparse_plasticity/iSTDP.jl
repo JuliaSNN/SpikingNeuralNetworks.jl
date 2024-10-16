@@ -48,12 +48,12 @@ This is an in-place operation that modifies the input `AbstractSparseSynapse` ob
   otherwise the excitatory term decays exponentially over time with a time constant `τy`.
 - The synaptic weights are bounded by `Wmin` and `Wmax`.
 """
-function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, dt::Float32)
-    plasticity!(c, param, c.plasticity, dt)
+function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, dt::Float32, T::Time)
+    plasticity!(c, param, c.plasticity, dt, T)
 end
 
 ##
-function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, plasticity::iSTDPVariables, dt::Float32)
+function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, plasticity::iSTDPVariables, dt::Float32, T::Time)
     @unpack rowptr, colptr, index, I, J, W, fireI, fireJ, g = c
     @unpack η, r, τy, Wmax, Wmin = param
     @unpack tpre, tpost = plasticity
@@ -100,11 +100,11 @@ This is an in-place operation that modifies the input `AbstractSparseSynapse` ob
 - For each post-synaptic neuron, if it fires, it increases the synaptic weight by an amount proportional to the pre-synaptic trace and increases the excitatory term, otherwise the excitatory term decays exponentially over time with a time constant `τy`.
 - The synaptic weights are bounded by `Wmin` and `Wmax`.
 """
-function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterPotential, dt::Float32)
-    plasticity!(c, param, c.plasticity, dt)
+function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterPotential, dt::Float32, T::Time)
+    plasticity!(c, param, c.plasticity, dt, T)
 end
 
-function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterPotential, plasticity::iSTDPVariables, dt::Float32)
+function plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterPotential, plasticity::iSTDPVariables, dt::Float32, T::Time)
     @unpack rowptr, colptr, index, I, J, W, v_post, fireI, fireJ, g = c
     @unpack η, v0, τy, Wmax, Wmin = param
     @unpack tpre, tpost = plasticity

@@ -9,7 +9,7 @@ function get_variables(param::no_STDPParameter, Npre, Npost)
     return no_PlasticityVariables()
 end
 
-function plasticity!(c::AbstractSparseSynapse, param::no_STDPParameter, dt::Float32) end
+function plasticity!(c::AbstractSparseSynapse, param::no_STDPParameter, dt::Float32, T::Time) end
 ##
 
 include("sparse_plasticity/vSTDP.jl")

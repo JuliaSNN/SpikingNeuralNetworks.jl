@@ -47,11 +47,11 @@ where if `τ > 0.0f0` then normalization will occur at intervals approximately e
 After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
-function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, dt::Float32)
-    plasticity!(c, param, c.plasticity, dt)
+function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, dt::Float32, T::Time)
+    plasticity!(c, param, c.plasticity, dt, T)
 end
 
-function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, plasticity::vSTDPVariables, dt::Float32)
+function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, plasticity::vSTDPVariables, dt::Float32, T::Time)
     @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, index = c
     @unpack  u, v, x = plasticity
     @unpack A_LTD, A_LTP, θ_LTD, θ_LTP, τu, τv, τx, Wmax, Wmin = param

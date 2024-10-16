@@ -43,7 +43,7 @@ function forward!(c::FLSynapse, param::FLSynapseParameter)
     axpy!(c.z, u, g)
 end
 
-function plasticity!(c::FLSynapse, param::FLSynapseParameter, dt::Float32)
+function plasticity!(c::FLSynapse, param::FLSynapseParameter, dt::Float32, T::Time)
     @unpack rI, P, q, w, f, z = c
     C = 1 / (1 + dot(q, rI))
     axpy!(C * (f - z), q, w)

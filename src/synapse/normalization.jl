@@ -102,11 +102,12 @@ normalized by `W1`. The weights are updated at intervals specified by time const
 - `param`: An instance of AdditiveNorm.
 - `dt`: Simulation time step.
 """
-function plasticity!(c::SynapseNormalization, param::NormParam, dt::Float32)
-    @unpack W1, W0, μ, t, synapses = c
+function plasticity!(c::SynapseNormalization, param::NormParam, dt::Float32, T::Time)
+    @unpack W1, W0, μ, synapses = c
+    tt = get_step(T)
     @unpack τ, operator = param
-    if ((t[1]) % round(Int, τ / dt)) < dt
-        @debug "Normalization of synapses"
+    if ((tt) % round(Int, τ / dt)) < dt
+        # @info "Normalization of synapses at time $tt with time constant $τ"
         # sum on all synapses
         fill!(W1, 0.0f0)
         for syn in synapses
