@@ -73,7 +73,7 @@ function vecplot!(
     v = getrecord(p, sym)
     y = hcat(v...)'
     neurons = isnothing(neurons) ? (1:size(y, 2)) : neurons
-    r_dt = round.(Int, r ./ dt )[1:end-1]
+    r_dt = round.(Int, r ./ dt)[1:end-1]
     r = r[1:end-1]
     if !isempty(r)
         y = y[r_dt, neurons]

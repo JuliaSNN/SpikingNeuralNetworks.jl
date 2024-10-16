@@ -7,7 +7,7 @@
     ΔApost::FT = -ΔApre * τpre / τpost * 1.05
 end
 
-@snn_kw struct STDPVariables{VFT = Vector{Float32}, IT =  Int} <: PlasticityVariables
+@snn_kw struct STDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
     ## Plasticity variables
     Npost::IT
     Npre::IT
@@ -18,7 +18,7 @@ end
 end
 
 function get_variables(param::STDPParameter, Npre, Npost)
-    return STDPVariables(Npre=Npre, Npost=Npost)
+    return STDPVariables(Npre = Npre, Npost = Npost)
 end
 
 ## It's broken   !!
@@ -27,9 +27,14 @@ function plasticity!(c::AbstractSparseSynapse, param::STDPParameter, dt::Float32
     plasticity!(c, param, c.plasticity, dt)
 end
 
-function plasticity!(c::AbstractSparseSynapse, param::STDPParameter, plasticity::STDPVariables, dt::Float32)
+function plasticity!(
+    c::AbstractSparseSynapse,
+    param::STDPParameter,
+    plasticity::STDPVariables,
+    dt::Float32,
+)
     @unpack rowptr, colptr, I, J, index, W, fireI, fireJ, g = c
-    @unpack τpre, τpost, Wmax, ΔApre, ΔApost = plasticity 
+    @unpack τpre, τpost, Wmax, ΔApre, ΔApost = plasticity
 
     @inbounds for j = 1:(length(colptr)-1)
         if fireJ[j]

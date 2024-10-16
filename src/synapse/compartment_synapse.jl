@@ -1,12 +1,18 @@
 
-gtype = SubArray{Float32, 2, Matrix{Float32}, Tuple{Base.Slice{Base.OneTo{Int64}}, Vector{Int64}}, false}
+gtype = SubArray{
+    Float32,
+    2,
+    Matrix{Float32},
+    Tuple{Base.Slice{Base.OneTo{Int64}},Vector{Int64}},
+    false,
+}
 
 @snn_kw mutable struct CompartmentSynapse{
     GT = gtype,
-    VIT = Vector{Int32}, 
-    VFT = Vector{Float32}, 
+    VIT = Vector{Int32},
+    VFT = Vector{Float32},
     VBT = Vector{Bool},
-    } <: AbstractSpikingSynapse
+} <: AbstractSpikingSynapse
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W
@@ -17,7 +23,7 @@ gtype = SubArray{Float32, 2, Matrix{Float32}, Tuple{Base.Slice{Base.OneTo{Int64}
     W::VFT  # synaptic weight
     fireI::VBT # postsynaptic firing
     fireJ::VBT # presynaptic firing
-    v_post::VFT 
+    v_post::VFT
     g::GT  # rise conductance
     αs::VFT = []
     receptors::VIT = []
@@ -52,7 +58,7 @@ function CompartmentSynapse(
     @unpack soma_syn = post
     if Symbol(type) == :exc
         receptors = target == :s ? [1] : [1, 2]
-        g = view(getfield(post, Symbol("h_$target")), :, receptors) 
+        g = view(getfield(post, Symbol("h_$target")), :, receptors)
         αs = [post.dend_syn[i].α for i in eachindex(receptors)]
     elseif Symbol(type) == :inh
         receptors = target == :s ? [2] : [3, 4]
@@ -66,21 +72,8 @@ function CompartmentSynapse(
     plasticity = get_variables(param, pre.N, post.N)
 
     CompartmentSynapse(;
-    plasticity= plasticity,
-        @symdict(
-            rowptr,
-            colptr,
-            I,
-            J,
-            index,
-            receptors,
-            W,
-            g,
-            αs,
-            v_post,
-            fireI,
-            fireJ
-        )...,
+        plasticity = plasticity,
+        @symdict(rowptr, colptr, I, J, index, receptors, W, g, αs, v_post, fireI, fireJ)...,
         kwargs...,
     )
 end

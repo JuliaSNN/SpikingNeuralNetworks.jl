@@ -79,11 +79,11 @@ function train!(
     end
 end
 
-function train!(;model, kwargs...)
+function train!(; model, kwargs...)
     train!(collect(model.pop), collect(model.syn); kwargs...)
 end
 
-function sim!(;model, kwargs...)
+function sim!(; model, kwargs...)
     sim!(collect(model.pop), collect(model.syn); kwargs...)
 end
 
@@ -110,7 +110,7 @@ function train!(
     P::Vector{TN},
     C::Vector{TS},
     dt::Float32,
-    T::Time
+    T::Time,
 ) where {TN<:AbstractNeuron,TS<:AbstractSynapse}
     update_time!(T, dt)
     for p in P

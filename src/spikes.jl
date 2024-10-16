@@ -2,7 +2,7 @@ using RollingFunctions
 
 function init_spiketimes(N)
     _s = Vector{Vector{Float32}}()
-    for i in 1:N
+    for i = 1:N
         push!(_s, Vector{Float32}())
     end
     return Spiketimes(_s)
@@ -21,9 +21,9 @@ Arguments:
 Returns:
 - `spiketimes`: A vector of vectors containing the spike times of each neuron.
 """
-function spiketimes(p::T, interval = nothing, indices = nothing) where T<:AbstractNeuron
+function spiketimes(p::T, interval = nothing, indices = nothing) where {T<:AbstractNeuron}
     if isnothing(indices)
-        spiketimes  =init_spiketimes(p.N)
+        spiketimes = init_spiketimes(p.N)
         indices = 1:p.N
     else
         spiketimes = init_spiketimes(length(indices))
@@ -35,8 +35,9 @@ function spiketimes(p::T, interval = nothing, indices = nothing) where T<:Abstra
     if isnothing(interval)
         interval = (0, firing_time[end])
     end
-    tt0, tt1 = findfirst(x -> x > interval[1], firing_time), findlast(x -> x < interval[2], firing_time)
-    for tt in tt0:tt1
+    tt0, tt1 = findfirst(x -> x > interval[1], firing_time),
+    findlast(x -> x < interval[2], firing_time)
+    for tt = tt0:tt1
         for n in neurons[tt]
             push!(spiketimes[n], firing_time[tt])
         end
@@ -44,21 +45,20 @@ function spiketimes(p::T, interval = nothing, indices = nothing) where T<:Abstra
     return spiketimes
 end
 
-function spiketimes(P) where T<:AbstractNeuron
+function spiketimes(P) where {T<:AbstractNeuron}
     collect(Iterators.flatten(map(keys(P)) do k
         p = getfield(P, k)
         spiketimes(p)
-        end
-    ))
+    end))
 end
 
-function population_indices(P, type="ˆ")
+function population_indices(P, type = "ˆ")
     n = 1
-    indices = Dict{Symbol, Vector{Int}}()
+    indices = Dict{Symbol,Vector{Int}}()
     for k in keys(P)
         !occursin(string(type), string(k)) && continue
         p = getfield(P, k)
-        indices[k] = n:(n + p.N - 1)
+        indices[k] = n:(n+p.N-1)
         n += p.N
     end
     return dict2ntuple(sort(indices))
@@ -66,7 +66,7 @@ end
 
 function filter_populations(P, type)
     n = 1
-    indices = Dict{Symbol, Any}()
+    indices = Dict{Symbol,Any}()
     for k in keys(P)
         !occursin(string(type), string(k)) && continue
         p = getfield(P, k)
@@ -108,7 +108,12 @@ end
     rate: Vector{Float32}
         Vector of rates in Hz
 """
-function convolve(spiketime::Vector{Float32}; interval::AbstractRange, τ = 100.0f0, f::Function = alpha_function)
+function convolve(
+    spiketime::Vector{Float32};
+    interval::AbstractRange,
+    τ = 100.0f0,
+    f::Function = alpha_function,
+)
     rate = zeros(Float32, length(interval))
     @inbounds for i in eachindex(interval)
         v = 0
@@ -187,16 +192,16 @@ A tuple containing:
 """
 function firing_rate(
     spiketimes::Spiketimes;
-    interval::AbstractVector=[],
+    interval::AbstractVector = [],
     sampling = 20ms,
     τ = 25ms,
     ttf = -1,
     tt0 = -1,
     cache = true,
-    pop::Union{Symbol,Vector{Int}}= :ALL,
+    pop::Union{Symbol,Vector{Int}} = :ALL,
 )
     if isempty(interval)
-        tt0 = tt0 > 0 ? tt0 : 0.f0
+        tt0 = tt0 > 0 ? tt0 : 0.0f0
         ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
         interval = tt0:sampling:ttf
     end
@@ -209,10 +214,7 @@ function firing_rate(
     return rates, interval
 end
 
-function firing_rate(
-    populations;
-    kwargs...
-)
+function firing_rate(populations; kwargs...)
     spiketimes = SNN.spiketimes(populations)
     firing_rate(spiketimes; kwargs...)
 
@@ -245,7 +247,7 @@ interval: 2 dimensional array with the start and end of the interval
 function get_spikes_in_interval(
     spiketimes::Spiketimes,
     interval,
-    margin = [0,0];
+    margin = [0, 0];
     collapse::Bool = false,
 )
     neurons = [Vector{Float32}() for x = 1:length(spiketimes)]
@@ -436,37 +438,38 @@ function firing_rate(P, τ; dt = 0.1ms)
     my_spikes = Matrix{Int}(spikes)
     @fastmath @inbounds for s in axes(spikes, 1)
         T = round(Int, τ / dt)
-        rates[s, round(Int, τ)+1:end] = trolling_mean((@view my_spikes[s,:]), T)[1:10:L] ./ (dt / 1000)
+        rates[s, round(Int, τ)+1:end] =
+            trolling_mean((@view my_spikes[s, :]), T)[1:10:L] ./ (dt / 1000)
     end
     return rates
 end
 
 function rolling_mean(a, n::Int)
-    @assert 1<=n<=length(a)
-    out = similar(a, length(a)-n+1)
+    @assert 1 <= n <= length(a)
+    out = similar(a, length(a) - n + 1)
     out[1] = sum(a[1:n])
     for i in eachindex(out)[2:end]
-        out[i] = out[i-1]-a[i-1]+a[i+n-1]
+        out[i] = out[i-1] - a[i-1] + a[i+n-1]
     end
-    return out ./n
+    return out ./ n
 end
 
 function trolling_mean(a, n::Int)
-    @assert 1<=n<=length(a)
-    nseg=Threads.nthreads()
-    if nseg*n >= length(a)
-        return rolling_mean(a,n)
+    @assert 1 <= n <= length(a)
+    nseg = Threads.nthreads()
+    if nseg * n >= length(a)
+        return rolling_mean(a, n)
     else
-        out = similar(a, length(a)-n+1)
-        lseg = (length(out)-1)÷nseg+1
-        segments = [(i*lseg+1, min(length(out),(i+1)*lseg)) for i in 0:nseg-1]
+        out = similar(a, length(a) - n + 1)
+        lseg = (length(out) - 1) ÷ nseg + 1
+        segments = [(i * lseg + 1, min(length(out), (i + 1) * lseg)) for i = 0:nseg-1]
         for (start, stop) in segments
             out[start] = sum(a[start:start+n-1])
-            for i in start+1:stop
-                out[i] = out[i-1]-a[i-1]+a[i+n-1]
+            for i = start+1:stop
+                out[i] = out[i-1] - a[i-1] + a[i+n-1]
             end
         end
-        return out ./n
+        return out ./ n
     end
 end
 

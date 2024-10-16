@@ -9,7 +9,8 @@ SNN.@load_units;
 # Define neurons and synapses in the network
 N = 100
 E = SNN.Tripod(
-    (300um), (150um),
+    (300um),
+    (150um),
     N = N,
     soma_syn = Synapse(DuarteGluSoma, MilesGabaSoma),
     dend_syn = Synapse(EyalGluDend, MilesGabaDend),
@@ -17,12 +18,5 @@ E = SNN.Tripod(
     param = SNN.AdExSoma(b = 0.0f0, Vr = -50),
 )
 
-E_to_E = SNN.CompartmentSynapse(
-    E,
-    E,
-    :d1,
-    :exc,
-    p = 0.2,
-    σ = 30,
-    param = SNN.vSTDPParameter(),
-)
+E_to_E =
+    SNN.CompartmentSynapse(E, E, :d1, :exc, p = 0.2, σ = 30, param = SNN.vSTDPParameter())

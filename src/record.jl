@@ -1,19 +1,19 @@
 @snn_kw struct Time
-    t::Vector{Float32}= [0.0f0]
+    t::Vector{Float32} = [0.0f0]
     tt::Vector{Int} = [0]
 end
 
 get_time(T::Time)::Float32 = T.t[1]
 get_step(T::Time)::Float32 = T.tt[1]
 
-function update_time!(T::Time, dt::Float32) 
+function update_time!(T::Time, dt::Float32)
     T.t[1] += dt
     T.tt[1] += 1
 end
 
 
 function record_sym(obj, key, T::Time, ind::Vector{Int})
-    ind = isempty(ind) ? collect(axes(getfield(obj,key), 1)) : ind
+    ind = isempty(ind) ? collect(axes(getfield(obj, key), 1)) : ind
     if key == :fire
         sum(obj.fire[ind]) == 0 && return
         t = get_time(T)
@@ -81,15 +81,18 @@ function monitor(obj, keys)
 
         ## If the then assign a Spiketimes object to the dictionary `records[:fire]`, add as many empty vectors as the number of neurons in the object as in [:indices][:fire]
         if sym == :fire
-            obj.records[:fire] = Dict{Symbol, AbstractVector}(:time=>Vector{Float32}(), :neurons=>Vector{Vector{Int}}())
-        ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
+            obj.records[:fire] = Dict{Symbol,AbstractVector}(
+                :time => Vector{Float32}(),
+                :neurons => Vector{Vector{Int}}(),
+            )
+            ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
         elseif hasfield(typeof(obj), sym)
             typ = typeof(getfield(obj, sym))
             obj.records[sym] = Vector{typ}()
-        ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
+            ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
         elseif hasfield(typeof(obj), :plasticity) && hasfield(typeof(obj.plasticity), sym)
             typ = typeof(getfield(obj.plasticity, sym))
-            obj.records[:plasticity] = Dict{Symbol, AbstractVector}()
+            obj.records[:plasticity] = Dict{Symbol,AbstractVector}()
             obj.records[:plasticity][sym] = Vector{typ}()
         else
             @debug "Field $sym not found in $(typeof(obj))"

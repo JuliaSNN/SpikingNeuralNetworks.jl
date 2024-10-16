@@ -216,7 +216,7 @@ function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExPara
 end
 
 @inline @fastmath function ΔwAdEx(v::Float32, w::Float32, AdEx::AdExSoma)::Float32
-	return (AdEx.a * (v - AdEx.Er) - w) / AdEx.τw
+    return (AdEx.a * (v - AdEx.Er) - w) / AdEx.τw
 end
 
 

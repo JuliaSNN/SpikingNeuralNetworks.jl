@@ -42,12 +42,7 @@ function forward!(c::SpikeRateSynapse, param::RateSynapseParameter)
     end
 end
 
-function plasticity!(
-    c::SpikeRateSynapse,
-    param::RateSynapseParameter,
-    dt::Float32,
-    T::Time,
-)
+function plasticity!(c::SpikeRateSynapse, param::RateSynapseParameter, dt::Float32, T::Time)
     @unpack colptr, I, W, rI, rJ, g = c
     @unpack lr = param
     @inbounds for j = 1:(length(colptr)-1)

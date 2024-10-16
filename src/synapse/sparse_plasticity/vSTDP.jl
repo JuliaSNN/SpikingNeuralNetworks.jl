@@ -10,7 +10,7 @@
     Wmin::FT = 0.1pF
 end
 
-@snn_kw struct vSTDPVariables{VFT = Vector{Float32}, IT= Int} <: PlasticityVariables
+@snn_kw struct vSTDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
     ## Plasticity variables
     Npost::IT
     Npre::IT
@@ -20,7 +20,7 @@ end
 end
 
 function get_variables(param::vSTDPParameter, Npre, Npost)
-    return vSTDPVariables(Npre=Npre, Npost=Npost)
+    return vSTDPVariables(Npre = Npre, Npost = Npost)
 end
 
 """
@@ -51,9 +51,15 @@ function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, dt::Float3
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
-function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, plasticity::vSTDPVariables, dt::Float32, T::Time)
+function plasticity!(
+    c::AbstractSparseSynapse,
+    param::vSTDPParameter,
+    plasticity::vSTDPVariables,
+    dt::Float32,
+    T::Time,
+)
     @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, index = c
-    @unpack  u, v, x = plasticity
+    @unpack u, v, x = plasticity
     @unpack A_LTD, A_LTP, θ_LTD, θ_LTP, τu, τv, τx, Wmax, Wmin = param
     R(x::Float32) = x < 0.0f0 ? 0.0f0 : x
 
