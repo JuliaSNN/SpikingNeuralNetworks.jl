@@ -6,18 +6,6 @@ function connect!(c, j, i, σ = 1e-6)
     return nothing
 end
 
-function model(elements)
-    elements = isa(elements, Array) ? elements : [elements]
-    P = vcat(map(elements) do e
-        e.pop
-    end)
-    C = vcat(map(elements) do e
-        e.syn
-    end)
-    return P, C
-end
-
-
 # """function dsparse
 
 function dsparse(A)
@@ -73,32 +61,89 @@ end
     return x
 end
 
+"""
+    merge_models(kwargs...; syn=nothing, pop=nothing)
 
-function merge_models(kwargs)
+Merge multiple models into a single model.
+
+## Arguments
+- `kwargs...`: List of `kwarg` elements, i.e., dictionary or named tuples, containing the models to be merged.
+    - if `kwarg` has elements with `:pop` and `:syn` entries, the function copies them into the merged model.
+    - if `kwarg` has no `:pop` and `:syn` entries, the function iterates over all the elements contained in `kwarg` and merge them into the model.
+- `syn`: Optional dictionary of synapses to be merged.
+- `pop`: Optional dictionary of populations to be merged.
+
+## Returns
+A tuple `(pop, syn)` representing the merged populations and synapses.
+
+## Details
+This function takes in multiple models represented as keyword arguments and merges them into a single model. The models can be specified using the `pop` and `syn` fields in the keyword arguments. If the `pop` and `syn` fields are not present, the function expects the keyword arguments to have elements with `:pop` or `:syn` fields.
+
+The merged populations and synapses are stored in dictionaries `populations` and `synapses`, respectively. The function performs type assertions to ensure that the elements being merged are of the correct types (`AbstractNeuron` for populations and `AbstractSynapse` for synapses).
+
+If `syn` and/or `pop` arguments are provided, they are merged into the respective dictionaries.
+
+## Example
+"""
+function merge_models(kwargs...; syn=nothing, pop=nothing) 
     populations = Dict{String, Any}()
     synapses = Dict{String,Any}()
-    for (k,v) in kwargs
-        @assert haskey(v, :pop) && haskey(v, :syn) "Each element must have a :pop and :syn field"
-        for (k1) in keys(v.pop)
-            push!(populations, "$(k)_$(k1)" => getfield(v.pop, k1))
-        end
-        for (k1) in keys(v.syn)
-            push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
-        end
-        if haskey(v, :norm) 
-            if isa(v.norm, NamedTuple)
-                for (k1) in keys(v.norm)
-                    push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
-                end
-            else
-                push!(synapses, "$(k)_norm" => getfield(v.syn, :norm))
+    for kwarg in kwargs
+        if haskey(kwarg, :pop) && haskey(kwarg, :syn)
+            for (k) in keys(kwarg.pop)
+                @assert typeof(kwarg.pop[k]) <: AbstractNeuron "$(typeof(pop[k])) is not a population"
+                push!(populations, "$(k)" =>getfield(kwarg.pop,k))
             end
-
+            for (k) in keys(kwarg.syn)
+                @assert typeof(kwarg.syn[k]) <: AbstractSynapse "$(typeof(syn[k])) is not a synapse"
+                push!(synapses, "$(k)" =>getfield(kwarg.syn,k))
+            end
+        else
+            for k in keys(kwarg)
+                v = kwarg[k]
+                @assert haskey(v, :pop) || haskey(v, :syn) "$k element must have a :pop or :syn field"
+                if haskey(v, :pop)
+                    for (k1) in keys(v.pop)
+                        @assert typeof(getfield(v.pop,k1)) <: AbstractNeuron "$(typeof(getfield(v.pop, k1))) is not a population"
+                        push!(populations, "$(k)_$(k1)" => getfield(v.pop, k1))
+                    end
+                end
+                if haskey(v, :syn)
+                    for (k1) in keys(v.syn)
+                        @assert typeof(getfield(v.syn,k1)) <: AbstractSynapse "$(typeof(getfield(v.syn, k1))) is not a synapse"
+                        push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
+                    end
+                end
+            end
         end
     end
-    pop = DrWatson.dict2ntuple(populations)
-    syn = DrWatson.dict2ntuple(synapses)
+    if !isnothing(syn)
+        for k in keys(syn)
+            @assert typeof(syn[k]) <: AbstractSynapse "$(typeof(syn[k])) is not a synapse"
+            push!(synapses, k => syn[k])
+        end
+    end
+    if !isnothing(pop)
+        for k in keys(pop)
+            @assert typeof(pop[k]) <: AbstractNeuron "$(typeof(pop[k])) is not a population"
+            push!(populations, k => pop[k])
+        end
+    end
+    pop = DrWatson.dict2ntuple(sort(populations))
+    syn = DrWatson.dict2ntuple(sort(synapses))
+    @info "Merging models"
+    @info "Populations"
+    for k in keys(pop)
+        @info "$(k) => $(typeof(getfield(pop,k)))"
+        @assert typeof(getfield(pop,k))<:SNN.AbstractNeuron "Expected neuron, got $(typeof(getfield(network.pop,k)))"
+    end
+    @info "Synapses"
+    for k in keys(syn)
+        @info "$(k) => $(typeof(getfield(syn,k)))"
+        @assert typeof(getfield(syn,k))<:SNN.AbstractSynapse "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+    end
     return (pop = pop, syn = syn)
 end
+
 
 export connect!, model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models

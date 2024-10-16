@@ -79,12 +79,12 @@ function train!(
     end
 end
 
-function train!(;model, dt = 0.1ms, duration = 10ms)
-    train!(collect(model.pop), collect(model.syn); dt = dt, duration = duration)
+function train!(;model, kwargs...)
+    train!(collect(model.pop), collect(model.syn); kwargs...)
 end
 
-function sim!(;model, dt = 0.1ms, duration = 10ms)
-    sim!(collect(model.pop), collect(model.syn); dt = dt, duration = duration)
+function sim!(;model, kwargs...)
+    sim!(collect(model.pop), collect(model.syn); kwargs...)
 end
 
 #########
