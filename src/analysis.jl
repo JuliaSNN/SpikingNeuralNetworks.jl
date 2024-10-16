@@ -118,3 +118,34 @@ function spiketimes(P; dt = 0.1ms)
     end
     return SNN.Spiketimes(_spiketimes)
 end
+
+function init_spiketimes(N)
+    _s = Vector{Vector{Float32}}()
+    for i in 1:N
+        push!(_s, Vector{Float32}())
+    end
+    return Spiketimes(_s)
+end
+
+function spiketimes(p, interval = nothing, indices = nothing)
+    if isnothing(indices)
+        spiketimes  =init_spiketimes(p.N)
+        indices = 1:p.N
+    else
+        spiketimes = init_spiketimes(length(indices))
+    end
+
+    firing_time = p.records[:fire][:time]
+    neurons = p.records[:fire][:neurons]
+
+    if isnothing(interval)
+        interval = (0, firing_time[end])
+    end
+    tt0, tt1 = findfirst(x -> x > interval[1], firing_time), findlast(x -> x < interval[2], firing_time)
+    for tt in tt0:tt1
+        for n in neurons[tt]
+            push!(spiketimes[n], firing_time[tt])
+        end
+    end
+    return spiketimes
+end
