@@ -19,10 +19,11 @@ using LoopVectorization
 
 
 include("structs.jl")
-include("unit.jl")
-include("main.jl")
-include("util.jl")
 include("macros.jl")
+include("unit.jl")
+include("util.jl")
+include("record.jl")
+include("main.jl")
 include("analysis.jl")
 include("synapse.jl")
 
