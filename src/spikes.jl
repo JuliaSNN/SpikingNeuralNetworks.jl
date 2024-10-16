@@ -186,8 +186,8 @@ A tuple containing:
 # Examples
 """
 function firing_rate(
-    spiketimes::Spiketimes,
-    interval::AbstractVector = [];
+    spiketimes::Spiketimes;
+    interval::AbstractVector=[],
     sampling = 20ms,
     τ = 25ms,
     ttf = -1,
@@ -197,7 +197,7 @@ function firing_rate(
 )
     if isempty(interval)
         tt0 = tt0 > 0 ? tt0 : 0.f0
-        ttf = ttf > 0 ? ttf : 1000.f0 
+        ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
         interval = tt0:sampling:ttf
     end
     spiketimes = pop == :ALL ? spiketimes : spiketimes[pop]
@@ -207,6 +207,15 @@ function firing_rate(
     )
     # rates = vcat(rates'...)
     return rates, interval
+end
+
+function firing_rate(
+    populations;
+    kwargs...
+)
+    spiketimes = SNN.spiketimes(populations)
+    firing_rate(spiketimes; kwargs...)
+
 end
 
 
