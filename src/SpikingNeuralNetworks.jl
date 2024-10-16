@@ -15,6 +15,7 @@ using StaticArrays
 using ProgressBars
 using Parameters
 using LoopVectorization
+using ThreadTools
 
 
 
@@ -24,7 +25,8 @@ include("unit.jl")
 include("util.jl")
 include("record.jl")
 include("main.jl")
-include("analysis.jl")
+include("spikes.jl")
+include("populations.jl")
 include("synapse.jl")
 
 abstract type AbstractPopulation end
