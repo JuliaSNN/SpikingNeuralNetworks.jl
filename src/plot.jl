@@ -1,10 +1,10 @@
 using .Plots, Statistics
 # FIXME: using StatsBase
 
-function raster(p, interval = nothing; dt)
+function bool_raster(p, interval = nothing; dt)
     fire = p.records[:fire]
     x, y = Float32[], Float32[]
-    for t in eachindex(fire)
+    for t in eachindex(fire)[]
         for n in findall(fire[t])
             if isnothing(interval) || (t * dt > interval[1] && t * dt < interval[2])
                 push!(x, t * dt)
@@ -15,12 +15,29 @@ function raster(p, interval = nothing; dt)
     x, y
 end
 
+function raster(p, interval = nothing)
+    fire = p.records[:fire]
+    x, y = Float32[], Float32[]
+    for i in eachindex(fire[:time])
+        t = fire[:time][i]
+        for n in fire[:neurons][i]
+            if isnothing(interval) || (t > interval[1] && t < interval[2])
+                push!(x, t)
+                push!(y, n)
+            end
+        end
+    end
+    x, y
+end
+
+
+
 function raster(P::Array, t = nothing, dt = 0.1ms; kwargs...)
     y0 = Int32[0]
     X = Float32[]
     Y = Float32[]
     for p in P
-        x, y = raster(p, t; dt = dt)
+        x, y = raster(p, t; kwargs...)
         append!(X, x)
         append!(Y, y .+ sum(y0))
         push!(y0, p.N)
