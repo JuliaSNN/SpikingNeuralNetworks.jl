@@ -45,34 +45,11 @@ function spiketimes(p::T, interval = nothing, indices = nothing) where {T<:Abstr
     return spiketimes
 end
 
-function spiketimes(P) where {T<:AbstractNeuron}
+function spiketimes(P) 
     collect(Iterators.flatten(map(keys(P)) do k
         p = getfield(P, k)
         spiketimes(p)
     end))
-end
-
-function population_indices(P, type = "ˆ")
-    n = 1
-    indices = Dict{Symbol,Vector{Int}}()
-    for k in keys(P)
-        !occursin(string(type), string(k)) && continue
-        p = getfield(P, k)
-        indices[k] = n:(n+p.N-1)
-        n += p.N
-    end
-    return dict2ntuple(sort(indices))
-end
-
-function filter_populations(P, type)
-    n = 1
-    indices = Dict{Symbol,Any}()
-    for k in keys(P)
-        !occursin(string(type), string(k)) && continue
-        p = getfield(P, k)
-        indices[k] = p
-    end
-    return dict2ntuple(sort(indices))
 end
 
 """
