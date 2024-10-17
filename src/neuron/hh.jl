@@ -71,12 +71,12 @@ function integrate!(p::HH, param::HHParameter, dt::Float32)
     end
 end
 
-function HH_spike_count(p::HH, dt = 0.01)
-    neurons = hcat(p.records[:fire]...)
-    spike_count = zeros(size(neurons, 1))
-    for (n, fires) in enumerate(eachrow(neurons))
-        r = length(findall(x -> fires[x] > 0 && fires[x+1] == 0, eachindex(fires[1:end-1])))
-        spike_count[n] = r / 1000
-    end
-    return spike_count
-end
+# function HH_spike_count(p::HH, dt = 0.01)
+#     neurons = hcat(p.records[:fire]...)
+#     spike_count = zeros(size(neurons, 1))
+#     for (n, fires) in enumerate(eachrow(neurons))
+#         r = length(findall(x -> fires[x] > 0 && fires[x+1] == 0, eachindex(fires[1:end-1])))
+#         spike_count[n] = r / 1000
+#     end
+#     return spike_count
+# end
