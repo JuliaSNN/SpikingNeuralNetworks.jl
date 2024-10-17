@@ -194,7 +194,34 @@ end
 function firing_rate(populations; kwargs...)
     spiketimes = SNN.spiketimes(populations)
     firing_rate(spiketimes; kwargs...)
+end
 
+function average_firing_rate(
+    spiketimes::Spiketimes;
+    interval::AbstractVector = [],
+    sampling = 20ms,
+    τ = 25ms,
+    ttf = -1,
+    tt0 = -1,
+    cache = true,
+    pop::Union{Symbol,Vector{Int}} = :ALL,
+)
+    rates, interval = firing_rate(
+        spiketimes;
+        interval = interval,
+        sampling = sampling,
+        τ = τ,
+        ttf = ttf,
+        tt0 = tt0,
+        cache = cache,
+        pop = pop,
+    )
+    return mean.(rates)
+end
+
+function average_firing_rate(populations; kwargs...)
+    spiketimes = SNN.spiketimes(populations)
+    average_firing_rate(spiketimes; kwargs...)
 end
 
 
