@@ -36,8 +36,7 @@ BallAndStick
     IT = Int32,
     FT = Float32,
     AdExType = AdExSoma,
-} <: AbstractGeneralizedIF
-    ## These are compulsory parameters
+} <: AbstractDendriteIF     ## These are compulsory parameters
     N::IT = 100
     soma_syn::ST
     dend_syn::ST

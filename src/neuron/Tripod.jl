@@ -39,7 +39,7 @@ Tripod
     IT = Int32,
     FT = Float32,
     AdExType = AdExSoma,
-} <: AbstractGeneralizedIF
+} <: AbstractDendriteIF
     ## These are compulsory parameters
     N::IT = 100
     soma_syn::ST

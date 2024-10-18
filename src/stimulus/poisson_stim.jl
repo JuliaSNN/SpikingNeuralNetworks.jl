@@ -1,11 +1,13 @@
 
-@snn_kw mutable struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
+@snn_kw mutable struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32, GT = gtype} <:
+
                        AbstractStimulus
     param::PoissonParameter = PoissonParameter()
     N::IT = 100
     cells::VIT
     ##
-    g::VFT # target conductance
+    g::VFT # target conductance for soma
+    g_d::GT # target conductance for dendrites
     colptr::VIT
     rowptr::VIT
     I::VIT
@@ -33,7 +35,15 @@ function PoissonStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cell
     w = SNN.dropzeros(w .* σ ./sum(w, dims=2))
 
     rowptr, colptr, I, J, index, W = dsparse(w)
-    g = getfield(post, sym)
+    if typeof(post) <: AbstractDendriteIF
+        g_d = view(getfield(post, sym), :, [1,2])
+        g = []
+    else
+        g = getfield(post, sym)
+
+        a = zeros(Float32, 2,2)
+        g_d = @view(a[:,[1,2]])
+    end
 
     (isa(r, Number)) && (r = (t::Time) -> r)
 
@@ -43,6 +53,7 @@ function PoissonStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cell
         N = N_pre,
         cells = cells,
         g = g,
+        g_d = g_d,
         @symdict(rowptr, colptr, I, J, index, W)...,
         rate = r,
     )
@@ -54,15 +65,28 @@ end
 Poisson
 
 function stimulate!(p::PoissonStimulus, param::PoissonParameter, time::Time, dt::Float32)
-    @unpack N, randcache, fire, rate, cells, colptr, W, I, g = p
+    @unpack N, randcache, fire, rate, cells, colptr, W, I, g, g_d = p
     rand!(randcache)
-    myrate::Float32 = rate(time)
-    @inbounds for j = 1:N
-        if randcache[j] < myrate * dt
-            fire[j] = true
-            @inbounds for i ∈ eachindex(cells) # loop on postsynaptic cells
-                @inbounds @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g[cells[I[s]]] += W[s]
+    if isempty(g) 
+        myrate::Float32 = rate(time)
+        @inbounds for j = 1:N
+            if randcache[j] < myrate * dt
+                fire[j] = true
+                @inbounds for i ∈ eachindex(cells) # loop on postsynaptic cells
+                    @inbounds @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                        g_d[cells[I[s]]] += W[s]
+                    end
+                end
+            end
+        end
+    else
+        @inbounds for j = 1:N
+            if randcache[j] < myrate * dt
+                fire[j] = true
+                @inbounds for i ∈ eachindex(cells) # loop on postsynaptic cells
+                    @inbounds @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                        g[cells[I[s]]] += W[s]
+                    end
                 end
             end
         end
