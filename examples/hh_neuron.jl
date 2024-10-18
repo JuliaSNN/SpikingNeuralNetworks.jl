@@ -15,7 +15,7 @@ for n in eachindex(xs)
     E = SNN.HH(; N = 10, param = HHP)
     E.I .= xs[n]
     SNN.monitor(E, [:v, :fire])
-    SNN.sim!([E]; dt = 0.01ms, duration = 5000ms, pbar=true)
+    SNN.sim!([E]; dt = 0.01ms, duration = 5000ms, pbar = true)
     r = mean(SNN.average_firing_rate(E))
     ys[n] = r
 end

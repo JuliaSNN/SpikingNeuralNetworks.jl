@@ -1,13 +1,20 @@
 abstract type AbstractParameter end
-abstract type AbstractSynapseParameter <: AbstractParameter end
-abstract type AbstractNeuronParameter <: AbstractParameter end
-abstract type AbstractSynapse end
-abstract type AbstractNeuron end
+abstract type AbstractConnectionParameter <: AbstractParameter end
+abstract type AbstractPopulationParameter <: AbstractParameter end
+abstract type AbstractStimulusParameter <: AbstractParameter end
+abstract type AbstractConnection end
+abstract type AbstractPopulation end
+abstract type AbstractStimulus end
 
-abstract type AbstractSparseSynapse <: AbstractSynapse end
-abstract type AbstractNormalization <: AbstractSynapse end
+abstract type AbstractSparseSynapse <: AbstractConnection end
+abstract type AbstractNormalization <: AbstractConnection end
 
 Spiketimes = Vector{Vector{Float32}}
-Model = @NamedTuple{syn::Any, pop::Any}
+
+@snn_kw struct EmptyParam
+    type::Symbol = :empty
+end
+
+
 
 export Spiketimes

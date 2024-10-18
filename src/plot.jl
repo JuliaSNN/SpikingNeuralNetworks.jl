@@ -50,7 +50,7 @@ function raster(P::Array, t = nothing, dt = 0.1ms; kwargs...)
         xaxis = ("t", (0, Inf)),
         yaxis = ("neuron",),
     )
-    y0 = y0[2:end-1]
+    y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     !isnothing(t) && plot!(xlims = t)
     return plt
@@ -73,13 +73,13 @@ function vecplot!(
     v = getrecord(p, sym)
     y = hcat(v...)'
     neurons = isnothing(neurons) ? (1:size(y, 2)) : neurons
-    r_dt = round.(Int, r ./ dt)[1:end-1]
-    r = r[1:end-1]
+    r_dt = round.(Int, r ./ dt)[1:(end-1)]
+    r = r[1:(end-1)]
     if !isempty(r)
         y = y[r_dt, neurons]
         x = r
     else
-        x = dt:dt:length(v)*dt
+        x = dt:dt:(length(v)*dt)
     end
     y = average ? mean(y, dims = 2)[:, 1] : y
     plot!(
@@ -144,7 +144,7 @@ end
 
 function rateplot(P::Array, sym)
     R = vcat([rateplot(p, sym) for p in P]...)
-    y0 = [p.N for p in P][2:end-1]
+    y0 = [p.N for p in P][2:(end-1)]
     plt = heatmap(R, leg = :none)
     !isempty(y0) && hline!(plt, cumsum(y0), line = (:black, 1))
     plt

@@ -102,8 +102,8 @@ function firing_rate(E, I, bin_width, bin_edges)
     E_neuron_spikes = map(sum, E.records[:fire]) ./ E.N
     I_neuron_spikes = map(sum, I.records[:fire]) ./ E.N
     # Count the number of spikes in each bin
-    E_bin_count = [sum(E_neuron_spikes[i:i+bin_width-1]) for i in bin_edges]
-    I_bin_count = [sum(I_neuron_spikes[i:i+bin_width-1]) for i in bin_edges]
+    E_bin_count = [sum(E_neuron_spikes[i:(i+bin_width-1)]) for i in bin_edges]
+    I_bin_count = [sum(I_neuron_spikes[i:(i+bin_width-1)]) for i in bin_edges]
     return E_bin_count, I_bin_count
 end
 
@@ -152,8 +152,8 @@ for (n, inh_input) in enumerate(inputs)
     P[2].I .= inh_input
     SNN.sim!(P, C; duration = duration)
     E_bin_count, I_bin_count = firing_rate(P[1], P[2], bin_width, bin_edges)
-    rates[n, 1] = mean(E_bin_count[end-100:end])
-    rates[n, 2] = mean(I_bin_count[end-100:end])
+    rates[n, 1] = mean(E_bin_count[(end-100):end])
+    rates[n, 2] = mean(I_bin_count[(end-100):end])
     # push!(E_bin_counts, E_bin_count)
     # push!(I_bin_counts, I_bin_count)
 end

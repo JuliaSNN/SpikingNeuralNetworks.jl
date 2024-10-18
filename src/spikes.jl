@@ -21,7 +21,11 @@ Arguments:
 Returns:
 - `spiketimes`: A vector of vectors containing the spike times of each neuron.
 """
-function spiketimes(p::T, interval = nothing, indices = nothing) where {T<:AbstractNeuron}
+function spiketimes(
+    p::T,
+    interval = nothing,
+    indices = nothing,
+) where {T<:AbstractPopulation}
     if isnothing(indices)
         spiketimes = init_spiketimes(p.N)
         indices = 1:p.N
@@ -45,7 +49,7 @@ function spiketimes(p::T, interval = nothing, indices = nothing) where {T<:Abstr
     return spiketimes
 end
 
-function spiketimes(P) 
+function spiketimes(P)
     collect(Iterators.flatten(map(keys(P)) do k
         p = getfield(P, k)
         spiketimes(p)
@@ -466,10 +470,10 @@ function trolling_mean(a, n::Int)
     else
         out = similar(a, length(a) - n + 1)
         lseg = (length(out) - 1) ÷ nseg + 1
-        segments = [(i * lseg + 1, min(length(out), (i + 1) * lseg)) for i = 0:nseg-1]
+        segments = [(i * lseg + 1, min(length(out), (i + 1) * lseg)) for i = 0:(nseg-1)]
         for (start, stop) in segments
-            out[start] = sum(a[start:start+n-1])
-            for i = start+1:stop
+            out[start] = sum(a[start:(start+n-1)])
+            for i = (start+1):stop
                 out[i] = out[i-1] - a[i-1] + a[i+n-1]
             end
         end

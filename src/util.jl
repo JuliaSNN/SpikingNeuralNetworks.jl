@@ -79,7 +79,7 @@ A tuple `(pop, syn)` representing the merged populations and synapses.
 ## Details
 This function takes in multiple models represented as keyword arguments and merges them into a single model. The models can be specified using the `pop` and `syn` fields in the keyword arguments. If the `pop` and `syn` fields are not present, the function expects the keyword arguments to have elements with `:pop` or `:syn` fields.
 
-The merged populations and synapses are stored in dictionaries `populations` and `synapses`, respectively. The function performs type assertions to ensure that the elements being merged are of the correct types (`AbstractNeuron` for populations and `AbstractSynapse` for synapses).
+The merged populations and synapses are stored in dictionaries `populations` and `synapses`, respectively. The function performs type assertions to ensure that the elements being merged are of the correct types (`AbstractPopulation` for populations and `AbstractConnection` for synapses).
 
 If `syn` and/or `pop` arguments are provided, they are merged into the respective dictionaries.
 
@@ -91,11 +91,11 @@ function merge_models(kwargs...; syn = nothing, pop = nothing)
     for kwarg in kwargs
         if haskey(kwarg, :pop) && haskey(kwarg, :syn)
             for (k) in keys(kwarg.pop)
-                @assert typeof(kwarg.pop[k]) <: AbstractNeuron "$(typeof(pop[k])) is not a population"
+                @assert typeof(kwarg.pop[k]) <: AbstractPopulation "$(typeof(pop[k])) is not a population"
                 push!(populations, "$(k)" => getfield(kwarg.pop, k))
             end
             for (k) in keys(kwarg.syn)
-                @assert typeof(kwarg.syn[k]) <: AbstractSynapse "$(typeof(syn[k])) is not a synapse"
+                @assert typeof(kwarg.syn[k]) <: AbstractConnection "$(typeof(syn[k])) is not a synapse"
                 push!(synapses, "$(k)" => getfield(kwarg.syn, k))
             end
         else
@@ -104,13 +104,13 @@ function merge_models(kwargs...; syn = nothing, pop = nothing)
                 @assert haskey(v, :pop) || haskey(v, :syn) "$k element must have a :pop or :syn field"
                 if haskey(v, :pop)
                     for (k1) in keys(v.pop)
-                        @assert typeof(getfield(v.pop, k1)) <: AbstractNeuron "$(typeof(getfield(v.pop, k1))) is not a population"
+                        @assert typeof(getfield(v.pop, k1)) <: AbstractPopulation "$(typeof(getfield(v.pop, k1))) is not a population"
                         push!(populations, "$(k)_$(k1)" => getfield(v.pop, k1))
                     end
                 end
                 if haskey(v, :syn)
                     for (k1) in keys(v.syn)
-                        @assert typeof(getfield(v.syn, k1)) <: AbstractSynapse "$(typeof(getfield(v.syn, k1))) is not a synapse"
+                        @assert typeof(getfield(v.syn, k1)) <: AbstractConnection "$(typeof(getfield(v.syn, k1))) is not a synapse"
                         push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
                     end
                 end
@@ -119,13 +119,13 @@ function merge_models(kwargs...; syn = nothing, pop = nothing)
     end
     if !isnothing(syn)
         for k in keys(syn)
-            @assert typeof(syn[k]) <: AbstractSynapse "$(typeof(syn[k])) is not a synapse"
+            @assert typeof(syn[k]) <: AbstractConnection "$(typeof(syn[k])) is not a synapse"
             push!(synapses, k => syn[k])
         end
     end
     if !isnothing(pop)
         for k in keys(pop)
-            @assert typeof(pop[k]) <: AbstractNeuron "$(typeof(pop[k])) is not a population"
+            @assert typeof(pop[k]) <: AbstractPopulation "$(typeof(pop[k])) is not a population"
             push!(populations, k => pop[k])
         end
     end
@@ -135,12 +135,12 @@ function merge_models(kwargs...; syn = nothing, pop = nothing)
     @info "Populations"
     for k in keys(pop)
         @info "$(k) => $(typeof(getfield(pop,k)))"
-        @assert typeof(getfield(pop, k)) <: SNN.AbstractNeuron "Expected neuron, got $(typeof(getfield(network.pop,k)))"
+        @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
     end
     @info "Synapses"
     for k in keys(syn)
         @info "$(k) => $(typeof(getfield(syn,k)))"
-        @assert typeof(getfield(syn, k)) <: SNN.AbstractSynapse "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+        @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
     end
     return (pop = pop, syn = syn)
 end
