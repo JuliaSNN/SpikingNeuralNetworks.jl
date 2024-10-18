@@ -3,13 +3,9 @@ using Test
 SNN.@load_units;
 
 
-d1 = [SNN.Dendrite()]
-d2 = [SNN.Dendrite()]
 N = 1
-E = SNN.TripodNeurons(
+E = SNN.TripodHet(
     N = N,
-    d1 = d1,
-    d2 = d2,
     soma_syn = Synapse(DuarteGluSoma, MilesGabaSoma),
     dend_syn = Synapse(EyalGluDend, MilesGabaDend),
     NMDA = SNN.EyalNMDA,

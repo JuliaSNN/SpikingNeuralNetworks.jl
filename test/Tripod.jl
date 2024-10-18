@@ -8,9 +8,7 @@ SNN.@load_units;
 ##
 # Define neurons and synapses in the network
 N = 100
-E = SNN.Tripod(
-    (300um),
-    (150um),
+E = SNN.TripodHet(
     N = N,
     soma_syn = Synapse(DuarteGluSoma, MilesGabaSoma),
     dend_syn = Synapse(EyalGluDend, MilesGabaDend),
