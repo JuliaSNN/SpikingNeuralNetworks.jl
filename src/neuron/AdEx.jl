@@ -138,6 +138,7 @@ Dendrite
 
 @snn_kw struct AdEx{
     VFT = Vector{Float32},
+    VIT = Vector{Int},
     VBT = Vector{Bool},
     AdExT<:AbstractAdExParameter,
 } <: AbstractGeneralizedIF
@@ -147,6 +148,8 @@ Dendrite
     w::VFT = zeros(N) # Adaptation current
     fire::VBT = zeros(Bool, N) # Store spikes
     θ::VFT = ones(N) * param.Vt # Array with membrane potential thresholds
+    ξ_het::VFT = ones(N) # Membrane time constant
+    tabs::VIT = ones(N) # Membrane time constant
     I::VFT = zeros(N) # Current
     # synaptic conductance
     ge::VFT = zeros(N) # Time-dependent conductivity that opens whenever a presynaptic excitatory spike arrives
@@ -187,9 +190,18 @@ function update_synapses!(p::AdEx, param::AdExParameterSingleExponential, dt::Fl
 end
 
 function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExParameter}
-    @unpack N, v, w, fire, θ, I, ge, gi, = p
-    @unpack τm, Vt, Vr, El, R, ΔT, τw, a, b, At, τT, E_e, E_i = param
+    @unpack N, v, w, fire, θ, I, ge, gi, ξ_het, tabs = p
+    @unpack τm, Vt, Vr, El, R, ΔT, τw, a, b, At, τT, E_e, E_i, τabs = param
     @inbounds for i ∈ 1:N
+        # Reset membrane potential after spike
+        v[i] = ifelse(fire[i], Vr, v[i])
+        # Absolute refractory period
+        if tabs[i] > 0
+            fire[i] = false
+            tabs[i] -= 1
+            continue
+        end
+
         # Adaptation current 
         w[i] += dt * (a * (v[i] - El) - w[i]) / τw
         # Membrane potential
@@ -202,16 +214,21 @@ function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExPara
                 R * ge[i] * (E_e - v[i]) +
                 R * gi[i] * (E_i - v[i]) #synaptic term: conductance times membrane potential difference gives synaptic current
                 - R * w[i] # adaptation
-            ) / τm
+            ) / (τm * ξ_het[i])
         # Double exponential
         θ[i] += dt * (Vt - θ[i]) / τT
 
-        # Refractory period
-        v[i] = ifelse(fire[i], Vr, v[i])
+
+        # Spike
         fire[i] = v[i] > θ[i] + 5.0f0
-        v[i] = ifelse(fire[i], 10.0f0, v[i]) # if there is a spike, set membrane potential to reset potential
+        v[i] = ifelse(fire[i], 10.0f0, v[i]) # Set membrane potential to spike potential
+
+        # Spike-triggered adaptation
+        w[i] = ifelse(fire[i], w[i] + b, w[i]) 
         θ[i] = ifelse(fire[i], θ[i] + At, θ[i])
-        w[i] = ifelse(fire[i], w[i] + b, w[i]) # if there is a spike, increase adaptation current by an amount of b 
+        # Absolute refractory period
+        tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
+        # increase adaptation current
     end
 end
 
