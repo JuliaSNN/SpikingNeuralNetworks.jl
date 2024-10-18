@@ -61,7 +61,10 @@ end
     return x
 end
 
+
+
 """
+
     merge_models(kwargs...; syn=nothing, pop=nothing)
 
 Merge multiple models into a single model.
@@ -72,6 +75,7 @@ Merge multiple models into a single model.
     - if `kwarg` has no `:pop` and `:syn` entries, the function iterates over all the elements contained in `kwarg` and merge them into the model.
 - `syn`: Optional dictionary of synapses to be merged.
 - `pop`: Optional dictionary of populations to be merged.
+- `stim`: Optional dictionary of stimuli to be merged.
 
 ## Returns
 A tuple `(pop, syn)` representing the merged populations and synapses.
@@ -81,23 +85,36 @@ This function takes in multiple models represented as keyword arguments and merg
 
 The merged populations and synapses are stored in dictionaries `populations` and `synapses`, respectively. The function performs type assertions to ensure that the elements being merged are of the correct types (`AbstractPopulation` for populations and `AbstractConnection` for synapses).
 
-If `syn` and/or `pop` arguments are provided, they are merged into the respective dictionaries.
+If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into the respective dictionaries.
 
 ## Example
 """
-function merge_models(kwargs...; syn = nothing, pop = nothing)
+function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
     populations = Dict{String,Any}()
     synapses = Dict{String,Any}()
+    stimuli = Dict{String,Any}()
     for kwarg in kwargs
-        if haskey(kwarg, :pop) && haskey(kwarg, :syn)
-            for (k) in keys(kwarg.pop)
-                @assert typeof(kwarg.pop[k]) <: AbstractPopulation "$(typeof(pop[k])) is not a population"
-                push!(populations, "$(k)" => getfield(kwarg.pop, k))
+        # case in which the model in the kwarg is a tuple with pop/syn/stim fields
+        if haskey(kwarg, :pop) || haskey(kwarg, :syn) || haskey(kwarg, :stim)
+            if haskey(kwarg, :pop)
+                for (k) in keys(kwarg.pop)
+                    @assert typeof(kwarg.pop[k]) <: AbstractPopulation "$(typeof(pop[k])) is not a population"
+                    push!(populations, "$(k)" => getfield(kwarg.pop, k))
+                end
             end
-            for (k) in keys(kwarg.syn)
-                @assert typeof(kwarg.syn[k]) <: AbstractConnection "$(typeof(syn[k])) is not a synapse"
-                push!(synapses, "$(k)" => getfield(kwarg.syn, k))
+            if haskey(kwarg, :syn)
+                for (k) in keys(kwarg.syn)
+                    @assert typeof(kwarg.syn[k]) <: AbstractConnection "$(typeof(syn[k])) is not a synapse"
+                    push!(synapses, "$(k)" => getfield(kwarg.syn, k))
+                end
             end
+            if haskey(kwarg, :stim)
+                for (k) in keys(kwarg.stim)
+                    @assert typeof(kwarg.stim[k]) <: AbstractStimulus "$(typeof(stim[k])) is not a stimulus"
+                    push!(stimuli, "$(k)" => getfield(kwarg.stim, k))
+                end
+            end
+        # case in which the model in the kwarg is a dictionary with submodels to merge
         else
             for k in keys(kwarg)
                 v = kwarg[k]
@@ -129,8 +146,15 @@ function merge_models(kwargs...; syn = nothing, pop = nothing)
             push!(populations, k => pop[k])
         end
     end
+    if !isnothing(stim)
+        for k in keys(stim)
+            @assert typeof(stim[k]) <: AbstractStimulus "$(typeof(stim[k])) is not a stimulus"
+            push!(stimuli, k => stim[k])
+        end
+    end
     pop = DrWatson.dict2ntuple(sort(populations))
     syn = DrWatson.dict2ntuple(sort(synapses))
+    stim = DrWatson.dict2ntuple(sort(stimuli))
     @info "Merging models"
     @info "Populations"
     for k in keys(pop)
@@ -142,7 +166,12 @@ function merge_models(kwargs...; syn = nothing, pop = nothing)
         @info "$(k) => $(typeof(getfield(syn,k)))"
         @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
     end
-    return (pop = pop, syn = syn)
+    @info "Stimuli"
+    for k in keys(stim)
+        @info "$(k) => $(typeof(getfield(stim,k)))"
+        @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
+    end
+    return (pop=pop, syn=syn, stim=stim)
 end
 
 

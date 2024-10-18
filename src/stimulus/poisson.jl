@@ -20,7 +20,7 @@
 end
 
 
-function PoissonStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cells=[]; N_pre::Int=50, p_post::R=0.05f0, σ::R=1.f0, param=PoissonParameter()) where {T <: AbstractPopulation, R <: Real}
+function PoissonStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cells=[]; N_pre::Int=50, p_post::R=0.05f0, σ::R=1.f0, param=PoissonParameter()) where {T <: AbstractPopulation, R <: Number}
 
     if isempty(cells)
         for i in  1:post.N
@@ -56,7 +56,7 @@ Poisson
 function stimulate!(p::PoissonStimulus, param::PoissonParameter, time::Time, dt::Float32)
     @unpack N, randcache, fire, rate, cells, colptr, W, I, g = p
     rand!(randcache)
-    myrate = rate(time)
+    myrate::Float32 = rate(time)
     @inbounds for j = 1:N
         if randcache[j] < myrate * dt
             fire[j] = true
@@ -67,7 +67,6 @@ function stimulate!(p::PoissonStimulus, param::PoissonParameter, time::Time, dt:
             end
         end
     end
-
 end
 
 export PoissonStimuli, stimulate!

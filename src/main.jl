@@ -81,12 +81,20 @@ function train!(
     end
 end
 
+
 function train!(; model, kwargs...)
-    train!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
+    pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
+    syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
+    stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
+    train!(pop,syn,stim; kwargs...)
 end
 
 function sim!(; model, kwargs...)
-    sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
+    pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
+    syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
+    stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
+    sim!(pop,syn,stim; kwargs...)
+    # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
 #########
