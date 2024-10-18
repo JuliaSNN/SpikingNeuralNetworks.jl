@@ -5,7 +5,7 @@
         dt = 0.1f0,
         duration = 10.0f0,
         pbar = false,
-    ) where {TN <: AbstractNeuron, TS<:AbstractSynapse }
+    ) where {TN <: AbstractPopulation, TS<:AbstractConnection }
 
 Simulates the spiking neural network for a specified duration by repeatedly calling `sim!` function.
 
@@ -23,19 +23,20 @@ Simulates the spiking neural network for a specified duration by repeatedly call
 
 """
 function sim!(
-    P::Vector{TN},
-    C::Vector{TS} = [EmptySynapse()];
+    P::Vector{TP},
+    C::Vector{TC} = [EmptySynapse()],
+    S::Vector{TS} = [EmptyStimulus()];
     dt = 0.1f0,
     duration = 10.0f0,
     pbar = false,
     time = Time(),
-) where {TN<:AbstractNeuron,TS<:AbstractSynapse}
+) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
     dt = Float32(dt)
     duration = Float32(duration)
     dts = 0.0f0:dt:(duration-dt)
     pbar = pbar ? ProgressBar(dts) : dts
     for t in pbar
-        sim!(P, C, dt, time)
+        sim!(P, C, S, dt, time)
     end
 end
 
@@ -47,7 +48,7 @@ end
         C::Vector{TS};
         dt = 0.1ms,
         duration = 10ms,
-    ) where {TN <: AbstractNeuron, TS<:AbstractSynapse }
+    ) where {TN <: AbstractPopulation, TS<:AbstractConnection }
 
 Trains the spiking neural network for a specified duration by repeatedly calling `train!` function.
 
@@ -64,38 +65,44 @@ Trains the spiking neural network for a specified duration by repeatedly calling
 
 """
 function train!(
-    P::Vector{TN},
-    C::Vector{TS};
+    P::Vector{TP},
+    C::Vector{TC} = [EmptySynapse()],
+    S::Vector{TS} = [EmptyStimulus()];
     dt = 0.1ms,
     duration = 10ms,
     time = Time(),
     pbar = false,
-) where {TN<:AbstractNeuron,TS<:AbstractSynapse}
+) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
     dt = Float32(dt)
     dts = 0.0f0:dt:(duration-dt)
     pbar = pbar ? ProgressBar(dts) : dts
     for t in pbar
-        train!(P, C, dt, time)
+        train!(P, C, S, dt, time)
     end
 end
 
 function train!(; model, kwargs...)
-    train!(collect(model.pop), collect(model.syn); kwargs...)
+    train!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
 function sim!(; model, kwargs...)
-    sim!(collect(model.pop), collect(model.syn); kwargs...)
+    sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
 #########
 
 function sim!(
-    P::Vector{TN},
-    C::Vector{TS},
+    P::Vector{TP},
+    C::Vector{TC},
+    S::Vector{TS},
     dt::Float32,
     T::Time,
-) where {TN<:AbstractNeuron,TS<:AbstractSynapse}
+) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
     update_time!(T, dt)
+    for s in S
+        stimulate!(s, getfield(s, :param), T)
+        record!(s, T)
+    end
     for p in P
         integrate!(p, getfield(p, :param), dt)
         record!(p, T)
@@ -107,12 +114,17 @@ function sim!(
 end
 
 function train!(
-    P::Vector{TN},
-    C::Vector{TS},
+    P::Vector{TP},
+    C::Vector{TC},
+    S::Vector{TS},
     dt::Float32,
     T::Time,
-) where {TN<:AbstractNeuron,TS<:AbstractSynapse}
+) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
     update_time!(T, dt)
+    for s in S
+        stimulate!(s, getfield(s, :param), T)
+        record!(s, T)
+    end
     for p in P
         integrate!(p, p.param, dt)
         record!(p, T)
@@ -123,8 +135,5 @@ function train!(
         record!(c, T)
     end
 end
-
-
-
 
 export sim!, train!
