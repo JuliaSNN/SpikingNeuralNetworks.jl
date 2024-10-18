@@ -100,7 +100,7 @@ function sim!(
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
     update_time!(T, dt)
     for s in S
-        stimulate!(s, getfield(s, :param), T)
+        stimulate!(s, getfield(s, :param), T, dt)
         record!(s, T)
     end
     for p in P
@@ -122,7 +122,7 @@ function train!(
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
     update_time!(T, dt)
     for s in S
-        stimulate!(s, getfield(s, :param), T)
+        stimulate!(s, getfield(s, :param), T, dt)
         record!(s, T)
     end
     for p in P

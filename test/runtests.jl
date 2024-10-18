@@ -2,6 +2,7 @@ using SpikingNeuralNetworks
 using Test
 SNN.@load_units
 
+##
 if VERSION > v"1.1"
     include("ctors.jl")
 end
@@ -17,3 +18,4 @@ include("rate_net.jl")
 include("stdp_demo.jl")
 include("tripod.jl")
 include("tripod_network.jl")
+include("poisson_stim.jl")

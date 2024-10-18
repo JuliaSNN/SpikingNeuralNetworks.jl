@@ -1,7 +1,3 @@
-using Random, Statistics, StatsBase
-using BenchmarkTools
-
-Random.seed!(123)
 network = let
     NE = 400
     NI = 100

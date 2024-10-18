@@ -1,6 +1,7 @@
-@snn_kw struct Time
+@snn_kw mutable struct Time
     t::Vector{Float32} = [0.0f0]
     tt::Vector{Int} = [0]
+    dt::Float32 = 0.125f0
 end
 
 get_time(T::Time)::Float32 = T.t[1]
@@ -10,7 +11,6 @@ function update_time!(T::Time, dt::Float32)
     T.t[1] += dt
     T.tt[1] += 1
 end
-
 
 function record_sym(obj, key, T::Time, ind::Vector{Int})
     ind = isempty(ind) ? collect(axes(getfield(obj, key), 1)) : ind

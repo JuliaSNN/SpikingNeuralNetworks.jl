@@ -3,4 +3,4 @@
     records::Dict = Dict()
 end
 
-function stimulate!(p::EmptyStimulus, param::EmptyParam, T::Time) end
+function stimulate!(p::EmptyStimulus, param::EmptyParam, T::Time, dt::Float32) end
