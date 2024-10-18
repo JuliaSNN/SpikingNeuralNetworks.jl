@@ -1,6 +1,6 @@
 struct RateParameter end
 
-@snn_kw mutable struct Rate{VFT = Vector{Float32}} <: AbstractNeuron
+@snn_kw mutable struct Rate{VFT = Vector{Float32}} <: AbstractPopulation
     param::RateParameter = RateParameter()
     N::Int32 = 100
     x::VFT = 0.5randn(N)

@@ -4,7 +4,7 @@ struct FLSynapseParameter end
     MFT = Matrix{Float32},
     VFT = Vector{Float32},
     FT = Float32,
-} <: AbstractSynapse
+} <: AbstractConnection
     param::FLSynapseParameter = FLSynapseParameter()
     W::MFT  # synaptic weight
     rI::VFT # postsynaptic rate

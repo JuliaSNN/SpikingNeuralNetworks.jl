@@ -13,7 +13,7 @@
     Ei::FT = -80mV
 end
 
-@snn_kw mutable struct HH{VFT = Vector{Float32},VBT = Vector{Bool}} <: AbstractNeuron
+@snn_kw mutable struct HH{VFT = Vector{Float32},VBT = Vector{Bool}} <: AbstractPopulation
     param::HHParameter = HHParameter()
     N::Int32 = 100
     v::VFT = param.El .+ 5(randn(N) .- 1)

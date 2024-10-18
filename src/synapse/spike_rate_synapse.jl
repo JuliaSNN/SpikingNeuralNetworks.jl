@@ -3,7 +3,7 @@
     VIT = Vector{Int32},
     VFT = Vector{Float32},
     VBT = Vector{Bool},
-} <: AbstractSynapse
+} <: AbstractConnection
     param::RateSynapseParameter = RateSynapseParameter()
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W

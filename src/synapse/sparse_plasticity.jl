@@ -1,4 +1,4 @@
-abstract type SpikingSynapseParameter <: AbstractSynapseParameter end
+abstract type SpikingSynapseParameter <: AbstractConnectionParameter end
 abstract type PlasticityVariables end
 struct no_STDPParameter <: SpikingSynapseParameter end
 

@@ -224,7 +224,7 @@ function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExPara
         v[i] = ifelse(fire[i], 10.0f0, v[i]) # Set membrane potential to spike potential
 
         # Spike-triggered adaptation
-        w[i] = ifelse(fire[i], w[i] + b, w[i]) 
+        w[i] = ifelse(fire[i], w[i] + b, w[i])
         θ[i] = ifelse(fire[i], θ[i] + At, θ[i])
         # Absolute refractory period
         tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])

@@ -68,7 +68,7 @@ function plasticity!(
         @inbounds @fastmath x[j] += dt * (-x[j] + fireJ[j]) / τx
     end
 
-    Is = 1:length(rowptr)-1
+    Is = 1:(length(rowptr)-1)
     @turbo for i in eachindex(Is) # Iterate over postsynaptic neurons
         @inbounds u[i] += dt * (-u[i] + v_post[i]) / τu # postsynaptic neuron
         @inbounds v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron

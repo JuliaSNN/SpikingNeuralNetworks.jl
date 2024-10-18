@@ -1,7 +1,7 @@
 struct PINningSparseSynapseParameter end
 
 @snn_kw mutable struct PINningSparseSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:
-                       AbstractSynapse
+                       AbstractConnection
     param::PINningSparseSynapseParameter = PINningSparseSynapseParameter()
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W

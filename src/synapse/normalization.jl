@@ -75,10 +75,10 @@ function SynapseNormalization(N, synapses; param::NormParam, kwargs...)
     μ = zeros(Float32, N)
     for syn in synapses
         @unpack rowptr, W, index = syn
-        Is = 1:length(rowptr)-1
+        Is = 1:(length(rowptr)-1)
         @assert length(Is) == N
         for i in eachindex(Is)
-            @simd for j ∈ rowptr[i]:rowptr[i+1]-1 # all presynaptic neurons connected to neuron 
+            @simd for j ∈ rowptr[i]:(rowptr[i+1]-1) # all presynaptic neurons connected to neuron 
                 W0[i] += W[index[j]]
             end
         end
@@ -113,7 +113,7 @@ function plasticity!(c::SynapseNormalization, param::NormParam, dt::Float32, T::
         for syn in synapses
             @unpack rowptr, W, index = syn
             Threads.@threads for i = 1:(length(rowptr)-1) # Iterate over all postsynaptic neuron
-                @inbounds @fastmath @simd for j = rowptr[i]:rowptr[i+1]-1 # all presynaptic neurons of i
+                @inbounds @fastmath @simd for j = rowptr[i]:(rowptr[i+1]-1) # all presynaptic neurons of i
                     W1[i] += W[index[j]]
                 end
             end
@@ -127,7 +127,7 @@ function plasticity!(c::SynapseNormalization, param::NormParam, dt::Float32, T::
         for syn in synapses
             @unpack rowptr, W, index = syn
             Threads.@threads for i = 1:(length(rowptr)-1) # Iterate over all postsynaptic neuron
-                @inbounds @fastmath @simd for j = rowptr[i]:rowptr[i+1]-1 # all presynaptic neurons connected to neuron i
+                @inbounds @fastmath @simd for j = rowptr[i]:(rowptr[i+1]-1) # all presynaptic neurons connected to neuron i
                     W[index[j]] = operator(W[index[j]], μ[i])
                 end
             end

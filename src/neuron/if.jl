@@ -1,5 +1,5 @@
-abstract type AbstractGeneralizedIFParameter <: AbstractNeuronParameter end
-abstract type AbstractGeneralizedIF <: AbstractNeuron end
+abstract type AbstractGeneralizedIFParameter <: AbstractPopulationParameter end
+abstract type AbstractGeneralizedIF <: AbstractPopulation end
 abstract type AbstractIFParameter <: AbstractGeneralizedIFParameter end
 
 @snn_kw struct IFParameter{FT = Float32} <: AbstractIFParameter

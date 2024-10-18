@@ -15,19 +15,19 @@ The library allows us to define and simulate models from computational neuroscie
 The library exposes two functions:
 
 ```julia
-function sim!(p::Vector{AbstractNeuron}, c::Vector{AbstractSynapse}, duration<:Real) end
-function train!(p::Vector{AbstractSynapse}, c:Vector{AbstractSynapse}, duration<:Real) end
+function sim!(p::Vector{AbstractPopulation}, c::Vector{AbstractConnection}, duration<:Real) end
+function train!(p::Vector{AbstractConnection}, c:Vector{AbstractConnection}, duration<:Real) end
 ```
 
 The functions support simulation with and without neural plasticity; the model is defined within the arguments passed to the functions. 
-Models are composed of 'AbstractNeuron' and 'AbstractSynapse' arrays. 
+Models are composed of 'AbstractPopulation' and 'AbstractConnection' arrays. 
 
-Any elements of `AbstractNeuron` must implement the method: 
+Any elements of `AbstractPopulation` must implement the method: 
 ```julia
 function integrate!(p, p.param, dt) end
 ```
 
-Conversely, elements of `AbstractSynapse` must implement the methods: 
+Conversely, elements of `AbstractConnection` must implement the methods: 
 
 ```julia
 function forward!(p, p.param) end

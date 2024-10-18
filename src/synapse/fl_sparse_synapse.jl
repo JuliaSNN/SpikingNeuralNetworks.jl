@@ -1,7 +1,7 @@
 struct FLSparseSynapseParameter end
 
 @snn_kw mutable struct FLSparseSynapse{VFT = Vector{Float32},FT = Float32} <:
-                       AbstractSynapse
+                       AbstractConnection
     param::FLSparseSynapseParameter = FLSparseSynapseParameter()
     colptr::Vector{Int32} # column pointer of sparse W
     I::Vector{Int32}      # postsynaptic index of W

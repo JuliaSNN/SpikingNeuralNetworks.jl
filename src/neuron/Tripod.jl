@@ -96,6 +96,30 @@ function Tripod(
     )
 end
 
+function TripodHet(
+    d1::Union{Real,Tuple} = (150um, 400um),
+    d2::Union{Real,Tuple} = (150um, 400um);
+    N::Int,
+    soma_syn::Synapse,
+    dend_syn::Synapse,
+    NMDA::NMDAVoltageDependency,
+    param = AdExSoma(),
+)
+    d1 = create_dendrite(N, d1)
+    d2 = create_dendrite(N, d2)
+    Tripod(;
+        N = N,
+        d1 = d1,
+        d2 = d2,
+        soma_syn = synapsearray(soma_syn),
+        dend_syn = synapsearray(dend_syn),
+        NMDA = NMDA,
+        param = param,
+    )
+end
+
+
+
 
 #const dend_receptors::SVector{Symbol,3} = [:AMPA, :NMDA, :GABAa, :GABAb]
 # const soma_receptors::Vector{Symbol} = [:AMPA, :GABAa]

@@ -1,9 +1,4 @@
-
-@snn_kw struct EmptyParam
-    type::Symbol = :empty
-end
-
-@snn_kw struct EmptySynapse <: AbstractSynapse
+@snn_kw struct EmptySynapse <: AbstractConnection
     param::EmptyParam = EmptyParam()
     records::Dict = Dict()
 end

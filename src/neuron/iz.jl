@@ -5,7 +5,7 @@
     d::FT = 2
 end
 
-@snn_kw mutable struct IZ{VFT = Vector{Float32},VBT = Vector{Bool}} <: AbstractNeuron
+@snn_kw mutable struct IZ{VFT = Vector{Float32},VBT = Vector{Bool}} <: AbstractPopulation
     param::IZParameter = IZParameter()
     N::Int32 = 100
     v::VFT = fill(-65.0, N)
