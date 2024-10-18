@@ -434,19 +434,19 @@ This function assumes that the firing records in `P` are stored as columns corre
 The result is normalized by `(dt/1000)` to account for the fact that `dt` is typically in milliseconds.
 
 """
-function firing_rate(P, τ; dt = 0.1ms)
-    spikes = hcat(P.records[:fire]...)
-    time_span = round(Int, size(spikes, 2) * dt)
-    rates = zeros(P.N, time_span)
-    L = round(Int, time_span - τ) * 10
-    my_spikes = Matrix{Int}(spikes)
-    @fastmath @inbounds for s in axes(spikes, 1)
-        T = round(Int, τ / dt)
-        rates[s, round(Int, τ)+1:end] =
-            trolling_mean((@view my_spikes[s, :]), T)[1:10:L] ./ (dt / 1000)
-    end
-    return rates
-end
+# function firing_rate(P, τ; dt = 0.1ms)
+#     spikes = hcat(P.records[:fire]...)
+#     time_span = round(Int, size(spikes, 2) * dt)
+#     rates = zeros(P.N, time_span)
+#     L = round(Int, time_span - τ) * 10
+#     my_spikes = Matrix{Int}(spikes)
+#     @fastmath @inbounds for s in axes(spikes, 1)
+#         T = round(Int, τ / dt)
+#         rates[s, round(Int, τ)+1:end] =
+#             trolling_mean((@view my_spikes[s, :]), T)[1:10:L] ./ (dt / 1000)
+#     end
+#     return rates
+# end
 
 function rolling_mean(a, n::Int)
     @assert 1 <= n <= length(a)
