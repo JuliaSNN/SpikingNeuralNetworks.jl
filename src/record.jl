@@ -120,10 +120,16 @@ function getrecord(p, sym)
 end
 
 function clear_records(obj)
-    for (key, val) in obj.records
-        key == :indices && continue
-        empty!(val)
+    function clean(z)
+        for (key, val) in z
+            if isa(val, Dict) 
+                clean(val)
+            else
+                empty!(val)
+            end
+        end
     end
+    clean(obj.records)
 end
 
 function clear_records(obj, sym::Symbol)
