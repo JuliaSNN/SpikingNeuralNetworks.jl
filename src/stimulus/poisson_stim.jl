@@ -40,7 +40,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, r::Union{Function}; cells=[], N_pre::Int=50, p_post::R=0.05f0, σ::R=1.f0, param=PoissonParameter()) where {T <: AbstractPopulation, R <: Number}
+function PoissonStimulus(post::T, sym::Symbol, r::Union{Function}; cells=[], N_pre::Int=200, p_post::R=0.05f0, σ::R=1.f0, param=PoissonParameter()) where {T <: AbstractPopulation, R <: Number}
 
     if cells == :ALL
         cells = 1:post.N
@@ -53,6 +53,8 @@ function PoissonStimulus(post::T, sym::Symbol, r::Union{Function}; cells=[], N_p
         end
     end
     w = ceil.(sprand(length(cells), N_pre, 0.2)) # Construct a random sparse matrix with dimensions post.N x pre.N and density p
+
+    # normalize the strength of the synapses to each postsynaptic cell
     w = SNN.dropzeros(w .* σ ./sum(w, dims=2))
 
     rowptr, colptr, I, J, index, W = dsparse(w)

@@ -15,11 +15,29 @@ function bool_raster(p, interval = nothing; dt)
     x, y
 end
 
+# function raster_population...
+    # else
+    #     for i in eachindex(fire[:time])
+    #         t = fire[:time][i]
+    #         for n in fire[:neurons][i]
+    #             if n ∈ neurons
+    #                 if isnothing(interval) || (t > interval[1] && t < interval[2])
+    #                     push!(x, t)
+    #                     push!(y, indexin(n,neurons)[1])
+    #                 end
+    #             end
+    #         end
+    #     end
+    # end
+
+
 function raster(p, interval = nothing)
     fire = p.records[:fire]
     x, y = Float32[], Float32[]
+    # which time to plot
     for i in eachindex(fire[:time])
-        t = fire[:time][i]
+    t = fire[:time][i]
+    # which neurons to plot
         for n in fire[:neurons][i]
             if isnothing(interval) || (t > interval[1] && t < interval[2])
                 push!(x, t)
@@ -27,7 +45,7 @@ function raster(p, interval = nothing)
             end
         end
     end
-    x, y
+    return x, y
 end
 
 

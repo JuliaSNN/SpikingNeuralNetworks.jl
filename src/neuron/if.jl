@@ -17,6 +17,7 @@ abstract type AbstractIFParameter <: AbstractGeneralizedIFParameter end
     E_e::FT = 0mV # Reversal potential
     τabs::FT = 1ms # Absolute refractory period
 end
+
 @snn_kw struct IFParameterSingleExponential{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
     Vt::FT = -50mV

@@ -148,7 +148,6 @@ function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
     end
     if !isnothing(stim)
         for k in keys(stim)
-            @show k
             @assert typeof(stim[k]) <: AbstractStimulus "$(typeof(stim[k])) is not a stimulus"
             push!(stimuli, k => stim[k])
         end
