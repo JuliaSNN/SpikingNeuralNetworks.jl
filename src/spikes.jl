@@ -36,6 +36,10 @@ function spiketimes(
     firing_time = p.records[:fire][:time]
     neurons = p.records[:fire][:neurons]
 
+    if isempty(firing_time)
+        @warn "No spikes in population"
+        return 
+    end
     if isnothing(interval)
         interval = (0, firing_time[end])
     end
@@ -62,7 +66,7 @@ end
     Alpha function for convolution of spiketimes. Evaluate the alpha function at time t, with time of peak t0 and time constant τ.
 """
 function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
-    return @fastmath 1 / τ * SNN.exp32(1 - (t - t0) / τ) * Θ(1.0 * (t - t0))
+    return @fastmath 1000 / 60τ * SNN.exp32(1 - (t - t0) / τ) * Θ(1.0 * (t - t0))
 end
 """
     Θ(x::Float64)
