@@ -148,6 +148,7 @@ function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
     end
     if !isnothing(stim)
         for k in keys(stim)
+            @show k
             @assert typeof(stim[k]) <: AbstractStimulus "$(typeof(stim[k])) is not a stimulus"
             push!(stimuli, k => stim[k])
         end
@@ -155,20 +156,24 @@ function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
     pop = DrWatson.dict2ntuple(sort(populations))
     syn = DrWatson.dict2ntuple(sort(synapses))
     stim = DrWatson.dict2ntuple(sort(stimuli))
+    @info "================"
     @info "Merging models"
-    @info "Populations"
+    @info "----------------"
+    @info "Populations:"
     for k in keys(pop)
-        @info "$(k) => $(typeof(getfield(pop,k)))"
+        @info "$(k) => $(nameof(typeof(getfield(pop,k))))"
         @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
     end
-    @info "Synapses"
+    @info "----------------"
+    @info "Synapses:"
     for k in keys(syn)
-        @info "$(k) => $(typeof(getfield(syn,k)))"
+        @info "$(k) => $(nameof(typeof(getfield(syn,k))))"
         @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
     end
-    @info "Stimuli"
+    @info "----------------"
+    @info "Stimuli:"
     for k in keys(stim)
-        @info "$(k) => $(typeof(getfield(stim,k)))"
+        @info "$(k) => $(nameof(typeof(getfield(stim,k))))"
         @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
     end
     return (pop=pop, syn=syn, stim=stim)
