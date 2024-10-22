@@ -5,7 +5,6 @@ end
 @snn_kw mutable struct Poisson{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:
                        AbstractPopulation
     param::PoissonParameter = PoissonParameter()
-    t::VFT = [0.0f0] ## keep the time of the simulation
     N::IT = 100
     rate::VFT = fill(param.rate, N)
     # rt::VFT=[-1f0] ## add a variable rate for the population

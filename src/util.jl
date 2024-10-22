@@ -1,6 +1,6 @@
-function connect!(c, j, i, σ = 1e-6)
+function connect!(c, j, i, μ = 1e-6)
     W = sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
-    W[i, j] = σ * randn(Float32)
+    W[i, j] = μ * randn(Float32)
     c.rowptr, c.colptr, c.I, c.J, c.index, c.W = dsparse(W)
     # c.tpre, c.tpost, c.Apre, c.Apost = zero(c.W), zero(c.W), zero(c.W), zero(c.W)
     return nothing
@@ -160,19 +160,19 @@ function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
     @info "----------------"
     @info "Populations:"
     for k in keys(pop)
-        @info "$(k) => $(nameof(typeof(getfield(pop,k))))"
+        @info "$(k) => $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
         @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
     end
     @info "----------------"
     @info "Synapses:"
     for k in keys(syn)
-        @info "$(k) => $(nameof(typeof(getfield(syn,k))))"
+        @info "$(k) => $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
         @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
     end
     @info "----------------"
     @info "Stimuli:"
     for k in keys(stim)
-        @info "$(k) => $(nameof(typeof(getfield(stim,k))))"
+        @info "$(k) => $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
         @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
     end
     return (pop=pop, syn=syn, stim=stim)

@@ -20,8 +20,8 @@ end
 """
 PINningSparseSynapse
 
-function PINningSparseSynapse(pre, post; σ = 1.5, p = 0.0, α = 1, kwargs...)
-    w = σ / √(p * pre.N) * sprandn(post.N, pre.N, p)
+function PINningSparseSynapse(pre, post; μ = 1.5, p = 0.0, α = 1, kwargs...)
+    w = μ / √(p * pre.N) * sprandn(post.N, pre.N, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
     rI, rJ, g = post.r, pre.r, post.g
     P = α .* (I .== J)

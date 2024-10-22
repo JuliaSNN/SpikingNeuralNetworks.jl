@@ -24,9 +24,9 @@ end
 """
 FLSynapse
 
-function FLSynapse(pre, post; σ = 1.5, p = 0.0, α = 1, kwargs...)
+function FLSynapse(pre, post; μ = 1.5, p = 0.0, α = 1, kwargs...)
     rI, rJ, g = post.r, pre.r, post.g
-    W = σ * 1 / √pre.N * randn(post.N, pre.N) # normalized recurrent weight
+    W = μ * 1 / √pre.N * randn(post.N, pre.N) # normalized recurrent weight
     w = 1 / √post.N * (2rand(post.N) .- 1) # initial output weight
     u = 2rand(post.N) .- 1 # initial force weight
     P = α * I(post.N) # initial inverse of   = <rr'>

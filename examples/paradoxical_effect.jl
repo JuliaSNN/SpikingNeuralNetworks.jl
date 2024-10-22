@@ -7,12 +7,12 @@ using Statistics, Random
 function initialize()
     E = SNN.AdEx(; N = 2000, param = AdExParameterSingleExponential(El = -65mV))
     I = SNN.IF(; N = 500, param = SNN.IFParameterSingleExponential())
-    EE = SNN.SpikingSynapse(E, E, :ge; σ = 1.0, p = 0.2)
-    EI = SNN.SpikingSynapse(E, I, :ge; σ = 10, p = 0.2)
-    IE = SNN.SpikingSynapse(I, E, :gi; σ = 5.0, p = 0.2)
-    II = SNN.SpikingSynapse(I, I, :gi; σ = 10, p = 0.2)
+    EE = SNN.SpikingSynapse(E, E, :ge; μ = 1.0, p = 0.2)
+    EI = SNN.SpikingSynapse(E, I, :ge; μ = 10, p = 0.2)
+    IE = SNN.SpikingSynapse(I, E, :gi; μ = 5.0, p = 0.2)
+    II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.2)
     inputs = SNN.Poisson(; N = 350, param = SNN.PoissonParameter(rate = 10.5Hz))
-    ProjE = SNN.SpikingSynapse(inputs, E, :ge; σ = 5, p = 0.2)
+    ProjE = SNN.SpikingSynapse(inputs, E, :ge; μ = 5, p = 0.2)
     P = [E, I, inputs]
     C = [EE, EI, IE, II, ProjE]
     return P, C

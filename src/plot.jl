@@ -1,34 +1,25 @@
 using .Plots, Statistics
-# FIXME: using StatsBase
 
-function bool_raster(p, interval = nothing; dt)
-    fire = p.records[:fire]
+## Raster plot
+
+function raster_populations(p, interval = nothing; populations::Vector{T} ) where T<: AbstractVector
+    all_spiketimes = spiketimes(p)
+    y0 = 0
     x, y = Float32[], Float32[]
-    for t in eachindex(fire)[]
-        for n in findall(fire[t])
-            if isnothing(interval) || (t * dt > interval[1] && t * dt < interval[2])
-                push!(x, t * dt)
-                push!(y, n)
+    for pop in populations
+        spiketimes_pop = all_spiketimes[pop] ## population spiketimes
+        for n in eachindex(spiketimes_pop) ## neuron spiketimes
+            for t in spiketimes_pop[n] ## spiketime
+                if isnothing(interval) || (t > interval[1] && t < interval[2])
+                    push!(x, t)
+                    push!(y, n + y0)
+                end
             end
         end
+        y0 = y0 + length(spiketimes_pop)
     end
-    x, y
+    return x, y
 end
-
-# function raster_population...
-    # else
-    #     for i in eachindex(fire[:time])
-    #         t = fire[:time][i]
-    #         for n in fire[:neurons][i]
-    #             if n ∈ neurons
-    #                 if isnothing(interval) || (t > interval[1] && t < interval[2])
-    #                     push!(x, t)
-    #                     push!(y, indexin(n,neurons)[1])
-    #                 end
-    #             end
-    #         end
-    #     end
-    # end
 
 
 function raster(p, interval = nothing)
@@ -49,13 +40,12 @@ function raster(p, interval = nothing)
 end
 
 
-
-function raster(P::Array, t = nothing, dt = 0.1ms; kwargs...)
+function raster(P::Array, t = nothing, dt = 0.1ms; populations=nothing, kwargs...)
     y0 = Int32[0]
     X = Float32[]
     Y = Float32[]
     for p in P
-        x, y = raster(p, t; kwargs...)
+        x, y = isnothing(populations) ? raster(p, t; kwargs...) : raster_populations(p, t; populations = populations, kwargs...)
         append!(X, x)
         append!(Y, y .+ sum(y0))
         push!(y0, p.N)
@@ -74,8 +64,16 @@ function raster(P::Array, t = nothing, dt = 0.1ms; kwargs...)
     return plt
 end
 
-function vecplot(p, sym; r::AbstractArray{T} = 0:-1, dt = 0.1, kwargs...) where {T<:Real}
-    vecplot!(plot(), p, sym; r = r, dt = dt, kwargs...)
+## Vector plot
+
+function vecplot(p, sym; kwargs...)
+    vecplot!(plot(), p, sym; kwargs...)
+end
+
+function vecplot(P::Array, sym; kwargs...)
+    plts = [vecplot(p, sym; kwargs...) for p in P]
+    N = length(plts)
+    plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
 function vecplot!(
@@ -83,23 +81,46 @@ function vecplot!(
     p,
     sym;
     neurons = nothing,
-    average = false,
+    pop_average = false,
     r::AbstractArray{T} = 0:-1,
     dt = 0.1,
+    sym_id = nothing,
+    factor = 1,
     kwargs...,
 ) where {T<:Real}
+    # get steps of the interval from dt and remove first and last step
+    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
+    # get the record
     v = getrecord(p, sym)
-    y = hcat(v...)'
-    neurons = isnothing(neurons) ? (1:size(y, 2)) : neurons
-    r_dt = round.(Int, r ./ dt)[1:(end-1)]
-    r = r[1:(end-1)]
-    if !isempty(r)
+    # check if the record is a vector or a matrix
+    if isa(v[1], Vector)
+        # if the record is a vector
+        _time=size(v, 1)
+        _n = size(v[1], 1)
+        y = zeros(_time, _n)
+        neurons = isnothing(neurons) ? _n : neurons
+        for i in 1:_time
+            y[i, :] = v[i]*factor
+        end
         y = y[r_dt, neurons]
-        x = r
+        y = pop_average ? mean(y, dims = 2)[:, 1] : y
+    elseif isa(v[1], Matrix)
+        _time=size(v, 1)
+        _n = size(v[1], 1)
+        _x = size(v[1], 2)
+        y = zeros(_time, _n, _x)
+        neurons = isnothing(neurons) ? _n : neurons
+        for i in 1:_time
+            y[i, :, :] = v[i]*factor
+        end
+        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot")))
+        y = y[r_dt, neurons, sym_id]
+        y = pop_average ? mean(y, dims = 2)[:, 1, :] : y
     else
-        x = dt:dt:(length(v)*dt)
+        throw(ArgumentError("The record is not a vector or a matrix"))
     end
-    y = average ? mean(y, dims = 2)[:, 1] : y
+
+    x = r_dt .* dt
     plot!(
         my_plot,
         x,
@@ -111,21 +132,16 @@ function vecplot!(
     )
 end
 
-function vecplot(P::Array, sym; kwargs...)
-    plts = [vecplot(p, sym; kwargs...) for p in P]
-    N = length(plts)
-    plot(plts..., size = (600, 400N), layout = (N, 1))
-end
 
-function vecplot!(P::Array, sym; kwargs...)
-    plts = [vecplot(p, sym; kwargs...) for p in P]
-    my_plot = plot()
-    for p in P
-        vecplot!(my_plot, p, sym; kwargs...)
-    end
-    plot!(my_plot; kwargs...)
-    return my_plot
-end
+# function vecplot!(P::Array, sym; kwargs...)
+#     plts = [vecplot(p, sym; kwargs...) for p in P]
+#     my_plot = plot()
+#     for p in P
+#         vecplot!(my_plot, p, sym; kwargs...)
+#     end
+#     plot!(my_plot; kwargs...)
+#     return my_plot
+# end
 
 function vecplot(P, syms::Array; kwargs...)
     plts = [vecplot(P, sym; kwargs...) for sym in syms]
@@ -133,27 +149,9 @@ function vecplot(P, syms::Array; kwargs...)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
-function windowsize(p)
-    A = sum.(p.records[:fire]) / length(p.N)
-    W = round(Int32, 0.5p.N / mean(A)) # filter window, unit=1
-end
+## Matrix plot
 
-function density(p, sym)
-    X = getrecord(p, sym)
-    t = 1:length(X)
-    xmin, xmax = extrema(vcat(X...))
-    edge = linspace(xmin, xmax, 50)
-    c = center(edge)
-    ρ = [fit(Histogram, x, edge).weights |> float for x in X] |> x -> hcat(x...)
-    ρ = smooth(ρ, windowsize(p), 2)
-    ρ ./= sum(ρ, 1)
-    p = @gif for t = 1:length(X)
-        bar(c, ρ[:, t], leg = false, xlabel = string(sym), yaxis = ("p", extrema(ρ)))
-    end
-    is_windows() && run(`powershell start $(p.filename)`)
-    is_unix() && run(`xdg-open $(p.filename)`)
-    p
-end
+## Rateplot
 
 function rateplot(p, sym)
     r = getrecord(p, sym)
@@ -168,17 +166,6 @@ function rateplot(P::Array, sym)
     plt
 end
 
-function activity(p)
-    A = sum.(p.records[:fire]) / length(p.N)
-    W = windowsize(p)
-    A = smooth(A, W)
-end
-
-function activity(P::Array)
-    A = activity.(P)
-    t = 1:length(P[1].records[:fire])
-    plot(t, A, leg = :none, xaxis = ("t",), yaxis = ("A", (0, Inf)))
-end
 
 function if_curve(model, current; neuron = 1, dt = 0.1ms, duration = 1second)
     E = model(neuron)
@@ -208,4 +195,39 @@ end
 # function density(P::Array, sym)
 #   plts = [density(p, sym) for p in P]
 #   plot(plts..., layout=(length(plts),1))
+# end
+
+
+# function windowsize(p)
+#     A = sum.(p.records[:fire]) / length(p.N)
+#     W = round(Int32, 0.5p.N / mean(A)) # filter window, unit=1
+# end
+
+# function density(p, sym)
+#     X = getrecord(p, sym)
+#     t = 1:length(X)
+#     xmin, xmax = extrema(vcat(X...))
+#     edge = linspace(xmin, xmax, 50)
+#     c = center(edge)
+#     ρ = [fit(Histogram, x, edge).weights |> float for x in X] |> x -> hcat(x...)
+#     ρ = smooth(ρ, windowsize(p), 2)
+#     ρ ./= sum(ρ, 1)
+#     p = @gif for t = 1:length(X)
+#         bar(c, ρ[:, t], leg = false, xlabel = string(sym), yaxis = ("p", extrema(ρ)))
+#     end
+#     is_windows() && run(`powershell start $(p.filename)`)
+#     is_unix() && run(`xdg-open $(p.filename)`)
+#     p
+# end
+
+# function activity(p)
+#     A = sum.(p.records[:fire]) / length(p.N)
+#     W = windowsize(p)
+#     A = smooth(A, W)
+# end
+
+# function activity(P::Array)
+#     A = activity.(P)
+#     t = 1:length(P[1].records[:fire])
+#     plot(t, A, leg = :none, xaxis = ("t",), yaxis = ("A", (0, Inf)))
 # end

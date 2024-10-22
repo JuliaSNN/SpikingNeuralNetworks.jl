@@ -37,18 +37,21 @@ function CompartmentSynapse(
     target::Symbol,
     type::Symbol;
     w = nothing,
-    σ = 0.0,
     p = 0.0,
+    μ=1.0,
+    σ = 0.0,
+    dist=Normal,
     kwargs...,
 )
-    # Create the sparse matrix
-    if w === nothing
-        w = σ * sprand(post.N, pre.N, p)
+    if isnothing(w)
+        w = rand(dist(μ, σ), post.N, pre.N) # Construct a random dense matrix with dimensions post.N x pre.N
+        w[[n for n in eachindex(w[:]) if rand() > p]] .= 0
+        w[w .< 0] .= 0 
+        w = sparse(w)
     else
         w = sparse(w)
     end
-    #no autapsis
-    w[diagind(w)] .= 0
+    (pre == post) && (w[diagind(w)] .= 0) # remove autapses if pre == post
     rowptr, colptr, I, J, index, W = dsparse(w)
     fireI, fireJ = post.fire, pre.fire
     v_post = getfield(post, Symbol("v_$target"))

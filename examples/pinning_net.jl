@@ -3,7 +3,7 @@ using SpikingNeuralNetworks
 SNN.@load_units
 
 S = SNN.Rate(; N = 200)
-SS = SNN.PINningSynapse(S, S; σ = 1.5, p = 1.0)
+SS = SNN.PINningSynapse(S, S; μ = 1.5, p = 1.0)
 P, C = [S], [SS]
 
 SNN.monitor(SS, [(:g, [1])])

@@ -16,6 +16,8 @@ abstract type AbstractIFParameter <: AbstractGeneralizedIFParameter end
     E_i::FT = -75mV # Reversal potential
     E_e::FT = 0mV # Reversal potential
     τabs::FT = 1ms # Absolute refractory period
+    gsyn_e::FT = 1.0 * norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
+    gsyn_i::FT = 1.0 * norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
 end
 @snn_kw struct IFParameterSingleExponential{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
@@ -29,6 +31,8 @@ end
     E_i::FT = -75mV # Reversal potential
     E_e::FT = 0mV # Reversal potential
     τabs::FT = 1ms # Absolute refractory period
+    gsyn_e::FT = 1.0 # Synaptic conductance for excitatory synapses
+    gsyn_i::FT = 1.0 # Synaptic conductance for inhibitory synapses
 end
 
 @snn_kw mutable struct IF{
@@ -56,14 +60,14 @@ IF
 
 function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     @unpack N, v, ge, gi, fire, I, records, he, hi, timespikes = p
-    @unpack τm, Vt, Vr, El, R, ΔT, E_i, E_e, τabs = param
+    @unpack τm, Vt, Vr, El, R, ΔT, E_i, E_e, τabs, gsyn_e, gsyn_i = param
     @inbounds for i = 1:N
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
                 +
-                R * ge[i] * (E_e - v[i]) +
-                R * gi[i] * (E_i - v[i]) +
+                R * ge[i] * (E_e - v[i])* gsyn_e +
+                R * gi[i] * (E_i - v[i])* gsyn_i +
                 I[i] * R #synaptic term
             ) / τm
 

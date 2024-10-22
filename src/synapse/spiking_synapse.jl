@@ -22,9 +22,12 @@ abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
     records::Dict = Dict()
 end
 
-function SpikingSynapse(pre, post, sym; σ = 0.0, p = 0.0, w = nothing, kwargs...)
+function SpikingSynapse(pre, post, sym;  μ=1.0, σ = 0.0, p = 0.0, w = nothing, dist=Normal, kwargs...)
     if isnothing(w)
-        w = σ * sprand(post.N, pre.N, p) # Construct a random sparse matrix with dimensions post.N x pre.N and density p
+        w = rand(dist(μ, σ), post.N, pre.N) # Construct a random dense matrix with dimensions post.N x pre.N
+        w[[n for n in eachindex(w[:]) if rand() > p]] .= 0
+        w[w .< 0] .= 0 
+        w = sparse(w)
     else
         w = sparse(w)
     end

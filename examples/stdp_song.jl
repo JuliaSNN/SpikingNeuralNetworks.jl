@@ -19,7 +19,7 @@ S = SNN.SpikingSynapse(
     inputs,
     neurons,
     :ge;
-    σ = 0.01,
+    μ = 0.01,
     p = 1.0,
     param = SNN.vSTDPParameter(; Wmax = 0.01),
 )

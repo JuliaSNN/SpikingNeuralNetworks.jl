@@ -16,6 +16,7 @@ using ProgressBars
 using Parameters
 using LoopVectorization
 using ThreadTools
+using Distributions
 
 
 
@@ -36,6 +37,7 @@ include("neuron/poisson.jl")
 include("neuron/iz.jl")
 include("neuron/hh.jl")
 include("neuron/rate.jl")
+include("neuron/identity.jl")
 
 abstract type AbstractDendriteIF <: AbstractGeneralizedIF end
 include("neuron/dendrite.jl")

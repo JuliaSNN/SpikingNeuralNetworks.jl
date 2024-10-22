@@ -24,12 +24,12 @@ function initialize_LKD(νe = 4.5Hz)
     # νe = 4.5Hz # Rate of external input to E neurons 
     νi = 0#0.025Hz # Rate of external input to I neurons 
     p_in = 0.5 #1.0 # 0.5 
-    σ_in_E = 1.78SNN.pF
+    μ_in_E = 1.78SNN.pF
 
-    σEE = 2.76SNN.pF # Initial E to E synaptic weight
-    σIE = 48.7SNN.pF # Initial I to E synaptic weight
-    σEI = 1.27SNN.pF # Synaptic weight from E to I
-    σII = 16.2SNN.pF # Synaptic weight from I to I
+    μEE = 2.76SNN.pF # Initial E to E synaptic weight
+    μIE = 48.7SNN.pF # Initial I to E synaptic weight
+    μEI = 1.27SNN.pF # Synaptic weight from E to I
+    μII = 16.2SNN.pF # Synaptic weight from I to I
 
     Random.seed!(28)
 
@@ -71,12 +71,12 @@ function initialize_LKD(νe = 4.5Hz)
     Input_I = SNN.Poisson(; N = N, param = SNN.PoissonParameter(; rate = νi))
     E = SNN.AdEx(; N = 800, param = LKD_AdEx_exc)
     I = SNN.IF(; N = 200, param = LKD_IF_inh)
-    EE = SNN.SpikingSynapse(E, E, :ge; σ = σEE, p = 0.2, param = SNN.vSTDPParameter())
-    EI = SNN.SpikingSynapse(E, I, :ge; σ = σEI, p = 0.2)
-    IE = SNN.SpikingSynapse(I, E, :gi; σ = σIE, p = 0.2, param = SNN.iSTDPParameter())
-    II = SNN.SpikingSynapse(I, I, :gi; σ = σII, p = 0.2)
-    ProjI = SNN.SpikingSynapse(Input_I, I, :ge; σ = σ_in_E, p = p_in)
-    ProjE = SNN.SpikingSynapse(Input_E, E, :ge; σ = σ_in_E, p = p_in) # connection from input to E
+    EE = SNN.SpikingSynapse(E, E, :ge; μ = μEE, p = 0.2, param = SNN.vSTDPParameter())
+    EI = SNN.SpikingSynapse(E, I, :ge; μ = μEI, p = 0.2)
+    IE = SNN.SpikingSynapse(I, E, :gi; μ = μIE, p = 0.2, param = SNN.iSTDPParameter())
+    II = SNN.SpikingSynapse(I, I, :gi; μ = μII, p = 0.2)
+    ProjI = SNN.SpikingSynapse(Input_I, I, :ge; μ = μ_in_E, p = p_in)
+    ProjE = SNN.SpikingSynapse(Input_E, E, :ge; μ = μ_in_E, p = p_in) # connection from input to E
     P = [E, I, Input_E, Input_I]
     C = [EE, II, EI, IE, ProjE, ProjI]
     return P, C
@@ -133,12 +133,12 @@ for (n, inh_input) in enumerate(inputs)
     # Input_E = SNN.Poisson(; N = N, param = SNN.PoissonParameter(; rate = νe))
     # E = SNN.AdEx(; N = 500, param = LKD_AdEx_exc)
     # I = SNN.IF(; N = 125, param = LKD_IF_inh)
-    # EE = SNN.SpikingSynapse(E, E, :ge; σ = σEE, p = 0.2) 
-    # EI = SNN.SpikingSynapse(E, I, :ge; σ = σEI, p = 0.2)
-    # IE = SNN.SpikingSynapse(I, E, :gi; σ = σIE, p = 0.2)
-    # II = SNN.SpikingSynapse(I, I, :gi; σ = σII, p = 0.2)
-    # ProjE = SNN.SpikingSynapse(Input_E, E, :ge; σ = σ_in_E, p = p_in) 
-    # ProjI = SNN.SpikingSynapse(Input_I, I, :ge; σ = σ_in_E, p = p_in)
+    # EE = SNN.SpikingSynapse(E, E, :ge; μ = μEE, p = 0.2) 
+    # EI = SNN.SpikingSynapse(E, I, :ge; μ = μEI, p = 0.2)
+    # IE = SNN.SpikingSynapse(I, E, :gi; μ = μIE, p = 0.2)
+    # II = SNN.SpikingSynapse(I, I, :gi; μ = μII, p = 0.2)
+    # ProjE = SNN.SpikingSynapse(Input_E, E, :ge; μ = μ_in_E, p = p_in) 
+    # ProjI = SNN.SpikingSynapse(Input_I, I, :ge; μ = μ_in_E, p = p_in)
 
 
 

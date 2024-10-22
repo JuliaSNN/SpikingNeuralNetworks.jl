@@ -22,8 +22,8 @@ end
 """
 SpikeRateSynapse
 
-function SpikeRateSynapse(pre, post; σ = 0.0, p = 0.0, kwargs...)
-    w = σ / √(p * pre.N) * sprandn(post.N, pre.N, p)
+function SpikeRateSynapse(pre, post; μ = 0.0, p = 0.0, kwargs...)
+    w = μ / √(p * pre.N) * sprandn(post.N, pre.N, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
     rI, fireJ, g = post.r, pre.fire, post.g
     SpikeRateSynapse(; @symdict(colptr, I, W, rI, fireJ, g)..., kwargs...)
