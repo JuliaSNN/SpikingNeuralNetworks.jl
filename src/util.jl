@@ -89,72 +89,19 @@ If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into
 
 ## Example
 """
-function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
-    populations = Dict{String,Any}()
-    synapses = Dict{String,Any}()
-    stimuli = Dict{String,Any}()
-    for kwarg in kwargs
-        # case in which the model in the kwarg is a tuple with pop/syn/stim fields
-        if haskey(kwarg, :pop) || haskey(kwarg, :syn) || haskey(kwarg, :stim)
-            if haskey(kwarg, :pop)
-                for (k) in keys(kwarg.pop)
-                    @assert typeof(kwarg.pop[k]) <: AbstractPopulation "$(typeof(pop[k])) is not a population"
-                    push!(populations, "$(k)" => getfield(kwarg.pop, k))
-                end
-            end
-            if haskey(kwarg, :syn)
-                for (k) in keys(kwarg.syn)
-                    @assert typeof(kwarg.syn[k]) <: AbstractConnection "$(typeof(syn[k])) is not a synapse"
-                    push!(synapses, "$(k)" => getfield(kwarg.syn, k))
-                end
-            end
-            if haskey(kwarg, :stim)
-                for (k) in keys(kwarg.stim)
-                    @assert typeof(kwarg.stim[k]) <: AbstractStimulus "$(typeof(stim[k])) is not a stimulus"
-                    push!(stimuli, "$(k)" => getfield(kwarg.stim, k))
-                end
-            end
-        # case in which the model in the kwarg is a dictionary with submodels to merge
-        else
-            for k in keys(kwarg)
-                v = kwarg[k]
-                @assert haskey(v, :pop) || haskey(v, :syn) "$k element must have a :pop or :syn field"
-                if haskey(v, :pop)
-                    for (k1) in keys(v.pop)
-                        @assert typeof(getfield(v.pop, k1)) <: AbstractPopulation "$(typeof(getfield(v.pop, k1))) is not a population"
-                        push!(populations, "$(k)_$(k1)" => getfield(v.pop, k1))
-                    end
-                end
-                if haskey(v, :syn)
-                    for (k1) in keys(v.syn)
-                        @assert typeof(getfield(v.syn, k1)) <: AbstractConnection "$(typeof(getfield(v.syn, k1))) is not a synapse"
-                        push!(synapses, "$(k)_$(k1)" => getfield(v.syn, k1))
-                    end
-                end
-            end
-        end
+function merge_models(args...;kwargs...)
+    pop = Dict{Symbol, Any}()
+    syn = Dict{Symbol, Any}()
+    stim= Dict{Symbol, Any}()
+    for v in args
+        extract_items(Symbol(""),v, pop=pop, syn=syn, stim=stim)
     end
-    if !isnothing(syn)
-        for k in keys(syn)
-            @assert typeof(syn[k]) <: AbstractConnection "$(typeof(syn[k])) is not a synapse"
-            push!(synapses, k => syn[k])
-        end
+    for (k,v) in kwargs
+        extract_items(k,v, pop=pop, syn=syn, stim=stim)
     end
-    if !isnothing(pop)
-        for k in keys(pop)
-            @assert typeof(pop[k]) <: AbstractPopulation "$(typeof(pop[k])) is not a population"
-            push!(populations, k => pop[k])
-        end
-    end
-    if !isnothing(stim)
-        for k in keys(stim)
-            @assert typeof(stim[k]) <: AbstractStimulus "$(typeof(stim[k])) is not a stimulus"
-            push!(stimuli, k => stim[k])
-        end
-    end
-    pop = DrWatson.dict2ntuple(sort(populations))
-    syn = DrWatson.dict2ntuple(sort(synapses))
-    stim = DrWatson.dict2ntuple(sort(stimuli))
+    pop = DrWatson.dict2ntuple(sort(pop))
+    syn = DrWatson.dict2ntuple(sort(syn))
+    stim = DrWatson.dict2ntuple(sort(stim))
     @info "================"
     @info "Merging models"
     @info "----------------"
@@ -178,6 +125,26 @@ function merge_models(kwargs...; syn = nothing, pop = nothing, stim = nothing)
     return (pop=pop, syn=syn, stim=stim)
 end
 
+function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict{Symbol, Any}, stim::Dict{Symbol,Any})
+    for k in keys(container)
+        v = getindex(container, k)
+        (k ==:pop || k ==:syn || k ==:stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
+        new_key = isempty(string(root)) ? k : Symbol(string(root)*"_"*string(k))
+        if (typeof(v) <: AbstractPopulation) 
+            @assert !haskey(pop, new_key) "Population $(new_key) already exists"
+            push!(pop, new_key=> v)
+        elseif (typeof(v) <: AbstractConnection) 
+            @assert !haskey(syn, new_key) "Synapse $(new_key) already exists"
+            push!(syn, new_key=> v)
+        elseif (typeof(v) <: AbstractStimulus)
+            @assert !haskey(stim, new_key) "Stimulus $(new_key) already exists"
+            push!(stim, new_key=> v)
+        else
+            extract_items(new_key, v, pop=pop, syn=syn, stim=stim)
+        end
+    end
+    return true
+end
 
 export connect!,
     model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models

@@ -1,8 +1,14 @@
+@snn_kw mutable struct PoissonStimulusParameter{VFT}
+    variables::Dict{Symbol, Any}=Dict{Symbol, Any}()
+    rate::Function
+end
+
+PSParam = PoissonStimulusParameter
 
 @snn_kw mutable struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32, GT = gtype} <:
 
                        AbstractStimulus
-    param::PoissonParameter = PoissonParameter()
+    param::PoissonStimulusParameter
     N::IT = 100
     N_pre::IT = 5
     cells::VIT
@@ -17,7 +23,6 @@
     W::VFT
     fire::VBT = zeros(Bool, N)
     ##
-    rate::Function # rate function
     randcache::VFT = rand(N) # random cache
     records::Dict = Dict()
 end
@@ -42,7 +47,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, r::Union{Function}; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, receptors::Vector{Int}=[1], μ::R=1.f0, param=PoissonParameter()) where {T <: AbstractPopulation, R <: Number}
+function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, receptors::Vector{Int}=[1], μ::R=1.f0, param::PoissonStimulusParameter) where {T <: AbstractPopulation, R <: Number}
 
     if cells == :ALL
         cells = 1:post.N
@@ -74,8 +79,6 @@ function PoissonStimulus(post::T, sym::Symbol, r::Union{Function}; cells=[], N::
         g_d = @view(a[:,receptors])
     end
 
-    (isa(r, Number)) && (r = (t::Time) -> r)
-
     # Construct the SpikingSynapse instance
     return PoissonStimulus(;
         param = param,
@@ -85,7 +88,6 @@ function PoissonStimulus(post::T, sym::Symbol, r::Union{Function}; cells=[], N::
         g = g,
         g_d = g_d,
         @symdict(rowptr, colptr, I, J, index, W)...,
-        rate = r,
     )
 end
 
@@ -95,9 +97,10 @@ end
 
 Generate a Poisson stimulus for a postsynaptic population.
 """
-function stimulate!(p::PoissonStimulus, param::PoissonParameter, time::Time, dt::Float32)
-    @unpack N,N_pre, randcache, fire, rate, cells, colptr, W, I, g, g_d = p
-    myrate::Float32 = rate(get_time(time))
+function stimulate!(p::PoissonStimulus, param::PoissonStimulusParameter, time::Time, dt::Float32)
+    @unpack N,N_pre, randcache, fire, cells, colptr, W, I, g, g_d = p
+    @unpack rate = param
+    myrate::Float32 = rate(get_time(time), param)
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < myrate/N_pre * dt
@@ -125,4 +128,4 @@ function stimulate!(p::PoissonStimulus, param::PoissonParameter, time::Time, dt:
     end
 end
 
-export PoissonStimuli, stimulate!
+export PoissonStimuli, stimulate!, PSParam, PoissonStimulusParameter
