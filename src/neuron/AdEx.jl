@@ -116,25 +116,6 @@ PostSpike
     τA::FT
 end
 
-"""
-	Dendrite
-
-A structure representing a dendritic compartment within a neuron model.
-
-# Fields
-- `Er::FT = -70.6mV`: Resting potential.
-- `C::FT = 10pF`: Membrane capacitance.
-- `gax::FT = 10nS`: Axial conductance.
-- `gm::FT = 1nS`: Membrane conductance.
-- `l::FT = 150um`: Length of the dendritic compartment.
-- `d::FT = 4um`: Diameter of the dendrite.
-
-The type `FT` represents Float32.
-"""
-Dendrite
-
-
-
 
 @snn_kw struct AdEx{
     VFT = Vector{Float32},
@@ -154,8 +135,8 @@ Dendrite
     # synaptic conductance
     ge::VFT = zeros(N) # Time-dependent conductivity that opens whenever a presynaptic excitatory spike arrives
     gi::VFT = zeros(N) # Time-dependent conductivity that opens whenever a presynaptic inhibitory spike arrives
-    he::Vector{Float64} = zeros(N)
-    hi::Vector{Float64} = zeros(N)
+    he::VFT = zeros(N)
+    hi::VFT = zeros(N)
     records::Dict = Dict()
 end
 
@@ -173,10 +154,10 @@ function update_synapses!(p::AdEx, param::AdExParameter, dt::Float32)
     @unpack N, ge, gi, he, hi = p
     @unpack τde, τre, τdi, τri = param
     @inbounds for i ∈ 1:N
-        ge[i] += dt * (-ge[i] / τde + he[i])
-        he[i] -= dt * he[i] / τre
-        gi[i] += dt * (-gi[i] / τdi + hi[i])
-        hi[i] -= dt * hi[i] / τri
+        ge[i] += dt * (- ge[i] / τde + he[i])
+        he[i] += dt * (- he[i] / τre)
+        gi[i] += dt * (- gi[i] / τdi + hi[i])
+        hi[i] += dt * (- hi[i] / τri)
     end
 end
 
