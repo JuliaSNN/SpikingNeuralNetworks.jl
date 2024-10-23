@@ -103,7 +103,7 @@ function merge_models(args...;kwargs...)
     syn = DrWatson.dict2ntuple(sort(syn))
     stim = DrWatson.dict2ntuple(sort(stim))
     @info "================"
-    @info "Merging models"
+    @info "Model:"
     @info "----------------"
     @info "Populations:"
     for k in keys(pop)
@@ -122,6 +122,7 @@ function merge_models(args...;kwargs...)
         @info "$(k) => $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
         @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
     end
+    @info "================"
     return (pop=pop, syn=syn, stim=stim)
 end
 
