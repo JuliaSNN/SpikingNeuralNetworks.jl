@@ -27,30 +27,33 @@ function spiketimes(
     indices = nothing,
 ) where {T<:AbstractPopulation}
     if isnothing(indices)
-        spiketimes = init_spiketimes(p.N)
+        _spiketimes = init_spiketimes(p.N)
         indices = 1:p.N
     else
-        spiketimes = init_spiketimes(length(indices))
+        _spiketimes = init_spiketimes(length(indices))
     end
 
     firing_time = p.records[:fire][:time]
     neurons = p.records[:fire][:neurons]
 
-    if isempty(firing_time)
+    if length(firing_time) < 2
         @warn "No spikes in population"
-        return 
+        return _spiketimes
     end
     if isnothing(interval)
         interval = (0, firing_time[end])
     end
     tt0, tt1 = findfirst(x -> x > interval[1], firing_time),
     findlast(x -> x < interval[2], firing_time)
+    if isnothing(tt0) || isnothing(tt1)
+        return _spiketimes
+    end
     for tt = tt0:tt1
         for n in neurons[tt]
-            push!(spiketimes[n], firing_time[tt])
+            push!(_spiketimes[n], firing_time[tt])
         end
     end
-    return spiketimes
+    return _spiketimes
 end
 
 function spiketimes(P)
@@ -185,6 +188,7 @@ function firing_rate(
     cache = true,
     pop::Union{Symbol,Vector{Int}} = :ALL,
 )
+    all(isempty.(spiketimes)) && return [0], [0]
     if isempty(interval)
         tt0 = tt0 > 0 ? tt0 : 0.0f0
         ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
