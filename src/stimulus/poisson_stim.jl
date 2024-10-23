@@ -47,7 +47,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, receptors::Vector{Int}=[1], μ::R=1.f0, param::PoissonStimulusParameter) where {T <: AbstractPopulation, R <: Number}
+function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, receptors::Vector{Int}=[1], μ::R=1.f0, param::Union{PoissonStimulusParameter,R2}) where {T <: AbstractPopulation, R <: Real, R2<:Real}
 
     if cells == :ALL
         cells = 1:post.N
@@ -79,6 +79,11 @@ function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5
         g_d = @view(a[:,receptors])
     end
 
+    if typeof(param) <: Real
+        r = param
+        param = PSParam(rate = (x,y)->r)
+    end
+
     # Construct the SpikingSynapse instance
     return PoissonStimulus(;
         param = param,
@@ -98,9 +103,8 @@ end
 Generate a Poisson stimulus for a postsynaptic population.
 """
 function stimulate!(p::PoissonStimulus, param::PoissonStimulusParameter, time::Time, dt::Float32)
-    @unpack N,N_pre, randcache, fire, cells, colptr, W, I, g, g_d = p
-    @unpack rate = param
-    myrate::Float32 = rate(get_time(time), param)
+    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g, g_d = p
+    myrate::Float32 = param.rate(get_time(time), param)
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < myrate/N_pre * dt
