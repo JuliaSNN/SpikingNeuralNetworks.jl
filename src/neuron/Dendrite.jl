@@ -36,6 +36,24 @@ function C_mem(; Cd = Cd, d = d, l = l)
     (Cd * π * d * l)
 end
 
+
+"""
+	Dendrite
+
+A structure representing a dendritic compartment within a neuron model.
+
+# Fields
+- `Er::FT = -70.6mV`: Resting potential.
+- `C::FT = 10pF`: Membrane capacitance.
+- `gax::FT = 10nS`: Axial conductance.
+- `gm::FT = 1nS`: Membrane conductance.
+- `l::FT = 150um`: Length of the dendritic compartment.
+- `d::FT = 4um`: Diameter of the dendrite.
+
+The type `FT` represents Float32.
+"""
+Dendrite
+
 @snn_kw struct Dendrite{VFT = Vector{Float32}}
     N::Int32 = 100
     Er::VFT = zeros(N)             # (mV) resting potential
