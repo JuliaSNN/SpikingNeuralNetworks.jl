@@ -48,8 +48,8 @@ end
     fire::VBT = zeros(Bool, N)
     I::VFT = zeros(N)
     records::Dict = Dict()
-    he::Vector{Float64} = zeros(N)
-    hi::Vector{Float64} = zeros(N)
+    he::VFT = zeros(N)
+    hi::VFT = zeros(N)
     timespikes::Vector{Float64} = zeros(N)
 end
 
