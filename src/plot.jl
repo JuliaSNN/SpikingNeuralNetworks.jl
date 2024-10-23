@@ -50,6 +50,14 @@ function raster(P::Array, t = nothing, dt = 0.1ms; populations=nothing, kwargs..
         append!(Y, y .+ sum(y0))
         push!(y0, p.N)
     end
+    if length(X) > 200_000 
+        s = ceil(Int, length(X) / 200_000)
+        points = Vector{Int}(eachindex(X))
+        points = sample(points, 200_000, replace = false)
+        X = X[points]
+        Y = Y[points]
+        @warn "Subsampling raster plot, 1 out of $s spikes"
+    end
     plt = scatter(
         X,
         Y,
