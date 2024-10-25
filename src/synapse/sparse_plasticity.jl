@@ -20,6 +20,7 @@ function plasticity!(
 include("sparse_plasticity/vSTDP.jl")
 include("sparse_plasticity/iSTDP.jl")
 include("sparse_plasticity/STDP.jl")
+include("sparse_plasticity/STP.jl")
 
 export SpikingSynapse,
     SpikingSynapseParameter,
