@@ -12,28 +12,22 @@ function update_time!(T::Time, dt::Float32)
     T.tt[1] += 1
 end
 
-function record_sym(obj, key, T::Time, ind::Vector{Int})
-    ind = isempty(ind) ? collect(axes(getfield(obj, key), 1)) : ind
-    if key == :fire
-        sum(obj.fire[ind]) == 0 && return
-        t = get_time(T)
-        push!(obj.records[:fire][:time], t)
-        push!(obj.records[:fire][:neurons], [i for i in ind if obj.fire[i]])
-    else
-        push!(obj.records[key], getindex(getfield(obj, key), ind))
-    end
+function record_plast(obj::ST, key, T::Time, indices::Dict{Symbol,Vector{Int}}) where {ST <: AbstractConnection}
+    ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(obj.plasticity, key)))
+    push!(obj.records[:plasticity][key], getfield(obj.plasticity, key)[ind])
 end
 
-function record_sym(obj, key, T::Time)
-    if key == :fire
-        sum(obj.fire) == 0 && return
-        t = get_time(T)
-        push!(obj.records[:fire][:time], t)
-        push!(obj.records[:fire][:neurons], findall(obj.fire))
-    else
-        # getindex returns a copy of `getfield(obj, sym)` at the given index `ind`
-        push!(obj.records[key], copy(getfield(obj, key)))
-    end
+function record_fire(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: AbstractPopulation}
+    sum(obj.fire) == 0 && return
+    ind::Vector{Int} = haskey(indices, :fire) ? indices[:fire] : collect(eachindex(obj.fire))
+    t::Float32 = get_time(T)
+    push!(obj.records[:fire][:time], t)
+    push!(obj.records[:fire][:neurons], findall(obj.fire[ind]))
+end
+
+function record_sym(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}) 
+    ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(obj,key)))
+    push!(obj.records[key], getfield(obj, key)[ind])
 end
 
 """
@@ -44,14 +38,18 @@ Store values into the dictionary named `records` in the object given
 
 """
 function record!(obj, T::Time)
-    for key in keys(obj.records)
+    records::Dict{Symbol,Any} = obj.records
+    for key in keys(records)
         (key == :indices) && (continue)
-        if haskey(obj.records[:indices], key)
-            indices = get(obj.records, :indices, nothing)
-            ind = get(indices, key, nothing)
-            record_sym(obj, key, T, ind)
+        if key == :fire
+            record_fire(obj, T, records[:indices])
+        elseif key == :plasticity
+            for p_k in keys(records[:plasticity])
+                # @show p_k, typeof(obj)
+                record_plast(obj, p_k, T, records[:indices])
+            end
         else
-            record_sym(obj, key, T)
+            record_sym(obj, key, T, records[:indices])
         end
     end
 end
@@ -70,7 +68,6 @@ function monitor(obj, keys)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
     end
     for key in keys
-        # @info key
         ## If the key is a tuple, then the first element is the symbol and the second element is the list of neurons to record.
         if isa(key, Tuple)
             sym, ind = key
@@ -85,17 +82,17 @@ function monitor(obj, keys)
                 :time => Vector{Float32}(),
                 :neurons => Vector{Vector{Int}}(),
             )
-            ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
+        ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
         elseif hasfield(typeof(obj), sym)
             typ = typeof(getfield(obj, sym))
             obj.records[sym] = Vector{typ}()
-            ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
+        ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
         elseif hasfield(typeof(obj), :plasticity) && hasfield(typeof(obj.plasticity), sym)
             typ = typeof(getfield(obj.plasticity, sym))
-            obj.records[:plasticity] = Dict{Symbol,AbstractVector}()
+            (haskey(obj.records, :plasticity)) || (obj.records[:plasticity] = Dict{Symbol,AbstractVector}())
             obj.records[:plasticity][sym] = Vector{typ}()
         else
-            @debug "Field $sym not found in $(typeof(obj))"
+            @error "Field $sym not found in $(typeof(obj))"
         end
     end
 end
@@ -116,7 +113,13 @@ function getrecord(p, sym)
     for (k, val) in p.records
         isa(k, Tuple) && k[1] == sym && (key = k)
     end
-    p.records[key]
+    if haskey(p.records, key) 
+        p.records[key]
+    elseif haskey(p.records[:plasticity], key)
+        p.records[:plasticity][sym]
+    else
+        throw(ArgumentError("The record is not found"))
+    end
 end
 
 function clear_records(obj)
