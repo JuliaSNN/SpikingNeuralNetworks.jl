@@ -20,7 +20,7 @@ An implementation of the Adaptive Exponential Integrate-and-Fire (AdEx) model, a
 - `b::FT = 80.5pA`: Spike-triggered adaptation increment.
 - `AP_membrane::FT = 10.0f0mV`: After-potential membrane parameter .
 - `BAP::FT = 1.0f0mV`: Backpropagating action potential parameter.
-- `up::IT = 1ms`, `idle::IT = 2ms`: Parameters related to spikes.
+- `up::IT = 1ms`, `τabs::IT = 2ms`: Parameters related to spikes.
 
 The types `FT` and `IT` represent Float32 and Int64 respectively.
 """
@@ -45,7 +45,7 @@ AdExSoma
     AP_membrane::FT = 10.0f0mV
     BAP::FT = 1.0f0mV
     up::IT = 1ms
-    idle::IT = 2ms
+    τabs::IT = 2ms
 end
 
 """
@@ -241,7 +241,7 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
     postspike,
     Δv,
     Δv_temp = p
-    @unpack Er, up, idle, BAP, AP_membrane, Vr, Vt, τw, a, b = param
+    @unpack Er, up, τabs, BAP, AP_membrane, Vr, Vt, τw, a, b = param
     @unpack dend_syn, soma_syn = p
     @unpack gax1, gax2, gm1, gm2, cd1, cd2 = p
 
@@ -266,7 +266,7 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
 
     # update the neurons
     @inbounds for i ∈ 1:N
-        if after_spike[i] > idle
+        if after_spike[i] > τabs
             v_s[i] = BAP
             ## backpropagation effect
             c1 = (BAP - v_d1[i]) * gax1[i]
@@ -311,7 +311,7 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
                 θ[i] += postspike.A
                 v_s[i] = AP_membrane
                 w_s[i] += b ##  *τw
-                after_spike[i] = (up + idle) / dt
+                after_spike[i] = (up + τabs) / dt
             end
         end
     end

@@ -91,7 +91,7 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
     @unpack N, v_s, w_s, v_d = p
     @unpack g_s, g_d, h_s, h_d = p
     @unpack fire, θ, after_spike, postspike, Δv, Δv_temp = p
-    @unpack Er, up, idle, BAP, AP_membrane, Vr, Vt, τw, a, b = param
+    @unpack Er, up, τabs, BAP, AP_membrane, Vr, Vt, τw, a, b = param
     @unpack dend_syn, soma_syn = p
     @unpack d = p
 
@@ -114,7 +114,7 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
 
     # update the neurons
     @inbounds for i ∈ 1:N
-        if after_spike[i] > idle
+        if after_spike[i] > τabs
             v_s[i] = BAP
             ## backpropagation effect
             c1 = (BAP - v_d[i]) * d.gax[i]
@@ -154,7 +154,7 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
                 θ[i] += postspike.A
                 v_s[i] = AP_membrane
                 w_s[i] += b ##  *τw
-                after_spike[i] = (up + idle) / dt
+                after_spike[i] = (up + τabs) / dt
             end
         end
     end

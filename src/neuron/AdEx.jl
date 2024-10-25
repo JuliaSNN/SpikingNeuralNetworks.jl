@@ -70,7 +70,7 @@ An implementation of the Adaptive Exponential Integrate-and-Fire (AdEx) model, a
 - `b::FT = 80.5pA`: Spike-triggered adaptation increment.
 - `AP_membrane::FT = 10.0f0mV`: After-potential membrane parameter .
 - `BAP::FT = 1.0f0mV`: Backpropagating action potential parameter.
-- `up::IT = 1ms`, `idle::IT = 2ms`: Parameters related to spikes.
+- `up::IT = 1ms`, `τabs::IT = 2ms`: Parameters related to spikes.
 
 The types `FT` and `IT` represent Float32 and Int64 respectively.
 """
@@ -95,7 +95,7 @@ AdExSoma
     AP_membrane::FT = 10.0f0mV
     BAP::FT = 1.0f0mV
     up::IT = 1ms
-    idle::IT = 2ms
+    τabs::IT = 2ms
 end
 
 """

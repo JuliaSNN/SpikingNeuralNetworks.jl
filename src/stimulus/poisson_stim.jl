@@ -1,11 +1,11 @@
-@snn_kw mutable struct PoissonStimulusParameter{VFT}
+@snn_kw struct PoissonStimulusParameter{VFT}
     variables::Dict{Symbol, Any}=Dict{Symbol, Any}()
     rate::Function
 end
 
 PSParam = PoissonStimulusParameter
 
-@snn_kw mutable struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32, GT = gtype} <:
+@snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32, GT = gtype} <:
 
                        AbstractStimulus
     param::PoissonStimulusParameter
