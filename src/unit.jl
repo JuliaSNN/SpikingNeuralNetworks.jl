@@ -36,8 +36,8 @@ const nS = siemens / 1e9
 const nsiemens = nS
 
 const Ω = 1 / siemens
-const MΩ = Ω * 10e6
-const GΩ = Ω * 10e9
+const MΩ = Ω * 1e6
+const GΩ = Ω * 1e9
 
 second / Ω ≈ farad
 
