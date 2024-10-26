@@ -17,13 +17,13 @@ end
     Apost::VFT = zeros(Npost) # postsynaptic trace
 end
 
-function get_variables(param::STDPParameter, Npre, Npost)
+function get_variables(param::T, Npre, Npost) where T <: STDPParameter
     return STDPVariables(Npre = Npre, Npost = Npost)
 end
 
 ## It's broken   !!
 
-function plasticity!(c::AbstractSparseSynapse, param::STDPParameter, dt::Float32, T::Time)
+function plasticity!(c::PT, param::STDPParameter, dt::Float32, T::Time) where PT <: AbstractSparseSynapse
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
