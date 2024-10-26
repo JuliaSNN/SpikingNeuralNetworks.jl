@@ -1,5 +1,4 @@
 abstract type SpikingSynapseParameter <: AbstractConnectionParameter end
-abstract type PlasticityVariables end
 struct no_STDPParameter <: SpikingSynapseParameter end
 
 ## No plasticity
@@ -19,8 +18,8 @@ function plasticity!(
 
 include("sparse_plasticity/vSTDP.jl")
 include("sparse_plasticity/iSTDP.jl")
-include("sparse_plasticity/STDP.jl")
 include("sparse_plasticity/STP.jl")
+include("sparse_plasticity/longshortSP.jl")
 
 export SpikingSynapse,
     SpikingSynapseParameter,
