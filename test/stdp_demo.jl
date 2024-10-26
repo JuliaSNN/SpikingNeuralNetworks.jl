@@ -7,6 +7,8 @@ for n = 1:E1.N
 end
 SNN.monitor([E1, E2], [:fire])
 SNN.monitor(EE, [:W])
+SNN.monitor(EE, [:x])
+
 
 for t = 1:N
     E1.v[t] = 100
@@ -14,3 +16,4 @@ for t = 1:N
     SNN.train!([E1, E2], [EE], duration = (t - 1) * 0.5ms, dt = 0.1ms)
 end
 ΔW = EE.records[:W][end]
+x = EE.records[:plasticity][:x][end]
