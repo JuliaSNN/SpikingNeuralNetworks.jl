@@ -15,7 +15,7 @@ end
     _ρ::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function get_variables(param::STPParameter, Npre, Npost)
+function get_variables(param::T, Npre, Npost) where T <: STPParameter
     return STPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -48,28 +48,28 @@ function plasticity!(c::AbstractSparseSynapse, param::STPParameter, dt::Float32,
 end
 
 function plasticity!(
-    c::AbstractSparseSynapse,
+    c::PT,
     param::STPParameter,
     plasticity::STPVariables,
     dt::Float32,
     T::Time,
-)
+) where PT <: AbstractSparseSynapse
     @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, ρ,index = c
     @unpack u, x, _ρ = plasticity
     @unpack U, τF, τD, Wmax, Wmin = param
-
-    # update pre-synaptic spike trace
-    @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
-        @fastmath u[j] += dt * (U- u[j])/τF  
-        @fastmath x[j] += dt * (1- x[j])/τD 
-    end
 
     @simd for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
         if fireJ[j]
             u[j] += dt*(U * (1 - x[j]))
             x[j] += dt*(- u[j] * x[j])
-            _ρ[j] = u[j] * x[j]
         end
+    end
+
+    # update pre-synaptic spike trace
+    @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
+        @fastmath u[j] += dt * (U- u[j])/τF  
+        @fastmath x[j] += dt * (1- x[j])/τD 
+        @fastmath _ρ[j] = u[j] * x[j]
     end
 
     Threads.@threads for j in eachindex(fireJ) # Iterate over postsynaptic neurons

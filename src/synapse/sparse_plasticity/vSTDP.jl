@@ -19,7 +19,7 @@ end
     x::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function get_variables(param::vSTDPParameter, Npre, Npost)
+function get_variables(param::T, Npre, Npost) where T <: vSTDPParameter
     return vSTDPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -47,17 +47,17 @@ where if `τ > 0.0f0` then normalization will occur at intervals approximately e
 After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
-function plasticity!(c::AbstractSparseSynapse, param::vSTDPParameter, dt::Float32, T::Time)
+function plasticity!(c::PT, param::vSTDPParameter, dt::Float32, T::Time) where PT <: AbstractSparseSynapse
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
 function plasticity!(
-    c::AbstractSparseSynapse,
+    c::PT,
     param::vSTDPParameter,
     plasticity::vSTDPVariables,
     dt::Float32,
     T::Time,
-)
+) where PT <: AbstractSparseSynapse
     @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, index = c
     @unpack u, v, x = plasticity
     @unpack A_LTD, A_LTP, θ_LTD, θ_LTP, τu, τv, τx, Wmax, Wmin = param
