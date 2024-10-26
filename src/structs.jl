@@ -8,6 +8,7 @@ abstract type AbstractStimulus end
 
 abstract type AbstractSparseSynapse <: AbstractConnection end
 abstract type AbstractNormalization <: AbstractConnection end
+abstract type PlasticityVariables end
 
 Spiketimes = Vector{Vector{Float32}}
 
