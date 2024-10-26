@@ -127,21 +127,33 @@ function merge_models(args...;kwargs...)
 end
 
 function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict{Symbol, Any}, stim::Dict{Symbol,Any})
-    for k in keys(container)
-        v = getindex(container, k)
-        (k ==:pop || k ==:syn || k ==:stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
-        new_key = isempty(string(root)) ? k : Symbol(string(root)*"_"*string(k))
-        if (typeof(v) <: AbstractPopulation) 
-            @assert !haskey(pop, new_key) "Population $(new_key) already exists"
-            push!(pop, new_key=> v)
-        elseif (typeof(v) <: AbstractConnection) 
-            @assert !haskey(syn, new_key) "Synapse $(new_key) already exists"
-            push!(syn, new_key=> v)
-        elseif (typeof(v) <: AbstractStimulus)
-            @assert !haskey(stim, new_key) "Stimulus $(new_key) already exists"
-            push!(stim, new_key=> v)
-        else
-            extract_items(new_key, v, pop=pop, syn=syn, stim=stim)
+    v = container
+    if (typeof(v) <: AbstractPopulation) 
+        @assert !haskey(pop, root) "Population $(new_key) already exists"
+        push!(pop, root=> v)
+    elseif (typeof(v) <: AbstractConnection) 
+        @assert !haskey(syn, root) "Synapse $(new_key) already exists"
+        push!(syn, root=> v)
+    elseif (typeof(v) <: AbstractStimulus)
+        @assert !haskey(stim, root) "Stimulus $(new_key) already exists"
+        push!(stim, root=> v)
+    else
+        for k in keys(container)
+            v = getindex(container, k)
+            (k ==:pop || k ==:syn || k ==:stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
+            new_key = isempty(string(root)) ? k : Symbol(string(root)*"_"*string(k))
+            if (typeof(v) <: AbstractPopulation) 
+                @assert !haskey(pop, new_key) "Population $(new_key) already exists"
+                push!(pop, new_key=> v)
+            elseif (typeof(v) <: AbstractConnection) 
+                @assert !haskey(syn, new_key) "Synapse $(new_key) already exists"
+                push!(syn, new_key=> v)
+            elseif (typeof(v) <: AbstractStimulus)
+                @assert !haskey(stim, new_key) "Stimulus $(new_key) already exists"
+                push!(stim, new_key=> v)
+            else
+                extract_items(new_key, v, pop=pop, syn=syn, stim=stim)
+            end
         end
     end
     return true
