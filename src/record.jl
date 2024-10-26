@@ -12,12 +12,12 @@ function update_time!(T::Time, dt::Float32)
     T.tt[1] += 1
 end
 
-function record_plast(obj::ST, key, T::Time, indices::Dict{Symbol,Vector{Int}}) where {ST <: AbstractConnection}
-    ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(obj.plasticity, key)))
-    push!(obj.records[:plasticity][key], getfield(obj.plasticity, key)[ind])
+function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
+    ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
+    push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
 
-function record_fire(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: AbstractPopulation}
+function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: AbstractPopulation}
     sum(obj.fire) == 0 && return
     ind::Vector{Int} = haskey(indices, :fire) ? indices[:fire] : collect(eachindex(obj.fire))
     t::Float32 = get_time(T)
@@ -25,7 +25,7 @@ function record_fire(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where 
     push!(obj.records[:fire][:neurons], findall(obj.fire[ind]))
 end
 
-function record_sym(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}) 
+function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}) 
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(obj,key)))
     push!(obj.records[key], getfield(obj, key)[ind])
 end
@@ -42,14 +42,17 @@ function record!(obj, T::Time)
     for key in keys(records)
         (key == :indices) && (continue)
         if key == :fire
-            record_fire(obj, T, records[:indices])
+            record_fire!(obj, T, records[:indices])
         elseif key == :plasticity
-            for p_k in keys(records[:plasticity])
-                # @show p_k, typeof(obj)
-                record_plast(obj, p_k, T, records[:indices])
+            for name_plasticity in keys(records[:plasticity])
+                for p_k in records[:plasticity][name_plasticity]
+                    record_plast!(obj, obj.plasticity, p_k, T, records[:indices], name_plasticity)
+                end
             end
+        elseif key ∈ keys(records[:plasticity])
+            continue
         else
-            record_sym(obj, key, T, records[:indices])
+            record_sym!(obj, key, T, records[:indices])
         end
     end
 end
@@ -75,7 +78,6 @@ function monitor(obj, keys)
         else
             sym = key
         end
-
         ## If the then assign a Spiketimes object to the dictionary `records[:fire]`, add as many empty vectors as the number of neurons in the object as in [:indices][:fire]
         if sym == :fire
             obj.records[:fire] = Dict{Symbol,AbstractVector}(
@@ -87,17 +89,33 @@ function monitor(obj, keys)
             typ = typeof(getfield(obj, sym))
             obj.records[sym] = Vector{typ}()
         ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
-        elseif hasfield(typeof(obj), :plasticity) && hasfield(typeof(obj.plasticity), sym)
-            typ = typeof(getfield(obj.plasticity, sym))
-            (haskey(obj.records, :plasticity)) || (obj.records[:plasticity] = Dict{Symbol,AbstractVector}())
-            obj.records[:plasticity][sym] = Vector{typ}()
+        elseif hasfield(typeof(obj), :plasticity) && has_plasticity_field(obj.plasticity, sym)
+            monitor_plast(obj, obj.plasticity, sym)
         else
             @error "Field $sym not found in $(typeof(obj))"
         end
     end
 end
 
+function has_plasticity_field(plasticity::T, key) where {T<:PlasticityVariables}
+    return hasfield(typeof(plasticity), key)
+end
 
+function monitor_plast(obj, plasticity, sym) 
+    name =nameof(typeof(plasticity))
+    if !haskey(obj.records, :plasticity)
+       obj.records[:plasticity] = Dict{Symbol,Vector{Symbol}}()
+    end
+    if !haskey(obj.records[:plasticity], name)
+       obj.records[:plasticity][name] = Vector{Symbol}()
+    end
+    push!(obj.records[:plasticity][name], sym)
+    typ = typeof(getfield(plasticity, sym))
+    if !haskey(obj.records, name)
+       obj.records[name] = Dict{Symbol,AbstractVector}()
+    end
+    obj.records[name][sym] = Vector{typ}()
+end
 
 function monitor(objs::Array, keys)
     """
