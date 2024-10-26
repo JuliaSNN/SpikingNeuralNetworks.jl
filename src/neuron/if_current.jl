@@ -62,7 +62,7 @@ function integrate!(p::IFCurrent, param::T, dt::Float32) where {T<:AbstractIFPar
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
-                + R * (ge[i] + gi[i] + I[i]) #synaptic term
+                + R * (ge[i] - gi[i] + I[i]) #synaptic term
             ) / τm
 
     end
