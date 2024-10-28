@@ -45,7 +45,7 @@ function raster(P::Array, t = nothing, dt = 0.1ms; populations=nothing, kwargs..
     X = Float32[]
     Y = Float32[]
     for p in P
-        x, y = isnothing(populations) ? raster(p, t; kwargs...) : raster_populations(p, t; populations = populations, kwargs...)
+        x, y = isnothing(populations) ? raster(p, t) : raster_populations(p, t; populations = populations)
         append!(X, x)
         append!(Y, y .+ sum(y0))
         push!(y0, p.N)
@@ -69,6 +69,7 @@ function raster(P::Array, t = nothing, dt = 0.1ms; populations=nothing, kwargs..
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     !isnothing(t) && plot!(xlims = t)
+    plot!(plt; kwargs...)
     return plt
 end
 
