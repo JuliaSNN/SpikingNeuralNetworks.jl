@@ -2,7 +2,6 @@ using DrWatson
 using Plots
 using Revise
 using SpikingNeuralNetworks
-using SNNUtils
 SNN.@load_units;
 
 ##
@@ -17,4 +16,4 @@ E = SNN.TripodHet(
 )
 
 E_to_E =
-    SNN.CompartmentSynapse(E, E, :d1, :exc, p = 0.2, μ = 30, param = SNN.vSTDPParameter())
+    SNN.CompartmentSynapse(E, E, :d1, :he, μ = 30, param = SNN.vSTDPParameter())
