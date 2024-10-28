@@ -49,7 +49,7 @@ function record!(obj, T::Time)
                     record_plast!(obj, obj.plasticity, p_k, T, records[:indices], name_plasticity)
                 end
             end
-        elseif key ∈ keys(records[:plasticity])
+        elseif haskey(records,:plasticity) key ∈ keys(records[:plasticity])
             continue
         else
             record_sym!(obj, key, T, records[:indices])
@@ -133,7 +133,7 @@ function getrecord(p, sym)
     end
     if haskey(p.records, key) 
         p.records[key]
-    elseif haskey(p.records[:plasticity], key)
+    elseif haskey(p.records, :plasticity) && haskey(p.records[:plasticity], key)
         p.records[:plasticity][sym]
     else
         throw(ArgumentError("The record is not found"))
