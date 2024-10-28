@@ -1,7 +1,3 @@
-abstract type AbstractGeneralizedIFParameter <: AbstractPopulationParameter end
-abstract type AbstractGeneralizedIF <: AbstractPopulation end
-abstract type AbstractIFParameter <: AbstractGeneralizedIFParameter end
-
 @snn_kw struct IFParameter{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
     Vt::FT = -50mV
@@ -40,6 +36,7 @@ end
     VBT = Vector{Bool},
     IFT<:AbstractIFParameter,
 } <: AbstractGeneralizedIF
+    name::String = "IF"
     param::IFT = IFParameter()
     N::Int32 = 100
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)

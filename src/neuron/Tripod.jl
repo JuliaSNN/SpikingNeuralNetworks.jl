@@ -40,6 +40,7 @@ Tripod
     FT = Float32,
     AdExType = AdExSoma,
 } <: AbstractDendriteIF
+    name::String = "Tripod"
     ## These are compulsory parameters
     N::IT = 100
     soma_syn::ST
@@ -62,6 +63,14 @@ Tripod
     h_s::MFT = zeros(N, 2)
     h_d1::MFT = zeros(N, 4)
     h_d2::MFT = zeros(N, 4)
+    # Synapses inputs
+    he_s::VFT = zeros(N)
+    he_d1::VFT = zeros(N)
+    he_d2::VFT = zeros(N)
+    hi_s::VFT = zeros(N)
+    hi_d1::VFT = zeros(N)
+    hi_d2::VFT = zeros(N)
+
     # Spike model and threshold
     fire::VBT = zeros(Bool, N)
     after_spike::VFT = zeros(Int, N)
@@ -135,23 +144,7 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
     @unpack d1, d2 = p
 
     # Update all synaptic conductance
-    for n in eachindex(dend_syn)
-        @unpack τr⁻, τd⁻ = dend_syn[n]
-        @fastmath @simd for i ∈ 1:N
-            g_d1[i, n] = exp32(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
-            h_d1[i, n] = exp32(-dt * τr⁻) * (h_d1[i, n])
-            g_d2[i, n] = exp32(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
-            h_d2[i, n] = exp32(-dt * τr⁻) * (h_d2[i, n])
-        end
-    end
-    # for soma
-    for n in eachindex(soma_syn)
-        @unpack τr⁻, τd⁻ = soma_syn[n]
-        @fastmath @simd for i ∈ 1:N
-            g_s[i, n] = exp32(-dt * τd⁻) * (g_s[i, n] + dt * h_s[i, n])
-            h_s[i, n] = exp32(-dt * τr⁻) * (h_s[i, n])
-        end
-    end
+    update_synapses!(p, dend_syn, soma_syn, dt)
 
     # update the neurons
     @inbounds for i ∈ 1:N
@@ -205,6 +198,35 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
         end
     end
     return
+end
+
+function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
+    @unpack N, g_s, g_d1, g_d2, h_s, h_d1, h_d2 = p
+    @unpack he_s, he_d1, he_d2, hi_s, hi_d1, hi_d2 = p
+
+    for n in eachindex(dend_syn)
+        @unpack τr⁻, τd⁻ = dend_syn[n]
+        @fastmath @simd for i ∈ 1:N
+            # h_d1[i, 1:2] .+= he_d1
+            # h_d2[i, 1:2] .+= he_d2
+            # h_d1[i, 3:4] .+= hi_d1
+            # h_d2[i, 3:4] .+= hi_d2
+            g_d1[i, n] = exp32(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
+            h_d1[i, n] = exp32(-dt * τr⁻) * (h_d1[i, n])
+            g_d2[i, n] = exp32(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
+            h_d2[i, n] = exp32(-dt * τr⁻) * (h_d2[i, n])
+        end
+    end
+
+    for n in eachindex(soma_syn)
+        @unpack τr⁻, τd⁻ = soma_syn[n]
+        @fastmath @simd for i ∈ 1:N
+            # h_s[i, 1] += he_s[i]
+            # h_s[i, 2] += hi_s[i]
+            g_s[i, n] = exp32(-dt * τd⁻) * (g_s[i, n] + dt * h_s[i, n])
+            h_s[i, n] = exp32(-dt * τr⁻) * (h_s[i, n])
+        end
+    end
 end
 
 function update_tripod!(

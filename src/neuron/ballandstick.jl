@@ -37,6 +37,7 @@ BallAndStick
     FT = Float32,
     AdExType = AdExSoma,
 } <: AbstractDendriteIF     ## These are compulsory parameters
+    name::String = "BallAndStick"
     N::IT = 100
     soma_syn::ST
     dend_syn::ST

@@ -1,4 +1,3 @@
-abstract type AbstractAdExParameter <: AbstractGeneralizedIFParameter end
 
 C = 281pF        #(pF)
 gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
@@ -123,6 +122,7 @@ end
     VBT = Vector{Bool},
     AdExT<:AbstractAdExParameter,
 } <: AbstractGeneralizedIF
+    name::String = "AdEx"
     param::AdExT = AdExParameter()
     N::Int32 = 100 # Number of neurons
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
