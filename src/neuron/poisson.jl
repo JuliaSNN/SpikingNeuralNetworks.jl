@@ -1,4 +1,4 @@
-@snn_kw struct PoissonParameter{FT = Float32}
+@snn_kw struct PoissonParameter{FT = Float32} <: AbstractPopulationParameter
     rate::FT = 1Hz
 end
 

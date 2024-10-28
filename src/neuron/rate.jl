@@ -1,4 +1,4 @@
-struct RateParameter end
+struct RateParameter <: AbstractPopulationParameter end
 
 @snn_kw mutable struct Rate{VFT = Vector{Float32}} <: AbstractPopulation
     name::String = "Rate"
