@@ -5,7 +5,7 @@ end
 
 PSParam = PoissonStimulusParameter
 
-@snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32, GT = gtype} <:
+@snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
 
                        AbstractStimulus
     param::PoissonStimulusParameter
@@ -14,7 +14,6 @@ PSParam = PoissonStimulusParameter
     cells::VIT
     ##
     g::VFT # target conductance for soma
-    g_d::GT # target conductance for dendrites
     colptr::VIT
     rowptr::VIT
     I::VIT
@@ -47,7 +46,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, receptors::Vector{Int}=[1], μ::R=1.f0, param::Union{PoissonStimulusParameter,R2}) where {T <: AbstractPopulation, R <: Real, R2<:Real}
+function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, receptors::Vector{Int}=[1], μ::R=1.f0, param::Union{PoissonStimulusParameter,R2}) where {T <: AbstractPopulation, R <: Real, R2<:Real}
 
     if cells == :ALL
         cells = 1:post.N
@@ -70,13 +69,10 @@ function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5
     # w = SNN.dropzeros(w .* μ ./sum(w, dims=2))
 
     rowptr, colptr, I, J, index, W = dsparse(w)
-    if typeof(post) <: AbstractDendriteIF
-        g_d = view(getfield(post, sym), :, receptors)
-        g = []
-    else
+    if isnothing(target) 
         g = getfield(post, sym)
-        a = zeros(Float32, 2,2)
-        g_d = @view(a[:,receptors])
+    else
+        g = getfield(post, Symbol("$(sym)_$target"))
     end
 
     if typeof(param) <: Real
@@ -91,7 +87,6 @@ function PoissonStimulus(post::T, sym::Symbol; cells=[], N::Int=200,N_pre::Int=5
         N_pre = N_pre,
         cells = cells,
         g = g,
-        g_d = g_d,
         @symdict(rowptr, colptr, I, J, index, W)...,
     )
 end
@@ -103,7 +98,7 @@ end
 Generate a Poisson stimulus for a postsynaptic population.
 """
 function stimulate!(p::PoissonStimulus, param::PoissonStimulusParameter, time::Time, dt::Float32)
-    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g, g_d = p
+    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
     myrate::Float32 = param.rate(get_time(time), param)
     rand!(randcache)
     @inbounds @simd for j = 1:N
@@ -113,20 +108,10 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusParameter, time::T
             fire[j] = false
         end
     end
-    if isempty(g) 
-        for j = 1:N # loop on presynaptic cells
-            if fire[j] # presynaptic fire
-                @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g_d[cells[I[s]],:] .+= W[s]
-                end
-            end
-        end
-    else
-        for j = 1:N
-            if fire[j] # presynaptic fire
-                @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g[cells[I[s]]] += W[s]
-                end
+    for j = 1:N # loop on presynaptic cells
+        if fire[j] # presynaptic fire
+            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                g[cells[I[s]]] += W[s]
             end
         end
     end
