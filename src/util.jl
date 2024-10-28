@@ -159,5 +159,21 @@ function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict
     return true
 end
 
+function remove_element(model, key)
+    pop = Dict(pairs(model.pop))
+    syn = Dict(pairs(model.syn))
+    stim = Dict(pairs(model.stim))
+    if haskey(model.pop, key)
+        delete!(pop, key)
+    elseif haskey(model.syn, key)
+        delete!(syn, key)
+    elseif haskey(model.stim, key)
+        delete!(stim, key)
+    else
+        throw(ArgumentError("Element not found"))
+    end
+    merge_models(pop, syn, stim)
+end
+
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element
