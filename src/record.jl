@@ -26,8 +26,9 @@ function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where
 end
 
 function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}) 
-    ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(obj,key)))
-    push!(obj.records[key], getfield(obj, key)[ind])
+    ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(getfield(obj,key),1)
+    isa(getfield(obj, key), Vector) && push!(obj.records[key], getfield(obj, key)[ind])
+    isa(getfield(obj, key), AbstractMatrix) && push!(obj.records[key], getfield(obj, key)[ind,:])
 end
 
 """
@@ -49,7 +50,7 @@ function record!(obj, T::Time)
                     record_plast!(obj, obj.plasticity, p_k, T, records[:indices], name_plasticity)
                 end
             end
-        elseif haskey(records,:plasticity) key ∈ keys(records[:plasticity])
+        elseif haskey(records,:plasticity) && (key ∈ keys(records[:plasticity]))
             continue
         else
             record_sym!(obj, key, T, records[:indices])
@@ -128,13 +129,23 @@ end
 
 function getrecord(p, sym)
     key = sym
-    for (k, val) in p.records
-        isa(k, Tuple) && k[1] == sym && (key = k)
-    end
     if haskey(p.records, key) 
-        p.records[key]
-    elseif haskey(p.records, :plasticity) && haskey(p.records[:plasticity], key)
-        p.records[:plasticity][sym]
+        return p.records[key]
+    elseif haskey(p.records, :plasticity)
+        values = []
+        names = []
+        for (name, keys) in p.records[:plasticity]
+            if sym in keys
+                @show sym, name
+                push!(values, p.records[name][sym])
+                push!(names, name)
+            end
+        end
+        if length(values) == 1
+            return values[1]
+        else
+            Dict{Symbol,Vector{Any}}(zip(names, values))
+        end
     else
         throw(ArgumentError("The record is not found"))
     end
