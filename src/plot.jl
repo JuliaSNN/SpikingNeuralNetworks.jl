@@ -121,7 +121,7 @@ function vecplot!(
         for i in 1:_time
             y[i, :, :] = v[i]*factor
         end
-        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot")))
+        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
         y = y[r_dt, neurons, sym_id]
         y = pop_average ? mean(y, dims = 2)[:, 1, :] : y
     else
