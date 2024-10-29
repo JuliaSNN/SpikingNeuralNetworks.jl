@@ -51,10 +51,22 @@ BallAndStick
     w_s::VFT = zeros(N)
     v_d::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
     # Synapses
-    g_s::MFT = zeros(N, 2)
     g_d::MFT = zeros(N, 4)
-    h_s::MFT = zeros(N, 2)
     h_d::MFT = zeros(N, 4)
+    hi_d::VFT = zeros(N) #! target
+    he_d::VFT = zeros(N) #! target
+
+    # Receptors properties
+    exc_receptors::VIT = [1, 2]
+    inh_receptors::VIT = [3, 4]
+    α::VFT = [1.0, 1.0, 1.0, 1.0]
+
+    # Synapses soma
+    ge_s::VFT = zeros(N)
+    gi_s::VFT = zeros(N) 
+    he_s::VFT = zeros(N) #! target
+    hi_s::VFT = zeros(N) #! target
+
     # Spike model and threshold
     fire::VBT = zeros(Bool, N)
     after_spike::VFT = zeros(Int, N)
@@ -75,13 +87,16 @@ function BallAndStick(
     NMDA::NMDAVoltageDependency,
     param = AdExSoma(),
 )
+    soma_syn = synapsearray(soma_syn)
+    dend_syn = synapsearray(dend_syn)
     BallAndStick(;
         N = N,
         d = create_dendrite(N, d),
-        soma_syn = synapsearray(soma_syn),
-        dend_syn = synapsearray(dend_syn),
+        soma_syn = soma_syn,
+        dend_syn = dend_syn,
         NMDA = NMDA,
         param = param,
+        α= [syn.α for syn in dend_syn],
     )
 end
 
@@ -90,28 +105,12 @@ end
 # const soma_receptors::Vector{Symbol} = [:AMPA, :GABAa]
 function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
     @unpack N, v_s, w_s, v_d = p
-    @unpack g_s, g_d, h_s, h_d = p
     @unpack fire, θ, after_spike, postspike, Δv, Δv_temp = p
     @unpack Er, up, τabs, BAP, AP_membrane, Vr, Vt, τw, a, b = param
     @unpack dend_syn, soma_syn = p
     @unpack d = p
-
-    # Update all synaptic conductance
-    for n in eachindex(dend_syn)
-        @unpack τr⁻, τd⁻ = dend_syn[n]
-        @fastmath @simd for i ∈ 1:N
-            g_d[i, n] = exp32(-dt * τd⁻) * (g_d[i, n] + dt * h_d[i, n])
-            h_d[i, n] = exp32(-dt * τr⁻) * (h_d[i, n])
-        end
-    end
-    # for soma
-    for n in eachindex(soma_syn)
-        @unpack τr⁻, τd⁻ = soma_syn[n]
-        @fastmath @simd for i ∈ 1:N
-            g_s[i, n] = exp32(-dt * τd⁻) * (g_s[i, n] + dt * h_s[i, n])
-            h_s[i, n] = exp32(-dt * τr⁻) * (h_s[i, n])
-        end
-    end
+   
+    update_synapses!(p, dend_syn, soma_syn, dt)
 
     # update the neurons
     @inbounds for i ∈ 1:N
@@ -162,6 +161,45 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
     return
 end
 
+function update_synapses!(p::BallAndStick, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
+    @unpack N, ge_s, g_d, he_s, h_d, hi_s, gi_s = p
+    @unpack he_d, hi_d, exc_receptors, inh_receptors, α = p
+
+    @inbounds for n in exc_receptors
+        @turbo for i ∈ 1:N
+            h_d[i, n] += he_d[i] * α[n]
+        end
+    end
+    @inbounds for n in inh_receptors
+        @turbo for i ∈ 1:N
+            h_d[i, n] += hi_d[i] * α[n]
+        end
+    end
+
+    fill!(he_d, 0.0f0)
+    fill!(hi_d, 0.0f0)
+    for n in eachindex(dend_syn)
+        @unpack τr⁻, τd⁻ = dend_syn[n]
+        @fastmath @turbo for i ∈ 1:N
+            g_d[i, n] = exp32(-dt * τd⁻) * (g_d[i, n] + dt * h_d[i, n])
+            h_d[i, n] = exp32(-dt * τr⁻) * (h_d[i, n])
+        end
+    end
+
+    @unpack τr⁻, τd⁻ = soma_syn[1]
+    @fastmath @turbo for i ∈ 1:N
+        ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
+        he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
+    end
+    @unpack τr⁻, τd⁻ = soma_syn[2]
+    @fastmath @turbo for i ∈ 1:N
+        gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
+        hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
+    end
+
+end
+
+
 function update_ballandstick!(
     p::BallAndStick,
     Δv::Vector{Float32},
@@ -171,7 +209,7 @@ function update_ballandstick!(
 )
 
     @fastmath @inbounds begin
-        @unpack v_d, v_s, w_s, g_s, g_d, θ, d = p
+        @unpack v_d, v_s, w_s, ge_s, gi_s, g_d, θ, d = p
         @unpack soma_syn, dend_syn, NMDA = p
         @unpack is, cs = p
         @unpack mg, b, k = NMDA
@@ -182,10 +220,10 @@ function update_ballandstick!(
         for _i ∈ 1:2
             is[_i] = 0.0f0
         end
-        for r in eachindex(soma_syn)
-            @unpack gsyn, E_rev = soma_syn[r]
-            is[1] += gsyn * g_s[i, r] * (v_s[i] + Δv[1] * dt - E_rev)
-        end
+        @unpack gsyn, E_rev = soma_syn[1]
+        is[1] += gsyn * ge_s[i] * (v_s[i] + Δv[1] * dt - E_rev)
+        @unpack gsyn, E_rev = soma_syn[2]
+        is[1] += gsyn * gi_s[i] * (v_s[i] + Δv[1] * dt - E_rev)
         for r in eachindex(dend_syn)
             @unpack gsyn, E_rev, nmda = dend_syn[r]
             if nmda > 0.0f0
