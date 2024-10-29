@@ -12,9 +12,22 @@
     E_i::FT = -75mV # Reversal potential
     E_e::FT = 0mV # Reversal potential
     τabs::FT = 1ms # Absolute refractory period
-    gsyn_e::FT = 1.0 * norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
-    gsyn_i::FT = 1.0 * norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
+    gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
+    gsyn_i::FT = 1.f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
+    a::FT = 4nS # Subthreshold adaptation parameter
+    b::FT = 80.5pA # 'sra' current increment
+    τw::FT = 144ms # adaptation time constant (~Ca-activated K current inactivation)
 end
+
+function IFParameterGsyn(;gsyn_i=1., gsyn_e=1., τde=6ms, τre=1ms, τdi=2ms, τri=0.5ms, kwargs...)
+    gsyn_e *= norm_synapse(τre, τde) 
+    gsyn_i *= norm_synapse(τri, τdi)
+    return IFParameter(
+        gsyn_e=Float32(gsyn_e), 
+        gsyn_i=Float32(gsyn_i),
+        ; kwargs...)
+end
+
 @snn_kw struct IFParameterSingleExponential{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
     Vt::FT = -50mV
@@ -42,12 +55,13 @@ end
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
     ge::VFT = zeros(N)
     gi::VFT = zeros(N)
+    he::VFT = zeros(N)
+    hi::VFT = zeros(N)
+    tabs::VFT = zeros(N)
+    w::VFT = zeros(N)
     fire::VBT = zeros(Bool, N)
     I::VFT = zeros(N)
     records::Dict = Dict()
-    he::VFT = zeros(N)
-    hi::VFT = zeros(N)
-    timespikes::Vector{Float64} = zeros(N)
 end
 
 """
@@ -56,9 +70,33 @@ end
 IF
 
 function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
-    @unpack N, v, ge, gi, fire, I, records, he, hi, timespikes = p
-    @unpack τm, Vt, Vr, El, R, ΔT, E_i, E_e, τabs, gsyn_e, gsyn_i = param
+    update_synapses!(p, param, dt)
+    update_neuron!(p, param, dt)
+    update_spike!(p, param, dt)
+end
+
+function update_spike!(p::IF, param::IFParameter, dt::Float32)
+    @unpack N, v, w, tabs, fire = p
+    @unpack Vt, Vr, b, τabs = param
     @inbounds for i = 1:N
+        fire[i] = v[i] > Vt
+        v[i] = ifelse(fire[i], Vr, v[i])
+        # Adaptation current
+        w[i] = ifelse(fire[i], w[i] + b, w[i])
+        # Absolute refractory period
+        tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
+    end
+end
+
+function update_neuron!(p::IF, param::IFParameter, dt::Float32)
+    @unpack N, v, ge, gi, I, tabs, fire = p
+    @unpack τm, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
+    @inbounds for i = 1:N
+        if tabs[i] > 0
+            fire[i] = false
+            tabs[i] -= 1
+            continue
+        end
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
@@ -67,13 +105,6 @@ function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
                 R * gi[i] * (E_i - v[i])* gsyn_i +
                 I[i] * R #synaptic term
             ) / τm
-
-    end
-    update_synapses!(p, param, dt)
-
-    @inbounds for i = 1:N
-        fire[i] = v[i] > Vt
-        v[i] = ifelse(fire[i], Vr, v[i])
     end
 end
 
@@ -96,3 +127,5 @@ function update_synapses!(p::IF, param::IFParameterSingleExponential, dt::Float3
         gi[i] += dt * (-gi[i] / τi)
     end
 end
+
+export IF, IFParameter, IFParameterSingleExponential, IFParameterGsyn
