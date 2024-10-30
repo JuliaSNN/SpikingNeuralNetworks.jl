@@ -6,6 +6,8 @@ end
 
 get_time(T::Time)::Float32 = T.t[1]
 get_step(T::Time)::Float32 = T.tt[1]
+get_dt(T::Time)::Float32 = T.dt
+get_interval(T::Time) = Float32(T.dt):Float32(T.dt):get_time(T)
 
 function update_time!(T::Time, dt::Float32)
     T.t[1] += dt
@@ -126,6 +128,13 @@ function monitor(objs::Array, keys)
         monitor(obj, keys)
     end
 end
+
+function getvariable(obj, key, id=nothing)
+    rec = getrecord(obj, key)
+    isnothing(id) && return hcat(rec...)
+    return hcat(rec...)[id,:]
+end
+
 
 function getrecord(p, sym)
     key = sym
