@@ -1,3 +1,22 @@
+
+MilesGabaSoma =
+    GABAergic(Receptor(E_rev = -75.0, τr = 0.5, τd = 6.0, g0 = 0.265), Receptor())
+
+DuarteGluSoma = Glutamatergic(
+    Receptor(E_rev = 0.0, τr = 0.25, τd = 2.0, g0 = 0.73),
+    ReceptorVoltage(E_rev = 0.0, nmda = 0.0f0),
+)
+EyalGluDend = Glutamatergic(
+    Receptor(E_rev = 0.0, τr = 0.25, τd = 2.0, g0 = 0.73),
+    ReceptorVoltage(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
+)
+MilesGabaDend = GABAergic(
+    Receptor(E_rev = -75.0, τr = 4.8, τd = 29.0, g0 = 0.126),
+    Receptor(E_rev = -90.0, τr = 30, τd = 100.0, g0 = 0.006),
+)
+TripodSomaSynapse = Synapse(DuarteGluSoma, MilesGabaSoma)
+TripodDendSynapse = Synapse(EyalGluDend, MilesGabaDend)
+
 """
 This is a struct representing a spiking neural network model that include two dendrites and a soma based on the adaptive exponential integrate-and-fire model (AdEx)
 
@@ -43,12 +62,11 @@ Tripod
     name::String = "Tripod"
     ## These are compulsory parameters
     N::IT = 100
-    soma_syn::ST
+    soma_syn::ST 
     dend_syn::ST
     d1::VDT
     d2::VDT
-    NMDA::NMDAT = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
-    ##
+    NMDA::NMDAT
     t::VIT = [0]
     param::AdExType = AdExSoma()
     # Membrane potential and adaptation
@@ -93,15 +111,16 @@ function Tripod(
     d1::Union{Real,Tuple},
     d2::Union{Real,Tuple};
     N::Int,
-    soma_syn::Synapse,
-    dend_syn::Synapse,
-    NMDA::NMDAVoltageDependency,
+    soma_syn = TripodSomaSynapse,
+    dend_syn = TripodDendSynapse,
+    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
+,
     param = AdExSoma(),
 )
-    d1 = create_dendrite(N, d1)
-    d2 = create_dendrite(N, d2)
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
+    d1 = create_dendrite(N, d1)
+    d2 = create_dendrite(N, d2)
     Tripod(;
         N = N,
         d1 = d1,

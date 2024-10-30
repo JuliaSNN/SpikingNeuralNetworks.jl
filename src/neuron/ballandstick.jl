@@ -82,9 +82,9 @@ end
 function BallAndStick(
     d::Union{Real,Tuple};
     N::Int,
-    soma_syn::Synapse,
-    dend_syn::Synapse,
-    NMDA::NMDAVoltageDependency,
+    soma_syn = TripodSomaSynapse,
+    dend_syn = TripodDendSynapse,
+    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
     param = AdExSoma(),
 )
     soma_syn = synapsearray(soma_syn)
@@ -99,6 +99,11 @@ function BallAndStick(
         α= [syn.α for syn in dend_syn],
     )
 end
+
+function BallAndStickHet(; kwargs...)
+    BallAndStick((150um, 400um); kwargs...)
+end
+
 
 
 #const dend_receptors::SVector{Symbol,3} = [:AMPA, :NMDA, :GABAa, :GABAb]
