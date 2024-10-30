@@ -231,4 +231,4 @@ end
 end
 
 
-export AdEx, AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn
+export AdEx, AdExSoma, AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn
