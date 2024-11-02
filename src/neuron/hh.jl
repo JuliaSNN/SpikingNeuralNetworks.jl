@@ -15,6 +15,7 @@ end
 
 @snn_kw mutable struct HH{VFT = Vector{Float32},VBT = Vector{Bool}} <: AbstractPopulation
     name::String = "HH"
+    id::String = randstring(12)
     param::HHParameter = HHParameter()
     N::Int32 = 100
     v::VFT = param.El .+ 5(randn(N) .- 1)
