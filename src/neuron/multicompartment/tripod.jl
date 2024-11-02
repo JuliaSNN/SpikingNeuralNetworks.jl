@@ -1,22 +1,3 @@
-
-MilesGabaSoma =
-    GABAergic(Receptor(E_rev = -75.0, τr = 0.5, τd = 6.0, g0 = 0.265), Receptor())
-
-DuarteGluSoma = Glutamatergic(
-    Receptor(E_rev = 0.0, τr = 0.25, τd = 2.0, g0 = 0.73),
-    ReceptorVoltage(E_rev = 0.0, nmda = 0.0f0),
-)
-EyalGluDend = Glutamatergic(
-    Receptor(E_rev = 0.0, τr = 0.25, τd = 2.0, g0 = 0.73),
-    ReceptorVoltage(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
-)
-MilesGabaDend = GABAergic(
-    Receptor(E_rev = -75.0, τr = 4.8, τd = 29.0, g0 = 0.126),
-    Receptor(E_rev = -90.0, τr = 30, τd = 100.0, g0 = 0.006),
-)
-TripodSomaSynapse = Synapse(DuarteGluSoma, MilesGabaSoma)
-TripodDendSynapse = Synapse(EyalGluDend, MilesGabaDend)
-
 """
 This is a struct representing a spiking neural network model that include two dendrites and a soma based on the adaptive exponential integrate-and-fire model (AdEx)
 
@@ -59,6 +40,7 @@ Tripod
     FT = Float32,
     AdExType = AdExSoma,
 } <: AbstractDendriteIF
+    id::String = randstring(12)
     name::String = "Tripod"
     ## These are compulsory parameters
     N::IT = 100
