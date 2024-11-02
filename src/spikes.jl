@@ -69,14 +69,14 @@ end
     Alpha function for convolution of spiketimes. Evaluate the alpha function at time t, with time of peak t0 and time constant τ.
 """
 function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
-    return @fastmath 1000 / 60τ * SNN.exp32(1 - (t - t0) / τ) * Θ(1.0 * (t - t0))
+    return @fastmath SNN.exp32(- (t - t0) / τ) * Θ((t - t0))
 end
 """
     Θ(x::Float64)
 
     Heaviside function
 """
-Θ(x::Float64) = x > 0.0 ? x : 0.0
+Θ(x::Float32) = x > 0.0 ? x : 0.0
 
 """
     convolve(spiketime::Vector{Float32}; interval::AbstractRange, τ = 100)
@@ -112,7 +112,8 @@ function convolve(
                 v += f(t, t0 = t0, τ = τ)
             end
         end
-        rate[i] = v
+        rate[i] = v ./τ^2 *1000
+
     end
     return rate ## Hz
 end

@@ -15,10 +15,8 @@ E = SNN.TripodHet(
 
 pre = (fire = falses(1), N = 1)
 w = 20 * ones(1, 1)
-projection_exc_dend = SNN.CompartmentSynapse(pre, E, :d1, :exc, w = w)
-projection_inh_dend = SNN.CompartmentSynapse(pre, E, :d1, :inh, w = w)
-projection_exc_soma = SNN.CompartmentSynapse(pre, E, :s, :exc, w = w)
-projection_inh_soma = SNN.CompartmentSynapse(pre, E, :s, :inh, w = w)
+projection_exc_soma = SNN.CompartmentSynapse(pre, E, :s, :he, w = w)
+projection_inh_soma = SNN.CompartmentSynapse(pre, E, :s, :hi, w = w)
 
 
 projections = [projection_exc_soma, projection_inh_soma]
@@ -26,7 +24,7 @@ projections = [projection_exc_soma, projection_inh_soma]
 
 SNN.sim!([E], projections, duration = 1000)
 #
-SNN.monitor(E, [:v_s, :v_d1, :g_d1, :fire, :g_s, :w_s])
+SNN.monitor(E, [:v_s, :v_d1, :g_d1, :fire, :ge_s, :gi_s, :w_s])
 SNN.sim!([E], projections, duration = 50)
 for p in projections
     p.fireJ[1] = true
@@ -38,14 +36,19 @@ end
 SNN.sim!([E], projections, duration = 200)
 using Plots
 
+E.records
+
+vcat(SNN.getrecord(E, :ge_s)...)
+vcat(SNN.getrecord(E, :gi_s)...)
+
 plot(
-    plot(vcat(E.records[:g_s]...)[:, 1], ylabel = "g_s exc", labels = ["AMPA" "NMDA"]),
-    plot(vcat(E.records[:g_s]...)[:, 2], ylabel = "g_s inh", labels = ["GABAa" "GABAb"]),
-    SNN.vecplot(E, :v_s),
-    SNN.vecplot(E, :v_d1),
-    SNN.vecplot(E, :w_s),
+    SNN.vecplot(E, :ge_s, r=1:0.01:250),
+    SNN.vecplot(E, :gi_s, r=1:0.01:250),
+    SNN.vecplot(E, :v_s, r=1:0.01:250),
+    SNN.vecplot(E, :v_d1, r=1:0.01:250),
+    SNN.vecplot(E, :w_s, r=1:0.01:250),
     layout = (5, 1),
-    xlims = (0, 2500),
     size = (500, 900),
     linky = true,
+    margin = 5Plots.mm,
 )

@@ -4,6 +4,7 @@ end
 @snn_kw mutable struct Identity{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:
                        AbstractPopulation
     param::IdentityParam = IdentityParam()
+    name::String = "identity"
     N::IT = 100
     g::VFT = zeros(N)
     h::VFT = zeros(N)

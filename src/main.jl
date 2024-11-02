@@ -135,6 +135,7 @@ function train!(
     end
     for p in P
         integrate!(p, p.param, dt)
+        plasticity!(p, p.param, dt, T)
         record!(p, T)
     end
     for c in C

@@ -140,7 +140,7 @@ Tripod
     FT = Float32,
     AdExType = AdExSoma,
 } <: AbstractGeneralizedIF
-    t::VIT = [0]
+    name::String = "Multipod"
     param::AdExType = AdExSoma()
     ## These are compulsory parameters
     N::IT = 100

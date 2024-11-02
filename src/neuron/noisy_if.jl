@@ -3,6 +3,7 @@
 end
 
 @snn_kw mutable struct NoisyIF{VFT = Vector{Float32}} <: AbstractGeneralizedIF
+    name::String = "NoisyIF"
     param::NoisyIFParameter = NoisyIFParameter()
     N::Int32 = 100
     randncache::VFT = randn(N)

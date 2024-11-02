@@ -1,5 +1,3 @@
-abstract type AbstractAdExParameter <: AbstractGeneralizedIFParameter end
-
 C = 281pF        #(pF)
 gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
 
@@ -22,10 +20,21 @@ gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
     τdi::FT = 2ms # Decay time for inhibitory synapses
     E_i::FT = -75mV # Reversal potential excitatory synapses 
     E_e::FT = 0mV #Reversal potential excitatory synapses
+    gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
+    gsyn_i::FT = 1.f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
 
     ## Dynamic spike threshold
     At::FT = 10mV # Post spike threshold increase
-    τT::FT = 30ms # Adaptive threshold time scale
+    τt::FT = 30ms # Adaptive threshold time scale
+end
+
+function AdExParameterGsyn(;gsyn_i=1., gsyn_e=1., τde=6ms, τre=1ms, τdi=2ms, τri=0.5ms, kwargs...)
+    gsyn_e *= norm_synapse(τre, τde) 
+    gsyn_i *= norm_synapse(τri, τdi)
+    return AdExParameter(
+        gsyn_e=Float32(gsyn_e), 
+        gsyn_i=Float32(gsyn_i),
+        ; kwargs...)
 end
 
 @snn_kw struct AdExParameterSingleExponential{FT = Float32} <: AbstractAdExParameter
@@ -48,7 +57,7 @@ end
 
     ## Dynamic spike threshold
     At::FT = 10mV # Post spike threshold increase
-    τT::FT = 30ms # Adaptive threshold time scale
+    τt::FT = 30ms # Adaptive threshold time scale
 end
 
 """
@@ -123,6 +132,7 @@ end
     VBT = Vector{Bool},
     AdExT<:AbstractAdExParameter,
 } <: AbstractGeneralizedIF
+    name::String = "AdEx"
     param::AdExT = AdExParameter()
     N::Int32 = 100 # Number of neurons
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
@@ -172,10 +182,12 @@ end
 
 function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExParameter}
     @unpack N, v, w, fire, θ, I, ge, gi, ξ_het, tabs = p
-    @unpack τm, Vt, Vr, El, R, ΔT, τw, a, b, At, τT, E_e, E_i, τabs = param
+    @unpack τm, Vt, Vr, El, R, ΔT, τw, a, b, At, τt, E_e, E_i, τabs = param
+    @unpack gsyn_e, gsyn_i = param
     @inbounds for i ∈ 1:N
         # Reset membrane potential after spike
         v[i] = ifelse(fire[i], Vr, v[i])
+
         # Absolute refractory period
         if tabs[i] > 0
             fire[i] = false
@@ -192,12 +204,13 @@ function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExPara
                 +
                 ΔT * exp((v[i] - θ[i]) / ΔT) # exponential term
                 +
-                R * ge[i] * (E_e - v[i]) +
-                R * gi[i] * (E_i - v[i]) #synaptic term: conductance times membrane potential difference gives synaptic current
+                R * ge[i] * (E_e - v[i]) * gsyn_e +
+                R * gi[i] * (E_i - v[i]) * gsyn_i +
                 - R * w[i] # adaptation
+                + R * I[i] # external current
             ) / (τm * ξ_het[i])
         # Double exponential
-        θ[i] += dt * (Vt - θ[i]) / τT
+        θ[i] += dt * (Vt - θ[i]) / τt
 
 
         # Spike
@@ -218,4 +231,4 @@ end
 end
 
 
-export AdEx, AdExParameter, AdExParameterSingleExponential
+export AdEx, AdExSoma, AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn

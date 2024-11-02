@@ -89,7 +89,7 @@ If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into
 
 ## Example
 """
-function merge_models(args...;kwargs...)
+function merge_models(args...;silent=false, kwargs...)
     pop = Dict{Symbol, Any}()
     syn = Dict{Symbol, Any}()
     stim= Dict{Symbol, Any}()
@@ -102,27 +102,29 @@ function merge_models(args...;kwargs...)
     pop = DrWatson.dict2ntuple(sort(pop))
     syn = DrWatson.dict2ntuple(sort(syn))
     stim = DrWatson.dict2ntuple(sort(stim))
-    @info "================"
-    @info "Model:"
-    @info "----------------"
-    @info "Populations:"
-    for k in keys(pop)
-        @info "$(k) => $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
-        @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
+    if !silent
+        @info "================"
+        @info "Model:"
+        @info "----------------"
+        @info "Populations:"
+        for k in keys(pop)
+            @info "$(k) => $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
+            @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
+        end
+        @info "----------------"
+        @info "Synapses:"
+        for k in keys(syn)
+            @info "$(k) => $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
+            @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+        end
+        @info "----------------"
+        @info "Stimuli:"
+        for k in keys(stim)
+            @info "$(k) => $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
+            @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
+        end
+        @info "================"
     end
-    @info "----------------"
-    @info "Synapses:"
-    for k in keys(syn)
-        @info "$(k) => $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
-        @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
-    end
-    @info "----------------"
-    @info "Stimuli:"
-    for k in keys(stim)
-        @info "$(k) => $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
-        @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
-    end
-    @info "================"
     return (pop=pop, syn=syn, stim=stim)
 end
 
@@ -159,5 +161,21 @@ function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict
     return true
 end
 
+function remove_element(model, key)
+    pop = Dict(pairs(model.pop))
+    syn = Dict(pairs(model.syn))
+    stim = Dict(pairs(model.stim))
+    if haskey(model.pop, key)
+        delete!(pop, key)
+    elseif haskey(model.syn, key)
+        delete!(syn, key)
+    elseif haskey(model.stim, key)
+        delete!(stim, key)
+    else
+        throw(ArgumentError("Element not found"))
+    end
+    merge_models(pop, syn, stim)
+end
+
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element

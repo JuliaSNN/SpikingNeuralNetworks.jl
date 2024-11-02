@@ -32,6 +32,7 @@ end
     VIT = Vector{Int32},
     IFT <:AbstractIFParameter,
 } <: AbstractGeneralizedIF
+    name::String = "IFCurrent"
     param::IFT = IFCurrentParameter()
     N::Int32 = 100
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)

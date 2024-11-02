@@ -106,7 +106,7 @@ function raster(P::Array, t = nothing, dt = 0.1ms; populations = nothing, popula
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     !isnothing(t) && plot!(xlims = t)
-
+    plot!(plt; kwargs...)
     return plt
 end
 
@@ -161,7 +161,7 @@ function vecplot!(
         for i in 1:_time
             y[i, :, :] = v[i]*factor
         end
-        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot")))
+        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
         y = y[r_dt, neurons, sym_id]
         y = pop_average ? mean(y, dims = 2)[:, 1, :] : y
     else
