@@ -103,56 +103,108 @@ function merge_models(args...;silent=false, kwargs...)
     syn = DrWatson.dict2ntuple(sort(syn))
     stim = DrWatson.dict2ntuple(sort(stim))
     if !silent
-        @info "================"
-        @info "Model:"
-        @info "----------------"
-        @info "Populations:"
-        for k in keys(pop)
-            @info "$(k) => $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
-            @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
-        end
-        @info "----------------"
-        @info "Synapses:"
-        for k in keys(syn)
-            @info "$(k) => $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
-            @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
-        end
-        @info "----------------"
-        @info "Stimuli:"
-        for k in keys(stim)
-            @info "$(k) => $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
-            @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
-        end
-        @info "================"
+        print_model((pop=pop, syn=syn, stim=stim))
     end
     return (pop=pop, syn=syn, stim=stim)
 end
 
+"""
+    print_model(model)
+
+Prints the details of the given model. 
+The model is expected to have three components: `pop` (populations), `syn` (synapses), and `stim` (stimuli).
+
+The function displays a graph representation of the model, followed by detailed information about each component.
+
+# Arguments
+- `model`: The model containing populations, synapses, and stimuli to be printed.
+
+# Outputs
+Prints the graph of the model, along with the name, key, type, and parameters of each component in the populations, synapses, and stimuli.
+
+# Exception
+Raises an assertion error if any component in the populations is not a subtype of `SNN.AbstractPopulation`, if any component in the synapses is not a subtype of `SNN.AbstractConnection`, or if any component in the stimuli is not a subtype of `SNN.AbstractStimulus`.
+
+"""
+function print_model(model)
+    model_graph = graph(model)
+    @show model_graph
+    @unpack pop, syn, stim = model
+    @info "================"
+    @info "Model:"
+    @info "----------------"
+    @info "Populations:"
+    for k in keys(pop)
+        v = filter_first_vertex(model_graph, (g, v) -> get_prop(model_graph, v, :key) == k)
+        name = props(model_graph, v)[:name]
+        @info "$name ($k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
+        @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
+    end
+    @info "----------------"
+    @info "Synapses:"
+    for k in keys(syn)
+        e = filter_first_edge(model_graph, (g, e) -> get_prop(model_graph, e, :key) == k)
+        name = props(model_graph, e)[:name]
+        @info "$name ($k): $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
+        @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+    end
+    @info "----------------"
+    @info "Stimuli:"
+    for k in keys(stim)
+        e = filter_first_edge(model_graph, (g, e) -> get_prop(model_graph, e, :key) == k)
+        name = props(model_graph, e)[:name]
+        @info "$name ($k): $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
+        @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
+    end
+    @info "================"
+end
+
+"""
+    extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict{Symbol, Any}, stim::Dict{Symbol,Any})
+
+Extracts items from a container and adds them to the corresponding dictionaries based on their type.
+
+## Arguments
+- `root::Symbol`: The root symbol for the items being extracted.
+- `container`: The container from which to extract items.
+- `pop::Dict{Symbol,Any}`: The dictionary to store population items.
+- `syn::Dict{Symbol, Any}`: The dictionary to store synapse items.
+- `stim::Dict{Symbol,Any}`: The dictionary to store stimulus items.
+
+## Returns
+- `true`: Always returns true.
+
+## Details
+- If the type of the item in the container is `AbstractPopulation`, it is added to the `pop` dictionary.
+- If the type of the item in the container is `AbstractConnection`, it is added to the `syn` dictionary.
+- If the type of the item in the container is `AbstractStimulus`, it is added to the `stim` dictionary.
+- If the type of the item in the container is none of the above, the function is recursively called to extract items from the nested container.
+"""
 function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict{Symbol, Any}, stim::Dict{Symbol,Any})
     v = container
-    if (typeof(v) <: AbstractPopulation) 
-        @assert !haskey(pop, root) "Population $(new_key) already exists"
-        push!(pop, root=> v)
-    elseif (typeof(v) <: AbstractConnection) 
-        @assert !haskey(syn, root) "Synapse $(new_key) already exists"
-        push!(syn, root=> v)
-    elseif (typeof(v) <: AbstractStimulus)
-        @assert !haskey(stim, root) "Stimulus $(new_key) already exists"
-        push!(stim, root=> v)
+    if typeof(v) <: AbstractPopulation
+        @assert !haskey(pop, root) "Population $(root) already exists"
+        push!(pop, root => v)
+    elseif typeof(v) <: AbstractConnection
+        @assert !haskey(syn, root) "Synapse $(root) already exists"
+        push!(syn, root => v)
+    elseif typeof(v) <: AbstractStimulus
+        @assert !haskey(stim, root) "Stimulus $(root) already exists"
+        push!(stim, root => v)
     else
         for k in keys(container)
             v = getindex(container, k)
-            (k ==:pop || k ==:syn || k ==:stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
-            new_key = isempty(string(root)) ? k : Symbol(string(root)*"_"*string(k))
-            if (typeof(v) <: AbstractPopulation) 
+            (k == :pop || k == :syn || k == :stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
+            new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))
+            if typeof(v) <: AbstractPopulation
                 @assert !haskey(pop, new_key) "Population $(new_key) already exists"
-                push!(pop, new_key=> v)
-            elseif (typeof(v) <: AbstractConnection) 
+                push!(pop, new_key => v)
+            elseif typeof(v) <: AbstractConnection
                 @assert !haskey(syn, new_key) "Synapse $(new_key) already exists"
-                push!(syn, new_key=> v)
-            elseif (typeof(v) <: AbstractStimulus)
+                push!(syn, new_key => v)
+            elseif typeof(v) <: AbstractStimulus
                 @assert !haskey(stim, new_key) "Stimulus $(new_key) already exists"
-                push!(stim, new_key=> v)
+                push!(stim, new_key => v)
             else
                 extract_items(new_key, v, pop=pop, syn=syn, stim=stim)
             end
@@ -178,4 +230,4 @@ function remove_element(model, key)
 end
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph
