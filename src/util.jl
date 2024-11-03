@@ -143,9 +143,11 @@ function print_model(model)
     @info "----------------"
     @info "Synapses:"
     for k in keys(syn)
+        isa(syn[k], SNN.SynapseNormalization) && continue
         e = filter_first_edge(model_graph, (g, e) -> get_prop(model_graph, e, :key) == k)
         name = props(model_graph, e)[:name]
-        @info "$name ($k): $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
+        norm = !isnothing(props(model_graph, e)[:norm]) ? "<-> norm: $(props(model_graph, e)[:norm])" : ""
+        @info "$name ($k) $norm: $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
         @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
     end
     @info "----------------"

@@ -44,6 +44,7 @@ Throws ArgumentError when the synapse type is neither SNN.SpikingSynapse nor SNN
 function graph(model)
     graph = MetaGraphs.MetaDiGraph()
     @unpack pop, syn, stim = model
+    norms = Dict()
     for (k, pop) in pairs(pop)
         name = pop.name
         id = pop.id
@@ -58,18 +59,9 @@ function graph(model)
             pre_name = get_prop(graph, pre_node, :name)
             post_name = get_prop(graph, post_node, :name)
             syn_name = "$(pre_name) to $(post_name)"
-            add_edge!(graph, pre_node, post_node, Dict(:type => :fire_to_g, :name => syn_name, :key => k, :id => syn.id))
+            add_edge!(graph, pre_node, post_node, Dict(:type => :fire_to_g, :name => syn_name, :key => k, :id => syn.id, :norm => nothing))
         elseif isa(syn, SNN.SynapseNormalization)
-            add_vertex!(graph, Dict(:name => "norm", :id => syn.id, :key => k))
-            pre_node = find_id_vertex(graph, syn.id)
-            post_node = find_id_vertex(graph, syn.targets[:post])
-            targets = map(syn.targets[:synapses]) do id
-                e = find_id_edge(graph, id)
-                props(graph, e)[:key]
-            end
-            t = join(targets, ", ")
-            syn_name = "normalize: $t"
-            add_edge!(graph, pre_node, post_node, Dict(:type => :norm, :name => syn_name, :key => k, :id => syn.id))
+            push!(norms, k=>syn)
         else
             throw(ArgumentError("Only SpikingSynapse is supported"))
         end
@@ -85,6 +77,17 @@ function graph(model)
         stim_name = "$(pre_name) to $(post_name)"
         add_edge!(graph, pre_node, post_node, Dict(:type => :stim, :name => stim_name, :key => k, :id => stim.id))
     end
+    for (k,v) in norms
+        for id in v.targets[:synapses]
+            e = find_id_edge(graph, id)
+            props(graph, e.src, e.dst )[:norm] = k
+        end
+        # # t = join(targets, ", ")
+        # # syn_name = "normalize: $t"
+        # syn_group = "Normalization_$n"
+        # # add_edge!(graph, pre_node, post_node, Dict(:type => :norm, :name => syn_name, :key => k, :id => syn.id))
+    end
+
     return graph
 end
 
