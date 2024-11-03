@@ -2,6 +2,7 @@ struct PINningSynapseParameter end
 
 @snn_kw mutable struct PINningSynapse{MFT = Matrix{Float32},VFT = Vector{Float32}} <:
                        AbstractConnection
+    id::String = randstring(12)
     param::PINningSynapseParameter = PINningSynapseParameter()
     W::MFT  # synaptic weight
     rI::VFT # postsynaptic rate
@@ -10,6 +11,7 @@ struct PINningSynapseParameter end
     P::MFT  # <rᵢrⱼ>⁻¹
     q::VFT  # P * r
     f::VFT  # postsynaptic traget
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 

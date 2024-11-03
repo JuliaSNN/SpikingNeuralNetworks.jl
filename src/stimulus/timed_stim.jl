@@ -6,6 +6,7 @@ end
 
 @snn_kw struct SpikeTimeStimulus{FT=Float32, VFT = Vector{Float32}, DT=Distribution{Univariate, Continuous}, VIT = Vector{Int}} <: AbstractStimulus
     N::Int
+    id::String = randstring(12)
     param::SpikeTimeStimulusParameter
     rowptr::VIT # row pointer of sparse W
     colptr::VIT # column pointer of sparse W
@@ -18,6 +19,7 @@ end
     next_index::VIT = [0]
     fireJ::VIT = zeros(Int, N)
     records::Dict = Dict()
+    targets::Dict = Dict()
 end
 
 function SpikeTimeStimulus(N, post::T, sym::Symbol, target = nothing; p::R=0.05f0,  μ=1.0, σ = 0.0, w = nothing,dist=Normal, param::SpikeTimeStimulusParameter) where {T <: AbstractPopulation, R <: Real}

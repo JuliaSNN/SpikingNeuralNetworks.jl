@@ -4,6 +4,7 @@ end
 
 @snn_kw struct CurrentStimulus{FT=Float32, VFT = Vector{Float32}, DT=Distribution{Univariate, Continuous}, VIT = Vector{Int}} <: AbstractStimulus
     param::CurrentStimulusParameter=CurrentStimulusParameter()
+    id::String = randstring(12)
     cells::VIT
     ##
     I_base::FT = 0.0
@@ -12,6 +13,7 @@ end
     randcache::VFT = rand(length(cells)) # random cache
     I::VFT # target conductance for soma
     records::Dict = Dict()
+    targets::Dict = Dict()
 end
 
 

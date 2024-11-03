@@ -48,12 +48,14 @@ SynapseNormalization
     MFT = Matrix{Float32},
     VST = Vector{<:AbstractSparseSynapse},
 } <: AbstractNormalization
+    id::String = randstring(12)
     param::NormParam = MultiplicativeNorm()
     synapses::VST
     t::VIT = [0, 1]
     W0::VFT = [0.0f0]
     W1::VFT = [0.0f0]
     μ::VFT = [0.0f0]
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 
@@ -73,7 +75,13 @@ function SynapseNormalization(N, synapses; param::NormParam, kwargs...)
     W0 = zeros(Float32, N)
     W1 = zeros(Float32, N)
     μ = zeros(Float32, N)
+    targets = Dict()
+    posts =  [syn.targets[:g] for syn in synapses] 
+    @assert length(unique(posts)) == 1
+    targets[:post] = unique(posts)[1]
+    targets[:synapses] = [syn.id for syn in synapses]
     for syn in synapses
+        @assert isa(syn, AbstractSparseSynapse)
         @unpack rowptr, W, index = syn
         Is = 1:(length(rowptr)-1)
         @assert length(Is) == N
@@ -83,7 +91,7 @@ function SynapseNormalization(N, synapses; param::NormParam, kwargs...)
             end
         end
     end
-    SynapseNormalization(; @symdict(param, W0, W1, μ, synapses)..., kwargs...)
+    SynapseNormalization(; @symdict(param, W0, W1, μ, synapses)..., targets, kwargs...)
 end
 
 

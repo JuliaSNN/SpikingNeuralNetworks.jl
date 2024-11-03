@@ -8,6 +8,7 @@ PSParam = PoissonStimulusParameter
 @snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
 
                        AbstractStimulus
+    id::String = randstring(12)
     param::PoissonStimulusParameter
     N::IT = 100
     N_pre::IT = 5
@@ -24,6 +25,7 @@ PSParam = PoissonStimulusParameter
     ##
     randcache::VFT = rand(N) # random cache
     records::Dict = Dict()
+    targets::Dict = Dict()
 end
 
 
@@ -74,6 +76,7 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::In
     else
         g = getfield(post, Symbol("$(sym)_$target"))
     end
+    targets = Dict(:pre => :Poisson, :g => post.id, :compartment=>target)
 
     if typeof(param) <: Real
         r = param
@@ -86,6 +89,7 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::In
         N = N,
         N_pre = N_pre,
         cells = cells,
+        targets = targets,
         g = g,
         @symdict(rowptr, colptr, I, J, index, W)...,
     )

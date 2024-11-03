@@ -3,6 +3,7 @@
 end
 
 @snn_kw mutable struct RateSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:AbstractConnection
+    id::String = randstring(12)
     param::RateSynapseParameter = RateSynapseParameter()
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W
@@ -10,6 +11,7 @@ end
     rI::VFT # postsynaptic rate
     rJ::VFT # presynaptic rate
     g::VFT  # postsynaptic conductance
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 

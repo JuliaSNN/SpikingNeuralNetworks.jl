@@ -2,6 +2,7 @@ struct PINningSparseSynapseParameter end
 
 @snn_kw mutable struct PINningSparseSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:
                        AbstractConnection
+    id::String = randstring(12)
     param::PINningSparseSynapseParameter = PINningSparseSynapseParameter()
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W
@@ -12,6 +13,7 @@ struct PINningSparseSynapseParameter end
     P::VFT  # <rᵢrⱼ>⁻¹
     q::VFT  # P * r
     f::VFT  # postsynaptic traget
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 
