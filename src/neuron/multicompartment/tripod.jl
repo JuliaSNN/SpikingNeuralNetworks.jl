@@ -95,9 +95,8 @@ function Tripod(
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
-,
-    param = AdExSoma(),
+    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    kwargs...
 )
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
@@ -110,8 +109,8 @@ function Tripod(
         soma_syn = soma_syn,
         dend_syn = dend_syn,
         NMDA = NMDA,
-        param = param,
         α= [syn.α for syn in dend_syn],
+        kwargs...
     )
 end
 
@@ -144,7 +143,8 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
 
     # update the neurons
     @inbounds for i ∈ 1:N
-        if after_spike[i] > τabs
+        # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
+        if after_spike[i] > (τabs + up - up)/dt # backpropagation
             v_s[i] = BAP
             ## backpropagation effect
             c1 = (BAP - v_d1[i]) * d1.gax[i]
@@ -152,13 +152,13 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
             ## apply currents
             v_d1[i] += dt * c1 / d1.C[i]
             v_d2[i] += dt * c2 / d2.C[i]
-        elseif after_spike[i] > 0
+        elseif after_spike[i] > 0 # absolute refractory period
             v_s[i] = Vr
-            # c1 = (Vr - v_d1[i]) * gax1[i] /1000
-            # c2 = (Vr - v_d2[i]) * gax2[i] /100
+            c1 = (Vr - v_d1[i]) * d1.gax[i]
+            c2 = (Vr - v_d2[i]) * d2.gax[i]
             # ## apply currents
-            # v_d1[i] += dt * c1 / cd1[i]
-            # v_d2[i] += dt * c2 / cd2[i]
+            v_d1[i] += dt * c1 / d1.C[i]
+            v_d2[i] += dt * c2 / d2.C[i]
         else
             ## Heun integration
             for _i ∈ 1:3
@@ -212,7 +212,6 @@ function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseAr
             h_d2[i, n] += hi_d2[i] * α[n]
         end
     end
-
     fill!(he_d1, 0.0f0)
     fill!(he_d2, 0.0f0)
     fill!(hi_d1, 0.0f0)
