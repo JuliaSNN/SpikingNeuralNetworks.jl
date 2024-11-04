@@ -59,11 +59,19 @@ EyalGluDend = Glutamatergic(
     Receptor(E_rev = 0.0, τr = 0.25, τd = 2.0, g0 = 0.73),
     ReceptorVoltage(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
 )
+
+NAR0 = 1.31/0.73
+EyalGluNAR(NAR) = Glutamatergic(
+    Receptor(E_rev = 0.0, τr = 0.25, τd = 2.0, g0 = 0.73(1+NAR0-NAR)),
+    ReceptorVoltage(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 0.73*NAR, nmda = 1.0f0),
+)
+
 MilesGabaDend = GABAergic(
     Receptor(E_rev = -75.0, τr = 4.8, τd = 29.0, g0 = 0.126),
     Receptor(E_rev = -90.0, τr = 30, τd = 100.0, g0 = 0.006),
 )
 TripodSomaSynapse = Synapse(DuarteGluSoma, MilesGabaSoma)
 TripodDendSynapse = Synapse(EyalGluDend, MilesGabaDend)
+TripodNARSynapse(NAR) = Synapse(EyalGluNAR(NAR), MilesGabaDend)
 
-export AdExSoma, TripodSomaSynapse, TripodDendSynapse
+export AdExSoma, TripodSomaSynapse, TripodDendSynapse, TripodNARSynapse
