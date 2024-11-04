@@ -19,7 +19,7 @@ function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::D
     push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
 
-function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: AbstractPopulation}
+function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: Union{AbstractPopulation, AbstractStimulus}}
     sum(obj.fire) == 0 && return
     ind::Vector{Int} = haskey(indices, :fire) ? indices[:fire] : collect(eachindex(obj.fire))
     t::Float32 = get_time(T)
