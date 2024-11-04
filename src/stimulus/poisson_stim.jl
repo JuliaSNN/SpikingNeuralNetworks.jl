@@ -48,7 +48,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::Int=200,N_pre::Int=5, p_post::R=0.05f0, μ::R=1.f0, param::Union{PoissonStimulusParameter,R2}) where {T <: AbstractPopulation, R <: Real, R2<:Real}
+function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::Int=200,N_pre::Int=5, p_post =0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}) where {T <: AbstractPopulation, R <: Real}
 
     if cells == :ALL
         cells = 1:post.N
