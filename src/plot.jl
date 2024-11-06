@@ -2,75 +2,38 @@ using .Plots, Statistics
 
 ## Raster plot
 
-
-function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, kwargs...)
-    if isnothing(populations)
-        y0 = Int32[0]
-        X = Float32[]
-        Y = Float32[]
-        names = Vector{String}()
-        P = typeof(P)<: AbstractPopulation ? [P] : [getfield(P, k) for k in keys(P)]
-        for p in P
-            x, y, _y0= _raster(p, t) 
-            push!(names, p.name)
-            append!(X, x)
-            append!(Y, y .+ sum(y0))
-            isempty(_y0) ? push!(y0, p.N) : (y0 = vcat(y0, _y0))
-        end
-    else
-        @assert typeof(P)<: AbstractPopulation 
-        X, Y, y0 = _raster_populations(P, t; populations = populations)
-    end
-    names = isnothing(names) ? ["pop_$i" for i in 1:length(P)] : names
-
-    if length(X) > 200_000 
-        s = ceil(Int, length(X) / 200_000)
-        points = Vector{Int}(eachindex(X))
-        points = sample(points, 200_000, replace = false)
-        X = X[points]
-        Y = Y[points]
-        @warn "Subsampling raster plot, 1 out of $s spikes"
-    end
-    plt = scatter(
-        X,
-        Y,
-        m = (1, :black),
-        leg = :none,
-        xaxis = ("t", (0, Inf)),
-        yaxis = ("neuron",),
-    )
-    !isnothing(t) && plot!(xlims = t)
-    plot!(yticks = (cumsum(y0)[1:end-1] .+ y0[2:end] ./ 2, names))
-    y0 = y0[2:(end-1)]
-    !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
-    plot!(plt; kwargs...)
-    return plt
-end
-
-function _raster_populations(p, interval = nothing; populations::Vector{T} ) where T<: AbstractVector
+function raster_populations(p, interval = nothing; populations::Vector{T}) where T <: AbstractVector
     all_spiketimes = spiketimes(p)
+    y0 = 0
     x, y = Float32[], Float32[]
-    y0 = Int32[0]
+    pop_boundaries = []  # To store the boundary positions for each population
+
     for pop in populations
-        spiketimes_pop = all_spiketimes[pop] ## population spiketimes
-        for n in eachindex(spiketimes_pop) ## neuron spiketimes
-            for t in spiketimes_pop[n] ## spiketime
+        push!(pop_boundaries, y0)  # Store the starting y0 for each population
+        spiketimes_pop = all_spiketimes[pop]  # Population spiketimes
+        for n in eachindex(spiketimes_pop)  # Neuron spiketimes
+            for t in spiketimes_pop[n]  # Spiketime
                 if isnothing(interval) || (t > interval[1] && t < interval[2])
                     push!(x, t)
-                    push!(y, n + cumsum(y0)[end])
+                    push!(y, n + y0)
                 end
             end
         end
-        push!(y0, length(spiketimes_pop))
+        y0 += length(spiketimes_pop)
     end
-    return x, y, y0
+
+    # Add the final boundary for the last population
+    push!(pop_boundaries, y0)
+
+    return x, y, pop_boundaries
 end
 
 
-function _raster(p, interval = nothing)
+
+
+function raster(p, interval = nothing)
     fire = p.records[:fire]
     x, y = Float32[], Float32[]
-    y0 = Int32[]
     # which time to plot
     for i in eachindex(fire[:time])
     t = fire[:time][i]
@@ -82,7 +45,69 @@ function _raster(p, interval = nothing)
             end
         end
     end
-    return x, y, y0
+    return x, y
+end
+
+
+function raster(P::Array, t = nothing, dt = 0.1ms; populations = nothing, population_labels = nothing, kwargs...)
+    y0 = Int32[0]
+    X = Float32[]
+    Y = Float32[]
+    boundaries = []  # To store all population boundaries
+    label_positions = []  # To store the y positions for labels
+
+    for p in P
+        if isnothing(populations)
+            x, y = raster(p, t; kwargs...)
+        else
+            x, y, pop_boundaries = raster_populations(p, t; populations = populations, kwargs...)
+            # Adjust the boundaries to the current y0 and collect them
+            adjusted_boundaries = [b + sum(y0) for b in pop_boundaries]
+            append!(boundaries, adjusted_boundaries)
+            
+            # Determine the y position for labels (midpoint of each population)
+            for j in 1:(length(adjusted_boundaries) - 1)
+                push!(label_positions, (adjusted_boundaries[j] + adjusted_boundaries[j + 1]) / 2)
+            end
+        end
+
+        append!(X, x)
+        append!(Y, y .+ sum(y0))
+        push!(y0, p.N)
+    end
+
+    # Add label for the last population (use the midpoint of the last population)
+    if !isempty(boundaries)
+        last_midpoint = (boundaries[end-1] + boundaries[end]) / 2
+        push!(label_positions, last_midpoint)
+    end
+
+    # Create y-axis labels based on the population labels
+    yticks = nothing
+    if !isnothing(population_labels) && !isempty(label_positions)
+        yticks = (label_positions, population_labels)
+    end
+
+    # Plot the scatter
+    plt = scatter(
+        X,
+        Y,
+        m = (1, :black),
+        leg = :none,
+        xaxis = ("t", (0, Inf)),
+        yaxis = !isnothing(population_labels) ? ("stimuli",) : ("neuron",),
+        yticks = yticks  # Add y-axis labels here
+    )
+
+    # Plot red lines between populations
+    !isempty(boundaries) && hline!(plt, boundaries[2:end], linecolor = :red)
+
+    # Plot boundaries for populations in y0
+    y0 = y0[2:(end-1)]
+    !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
+    !isnothing(t) && plot!(xlims = t)
+    plot!(plt; kwargs...)
+    return plt
 end
 
 
