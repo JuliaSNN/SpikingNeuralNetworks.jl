@@ -87,6 +87,7 @@ function BallAndStick(
     dend_syn = TripodDendSynapse,
     NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
     param = AdExSoma(),
+    kwargs...
 )
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
@@ -98,6 +99,7 @@ function BallAndStick(
         NMDA = NMDA,
         param = param,
         α= [syn.α for syn in dend_syn],
+        kwargs...
     )
 end
 
