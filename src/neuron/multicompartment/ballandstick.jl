@@ -38,6 +38,7 @@ BallAndStick
     AdExType = AdExSoma,
 } <: AbstractDendriteIF     ## These are compulsory parameters
     name::String = "BallAndStick"
+    id::String = randstring(12)
     N::IT = 100
     soma_syn::ST
     dend_syn::ST

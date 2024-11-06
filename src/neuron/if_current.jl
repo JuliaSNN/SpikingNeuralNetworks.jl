@@ -33,6 +33,7 @@ end
     IFT <:AbstractIFParameter,
 } <: AbstractGeneralizedIF
     name::String = "IFCurrent"
+    id::String = randstring(12)
     param::IFT = IFCurrentParameter()
     N::Int32 = 100
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)

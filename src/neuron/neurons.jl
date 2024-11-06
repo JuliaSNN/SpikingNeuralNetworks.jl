@@ -18,6 +18,7 @@ abstract type AbstractAdExParameter <: AbstractGeneralizedIFParameter end
 include("adEx.jl")
 
 abstract type AbstractDendriteIF <: AbstractGeneralizedIF end
-include("dendrite.jl")
-include("tripod.jl")
-include("ballandstick.jl")
+include("multicompartment/tripod_params.jl")
+include("multicompartment/dendrite.jl")
+include("multicompartment/tripod.jl")
+include("multicompartment/ballandstick.jl")

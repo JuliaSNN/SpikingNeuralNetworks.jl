@@ -1,25 +1,123 @@
+"""
+    struct Time
+
+A mutable struct representing time. 
+
+# Fields
+- `t::Vector{Float32}`: A vector containing the current time.
+- `tt::Vector{Int}`: A vector containing the current time step.
+- `dt::Float32`: The time step size.
+
+"""
+Time
 @snn_kw mutable struct Time
     t::Vector{Float32} = [0.0f0]
     tt::Vector{Int} = [0]
     dt::Float32 = 0.125f0
 end
 
+"""
+    get_time(T::Time)
+
+Get the current time.
+
+# Arguments
+- `T::Time`: The Time object.
+
+# Returns
+- `Float32`: The current time.
+
+"""
 get_time(T::Time)::Float32 = T.t[1]
+
+"""
+    get_step(T::Time)
+
+Get the current time step.
+
+# Arguments
+- `T::Time`: The Time object.
+
+# Returns
+- `Float32`: The current time step.
+
+"""
 get_step(T::Time)::Float32 = T.tt[1]
+
+"""
+    get_dt(T::Time)
+
+Get the time step size.
+
+# Arguments
+- `T::Time`: The Time object.
+
+# Returns
+- `Float32`: The time step size.
+
+"""
 get_dt(T::Time)::Float32 = T.dt
+
+"""
+    get_interval(T::Time)
+
+Get the time interval from 0 to the current time.
+
+# Arguments
+- `T::Time`: The Time object.
+
+# Returns
+- `StepRange{Float32}`: The time interval.
+
+"""
 get_interval(T::Time) = Float32(T.dt):Float32(T.dt):get_time(T)
 
+"""
+    update_time!(T::Time, dt::Float32)
+
+Update the current time and time step.
+
+# Arguments
+- `T::Time`: The Time object.
+- `dt::Float32`: The time step size.
+
+"""
 function update_time!(T::Time, dt::Float32)
     T.t[1] += dt
     T.tt[1] += 1
 end
 
+"""
+    record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
+
+Record the plasticity variable `key` of the `plasticity` object into the `obj.records[name_plasticity][key]` array.
+
+# Arguments
+- `obj::ST`: The object to record the plasticity variable into.
+- `plasticity::PT`: The plasticity object containing the variable to record.
+- `key::Symbol`: The key of the variable to record.
+- `T::Time`: The time at which the recording is happening.
+- `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
+- `name_plasticity::Symbol`: The name of the plasticity object.
+
+"""
 function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
     push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
 
-function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: AbstractPopulation}
+"""
+    record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: Union{AbstractPopulation, AbstractStimulus}}
+
+Record the firing activity of the `obj` object into the `obj.records[:fire]` array.
+
+# Arguments
+- `obj::PT`: The object to record the firing activity from.
+- `T::Time`: The time at which the recording is happening.
+- `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
+
+"""
+function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: Union{AbstractPopulation, AbstractStimulus}}
     sum(obj.fire) == 0 && return
     ind::Vector{Int} = haskey(indices, :fire) ? indices[:fire] : collect(eachindex(obj.fire))
     t::Float32 = get_time(T)
@@ -27,6 +125,18 @@ function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where
     push!(obj.records[:fire][:neurons], findall(obj.fire[ind]))
 end
 
+"""
+    record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}})
+
+Record the variable `key` of the `obj` object into the `obj.records[key]` array.
+
+# Arguments
+- `obj`: The object to record the variable from.
+- `key::Symbol`: The key of the variable to record.
+- `T::Time`: The time at which the recording is happening.
+- `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
+
+"""
 function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}) 
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(getfield(obj,key),1)
     isa(getfield(obj, key), Vector) && push!(obj.records[key], getfield(obj, key)[ind])
@@ -119,23 +229,33 @@ function monitor_plast(obj, plasticity, sym)
     end
     obj.records[name][sym] = Vector{typ}()
 end
+"""
+monitor(objs::Array, keys)
 
+Function called when more than one object is given, which then calls the above monitor function for each object
+"""
 function monitor(objs::Array, keys)
-    """
-    Function called when more than one object is given, which then calls the above monitor function for each object
-    """
     for obj in objs
         monitor(obj, keys)
     end
 end
 
+"""
+getvariable(obj, key, id=nothing)
+
+Returns the recorded values for a given object and key. If an id is provided, returns the recorded values for that specific id.
+"""
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
     isnothing(id) && return hcat(rec...)
     return hcat(rec...)[id,:]
 end
 
+"""
+getrecord(p, sym)
 
+Returns the recorded values for a given object and symbol. If the symbol is not found in the object's records, it checks the records of the object's plasticity and returns the values for the matching symbol.
+"""
 function getrecord(p, sym)
     key = sym
     if haskey(p.records, key) 
@@ -160,6 +280,11 @@ function getrecord(p, sym)
     end
 end
 
+"""
+clear_records(obj)
+
+Clears all the records of a given object.
+"""
 function clear_records(obj)
     function clean(z)
         for (key, val) in z
@@ -173,20 +298,38 @@ function clear_records(obj)
     clean(obj.records)
 end
 
+"""
+clear_records(obj, sym::Symbol)
+
+Clears the records of a given object for a specific symbol.
+"""
 function clear_records(obj, sym::Symbol)
     for (key, val) in obj.records
         (key == sym) && (empty!(val))
     end
 end
 
+"""
+clear_records(objs::AbstractArray)
+
+Clears the records of multiple objects.
+"""
 function clear_records(objs::AbstractArray)
     for obj in objs
         clear_records(obj)
     end
 end
 
+"""
+clear_monitor(obj)
+
+Clears all the records of a given object.
+"""
 function clear_monitor(obj)
     for (k, val) in obj.records
         delete!(obj.records, k)
     end
 end
+
+
+export Time, get_time, get_step, get_dt, get_interval, update_time!, record_plast!, record_fire!, record_sym!, record!, monitor, monitor_plast, getvariable, getrecord, clear_records, clear_monitor

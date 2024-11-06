@@ -2,6 +2,7 @@ struct FLSparseSynapseParameter end
 
 @snn_kw mutable struct FLSparseSynapse{VFT = Vector{Float32},FT = Float32} <:
                        AbstractConnection
+    id::String = randstring(12)
     param::FLSparseSynapseParameter = FLSparseSynapseParameter()
     colptr::Vector{Int32} # column pointer of sparse W
     I::Vector{Int32}      # postsynaptic index of W
@@ -15,6 +16,7 @@ struct FLSparseSynapseParameter end
     w::VFT # output weight
     f::FT = 0 # postsynaptic traget
     z::FT = 0.5randn()  # output z ≈ f
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 

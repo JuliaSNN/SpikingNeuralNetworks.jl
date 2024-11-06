@@ -5,6 +5,7 @@ abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
     VFT = Vector{Float32},
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
+    id::String = randstring(12)
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W
@@ -18,6 +19,7 @@ abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
     fireJ::VBT # presynaptic firing
     v_post::VFT
     g::VFT  # rise conductance
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 
@@ -26,6 +28,7 @@ end
     VFT = Vector{Float32},
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
+    id::String = randstring(12)
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W
@@ -41,6 +44,7 @@ end
     g::VFT  # rise conductance
     delayspikes::VIT = []
     delaytime::VIT = []
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 
@@ -64,7 +68,7 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
     end
     (pre == post) && (w[diagind(w)] .= 0) # remove autapses if pre == post
     @assert size(w) == (post.N, pre.N)
-
+    targets = Dict(:fire => pre.id, :g => post.id)
     # get the sparse representation of the synaptic weight matrix
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -82,6 +86,8 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
         v_post = getfield(post, Symbol("v_$target"))
     end
 
+
+
     # set the paramter for the synaptic plasticity
     param = haskey(kwargs, :param) ? kwargs[:param] : no_STDPParameter()
     plasticity = get_variables(param, pre.N, post.N)
@@ -97,6 +103,7 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
             param = param,
             plasticity = plasticity,
             g = g,
+            targets = targets,
             @symdict(rowptr, colptr, I, J, index, W, fireI, fireJ, v_post)...,
             kwargs...,
         )
@@ -111,6 +118,7 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
             delayspikes = delayspikes,
             delaytime = delaytime,
             g = g,
+            targets = targets,
             @symdict(rowptr, colptr, I, J, index, W, fireI, fireJ, v_post)...,
             kwargs...,
         )

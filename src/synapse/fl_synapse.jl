@@ -5,6 +5,7 @@ struct FLSynapseParameter end
     VFT = Vector{Float32},
     FT = Float32,
 } <: AbstractConnection
+    id::String = randstring(12)
     param::FLSynapseParameter = FLSynapseParameter()
     W::MFT  # synaptic weight
     rI::VFT # postsynaptic rate
@@ -16,6 +17,7 @@ struct FLSynapseParameter end
     w::VFT # output weight
     f::FT = 0 # postsynaptic traget
     z::FT = 0.5randn()  # output z ≈ f
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 

@@ -49,6 +49,7 @@ end
     VBT = Vector{Bool},
     IFT<:AbstractIFParameter,
 } <: AbstractGeneralizedIF
+    id::String = randstring(12)
     name::String = "IF"
     param::IFT = IFParameter()
     N::Int32 = 100

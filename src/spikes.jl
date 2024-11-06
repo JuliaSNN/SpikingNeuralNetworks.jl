@@ -25,7 +25,7 @@ function spiketimes(
     p::T,
     interval = nothing,
     indices = nothing,
-) where {T<:AbstractPopulation}
+) where {T<:Union{AbstractPopulation, AbstractStimulus}}
     if isnothing(indices)
         _spiketimes = init_spiketimes(p.N)
         indices = 1:p.N
@@ -56,7 +56,7 @@ function spiketimes(
     return _spiketimes
 end
 
-function spiketimes(P)
+function spiketimes(P::T) where T <: AbstractVector
     collect(Iterators.flatten(map(keys(P)) do k
         p = getfield(P, k)
         spiketimes(p)

@@ -4,6 +4,7 @@
     VFT = Vector{Float32},
     VBT = Vector{Bool},
 } <: AbstractConnection
+    id::String = randstring(12)
     param::RateSynapseParameter = RateSynapseParameter()
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W
@@ -14,6 +15,7 @@
     tpre::VFT = zero(W) # presynaptic spiking time
     fireJ::VBT # presynaptic firing
     g::VFT  # postsynaptic conductance
+    targets::Dict = Dict()
     records::Dict = Dict()
 end
 

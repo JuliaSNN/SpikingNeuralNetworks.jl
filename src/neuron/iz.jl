@@ -6,6 +6,7 @@
 end
 
 @snn_kw mutable struct IZ{VFT = Vector{Float32},VBT = Vector{Bool}} <: AbstractPopulation
+    id::String = randstring(12)
     name::String = "IZ"
     param::IZParameter = IZParameter()
     N::Int32 = 100

@@ -17,6 +17,7 @@ using Parameters
 using LoopVectorization
 using ThreadTools
 using Distributions
+using Graphs, MetaGraphs
 
 
 
@@ -24,6 +25,7 @@ include("macros.jl")
 include("structs.jl")
 include("unit.jl")
 include("util.jl")
+include("graph.jl")
 include("record.jl")
 include("main.jl")
 include("spikes.jl")
