@@ -14,9 +14,9 @@
     τabs::FT = 1ms # Absolute refractory period
     gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
     gsyn_i::FT = 1.f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
-    a::FT = 4nS # Subthreshold adaptation parameter
-    b::FT = 80.5pA # 'sra' current increment
-    τw::FT = 144ms # adaptation time constant (~Ca-activated K current inactivation)
+    a::FT = 0.0 # Subthreshold adaptation parameter
+    b::FT = 0.0 #80.5pA # 'sra' current increment
+    τw::FT = 0.0 #144ms # adaptation time constant (~Ca-activated K current inactivation)
 end
 
 function IFParameterGsyn(;gsyn_i=1., gsyn_e=1., τde=6ms, τre=1ms, τdi=2ms, τri=0.5ms, kwargs...)
@@ -77,7 +77,7 @@ end
 
 function update_spike!(p::IF, param::IFParameter, dt::Float32)
     @unpack N, v, w, tabs, fire = p
-    @unpack Vt, Vr, b, τabs = param
+    @unpack Vt, Vr, τabs, b = param
     @inbounds for i = 1:N
         fire[i] = v[i] > Vt
         v[i] = ifelse(fire[i], Vr, v[i])
@@ -89,22 +89,28 @@ function update_spike!(p::IF, param::IFParameter, dt::Float32)
 end
 
 function update_neuron!(p::IF, param::IFParameter, dt::Float32)
-    @unpack N, v, ge, gi, I, tabs, fire = p
-    @unpack τm, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
+    @unpack N, v, ge, gi, w, I, tabs, fire = p
+    @unpack τm, El, R,  E_i, E_e, τabs, a, b, τw, gsyn_e, gsyn_i = param
     @inbounds for i = 1:N
         if tabs[i] > 0
             fire[i] = false
             tabs[i] -= 1
             continue
         end
+        # Adaptation current 
+        τw != 0.0 && (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
+
+        # Membrane potential
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
                 +
                 R * ge[i] * (E_e - v[i])* gsyn_e +
                 R * gi[i] * (E_i - v[i])* gsyn_i +
-                I[i] * R #synaptic term
+                - R * w[i] # adaptation
+                + R * I[i] #synaptic term
             ) / τm
+        # @show v[i]
     end
 end
 
