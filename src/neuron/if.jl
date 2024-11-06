@@ -99,7 +99,7 @@ function update_neuron!(p::IF, param::IFParameter, dt::Float32)
             continue
         end
         # Adaptation current 
-        τw != 0.0 && (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
+        τw > 0.0f0 && (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
 
         # Membrane potential
         v[i] +=
