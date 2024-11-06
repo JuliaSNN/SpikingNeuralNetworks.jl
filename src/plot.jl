@@ -22,7 +22,6 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         X, Y, y0 = _raster_populations(P, t; populations = populations)
     end
     names = isnothing(names) ? ["pop_$i" for i in 1:length(P)] : names
-    @show y0
 
     if length(X) > 200_000 
         s = ceil(Int, length(X) / 200_000)
@@ -41,7 +40,7 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         yaxis = ("neuron",),
     )
     !isnothing(t) && plot!(xlims = t)
-    plot!(yticks = (cumsum(y0) .+ y0 ./ 2, names))
+    plot!(yticks = (cumsum(y0)[1:end-1] .+ y0[2:end] ./ 2, names))
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     plot!(plt; kwargs...)
