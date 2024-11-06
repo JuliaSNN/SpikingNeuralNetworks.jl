@@ -19,3 +19,17 @@ function filter_populations(P, type)
     end
     return dict2ntuple(sort(indices))
 end
+
+
+function subpopulations(stim)
+    names = Vector{String}()
+    pops = Vector{Int}[]
+    my_keys = sort(collect(keys(stim)))
+    for key in my_keys
+        push!(names, getfield(stim, key).name)
+        push!(pops, getfield(stim, key).cells)
+    end
+    return names, pops
+end
+
+export population_indices, filter_populations, subpopulations
