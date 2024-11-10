@@ -66,7 +66,7 @@ function plasticity!(
     end
 
     # update pre-synaptic spike trace
-    @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
+    @simd for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
         @fastmath u[j] += dt * (U- u[j])/τF  
         @fastmath x[j] += dt * (1- x[j])/τD 
         @fastmath _ρ[j] = u[j] * x[j]

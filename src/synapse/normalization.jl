@@ -128,7 +128,7 @@ function plasticity!(c::SynapseNormalization, param::NormParam, dt::Float32, T::
         end
         # normalize
         # @fastmath @inbounds @simd 
-        @turbo for i in eachindex(μ)
+        @simd for i in eachindex(μ)
             μ[i] = (W0[i] - operator(W1[i], 0.0f0)) / W1[i] #operator defines additive or multiplicative norm
         end
         # apply
