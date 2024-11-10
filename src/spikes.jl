@@ -22,9 +22,10 @@ Returns:
 - `spiketimes`: A vector of vectors containing the spike times of each neuron.
 """
 function spiketimes(
-    p::T,
+    p::T;
     interval = nothing,
     indices = nothing,
+    kwargs...
 ) where {T<:Union{AbstractPopulation, AbstractStimulus}}
     if isnothing(indices)
         _spiketimes = init_spiketimes(p.N)
@@ -56,11 +57,13 @@ function spiketimes(
     return _spiketimes
 end
 
-function spiketimes(P::T) where T <: AbstractVector
-    collect(Iterators.flatten(map(keys(P)) do k
-        p = getfield(P, k)
-        spiketimes(p)
-    end))
+function spiketimes(Ps; kwargs...)
+    st = Vector{Vector{Float32}}[]
+    for p in Ps
+        _st = spiketimes(p; kwargs...)
+        st = vcat(st, _st)
+    end
+    return Spiketimes(st)
 end
 
 """

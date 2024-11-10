@@ -6,6 +6,7 @@ end
 
 @snn_kw struct SpikeTimeStimulus{FT=Float32, VFT = Vector{Float32}, DT=Distribution{Univariate, Continuous}, VIT = Vector{Int}} <: AbstractStimulus
     N::Int
+    name::String = "SpikeTimes"
     id::String = randstring(12)
     param::SpikeTimeStimulusParameter
     rowptr::VIT # row pointer of sparse W

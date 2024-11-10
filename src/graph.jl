@@ -52,14 +52,10 @@ function graph(model)
     end
     for (k, syn) in pairs(syn)
         if isa(syn, SNN.SpikingSynapse)
-            pre = syn.targets[:fire]
-            post = syn.targets[:g]
-            pre_node = find_id_vertex(graph, pre)
-            post_node = find_id_vertex(graph, post)
-            pre_name = get_prop(graph, pre_node, :name)
-            post_name = get_prop(graph, post_node, :name)
-            syn_name = "$(pre_name) to $(post_name)"
-            add_edge!(graph, pre_node, post_node, Dict(:type => :fire_to_g, :name => syn_name, :key => k, :id => syn.id, :norm => nothing))
+            pre_id = syn.targets[:fire]
+            post_id = syn.targets[:g]
+            type = :fire_to_g
+            add_connection!(graph, pre_id, post_id, k, syn, type)
         elseif isa(syn, SNN.SynapseNormalization)
             push!(norms, k=>syn)
         else
@@ -67,28 +63,57 @@ function graph(model)
         end
     end
     for (k, stim) in pairs(stim)
-        pre = stim.targets[:pre]
-        add_vertex!(graph, Dict(:name => "$pre", :id => stim.id, :key => k))
-        pre_node = find_id_vertex(graph, stim.id)
-        post = stim.targets[:g]
-        post_node = find_id_vertex(graph, post)
-        pre_name = get_prop(graph, pre_node, :name)
-        post_name = get_prop(graph, post_node, :name)
-        stim_name = "$(pre_name) to $(post_name)"
-        add_edge!(graph, pre_node, post_node, Dict(:type => :stim, :name => stim_name, :key => k, :id => stim.id))
+        # verterx and edge for the stimulus have the same id
+        pre_id = stim.id
+        post_id = stim.targets[:g]
+        add_vertex!(graph, Dict(:name => stim.name, :id => pre_id, :key => k))
+        type = :fire_to_g
+        add_connection!(graph, pre_id, post_id, k, stim, type)
     end
     for (k,v) in norms
         for id in v.targets[:synapses]
-            e = find_id_edge(graph, id)
-            props(graph, e.src, e.dst )[:norm] = k
+            _edges, _ids = filter_edge_props(graph, :id, id)
+            for (e, i) in zip(_edges, _ids)
+                props(graph, e.src, e.dst )[:norm][i] = k
+            end
         end
-        # # t = join(targets, ", ")
-        # # syn_name = "normalize: $t"
-        # syn_group = "Normalization_$n"
-        # # add_edge!(graph, pre_node, post_node, Dict(:type => :norm, :name => syn_name, :key => k, :id => syn.id))
     end
-
     return graph
+end
+
+function add_connection!(graph, pre_id, post_id, k, syn, type)
+    pre_node = find_id_vertex(graph, pre_id)
+    post_node = find_id_vertex(graph, post_id)
+    pre_name = get_prop(graph, pre_node, :name)
+    post_name = get_prop(graph, post_node, :name)
+    sym = haskey(syn.targets, :sym) ? syn.targets[:sym] : :soma
+    syn_name = "$(pre_name) -> $(post_name).$sym"
+    id = syn.id
+    if !has_edge(graph, pre_node, post_node)
+        add_edge!(graph, pre_node, post_node, 
+            Dict(
+                :type => [type], 
+                :name => [syn_name], 
+                :key => [k], 
+                :id => [id], 
+                :norm => [:none], 
+                :target => [sym], 
+                :count => [1],
+                :multi => 1)
+                )
+    else
+        multi_dict = props(graph, pre_node, post_node)
+        _multi = multi_dict[:multi] + 1
+        multi_dict[:multi] = _multi
+        push!(multi_dict[:name], syn_name)
+        push!(multi_dict[:type], type)
+        push!(multi_dict[:key], k)
+        push!(multi_dict[:id], id)
+        push!(multi_dict[:norm], :none)
+        push!(multi_dict[:target], sym)
+        push!(multi_dict[:count], _multi)
+        set_props!(graph, pre_node, post_node, multi_dict)
+    end
 end
 
 function filter_first_vertex(g::AbstractMetaGraph, fn::Function)
@@ -98,11 +123,23 @@ function filter_first_vertex(g::AbstractMetaGraph, fn::Function)
     error("No vertex matching conditions found")
 end
 
-function filter_first_edge(g::AbstractMetaGraph, fn::Function)
+function filter_edge_props(g::AbstractMetaGraph, key, value)
+    _edges = []
+    _ids = []
     for e in edges(g)
-        fn(g, e) && return e
+        prop = props(g, e)
+        for i in eachindex(prop[key])
+            if prop[key][i] == value
+                push!(_edges, e)
+                push!(_ids, i)
+            end
+        end
     end
-    error("No edge matching conditions found")
+    if isempty(_edges)
+        error("No edge matching conditions found")
+        return []
+    end
+    return _edges, _ids
 end
 
 function find_id_vertex(g::AbstractMetaGraph, id)
@@ -111,11 +148,6 @@ function find_id_vertex(g::AbstractMetaGraph, id)
     return v
 end
 
-function find_id_edge(g::AbstractMetaGraph, id)
-    v = filter_first_edge(g, (g, v) -> get_prop(g, v, :id) == id)
-    isnothing(v) && error("Vertex not found")
-    return v
-end
 
 function find_key_graph(g::AbstractMetaGraph, id)
     v = filter_first_vertex(g, (g, v) -> get_prop(g, v, :key) == id)

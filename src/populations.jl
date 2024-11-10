@@ -11,12 +11,25 @@ function population_indices(P, type = "ˆ")
 end
 
 function filter_populations(P, type)
-    n = 1
-    indices = Dict{Symbol,Any}()
+    indices = Dict{Symbol, AbstractPopulation}()
     for k in keys(P)
         !occursin(string(type), string(k)) && continue
         p = getfield(P, k)
-        indices[k] = p
+        push!(indices,k => p)
     end
     return dict2ntuple(sort(indices))
 end
+
+
+function subpopulations(stim)
+    names = Vector{String}()
+    pops = Vector{Int}[]
+    my_keys = sort(collect(keys(stim)))
+    for key in my_keys
+        push!(names, getfield(stim, key).name)
+        push!(pops, getfield(stim, key).cells)
+    end
+    return names, pops
+end
+
+export population_indices, filter_populations, subpopulations

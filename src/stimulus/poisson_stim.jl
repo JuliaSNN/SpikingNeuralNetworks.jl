@@ -9,6 +9,7 @@ PSParam = PoissonStimulusParameter
 
                        AbstractStimulus
     id::String = randstring(12)
+    name::String = "Poisson"
     param::PoissonStimulusParameter
     N::IT = 100
     N_pre::IT = 5
@@ -48,7 +49,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::Int=200,N_pre::Int=5, p_post =0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}) where {T <: AbstractPopulation, R <: Real}
+function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::Int=200,N_pre::Int=5, p_post =0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
 
     if cells == :ALL
         cells = 1:post.N
@@ -73,10 +74,12 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::In
     rowptr, colptr, I, J, index, W = dsparse(w)
     if isnothing(target) 
         g = getfield(post, sym)
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>:soma)
     else
-        g = getfield(post, Symbol("$(sym)_$target"))
+        sym= Symbol("$(sym)_$target")
+        g = getfield(post, sym)
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>target)
     end
-    targets = Dict(:pre => :Poisson, :g => post.id, :compartment=>target)
 
     if typeof(param) <: Real
         r = param
@@ -92,6 +95,7 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], N::In
         targets = targets,
         g = g,
         @symdict(rowptr, colptr, I, J, index, W)...,
+        kwargs...,
     )
 end
 

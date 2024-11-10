@@ -4,6 +4,7 @@ end
 
 @snn_kw struct CurrentStimulus{FT=Float32, VFT = Vector{Float32}, DT=Distribution{Univariate, Continuous}, VIT = Vector{Int}} <: AbstractStimulus
     param::CurrentStimulusParameter=CurrentStimulusParameter()
+    name::String = "Current"
     id::String = randstring(12)
     cells::VIT
     ##
@@ -17,7 +18,7 @@ end
 end
 
 
-function CurrentStimulus(post::T; cells=:ALL, I_dist::Distribution{Univariate, Continuous}=Normal(0,0), I_base::R, α::R2=1) where {T <: AbstractPopulation, R<:Real, R2<:Real}
+function CurrentStimulus(post::T; cells=:ALL, I_dist::Distribution{Univariate, Continuous}=Normal(0,0), I_base::R, α::R2=1, kwargs...) where {T <: AbstractPopulation, R<:Real, R2<:Real}
     if cells == :ALL
         cells = 1:post.N
     end 
@@ -29,7 +30,8 @@ function CurrentStimulus(post::T; cells=:ALL, I_dist::Distribution{Univariate, C
         I=post.I,
         I_dist = I_dist,
         I_base = I_base,
-        α = α
+        α = α;
+        kwargs...,
     )
 end
 

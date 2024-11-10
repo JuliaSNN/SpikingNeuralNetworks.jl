@@ -99,9 +99,9 @@ function merge_models(args...;silent=false, kwargs...)
     for (k,v) in kwargs
         extract_items(k,v, pop=pop, syn=syn, stim=stim)
     end
-    pop = DrWatson.dict2ntuple(sort(pop))
-    syn = DrWatson.dict2ntuple(sort(syn))
-    stim = DrWatson.dict2ntuple(sort(stim))
+    pop = DrWatson.dict2ntuple(sort(pop, by =x->x))
+    syn = DrWatson.dict2ntuple(sort(syn, by =x->x))
+    stim = DrWatson.dict2ntuple(sort(stim, by =x->stim[x].name))
     if !silent
         print_model((pop=pop, syn=syn, stim=stim))
     end
@@ -126,7 +126,7 @@ Prints the graph of the model, along with the name, key, type, and parameters of
 Raises an assertion error if any component in the populations is not a subtype of `SNN.AbstractPopulation`, if any component in the synapses is not a subtype of `SNN.AbstractConnection`, or if any component in the stimuli is not a subtype of `SNN.AbstractStimulus`.
 
 """
-function print_model(model)
+function print_model(model, get_keys=false)
     model_graph = graph(model)
     @show model_graph
     @unpack pop, syn, stim = model
@@ -137,26 +137,35 @@ function print_model(model)
     for k in keys(pop)
         v = filter_first_vertex(model_graph, (g, v) -> get_prop(model_graph, v, :key) == k)
         name = props(model_graph, v)[:name]
-        @info "$name ($k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
+        _k = get_keys ? "($k)" : ""
+        @info "$name $(_k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
         @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
     end
     @info "----------------"
     @info "Synapses:"
     for k in keys(syn)
         isa(syn[k], SNN.SynapseNormalization) && continue
-        e = filter_first_edge(model_graph, (g, e) -> get_prop(model_graph, e, :key) == k)
-        name = props(model_graph, e)[:name]
-        norm = !isnothing(props(model_graph, e)[:norm]) ? "<-> norm: $(props(model_graph, e)[:norm])" : ""
-        @info "$name ($k) $norm: $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
-        @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+        _edges, _ids = filter_edge_props(model_graph, :key, k)
+        for (e, i) in zip(_edges, _ids)
+            name = props(model_graph, e)[:name][i]
+            _k = get_keys ? "($k)" : ""
+            norm = props(model_graph, e)[:norm][i] !== :none ? "<-> norm: $(props(model_graph, e)[:norm][i])" : ""
+            # @info "$name $(_k) $norm: \n $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
+            @info "$name $(_k) $norm: $(nameof(typeof(getfield(syn,k).param)))"
+            @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+        end
     end
     @info "----------------"
     @info "Stimuli:"
     for k in keys(stim)
-        e = filter_first_edge(model_graph, (g, e) -> get_prop(model_graph, e, :key) == k)
-        name = props(model_graph, e)[:name]
-        @info "$name ($k): $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
-        @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
+        _edges, _ids = filter_edge_props(model_graph, :key, k)
+        for (e, i) in zip(_edges, _ids)
+            name = props(model_graph, e)[:name][i]
+            _k = get_keys ? "($k)" : ""
+            @info "$name $(_k): $(nameof(typeof(getfield(stim,k))))"
+            # @info "$name $(_k): $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
+            @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
+        end
     end
     @info "================"
 end

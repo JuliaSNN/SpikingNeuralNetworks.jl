@@ -68,7 +68,7 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
     end
     (pre == post) && (w[diagind(w)] .= 0) # remove autapses if pre == post
     @assert size(w) == (post.N, pre.N)
-    targets = Dict(:fire => pre.id, :g => post.id)
+    targets = Dict{Symbol,Any}(:fire => pre.id, :g => post.id)
     # get the sparse representation of the synaptic weight matrix
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -81,9 +81,12 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
     if isnothing(target) 
         g = getfield(post, sym) 
         v_post =  getfield(post, :v)
+        push!(targets, :sym => sym)
     else
-        g = getfield(post, Symbol("$(sym)_$target"))
+        _sym = Symbol("$(sym)_$target")
+        g = getfield(post, _sym)
         v_post = getfield(post, Symbol("v_$target"))
+        push!(targets, :sym => _sym)
     end
 
 
