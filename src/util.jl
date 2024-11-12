@@ -128,7 +128,6 @@ Raises an assertion error if any component in the populations is not a subtype o
 """
 function print_model(model, get_keys=false)
     model_graph = graph(model)
-    @show model_graph
     @unpack pop, syn, stim = model
     @info "================"
     @info "Model:"
