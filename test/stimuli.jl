@@ -1,19 +1,3 @@
-## The ball and stick model and the Tripod model reach similar depolarization with the same input rate
-function test_inputs(μ, rate)
-    E = SNN.Identity(N=1)
-    rate = 100Hz
-    S = SNN.PoissonStimulus(E, :g, x->rate, N=1000, N_pre=10, μ=μ, cells=[1])
-    model = SNN.merge_models(pop=Dict("E"=>E), stim=Dict("stim"=>S))
-
-    SNN.monitor(E, [:fire, :h])
-    SNN.monitor(S, [:fire])
-    S.records[:fire]
-    SNN.sim!(model=model, duration=1s, pbar=true, dt=0.125ms)
-    return vcat(SNN.getrecord(E, :h)...)[end]/length(SNN.spiketimes(E)[1]), length(SNN.spiketimes(E)[1])
-end
-
-## 
-# test_inputs(15.f0, 400Hz)
 
 
 E_rate = 200Hz
