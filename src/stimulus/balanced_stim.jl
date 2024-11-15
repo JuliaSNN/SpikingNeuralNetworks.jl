@@ -1,6 +1,6 @@
 @snn_kw struct BalancedStimulusParameter{VFT}
     kIE::Float32 = 1.0
-    β::Float32 = 1.0
+    β::Float32 = 0.0
     τ::Float32 = 50.0
     r0::Float32 = 1kHz
     wIE::Float32 = 1.0
