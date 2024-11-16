@@ -40,7 +40,7 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         yaxis = ("neuron",),
     )
     !isnothing(t) && plot!(xlims = t)
-    plot!(yticks = (cumsum(y0)[1:end-1] .+ y0[2:end] ./ 2, names))
+    plot!(yticks = (cumsum(y0) .+ y0 ./ 2, names))
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     plot!(plt; kwargs...)
@@ -84,7 +84,6 @@ function _raster(p, interval = nothing)
     end
     return x, y, y0
 end
-
 
 ## Vector plot
 
