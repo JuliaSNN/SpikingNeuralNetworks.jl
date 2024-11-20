@@ -120,7 +120,8 @@ function filter_first_vertex(g::AbstractMetaGraph, fn::Function)
     for v in vertices(g)
         fn(g, v) && return v
     end
-    error("No vertex matching conditions found")
+    # error("No vertex matching conditions found")
+    return nothing
 end
 
 function filter_edge_props(g::AbstractMetaGraph, key, value)
@@ -136,7 +137,7 @@ function filter_edge_props(g::AbstractMetaGraph, key, value)
         end
     end
     if isempty(_edges)
-        error("No edge matching conditions found")
+        # error("No edge matching conditions found")
         return []
     end
     return _edges, _ids
@@ -144,7 +145,7 @@ end
 
 function find_id_vertex(g::AbstractMetaGraph, id)
     v = filter_first_vertex(g, (g, v) -> get_prop(g, v, :id) == id)
-    isnothing(v) && error("Vertex not found")
+    isnothing(v) && error("Population $id not found")
     return v
 end
 
