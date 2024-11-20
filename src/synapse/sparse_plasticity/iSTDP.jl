@@ -25,7 +25,7 @@ end
     tpre::VFT = zeros(Npre) # presynaptic spiking time
 end
 
-function get_variables(param::T, Npre, Npost) where {T<:iSTDPParameter}
+function plasticityvariables(param::T, Npre, Npost) where {T<:iSTDPParameter}
     return iSTDPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -156,4 +156,4 @@ function plasticity!(
 end
 
 export iSTDPParameterRate,
-    iSTDPParameterPotential, iSTDPVariables, get_variables, plasticity!
+    iSTDPParameterPotential, iSTDPVariables, plasticityvariables, plasticity!

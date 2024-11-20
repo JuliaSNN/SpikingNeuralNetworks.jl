@@ -19,9 +19,9 @@ function LSSPVariables(;Npre, Npost, long, short)
 end
 
 
-function get_variables(param::LSSPParameter, Npre, Npost)
-    ls = get_variables(param.long, Npre, Npost)
-    ss = get_variables(param.short, Npre, Npost)
+function plasticityvariables(param::LSSPParameter, Npre, Npost)
+    ls = plasticityvariables(param.long, Npre, Npost)
+    ss = plasticityvariables(param.short, Npre, Npost)
     return LSSPVariables(Npre = Npre, Npost = Npost, long = ls, short = ss)
 end
 
@@ -54,4 +54,4 @@ function monitor_plast(obj, plasticity::LSSPVariables, sym)
 end
 
 
-export  LSSPParameter, LSSPVariables, get_variables, plasticity!
+export  LSSPParameter, LSSPVariables, plasticityvariables, plasticity!

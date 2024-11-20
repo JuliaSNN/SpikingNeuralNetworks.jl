@@ -8,6 +8,21 @@ end
 
 # """function dsparse
 
+function sparse_matrix(w, Npre, Npost, dist, μ, σ)
+    if isnothing(w)
+        # if w is not defined, construct a random sparse matrix with `dist` with `μ` and `σ`. 
+        w = rand(dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
+        w[[n for n in eachindex(w[:]) if rand() > p]] .= 0
+        w[w .< 0] .= 0 
+        w = sparse(w)
+    else
+        # if w is defined, convert it to a sparse matrix
+        w = sparse(w)
+    end
+    @assert size(w) == (Npost, Npre) "The size of the synaptic weight is not correct"
+    return w
+end
+
 function dsparse(A)
     # them in a special data structure leads to savings in space and execution time, compared to dense arrays.
     At = sparse(A') # Transposes the input sparse matrix A and stores it as At.
