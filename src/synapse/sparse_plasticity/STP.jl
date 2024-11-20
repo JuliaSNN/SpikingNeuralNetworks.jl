@@ -15,7 +15,7 @@ end
     _ρ::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function get_variables(param::T, Npre, Npost) where T <: STPParameter
+function plasticityvariables(param::T, Npre, Npost) where T <: STPParameter
     return STPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -79,4 +79,4 @@ function plasticity!(
     end
 end
 
-export  STPParameter, STPVariables, get_variables, plasticity!
+export  STPParameter, STPVariables, plasticityvariables, plasticity!
