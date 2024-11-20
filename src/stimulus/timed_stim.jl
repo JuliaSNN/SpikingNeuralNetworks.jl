@@ -10,7 +10,6 @@ function SpikeTime(spiketimes::VFT, neurons::Vector{Vector{Int}}) where {VFT <: 
     return SpikeTimeStimulusParameter(Float32.(spiketimes[order]), neurons[order])
 end
 
-
 @snn_kw struct SpikeTimeStimulus{FT=Float32, VFT = Vector{Float32}, DT=Distribution{Univariate, Continuous}, VIT = Vector{Int}} <: AbstractStimulus
     N::Int
     name::String = "SpikeTime"

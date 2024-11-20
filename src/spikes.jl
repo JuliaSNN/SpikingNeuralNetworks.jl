@@ -253,7 +253,7 @@ Compute the autocorrelogram of a spike train.
 # Returns
 - `taus`: Array{Float64} - The time differences between each spike and its surrounding spikes within the time window.
 """
-function autocorrelogram(t_pre, τ=200ms)
+function autocorrelogram(t_pre; τ=200ms)
     taus =[]
     t_pre = sort(t_pre)
     for n in eachindex(t_pre)
@@ -612,3 +612,5 @@ function spiketimes_from_bool(P; dt = 0.1ms)
     end
     return SNN.Spiketimes(_spiketimes)
 end
+
+export spiketimes, spiketimes_from_bool, merge_spiketimes, convolve, alpha_function, autocorrelogram, bin_spiketimes, compute_covariance_density, isi, CV, CV_isi2, firing_rate, average_firing_rate, firing_rate_average, firing_rate, firing_rate_average, spikes_in_interval, spikes_in_intervals, find_interval_indices, interval_standard_spikes, interval_standard_spikes!, relative_time!, st_order, isi_cv, spike_count, CV_isi2
