@@ -1,4 +1,4 @@
-struct IdentityParam
+struct IdentityParam <: AbstractPopulationParameter
 end
 
 @snn_kw mutable struct Identity{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:
