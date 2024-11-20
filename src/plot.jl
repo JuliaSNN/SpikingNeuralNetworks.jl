@@ -170,6 +170,8 @@ function vecplot(P, syms::Array; kwargs...)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
+export raster, vecplot, vecplot!, vecplot
+
 ## Matrix plot
 
 ## Rateplot
@@ -252,3 +254,4 @@ end
 #     t = 1:length(P[1].records[:fire])
 #     plot(t, A, leg = :none, xaxis = ("t",), yaxis = ("A", (0, Inf)))
 # end
+
