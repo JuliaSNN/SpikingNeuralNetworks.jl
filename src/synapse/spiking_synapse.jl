@@ -76,24 +76,20 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
     fireI, fireJ = post.fire, pre.fire
 
     # get the conductance and membrane potential of the target compartment if multicompartment model
-    g = nothing
-    v_post = nothing
-    if isnothing(target) 
-        g = getfield(post, sym) 
-        v_post =  getfield(post, :v)
-        push!(targets, :sym => sym)
-    else
-        _sym = Symbol("$(sym)_$target")
+
+    g = zeros(Float32, post.N)
+    v_post = zeros(Float32, post.N)
+    if !isnothing(sym)
+        _sym = isnothing(target) ? sym : Symbol("$(sym)_$target")
+        _v   = isnothing(target) ? :v : Symbol("v_$target")
         g = getfield(post, _sym)
-        v_post = getfield(post, Symbol("v_$target"))
+        hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
         push!(targets, :sym => _sym)
     end
 
-
-
     # set the paramter for the synaptic plasticity
     param = haskey(kwargs, :param) ? kwargs[:param] : no_STDPParameter()
-    plasticity = get_variables(param, pre.N, post.N)
+    plasticity = plasticityvariables(param, pre.N, post.N)
 
     # short term plasticity
     ρ = copy(W)
