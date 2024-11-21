@@ -1,4 +1,16 @@
-function population_indices(P, type = "ˆ")
+"""
+    population_indices(P, type = "ˆ")
+
+Given a dictionary `P` containing population names as keys and population objects as values, this function returns a named tuple `indices` that maps each population name to a range of indices. The range represents the indices of the neurons belonging to that population.
+
+# Arguments
+- `P`: A dictionary containing population names as keys and population objects as values.
+- `type`: A string specifying the type of population to consider. Only population names that contain the specified type will be included in the output. Defaults to "ˆ".
+
+# Returns
+A named tuple `indices` where each population name is mapped to a range of indices.
+"""
+function population_indices(P, type = "#")
     n = 1
     indices = Dict{Symbol,Vector{Int}}()
     for k in keys(P)
@@ -10,6 +22,21 @@ function population_indices(P, type = "ˆ")
     return dict2ntuple(sort(indices))
 end
 
+"""
+    filter_populations(P, regex)
+
+Filter populations in dictionary `P` based on a regular expression `regex`.
+Returns a named tuple of populations that match the regex.
+
+# Arguments
+- `P`: Dictionary of populations.
+- `regex`: Regular expression to match population names.
+
+# Returns
+A named tuple of populations that match the regex.
+
+# Examples
+"""
 function filter_populations(P, type)
     indices = Dict{Symbol, AbstractPopulation}()
     for k in keys(P)
@@ -20,7 +47,20 @@ function filter_populations(P, type)
     return dict2ntuple(sort(indices))
 end
 
+"""
+    subpopulations(stim)
 
+Extracts the names and the neuron ids projected from a given set of stimuli.
+
+# Arguments
+- `stim`: A dictionary containing stimulus information.
+
+# Returns
+- `names`: A vector of strings representing the names of the subpopulations.
+- `pops`: A vector of arrays representing the populations of the subpopulations.
+
+# Example
+"""
 function subpopulations(stim)
     names = Vector{String}()
     pops = Vector{Int}[]
