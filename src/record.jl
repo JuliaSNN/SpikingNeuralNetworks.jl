@@ -205,7 +205,7 @@ function monitor(obj, keys)
         elseif hasfield(typeof(obj), :plasticity) && has_plasticity_field(obj.plasticity, sym)
             monitor_plast(obj, obj.plasticity, sym)
         else
-            @error "Field $sym not found in $(typeof(obj))"
+            @warn "Field $sym not found in $(typeof(obj))"
         end
     end
 end
@@ -247,8 +247,16 @@ Returns the recorded values for a given object and key. If an id is provided, re
 """
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
-    isnothing(id) && return hcat(rec...)
-    return hcat(rec...)[id,:]
+    if isa(rec[1], Matrix)
+        array = zeros(size(rec[1])..., length(rec))
+        for i in eachindex(rec)
+            array[:,:,i] = rec[i]
+        end
+        return array
+    else
+        isnothing(id) && return hcat(rec...)
+        return hcat(rec...)[id,:]
+    end
 end
 
 """
@@ -276,7 +284,7 @@ function getrecord(p, sym)
             Dict{Symbol,Vector{Any}}(zip(names, values))
         end
     else
-        throw(ArgumentError("The record is not found"))
+        throw(ArgumentError("The record $sym is not found"))
     end
 end
 

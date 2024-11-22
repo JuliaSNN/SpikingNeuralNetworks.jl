@@ -4,6 +4,8 @@ using .Plots, Statistics
 
 
 function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, kwargs...)
+    @show t
+    t = t[[1,end]]
     if isnothing(populations)
         y0 = Int32[0]
         X = Float32[]
@@ -36,11 +38,14 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         Y,
         m = (1, :black),
         leg = :none,
-        xaxis = ("t", (0, Inf)),
-        yaxis = ("neuron",),
+        xaxis = ("Time (ms)", (0, Inf)),
+        yaxis = ("Neuron",),
     )
     !isnothing(t) && plot!(xlims = t)
-    plot!(yticks = (cumsum(y0) .+ y0 ./ 2, names))
+    @show y0
+    @show (cumsum(y0) .+ y0 ./ 2, names)
+    @show (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names)
+    plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     plot!(plt; kwargs...)
@@ -136,7 +141,7 @@ function vecplot!(
         end
         isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
         y = y[r_dt, neurons, sym_id]
-        y = pop_average ? mean(y, dims = 2)[:, 1, :] : y
+        y = pop_average ? mean(y, dims = 2)[:, 1] : y
     else
         throw(ArgumentError("The record is not a vector or a matrix"))
     end
@@ -170,7 +175,122 @@ function vecplot(P, syms::Array; kwargs...)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
-export raster, vecplot, vecplot!, vecplot
+##
+function dendrite_gplot(population, target; sym_id=1, r, dt, param=:dend_syn, nmda=true, kwargs...)
+    syn = getfield(population, param)
+    if nmda
+        @unpack mg, b, k = getfield(population, :NMDA)
+    end
+    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
+    v_sym = Symbol("v_", target) 
+    g_sym = Symbol("g_", target)
+    indices =  haskey(population.records[:indices], g_sym) ? population.records[:indices][g_sym] : 1:population.N
+    v = getvariable(population, v_sym)[indices, r_dt]
+    g = getvariable(population, g_sym)[:,:, r_dt]
+
+    @assert length(axes(g,1)) == length(axes(v,1))
+    @assert length(axes(g,2)) == length(syn) "Syn size: $(length(syn)) != $(length(axes(g,2)))"
+    @assert length(axes(g,3)) == length(axes(v,2))
+    curr = zeros(size(g))
+    for i in axes(g,3)
+        for r in axes(g,2)
+            @unpack gsyn, E_rev, nmda = syn[r]
+            for n in axes(g,1)
+                if nmda > 0.
+                    curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)/ (1.0f0 + (mg / b) * SNN.exp32(k * v[n,i]))
+                else
+                    curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)
+                end
+            end
+        end
+    end
+    curr .= curr ./1000
+
+    ylims =abs.(maximum(abs.(curr[sym_id,:,:]))) |> x->(-x, x)
+    plot(r_dt.*dt, curr[sym_id,1,:].+curr[sym_id,2,:], label="Glu")
+    plot!(r_dt*dt, curr[sym_id,3,:].+curr[sym_id,4,:], label="GABA")
+    plot!(ylims=ylims, xlabel="Time (ms)", ylabel="Syn. curr. dendrite (μA)")
+    hline!([0.0], c=:black, label="") 
+    plot!(;kwargs...)
+end
+
+function soma_gplot(population, target;sym_id=1, r, dt, param=:soma_syn, nmda=true, kwargs...)
+    syn = getfield(population, param)
+    if nmda
+        @unpack mg, b, k = getfield(population, :NMDA)
+    end
+    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
+    v_sym = Symbol("v_", target) 
+    ge_sym = Symbol("ge_", target)
+    gi_sym = Symbol("gi_", target)
+    indices =  haskey(population.records[:indices], ge_sym) ? population.records[:indices][ge_sym] : 1:population.N
+    v = getvariable(population, v_sym)[indices, r_dt]
+    g = zeros(length(indices), 2, length(r_dt))
+    g[:,1,:] = getvariable(population, ge_sym)[:,r_dt]
+    g[:,2,:] = getvariable(population, gi_sym)[:,r_dt]
+
+    @assert length(axes(g,1)) == length(axes(v,1))
+    @assert length(axes(g,2)) == length(syn) "Syn size: $(length(syn)) != $(length(axes(g,2)))"
+    @assert length(axes(g,3)) == length(axes(v,2))
+    curr = zeros(size(g))
+    for i in axes(g,3)
+        for r in axes(g,2)
+            @unpack gsyn, E_rev, nmda = syn[r]
+            for n in axes(g,1)
+                curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)
+            end
+        end
+    end
+    curr .= curr ./1000
+
+
+    ylims =abs.(maximum(abs.(curr[sym_id,:,:]))) |> x->(-x, x)
+    plot(r_dt.*dt, curr[sym_id,1,:], label="Glu")
+    plot!(r_dt*dt, curr[sym_id,2,:], label="GABA")
+    plot!(ylims=ylims, xlabel="Time (ms)", ylabel="Syn. curr. soma (μA)")
+    hline!([0.0], c=:black, label="") 
+    plot!(;kwargs...)
+end
+
+function gegi_plot(population; r, dt, param=:soma_syn, nmda=true, kwargs...)
+    syn = getfield(population, param)
+    if nmda
+        @unpack mg, b, k = getfield(population, :NMDA)
+    end
+    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
+    indices =  haskey(population.records[:indices], sym) ? population.records[:indices][sym] : 1:population.N
+    v_sym = :v
+    ge_sym = :ge
+    gi_sym = :gi
+    v = getvariable(population, v_sym)[indices, r_dt]
+    ge = getvariable(population, ge_sym)[:, r_dt]
+    gi = getvariable(population, gi_sym)[:, r_dt]
+
+    # curr = zeros(2, size(ge,2), )
+    # for i in axes(g,3)
+    #     for r in axes(g,2)
+    #         @unpack gsyn, E_rev, nmda = syn[r]
+    #         for n in axes(g,1)
+    #             if nmda > 0.
+    #                 curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)/ (1.0f0 + (mg / b) * SNN.exp32(k * v[n,i]))
+    #             else
+    #                 curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)
+    #             end
+    #         end
+    #     end
+    # end
+    # curr .= curr ./1000
+
+    plot(r_dt.*dt, curr[1,1,:].+curr[1,2,:], label="Glu")
+    plot!(r_dt*dt, curr[1,3,:].+curr[1,4,:], label="GABA")
+    plot!(ylims=(-maximum(abs.(curr)), maximum(abs.(curr))), xlabel="Time (ms)", ylabel="Syn Curr dendrite (μA)")
+    hline!([0.0], c=:black, label="") 
+end
+##
+
+
+export raster, vecplot, vecplot!, vecplot, dendrite_gplot
+
 
 ## Matrix plot
 
