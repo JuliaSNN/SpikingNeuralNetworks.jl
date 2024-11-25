@@ -1,4 +1,5 @@
 using .Plots, Statistics
+import Interpolations: scale, interpolate, BSpline, Linear
 
 ## Raster plot
 
@@ -72,7 +73,7 @@ function _raster_populations(p, interval = nothing; populations::Vector{T} ) whe
 end
 
 
-function _raster(p, interval = nothing)
+function _raster(p::T, interval = nothing) where T<: AbstractPopulation
     fire = p.records[:fire]
     x, y = Float32[], Float32[]
     y0 = Int32[]
@@ -109,50 +110,32 @@ function vecplot!(
     neurons = nothing,
     pop_average = false,
     r::AbstractArray{T} = 0:-1,
-    dt = 0.1,
     sym_id = nothing,
-    factor = 1,
     kwargs...,
 ) where {T<:Real}
-    # get steps of the interval from dt and remove first and last step
-    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
-    # get the record
-    v = getrecord(p, sym)
-    # check if the record is a vector or a matrix
-    if isa(v[1], Vector)
-        # if the record is a vector
-        _time=size(v, 1)
-        _n = size(v[1], 1)
-        y = zeros(_time, _n)
-        neurons = isnothing(neurons) ? _n : neurons
-        for i in 1:_time
-            y[i, :] = v[i]*factor
-        end
-        y = y[r_dt, neurons]
-        y = pop_average ? mean(y, dims = 2)[:, 1] : y
-    elseif isa(v[1], Matrix)
-        _time=size(v, 1)
-        _n = size(v[1], 1)
-        _x = size(v[1], 2)
-        y = zeros(_time, _n, _x)
-        neurons = isnothing(neurons) ? _n : neurons
-        for i in 1:_time
-            y[i, :, :] = v[i]*factor
-        end
-        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
-        y = y[r_dt, neurons, sym_id]
-        y = pop_average ? mean(y, dims = 2)[:, 1] : y
-    else
-        throw(ArgumentError("The record is not a vector or a matrix"))
-    end
+    # get the record and its sampling rate
+    y, r_v = interpolated_record(p, sym, sym_id)
 
-    x = r_dt .* dt
-    plot!(
+    # set the plot range
+    r = isempty(r) ? r_v : r
+    r[end] > r_v[end] && throw(ArgumentError("The end time is greater than the record time"))
+    r[1] < r_v[1] && throw(ArgumentError("The start time is less than the record time"))
+    
+    # get the neurons to plot
+    neurons = isnothing(neurons) ? axes(y, 1) : neurons
+    neurons = isa(neurons,Int) ? [neurons] : neurons
+    if pop_average
+        y = mean(y, dims = 1)
+        neurons = [1:1]
+    end
+    
+    @info "Vector plot in: $(r[1])s to $(round(Int, r[end]))s"
+    return plot!(
         my_plot,
-        x,
-        y,
+        r./1000,
+        y[neurons, r]',
         leg = :none,
-        xaxis = ("t", extrema(x)),
+        xaxis = ("t", extrema(r./1000)),
         yaxis = (string(sym), extrema(y));
         kwargs...,
     )
@@ -289,7 +272,7 @@ end
 ##
 
 
-export raster, vecplot, vecplot!, vecplot, dendrite_gplot
+export raster, vecplot, vecplot!, vecplot, dendrite_gplot, soma_gplot
 
 
 ## Matrix plot
