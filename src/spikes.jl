@@ -258,8 +258,8 @@ function autocorrelogram(t_pre; τ=200ms)
     t_pre = sort(t_pre)
     for n in eachindex(t_pre)
         my_t = t_pre[n]
-        @views last  = findlast(t-> abs(t -my_t) < τ, t_pre)
-        @views first = findfirst(t-> abs(t -my_t) < τ, t_pre)
+        last  = findlast(t-> abs(t -my_t) < τ, t_pre)
+        first = findfirst(t-> abs(t -my_t) < τ, t_pre)
         surrounding = first:last
         isnothing(surrounding) && continue
         append!(taus, t_pre[surrounding] .- my_t)
@@ -294,6 +294,7 @@ function bin_spiketimes(spiketimes, interval, sr)
     end
     return sparse(count), r
 end
+
 """
     compute_covariance_density(t_post, t_pre, T; τ=200ms, sr=50Hz)
 
