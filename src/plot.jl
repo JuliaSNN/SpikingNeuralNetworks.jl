@@ -103,37 +103,45 @@ function vecplot(P::Array, sym; kwargs...)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
+function _match_r(r, r_v)
+    r = isempty(r) ? r_v : r
+    r[end] > r_v[end] && throw(ArgumentError("The end time is greater than the record time"))
+    r[1] < r_v[1] && throw(ArgumentError("The start time is less than the record time"))
+    return r
+end
+
 function vecplot!(
     my_plot,
     p,
     sym;
     neurons = nothing,
     pop_average = false,
-    r::AbstractArray{T} = 0:-1,
+    r=nothing,
     sym_id = nothing,
     kwargs...,
-) where {T<:Real}
+) 
     # get the record and its sampling rate
-    y, r_v = interpolated_record(p, sym, sym_id)
+    y, r_v = interpolated_record(p, sym)
+
+    # check if the record is     a vector or a matrix
+    if length(size(y)) == 3
+        isnothing(sym_id) & (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
+        y = y[:, sym_id, :]
+    end
 
     # set the plot range
-    r = isempty(r) ? r_v : r
-    r[end] > r_v[end] && throw(ArgumentError("The end time is greater than the record time"))
-    r[1] < r_v[1] && throw(ArgumentError("The start time is less than the record time"))
-    
+    r = _match_r(r, r_v)
+
     # get the neurons to plot
     neurons = isnothing(neurons) ? axes(y, 1) : neurons
     neurons = isa(neurons,Int) ? [neurons] : neurons
-    if pop_average
-        y = mean(y, dims = 1)
-        neurons = [1:1]
-    end
+    y = pop_average ? mean(y[:,r], dims = 1) : y[neurons, r]
     
     @info "Vector plot in: $(r[1])s to $(round(Int, r[end]))s"
     return plot!(
         my_plot,
         r./1000,
-        y[neurons, r]',
+        y',
         leg = :none,
         xaxis = ("t", extrema(r./1000)),
         yaxis = (string(sym), extrema(y));
@@ -158,23 +166,28 @@ function vecplot(P, syms::Array; kwargs...)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
+
 ##
 function dendrite_gplot(population, target; sym_id=1, r, dt, param=:dend_syn, nmda=true, kwargs...)
     syn = getfield(population, param)
     if nmda
         @unpack mg, b, k = getfield(population, :NMDA)
     end
-    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
+    # r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
     v_sym = Symbol("v_", target) 
     g_sym = Symbol("g_", target)
     indices =  haskey(population.records[:indices], g_sym) ? population.records[:indices][g_sym] : 1:population.N
-    v = getvariable(population, v_sym)[indices, r_dt]
-    g = getvariable(population, g_sym)[:,:, r_dt]
+    v, r_v= interpolated_record(population, v_sym)
+    g, r_v = interpolated_record(population, g_sym)
+    r = _match_r(r, r_v)
+    v = Float32.(v[indices, r])
+    g = Float32.(g[:, :, r])
 
     @assert length(axes(g,1)) == length(axes(v,1))
     @assert length(axes(g,2)) == length(syn) "Syn size: $(length(syn)) != $(length(axes(g,2)))"
     @assert length(axes(g,3)) == length(axes(v,2))
     curr = zeros(size(g))
+    @show size(curr)
     for i in axes(g,3)
         for r in axes(g,2)
             @unpack gsyn, E_rev, nmda = syn[r]
@@ -188,10 +201,11 @@ function dendrite_gplot(population, target; sym_id=1, r, dt, param=:dend_syn, nm
         end
     end
     curr .= curr ./1000
+    @info size(curr), size(r)
 
     ylims =abs.(maximum(abs.(curr[sym_id,:,:]))) |> x->(-x, x)
-    plot(r_dt.*dt, curr[sym_id,1,:].+curr[sym_id,2,:], label="Glu")
-    plot!(r_dt*dt, curr[sym_id,3,:].+curr[sym_id,4,:], label="GABA")
+    plot(r, curr[sym_id,1,:].+curr[sym_id,2,:], label="Glu")
+    plot!(r, curr[sym_id,3,:].+curr[sym_id,4,:], label="GABA")
     plot!(ylims=ylims, xlabel="Time (ms)", ylabel="Syn. curr. dendrite (μA)")
     hline!([0.0], c=:black, label="") 
     plot!(;kwargs...)
@@ -207,29 +221,31 @@ function soma_gplot(population, target;sym_id=1, r, dt, param=:soma_syn, nmda=tr
     ge_sym = Symbol("ge_", target)
     gi_sym = Symbol("gi_", target)
     indices =  haskey(population.records[:indices], ge_sym) ? population.records[:indices][ge_sym] : 1:population.N
-    v = getvariable(population, v_sym)[indices, r_dt]
-    g = zeros(length(indices), 2, length(r_dt))
-    g[:,1,:] = getvariable(population, ge_sym)[:,r_dt]
-    g[:,2,:] = getvariable(population, gi_sym)[:,r_dt]
+    v, r_v= interpolated_record(population, v_sym)
+    ge, r_v = interpolated_record(population, ge_sym)
+    gi, r_v = interpolated_record(population, gi_sym)
+    r = _match_r(r, r_v)
+    v = Float32.(v[indices, r])
+    ge = Float32.(ge[:, r])
+    gi = Float32.(gi[:, r])
 
-    @assert length(axes(g,1)) == length(axes(v,1))
-    @assert length(axes(g,2)) == length(syn) "Syn size: $(length(syn)) != $(length(axes(g,2)))"
-    @assert length(axes(g,3)) == length(axes(v,2))
-    curr = zeros(size(g))
-    for i in axes(g,3)
-        for r in axes(g,2)
-            @unpack gsyn, E_rev, nmda = syn[r]
-            for n in axes(g,1)
-                curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)
-            end
+    @assert length(axes(ge,1)) == length(axes(v,1))
+    @assert length(axes(ge,2)) == length(axes(v,2))
+    curr = zeros(size(ge,1), 2, size(ge,2))
+    r = _match_r(r, r_v)
+    for i in axes(ge,2)
+        for n in axes(ge,1)
+            @unpack gsyn, E_rev, nmda = syn[1]
+            curr[n,1,i] = - gsyn * ge[n,i] * (v[n,i]-E_rev)
+            @unpack gsyn, E_rev, nmda = syn[2]
+            curr[n,2,i] = - gsyn * gi[n,i] * (v[n,i]-E_rev)
         end
     end
     curr .= curr ./1000
-
-
+    @info size(curr), size(r)
     ylims =abs.(maximum(abs.(curr[sym_id,:,:]))) |> x->(-x, x)
-    plot(r_dt.*dt, curr[sym_id,1,:], label="Glu")
-    plot!(r_dt*dt, curr[sym_id,2,:], label="GABA")
+    plot(r, curr[sym_id,1,:], label="Glu")
+    plot!(r, curr[sym_id,2,:], label="GABA")
     plot!(ylims=ylims, xlabel="Time (ms)", ylabel="Syn. curr. soma (μA)")
     hline!([0.0], c=:black, label="") 
     plot!(;kwargs...)

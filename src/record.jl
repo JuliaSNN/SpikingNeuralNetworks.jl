@@ -259,6 +259,8 @@ end
     scaled_variable(p, sym)
 
     Returns the recording with interpolated time values
+
+    The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
 """
 function interpolated_record(p, sym, sym_id=nothing)
     sr = p.records[:sr][sym]
@@ -268,18 +270,14 @@ function interpolated_record(p, sym, sym_id=nothing)
     _end = (size(v_dt,)[end]-1)/sr  
     # this is the recorded time (in ms), it assumes all recordings are contained in v_dt
     r_v = 0:1/sr:_end 
-
-    # check if the record is     a vector or a matrix
-    if length(size(v_dt)) == 3
-        isnothing(sym_id) & (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
-        v_dt = v_dt[:, sym_id, :]
-    end
-
     v = interpolate(v_dt, BSpline(Linear()))
-    @assert length(r_v) == size(v, 2) "The record and the sampled interval do not match"
-    y = scale(v,axes(v_dt,1),r_v)
-    return y, r_v
+    ax = map(1:length(size(v_dt))-1) do i
+        axes(v_dt, i)
+    end
+    y = scale(v, ax..., r_v)
+    return y, extrema(r_v)
 end
+
 
 """
 getvariable(obj, key, id=nothing)
