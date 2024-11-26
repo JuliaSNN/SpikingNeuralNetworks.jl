@@ -106,6 +106,7 @@ function sim!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
+    record_zero!(P,C,S,T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
@@ -128,6 +129,7 @@ function train!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
+    record_zero!(P,C,S,T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
@@ -142,6 +144,19 @@ function train!(
         forward!(c, c.param)
         plasticity!(c, c.param, dt, T)
         record!(c, T)
+    end
+end
+
+function record_zero!(P,C,S,T)
+    get_time(T) > 0.0f0 && return
+    for p in P
+        record!(p,T)
+    end
+    for c in C
+        record!(c,T)
+    end
+    for s in S
+        record!(s,T)
     end
 end
 

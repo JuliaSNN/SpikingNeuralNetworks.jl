@@ -33,7 +33,7 @@ function SpikeTimeStimulus(N, post::T, sym::Symbol, target = nothing; p::R=0.05f
     # set the synaptic weight matrix
     @assert N >= maximum(vcat(param.neurons...)) "Projections must be within the range of the presynaptic population"
 
-    w = sparse_matrix(w, N, post.N, dist, μ, σ)
+    w = sparse_matrix(w, N, post.N, dist, μ, σ, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
     if isnothing(target) 
