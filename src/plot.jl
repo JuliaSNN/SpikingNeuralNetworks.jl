@@ -4,7 +4,6 @@ import Interpolations: scale, interpolate, BSpline, Linear
 ## Raster plot
 
 function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, kwargs...)
-    @show t
     t = t[[1,end]]
     if isnothing(populations)
         y0 = Int32[0]
@@ -42,9 +41,6 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         yaxis = ("Neuron",),
     )
     !isnothing(t) && plot!(xlims = t)
-    @show y0
-    @show (cumsum(y0) .+ y0 ./ 2, names)
-    @show (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names)
     plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
@@ -134,7 +130,7 @@ function vecplot!(
     # get the neurons to plot
     neurons = isnothing(neurons) ? axes(y, 1) : neurons
     neurons = isa(neurons,Int) ? [neurons] : neurons
-    y = pop_average ? mean(y[:,r], dims = 1) : y[neurons, r]
+    y = pop_average ? mean(y[neurons,r], dims = 1) : y[neurons, r]
     
     @info "Vector plot in: $(r[1])s to $(round(Int, r[end]))s"
     return plot!(
@@ -153,6 +149,8 @@ function vecplot(P, syms::Array; kwargs...)
     N = length(plts)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
+
+export raster, vecplot, vecplot!
 
 
 ## Dendrite and soma plot
@@ -196,7 +194,6 @@ function dendrite_gplot(population, target; neuron=1, r, param=:dend_syn, nmda=t
     @assert length(axes(g,2)) == length(syn) "Syn size: $(length(syn)) != $(length(axes(g,2)))"
     @assert length(axes(g,3)) == length(axes(v,2))
     curr = zeros(size(g))
-    @show size(curr)
     for i in axes(g,3)
         for r in axes(g,2)
             @unpack gsyn, E_rev, nmda = syn[r]
@@ -338,6 +335,8 @@ function plot_weights(network)
                 ]
     return plot(h_I2E, h_I1E, sc_w, sc_fr, layout=layout, size=(800, 600), legend=false, margin=5Plots.mm)
 end
+
+export soma_gplot, dendrite_gplot, plot_activity, plot_weights
 ## 
 
 ## conductance plot
