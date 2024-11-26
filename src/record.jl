@@ -256,13 +256,15 @@ function monitor(objs::Array, keys; sr=200Hz)
 end
 
 """
-    scaled_variable(p, sym)
+    interpolated_record(p, sym)
 
-    Returns the recording with interpolated time values
+    Returns the recording with interpolated time values and the extrema of the recorded time points.
 
+    N.B. 
+    ----
     The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
 """
-function interpolated_record(p, sym, sym_id=nothing)
+function interpolated_record(p, sym)
     sr = p.records[:sr][sym]
     v_dt = SNN.getvariable(p, sym)
 

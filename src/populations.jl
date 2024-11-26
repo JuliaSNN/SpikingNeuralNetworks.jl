@@ -37,10 +37,11 @@ A named tuple of populations that match the regex.
 
 # Examples
 """
-function filter_populations(P, type)
+function filter_populations(P, condition= p->occursin(string(type), string(p.name)))
     populations = Dict{Symbol, Any}()
     for k in keys(P)
-        occursin(string(type), string(P[k].name)) && continue
+        p = getfield(P, k)
+        condition(p) && continue
         @show P[k].name
         p = getfield(P, k)
         push!(populations,k => p)
