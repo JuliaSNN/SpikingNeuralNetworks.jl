@@ -40,7 +40,8 @@ A named tuple of populations that match the regex.
 function filter_populations(P, type)
     populations = Dict{Symbol, Any}()
     for k in keys(P)
-        occursin(string(type), string(k)) && continue
+        occursin(string(type), string(P[k].name)) && continue
+        @show P[k].name
         p = getfield(P, k)
         push!(populations,k => p)
     end
