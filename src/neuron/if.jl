@@ -76,31 +76,33 @@ function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     update_spike!(p, param, dt)
 end
 
-function update_spike!(p::IF, param::IFParameter, dt::Float32)
+function update_spike!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     @unpack N, v, w, tabs, fire = p
-    @unpack Vt, Vr, τabs, b = param
+    @unpack Vt, Vr, τabs = param
     @inbounds for i = 1:N
         fire[i] = v[i] > Vt
         v[i] = ifelse(fire[i], Vr, v[i])
-        # Adaptation current
-        w[i] = ifelse(fire[i], w[i] + b, w[i])
         # Absolute refractory period
         tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
     end
+    # Adaptation current
+    # if the adaptation timescale is zero, return
+    !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
+    @unpack a = param
+    @inbounds for i = 1:N
+        w[i] = ifelse(fire[i], w[i] + b, w[i])
+    end
 end
 
-function update_neuron!(p::IF, param::IFParameter, dt::Float32)
+function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     @unpack N, v, ge, gi, w, I, tabs, fire = p
-    @unpack τm, El, R,  E_i, E_e, τabs, a, b, τw, gsyn_e, gsyn_i = param
+    @unpack τm, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
     @inbounds for i = 1:N
         if tabs[i] > 0
             fire[i] = false
             tabs[i] -= 1
             continue
         end
-        # Adaptation current 
-        τw > 0.0f0 && (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
-
         # Membrane potential
         v[i] +=
             dt * (
@@ -111,8 +113,15 @@ function update_neuron!(p::IF, param::IFParameter, dt::Float32)
                 - R * w[i] # adaptation
                 + R * I[i] #synaptic term
             ) / τm
-        # @show v[i]
     end
+    # Adaptation current
+    # if the adaptation timescale is zero, return
+    !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
+    @unpack a, b, τw = param
+    @inbounds for i = 1:N
+        (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
+    end
+
 end
 
 function update_synapses!(p::IF, param::IFParameter, dt::Float32)
