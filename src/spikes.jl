@@ -57,6 +57,11 @@ function spiketimes(
     return _spiketimes
 end
 
+"""
+    spiketimes(Ps; kwargs...)
+
+    Return the spiketimes of each population in single vector of Spiketimes.
+"""
 function spiketimes(Ps; kwargs...)
     st = Vector{Vector{Float32}}[]
     for p in Ps
@@ -64,6 +69,22 @@ function spiketimes(Ps; kwargs...)
         st = vcat(st, _st)
     end
     return Spiketimes(st)
+end
+
+"""
+    spiketimes_split(Ps; kwargs...)
+
+    Return the spiketimes of each population in a vector of Spiketimes.
+"""
+function spiketimes_split(Ps; kwargs...)
+    st_ps = Vector{Vector{Vector{Float32}}}()
+    names = Vector{String}()
+    for p in Ps
+        _st = spiketimes(p; kwargs...)
+        push!(st_ps, Spiketimes(_st))
+        push!(names, p.name)
+    end
+    return st_ps, names
 end
 
 """
@@ -208,8 +229,15 @@ function firing_rate(
 end
 
 function firing_rate(populations; kwargs...)
-    spiketimes = SNN.spiketimes(populations)
-    firing_rate(spiketimes; kwargs...)
+    spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
+    fr_pop = Vector{Vector{Float32}}[]
+    interval_pop = Vector{StepRangeLen}()
+    for spiketimes in spiketimes_pop
+        rates, interval = firing_rate(spiketimes; kwargs...)
+        push!(fr_pop, rates)
+        push!(interval_pop, interval)
+    end
+    return fr_pop, interval_pop, names_pop
 end
 
 function average_firing_rate(
