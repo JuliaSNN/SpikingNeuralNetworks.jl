@@ -220,7 +220,7 @@ function monitor(obj, keys; sr=1000Hz, T::Time=Time())
         elseif hasfield(typeof(obj), :plasticity) && has_plasticity_field(obj.plasticity, sym)
             monitor_plast(obj, obj.plasticity, sym)
         else
-            @warn "Field $sym not found in $(typeof(obj))"
+            @warn "Field $sym not found in $(nameof(typeof(obj)))"
         end
     end
 end
