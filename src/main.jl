@@ -106,7 +106,7 @@ function sim!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
-    record_zero!(P,C,S)
+    record_zero!(P,C,S,T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
