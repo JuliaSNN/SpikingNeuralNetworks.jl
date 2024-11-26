@@ -88,7 +88,7 @@ function update_spike!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParamet
     # Adaptation current
     # if the adaptation timescale is zero, return
     !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
-    @unpack a = param
+    @unpack b = param
     @inbounds for i = 1:N
         w[i] = ifelse(fire[i], w[i] + b, w[i])
     end
