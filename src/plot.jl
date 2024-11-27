@@ -3,6 +3,45 @@ import Interpolations: scale, interpolate, BSpline, Linear
 
 ## Raster plot
 
+function raster(spiketimes::Spiketimes, t = nothing, populations=nothing, names=nothing, kwargs...)
+    if isnothing(t)
+        t = [0, maximum(vcat(spiketimes...))]
+    end
+    t = t[[1,end]]
+    X = Float32[]
+    Y = Float32[]
+    for n in eachindex(spiketimes)
+        for st in spiketimes[n]
+            if isnothing(st) || (st > t[1] && st < t[2])
+                push!(X, st)
+                push!(Y, n)
+            end
+        end
+    end
+    if length(X) > 200_000 
+        s = ceil(Int, length(X) / 200_000)
+        points = Vector{Int}(eachindex(X))
+        points = sample(points, 200_000, replace = false)
+        X = X[points]
+        Y = Y[points]
+        @warn "Subsampling raster plot, 1 out of $s spikes"
+    end
+    plt = scatter(
+        X,
+        Y,
+        m = (1, :black),
+        leg = :none,
+        xaxis = ("Time (ms)", (0, Inf)),
+        yaxis = ("Neuron",),
+    )
+    !isnothing(t) && plot!(xlims = t)
+    # plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
+    # y0 = y0[2:(end-1)]
+    # !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
+    plot!(plt; kwargs...)
+    return plt
+end
+
 function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, kwargs...)
     t = t[[1,end]]
     if isnothing(populations)
