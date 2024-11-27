@@ -1,6 +1,6 @@
 @snn_kw struct BalancedStimulusParameter{VFT}
     kIE::Float32 = 1.0
-    β::Float32 = 1.0
+    β::Float32 = 0.0
     τ::Float32 = 50.0
     r0::Float32 = 1kHz
     wIE::Float32 = 1.0
@@ -8,11 +8,10 @@ end
 
 BSParam = BalancedStimulusParameter
 
-@snn_kw struct BalancedStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
-
-                       AbstractStimulus
+@snn_kw struct BalancedStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <: AbstractStimulus
     id::String = randstring(12)
     param::BalancedStimulusParameter
+    name::String = "Balanced"
     N::IT = 100
     N_pre::IT = 5
     cells::VIT

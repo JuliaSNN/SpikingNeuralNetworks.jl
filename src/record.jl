@@ -101,7 +101,8 @@ Record the plasticity variable `key` of the `plasticity` object into the `obj.re
 - `name_plasticity::Symbol`: The name of the plasticity object.
 
 """
-function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
+function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, sr::Float32, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
+    (get_step(T) % round(Int, 1/sr/get_dt(T))) != 0 && return
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
     push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
@@ -137,7 +138,8 @@ Record the variable `key` of the `obj` object into the `obj.records[key]` array.
 - `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
 
 """
-function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}) 
+function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, sr::Float32) 
+    (get_step(T) % floor(Int, 1/sr/get_dt(T))) != 0 && return
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(getfield(obj,key),1)
     isa(getfield(obj, key), Vector) && push!(obj.records[key], getfield(obj, key)[ind])
     isa(getfield(obj, key), AbstractMatrix) && push!(obj.records[key], getfield(obj, key)[ind,:])
@@ -154,18 +156,25 @@ function record!(obj, T::Time)
     records::Dict{Symbol,Any} = obj.records
     for key in keys(records)
         (key == :indices) && (continue)
+        (key == :sr) && (continue)
+        if (key == :timestamp) 
+            if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
+                push!(records[:timestamp], get_time(T))
+            end
+            continue
+        end
         if key == :fire
             record_fire!(obj, T, records[:indices])
         elseif key == :plasticity
             for name_plasticity in keys(records[:plasticity])
                 for p_k in records[:plasticity][name_plasticity]
-                    record_plast!(obj, obj.plasticity, p_k, T, records[:indices], name_plasticity)
+                    record_plast!(obj, obj.plasticity, p_k, T, records[:indices], records[:sr][name_plasticity], name_plasticity)
                 end
             end
         elseif haskey(records,:plasticity) && (key ∈ keys(records[:plasticity]))
             continue
         else
-            record_sym!(obj, key, T, records[:indices])
+            record_sym!(obj, key, T, records[:indices], records[:sr][key])
         end
     end
 end
@@ -178,10 +187,15 @@ Initialize dictionary records for the given object, by assigning empty vectors t
 - `keys`: The variables to be monitored
 
 """
-function monitor(obj, keys)
-
+function monitor(obj, keys; sr=1000Hz, T::Time=Time())
     if !haskey(obj.records, :indices)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
+    end
+    if !haskey(obj.records, :sr)
+        obj.records[:sr] = Dict{Symbol,Float32}()
+    end
+    if !haskey(obj.records, :timestamp)
+        obj.records[:timestamp] = Vector{Float32}()
     end
     for key in keys
         ## If the key is a tuple, then the first element is the symbol and the second element is the list of neurons to record.
@@ -191,6 +205,7 @@ function monitor(obj, keys)
         else
             sym = key
         end
+        push!(obj.records[:sr], sym => sr)
         ## If the then assign a Spiketimes object to the dictionary `records[:fire]`, add as many empty vectors as the number of neurons in the object as in [:indices][:fire]
         if sym == :fire
             obj.records[:fire] = Dict{Symbol,AbstractVector}(
@@ -205,7 +220,7 @@ function monitor(obj, keys)
         elseif hasfield(typeof(obj), :plasticity) && has_plasticity_field(obj.plasticity, sym)
             monitor_plast(obj, obj.plasticity, sym)
         else
-            @error "Field $sym not found in $(typeof(obj))"
+            @warn "Field $sym not found in $(nameof(typeof(obj)))"
         end
     end
 end
@@ -234,11 +249,37 @@ monitor(objs::Array, keys)
 
 Function called when more than one object is given, which then calls the above monitor function for each object
 """
-function monitor(objs::Array, keys)
+function monitor(objs::Array, keys; sr=200Hz)
     for obj in objs
-        monitor(obj, keys)
+        monitor(obj, keys, sr=sr)
     end
 end
+
+"""
+    interpolated_record(p, sym)
+
+    Returns the recording with interpolated time values and the extrema of the recorded time points.
+
+    N.B. 
+    ----
+    The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
+"""
+function interpolated_record(p, sym)
+    sr = p.records[:sr][sym]
+    v_dt = SNN.getvariable(p, sym)
+
+    # ! adjust the end time to account for the added first element 
+    _end = (size(v_dt,)[end]-1)/sr  
+    # this is the recorded time (in ms), it assumes all recordings are contained in v_dt
+    r_v = 0:1/sr:_end 
+    v = interpolate(v_dt, BSpline(Linear()))
+    ax = map(1:length(size(v_dt))-1) do i
+        axes(v_dt, i)
+    end
+    y = scale(v, ax..., r_v)
+    return y, extrema(r_v)
+end
+
 
 """
 getvariable(obj, key, id=nothing)
@@ -247,8 +288,16 @@ Returns the recorded values for a given object and key. If an id is provided, re
 """
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
-    isnothing(id) && return hcat(rec...)
-    return hcat(rec...)[id,:]
+    if isa(rec[1], Matrix)
+        array = zeros(size(rec[1])..., length(rec))
+        for i in eachindex(rec)
+            array[:,:,i] = rec[i]
+        end
+        return array
+    else
+        isnothing(id) && return hcat(rec...)
+        return hcat(rec...)[id,:]
+    end
 end
 
 """
@@ -276,7 +325,7 @@ function getrecord(p, sym)
             Dict{Symbol,Vector{Any}}(zip(names, values))
         end
     else
-        throw(ArgumentError("The record is not found"))
+        throw(ArgumentError("The record $sym is not found"))
     end
 end
 

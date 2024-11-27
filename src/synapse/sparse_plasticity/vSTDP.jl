@@ -19,7 +19,7 @@ end
     x::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function get_variables(param::T, Npre, Npost) where T <: vSTDPParameter
+function plasticityvariables(param::T, Npre, Npost) where T <: vSTDPParameter
     return vSTDPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -94,7 +94,7 @@ function plasticity!(
     end
 end
 
-export vSTDPParameter, vSTDPVariables, get_variables, plasticity!
+export vSTDPParameter, vSTDPVariables, plasticityvariables, plasticity!
 
 
 # @inbounds @fastmath @simd for i in eachindex(fireI) # Iterate over postsynaptic neurons
