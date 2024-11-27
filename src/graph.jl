@@ -51,7 +51,7 @@ function graph(model)
         add_vertex!(graph, Dict(:name => name, :id => id, :key => k))
     end
     for (k, syn) in pairs(syn)
-        if isa(syn, SNN.SpikingSynapse)
+        if isa(syn, SNN.SpikingSynapse) || isa(syn, SNN.SpikingSynapseDelay)
             pre_id = syn.targets[:fire]
             post_id = syn.targets[:g]
             type = :fire_to_g
