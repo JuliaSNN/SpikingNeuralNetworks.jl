@@ -11,6 +11,15 @@ using ProgressMeter
 using Plots
 using SpikingNeuralNetworks
 
+using SGtSNEpi, Random
+using Revise
+using Colors, LinearAlgebra
+#using GLMakie
+using Graphs
+using JLD2
+import StatsBase.mean
+
+
 
 """
 Define Potjans parameters for neuron populations and connection probabilities
@@ -42,7 +51,7 @@ function potjans_params(ccu, scale=1.0)
     for (i, k) in enumerate(keys(ccu))
         syn_pol[i] = occursin("E", k) ? 1 : 0
     end
-    @show(syn_pol)
+    #@show(syn_pol)
     return cumulative, ccu, layer_names, conn_probs, syn_pol
 end
 
@@ -67,11 +76,6 @@ function index_assignment!(item, w0Weights, g_strengths, Lee, Lie, Lii, Lei)
         w0Weights[src, tgt] = wig
         Lii[src, tgt] = wig
     end
-
-    println("Non-zero entries in the excitatory weight matrix:")
-    println(count(!iszero, Lee))
-    println(count(!iszero, w0Weights))
-
 end
 
 """
@@ -108,9 +112,9 @@ function build_matrix(cumulative, conn_probs, Ncells, g_strengths, syn_pol, batc
     end
 
     Lexc = Lee + Lei
-    @show(Lexc)
+    #@show(Lexc)
     Linh = Lie + Lii
-    @show(Linh)
+    #@show(Linh)
 
     return w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh
 end
@@ -141,7 +145,7 @@ function auxil_potjans_param(scale=1.0)
 
     Ncells = trunc(Int32, sum(values(ccu)) + 1)
     Ne = trunc(Int32, ccu["23E"] + ccu["4E"] + ccu["5E"] + ccu["6E"])
-    @show(Ne)
+    #@show(Ne)
     Ni = Ncells - Ne
     return Ncells, Ne, Ni, ccu
 end
@@ -169,26 +173,29 @@ function potjans_layer(scale)
     w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh = potjans_weights(Ncells, g_strengths, ccu, scale)
 end
 
-# Run with a specific scaling factor
-scale = 0.01
-w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh = potjans_layer(scale)
 
-exc_pop = unique(Lexc.rowval)
-inhib_pop = unique(Linh.rowval)
+if !isfile("potjans_wiring.jld")
+    # Run with a specific scaling factor
+    scale = 0.01
+    w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh = potjans_layer(scale)
+    @save "potjans_wiring.jld" w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh
+else
+    @load "potjans_wiring.jld" w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh    
+
+    exc_pop = unique(Lexc.rowval)
+    inhib_pop = unique(Linh.rowval)
+    exc_pop = Set(Lexc.rowval)
+    inhib_pop = Set(Linh.rowval)
 
 
-exc_pop = Set(Lexc.rowval)
-inhib_pop = Set(Linh.rowval)
+    # Find overlapping elements
+    overlap = intersect(exc_pop, inhib_pop)
 
+    # Remove overlapping elements from both sets
+    Epop_numbers = setdiff(exc_pop, overlap)
+    IPop_numbers = setdiff(inhib_pop, overlap)
 
-# Find overlapping elements
-overlap = intersect(exc_pop, inhib_pop)
-
-# Remove overlapping elements from both sets
-Epop_numbers = setdiff(exc_pop, overlap)
-IPop_numbers = setdiff(inhib_pop, overlap)
-
-overlap = intersect(exc_pop, inhib_pop)
+    overlap = intersect(exc_pop, inhib_pop)
 
 #=
 Note I may have to remove these elements from Lee,Lie,Lii,Lexc,Linh
@@ -205,7 +212,7 @@ end
 
 ## Neuron parameters
 
-function initialize_LKD(Epop_numbers,IPop_numbers,w0Weights, Lee, Lie, Lei, Lii,νe = 4.5Hz)
+function initialize_LKD(Epop_numbers,IPop_numbers,w0Weights, Lee, Lie, Lei, Lii;νe = 4.5Hz)
     τm = 20ms
     C = 300SNN.pF # Capacitance
     R = τm / C
@@ -245,7 +252,7 @@ function initialize_LKD(Epop_numbers,IPop_numbers,w0Weights, Lee, Lie, Lei, Lii,
         τri = τri,
         τdi = τdi,
         At = 10mV,
-        τT = 30ms,
+        τt = 30ms,
         E_i = -75mV,
         E_e = 0mV,
     ) #  0.000805nA
@@ -265,34 +272,80 @@ function initialize_LKD(Epop_numbers,IPop_numbers,w0Weights, Lee, Lie, Lei, Lii,
 
     Input_E = SNN.Poisson(; N = N, param = SNN.PoissonParameter(; rate = νe))
     Input_I = SNN.Poisson(; N = N, param = SNN.PoissonParameter(; rate = νi))
-    E = SNN.AdEx(; N = 800, param = LKD_AdEx_exc)
-    I = SNN.IF(; N = 200, param = LKD_IF_inh)
+    E = SNN.AdEx(; N = size(Lee)[1], param = LKD_AdEx_exc)
+    I = SNN.IF(; N = size(Lee)[1], param = LKD_IF_inh)
     EE = SNN.SpikingSynapse(E, E, w = Lee, :ge; μ = μEE, param = SNN.vSTDPParameter())
-    EI = SNN.SpikingSynapse(E, I, w = Lei, :ge; μ = μEI)
-    IE = SNN.SpikingSynapse(I, E, w = Lie, :gi; μ = μIE, param = SNN.iSTDPParameter())
+    EI = SNN.SpikingSynapse(E, I, w = Lei, :ge; μ = μEI, param = SNN.vSTDPParameter())
+    IE = SNN.SpikingSynapse(I, E, w = Lie, :gi; μ = μIE, param = SNN.vSTDPParameter())
     II = SNN.SpikingSynapse(I, I, w = Lii, :gi; μ = μII)
     ProjI = SNN.SpikingSynapse(Input_I, I, :ge; μ = μ_in_E, p = p_in)
     ProjE = SNN.SpikingSynapse(Input_E, E, :ge; μ = μ_in_E, p = p_in) # connection from input to E
     P = [E, I, Input_E, Input_I]
     C = [EE, II, EI, IE, ProjE, ProjI]
-    return P, C
+    return P, C, EE, II, EI, IE, ProjE, ProjI
 end
 
 ##
-P,C = initialize_LKD(Epop_numbers,IPop_numbers,w0Weights, Lee, Lie, Lei, Lii,νe = 4.5Hz)
+P,C, EE, II, EI, IE, ProjE, ProjI = initialize_LKD(Epop_numbers,IPop_numbers,w0Weights, Lee, Lie, Lei, Lii;νe = 4.5Hz)
 
 
 #
 #P, C = initialize_LKD(20Hz)
 duration = 15000ms
-pltdur = 500e1
+#pltdur = 500e1
 SNN.monitor(P[1:2], [:fire, :v])
 SNN.sim!(P, C; duration = duration)
-SNN.raster(P[1:2], [1, 1.5] .* pltdur)
-SNN.vecplot(P[1], :v, 10)
+
+p1 = SNN.raster(P[1])
+p2 = SNN.raster(P[2])
+display(plot(p1,p2))
+
+matrix_to_plot = w0Weights  # Replace 1 with the index of the matrix you need
+
+
+# Plot the heatmap
+heatmap(matrix_to_plot, color=:viridis, xlabel="Source Neurons", ylabel="Target Neurons", title="Connectivity Matrix Heatmap")
+
+# Assuming `matrix_to_plot` is the matrix you want to visualize
+#matrix_to_plot = layer_matrices[1]  # For example, w0Weights
+final = Matrix(Lee)+Matrix(Lei)
+# Convert the matrix to dense if it's sparse
+matrix_dense = Matrix(final)
+
+# Normalize the matrix between 0 and 1
+min_val = minimum(matrix_dense)
+max_val = maximum(matrix_dense)
+normalized_matrix = (matrix_dense .- min_val) ./ (max_val - min_val)
+
+# Plot the normalized heatmap
+heatmap(
+    normalized_matrix,
+    color=:viridis,
+    xlabel="Source Neurons",
+    ylabel="Target Neurons",
+    title="Normalized Connectivity Matrix Heatmap",
+    clims=(0, 1)  # Setting color limits for the normalized scale
+)
+
+#scale = 0.015
+#pot_conn = grab_connectome(scale)
+dim = 2
+Lx = Vector{Int64}(zeros(size(w0Weights[2,:])))
+Lx = convert(Vector{Int64},Lx)
+
+y = sgtsnepi(w0Weights)
+cmap_out = distinguishable_colors(
+    length(Lx),
+    [RGB(1,1,1), RGB(0,0,0)], dropseed=true)
+
+display(SGtSNEpi.show_embedding( y, Lx ,A=w0Weights;edge_alpha=0.15,lwd_in=0.15,lwd_out=0.013,cmap=cmap_out)
+#SNN.raster(P[1:2], [1, 1.5] .* pltdur)
+#display(SNN.vecplot(P[1], :v, 10))
 # E_neuron_spikes = map(sum, E.records[:fire])
 # E_neuron_spikes = map(sum, E.records[:fire])
-histogram(IE.W[:])
+display(histogram(IE.W[:]))
+display(histogram(EE.W[:]))
+display(histogram(EI.W[:]))
 
 ##
 function firing_rate(E, I, bin_width, bin_edges)
@@ -312,7 +365,7 @@ I_bin_counts = []
 bin_edges = []
 bin_width = 10  # in milliseconds
 
-num_bins = Int(length(E.records[:fire]) / bin_width)
+num_bins = Int(length(EE.records[:fire]) / bin_width)
 bin_edges = 1:bin_width:(num_bins*bin_width)
 
 ##
@@ -321,28 +374,13 @@ bin_edges = 1:bin_width:(num_bins*bin_width)
 inputs = 0nA:5e3nA:(50e3)nA
 rates = zeros(length(inputs), 2)
 for (n, inh_input) in enumerate(inputs)
-    # νe = 25Hz
-    # νi = 3Hz
-    # N =10000
-    # p_in = 0.2
     @info inh_input
-
-    # Input_I = SNN.Poisson(; N = N, param = SNN.PoissonParameter(; rate = νi))
-    # Input_E = SNN.Poisson(; N = N, param = SNN.PoissonParameter(; rate = νe))
-    # E = SNN.AdEx(; N = 500, param = LKD_AdEx_exc)
-    # I = SNN.IF(; N = 125, param = LKD_IF_inh)
-    # EE = SNN.SpikingSynapse(E, E, :ge; μ = μEE, p = 0.2) 
-    # EI = SNN.SpikingSynapse(E, I, :ge; μ = μEI, p = 0.2)
-    # IE = SNN.SpikingSynapse(I, E, :gi; μ = μIE, p = 0.2)
-    # II = SNN.SpikingSynapse(I, I, :gi; μ = μII, p = 0.2)
-    # ProjE = SNN.SpikingSynapse(Input_E, E, :ge; μ = μ_in_E, p = p_in) 
-    # ProjI = SNN.SpikingSynapse(Input_I, I, :ge; μ = μ_in_E, p = p_in)
 
 
 
     #
     duration = 500ms
-    P, C = initialize_LKD(20Hz)
+    #P, C = initialize_LKD(20Hz)
     SNN.monitor(P[1:2], [:fire])
     SNN.sim!(P, C; duration = duration)
 
@@ -398,30 +436,3 @@ plot!(bin_edges, I_bin_counts, label = "Inhibitory neurons")
 # For example, let's plot the first matrix, `w0Weights`
 
 # Extract the matrix you want to plot
-matrix_to_plot = w0Weights[1]  # Replace 1 with the index of the matrix you need
-
-#=
-# Plot the heatmap
-heatmap(matrix_to_plot, color=:viridis, xlabel="Source Neurons", ylabel="Target Neurons", title="Connectivity Matrix Heatmap")
-
-# Assuming `matrix_to_plot` is the matrix you want to visualize
-matrix_to_plot = layer_matrices[1]  # For example, w0Weights
-
-# Convert the matrix to dense if it's sparse
-matrix_dense = Matrix(matrix_to_plot)
-
-# Normalize the matrix between 0 and 1
-min_val = minimum(matrix_dense)
-max_val = maximum(matrix_dense)
-normalized_matrix = (matrix_dense .- min_val) ./ (max_val - min_val)
-
-# Plot the normalized heatmap
-heatmap(
-    normalized_matrix,
-    color=:viridis,
-    xlabel="Source Neurons",
-    ylabel="Target Neurons",
-    title="Normalized Connectivity Matrix Heatmap",
-    clims=(0, 1)  # Setting color limits for the normalized scale
-)
-=#
