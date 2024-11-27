@@ -104,7 +104,7 @@ If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into
 
 ## Example
 """
-function merge_models(args...;silent=false, kwargs...)
+function merge_models(args...;name="model", silent=false, kwargs...)
     pop = Dict{Symbol, Any}()
     syn = Dict{Symbol, Any}()
     stim= Dict{Symbol, Any}()
@@ -117,10 +117,11 @@ function merge_models(args...;silent=false, kwargs...)
     pop = DrWatson.dict2ntuple(sort(pop, by =x->x))
     syn = DrWatson.dict2ntuple(sort(syn, by =x->x))
     stim = DrWatson.dict2ntuple(sort(stim, by =x->stim[x].name))
+    model = (pop=pop, syn=syn, stim=stim, name=name)
     if !silent
-        print_model((pop=pop, syn=syn, stim=stim))
+        print_model(model)
     end
-    return (pop=pop, syn=syn, stim=stim)
+    return model
 end
 
 """
