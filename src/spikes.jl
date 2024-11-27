@@ -228,6 +228,11 @@ function firing_rate(
     return rates, interval
 end
 
+function firing_rate(population::T; kwargs...) where {T<:Union{AbstractPopulation, AbstractStimulus}}
+    return firing_rate(SNN.spiketimes(population)
+    ; kwargs...)
+end
+
 function firing_rate(populations; kwargs...)
     spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
     fr_pop = Vector{Vector{Float32}}[]
@@ -281,7 +286,7 @@ Compute the autocorrelogram of a spike train.
 # Returns
 - `taus`: Array{Float64} - The time differences between each spike and its surrounding spikes within the time window.
 """
-function autocorrelogram(t_pre; τ=200ms)
+function autocorrelogram(t_pre::Spiketimes; τ=200ms)
     taus =[]
     t_pre = sort(t_pre)
     for n in eachindex(t_pre)
@@ -313,7 +318,7 @@ containing the time points corresponding to the center of each bin.
 - `count`: A sparse matrix containing the spike counts for each time bin.
 - `r`: An array of time points corresponding to the center of each time bin.
 """
-function bin_spiketimes(spiketimes, interval, sr)
+function bin_spiketimes(spiketimes::Vector{Float32}, interval, sr)
     delta = round(Int,1/sr)
     r = interval[1]:delta:interval[2]
     count = zeros(Int, size(r))
@@ -342,7 +347,7 @@ The function returns the covariance density vectors for positive and negative ti
 - `covariance_density`: Tuple of two arrays representing the covariance density vectors for positive and negative time lags.
 
 """
-function compute_covariance_density(pre, post, T; τ=200ms, sr=50Hz)
+function compute_covariance_density(pre::Vector{Float32}, post::Vector{Float32}, T::R; τ=200ms, sr=50Hz) where {R<:Real}
     interval = 1:100
     interval = 1:round(Int,τ*sr)
     @show  interval, τ, sr, s
@@ -355,8 +360,24 @@ function compute_covariance_density(pre, post, T; τ=200ms, sr=50Hz)
     r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
     Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]*r_post*r_pre))/T  for x in range]
     Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1])* r_post*r_pre)/ T for x in range]
-    return vcat(reverse(-r[interval]), r[interval]),vcat(reverse(Cminus(interval)), Cplus(interval))
+    return vcat(reverse(-r[interval]), r[interval]), vcat(reverse(Cminus(interval)), Cplus(interval))
 end
+
+# function compute_covariance_density(pre::Spiketimes, post::Vector{}, ; τ=200ms, sr=50Hz)
+#     interval = 1:100
+#     interval = 1:round(Int,τ*sr)
+#     @show  interval, τ, sr, s
+#     a, r = bin_spiketimes(pre, [0, T], sr)
+#     b, r = bin_spiketimes(post, [0, T], sr)
+#     length(a)
+#     length(r)
+#     # Mean spike rates
+#     r_post = length(post) / T*s  # Average firing rate of post-synaptic spikes
+#     r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
+#     Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]*r_post*r_pre))/T  for x in range]
+#     Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1])* r_post*r_pre)/ T for x in range]
+#     return vcat(reverse(-r[interval]), r[interval]),vcat(reverse(Cminus(interval)), Cplus(interval))
+# end
 
 
 function isi(spiketimes::Spiketimes)
