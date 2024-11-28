@@ -125,14 +125,14 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
         if after_spike[i] > τabs
             v_s[i] = BAP
             ## backpropagation effect
-            c1 = (BAP - v_d[i]) * d.gax[i]
+            c1 = (BAP - v_d[i]) * d.gax[i]/100
             ## apply currents
             v_d[i] += dt * c1 / d.C[i]
         elseif after_spike[i] > 0
             v_s[i] = Vr
-            # c1 = (Vr - v_d1[i]) * gax1[i] /1000
-            # ## apply currents
-            # v_d1[i] += dt * c1 / cd1[i]
+            c1 = (Vr - v_d[i]) * d.gax[i] /100
+            # # apply currents
+            v_d[i] += dt * c1 / d.C[i]
         else
             ## Heun integration
             for _i ∈ 1:2
@@ -228,10 +228,12 @@ function update_ballandstick!(
         for _i ∈ 1:2
             is[_i] = 0.0f0
         end
+        ## update synaptic currents soma
         @unpack gsyn, E_rev = soma_syn[1]
         is[1] += gsyn * ge_s[i] * (v_s[i] + Δv[1] * dt - E_rev)
         @unpack gsyn, E_rev = soma_syn[2]
         is[1] += gsyn * gi_s[i] * (v_s[i] + Δv[1] * dt - E_rev)
+        ## update synaptic currents dendrites
         for r in eachindex(dend_syn)
             @unpack gsyn, E_rev, nmda = dend_syn[r]
             if nmda > 0.0f0

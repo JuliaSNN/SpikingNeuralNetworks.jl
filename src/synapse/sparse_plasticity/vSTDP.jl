@@ -20,7 +20,7 @@ end
     x::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function get_variables(param::T, Npre, Npost) where T <: vSTDPParameter
+function plasticityvariables(param::T, Npre, Npost) where T <: vSTDPParameter
     return vSTDPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -49,6 +49,8 @@ After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
 function plasticity!(c::PT, param::vSTDPParameter, dt::Float32, T::Time) where PT <: AbstractSparseSynapse
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
@@ -95,7 +97,7 @@ function plasticity!(
     end
 end
 
-export vSTDPParameter, vSTDPVariables, get_variables, plasticity!
+export vSTDPParameter, vSTDPVariables, plasticityvariables, plasticity!
 
 
 # @inbounds @fastmath @simd for i in eachindex(fireI) # Iterate over postsynaptic neurons

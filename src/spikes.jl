@@ -57,6 +57,11 @@ function spiketimes(
     return _spiketimes
 end
 
+"""
+    spiketimes(Ps; kwargs...)
+
+    Return the spiketimes of each population in single vector of Spiketimes.
+"""
 function spiketimes(Ps; kwargs...)
     st = Vector{Vector{Float32}}[]
     for p in Ps
@@ -64,6 +69,22 @@ function spiketimes(Ps; kwargs...)
         st = vcat(st, _st)
     end
     return Spiketimes(st)
+end
+
+"""
+    spiketimes_split(Ps; kwargs...)
+
+    Return the spiketimes of each population in a vector of Spiketimes.
+"""
+function spiketimes_split(Ps; kwargs...)
+    st_ps = Vector{Vector{Vector{Float32}}}()
+    names = Vector{String}()
+    for p in Ps
+        _st = spiketimes(p; kwargs...)
+        push!(st_ps, Spiketimes(_st))
+        push!(names, p.name)
+    end
+    return st_ps, names
 end
 
 """
@@ -207,9 +228,21 @@ function firing_rate(
     return rates, interval
 end
 
+function firing_rate(population::T; kwargs...) where {T<:Union{AbstractPopulation, AbstractStimulus}}
+    return firing_rate(SNN.spiketimes(population)
+    ; kwargs...)
+end
+
 function firing_rate(populations; kwargs...)
-    spiketimes = SNN.spiketimes(populations)
-    firing_rate(spiketimes; kwargs...)
+    spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
+    fr_pop = Vector{Vector{Float32}}[]
+    interval_pop = Vector{StepRangeLen}()
+    for spiketimes in spiketimes_pop
+        rates, interval = firing_rate(spiketimes; kwargs...)
+        push!(fr_pop, rates)
+        push!(interval_pop, interval)
+    end
+    return fr_pop, interval_pop, names_pop
 end
 
 function average_firing_rate(
@@ -240,22 +273,128 @@ function average_firing_rate(populations; kwargs...)
     average_firing_rate(spiketimes; kwargs...)
 end
 
+#
+"""
+    autocorrelogram(t_pre, τ=200ms, sr=50Hz)
 
-function get_isi(spiketimes::Spiketimes)
+Compute the autocorrelogram of a spike train.
+
+# Arguments
+- `t_pre`: Array{Float64} - The spike times of the pre-synaptic neuron.
+- `τ`: Float64 - The time window for computing the autocorrelogram. Default is 200ms.
+
+# Returns
+- `taus`: Array{Float64} - The time differences between each spike and its surrounding spikes within the time window.
+"""
+function autocorrelogram(t_pre::Spiketimes; τ=200ms)
+    taus =[]
+    t_pre = sort(t_pre)
+    for n in eachindex(t_pre)
+        my_t = t_pre[n]
+        last  = findlast(t-> abs(t -my_t) < τ, t_pre)
+        first = findfirst(t-> abs(t -my_t) < τ, t_pre)
+        surrounding = first:last
+        isnothing(surrounding) && continue
+        append!(taus, t_pre[surrounding] .- my_t)
+        filter!(x-> x != 0, taus)
+    end
+    return taus
+end
+
+"""
+    bin_spiketimes(spiketimes, interval, sr)
+
+Given a list of spike times `spiketimes`, an interval `[start, end]`, and a sampling rate `sr`,
+this function counts the number of spikes that fall within each time bin of width `1/sr` within the interval.
+The function returns a sparse matrix `count` containing the spike counts for each bin, and an array `r`
+containing the time points corresponding to the center of each bin.
+
+# Arguments
+- `spiketimes`: A 1-dimensional array of spike times.
+- `interval`: A 2-element array specifying the start and end times of the interval.
+- `sr`: The sampling rate, i.e., the number of time bins per second.
+
+# Returns
+- `count`: A sparse matrix containing the spike counts for each time bin.
+- `r`: An array of time points corresponding to the center of each time bin.
+"""
+function bin_spiketimes(spiketimes::Vector{Float32}, interval, sr)
+    delta = round(Int,1/sr)
+    r = interval[1]:delta:interval[2]
+    count = zeros(Int, size(r))
+    for i in 1:length(r)-1
+        count[i] = sum((spiketimes .> r[i]) .& (spiketimes .< r[i+1]))
+    end
+    return sparse(count), r
+end
+
+"""
+    compute_covariance_density(t_post, t_pre, T; τ=200ms, sr=50Hz)
+
+Compute the covariance density of spike trains `t_post` and `t_pre` over a time interval `T`.
+The function returns the covariance density vectors for positive and negative time lags.
+
+# Arguments
+- `t_post`: Array of post-synaptic spike times.
+- `t_pre`: Array of pre-synaptic spike times.
+- `T`: Total time duration.
+
+# Optional Arguments
+- `τ`: Time constant for the kernel (default: 200ms).
+- `sr`: Sampling rate (default: 50Hz).
+
+# Returns
+- `covariance_density`: Tuple of two arrays representing the covariance density vectors for positive and negative time lags.
+
+"""
+function compute_covariance_density(pre::Vector{Float32}, post::Vector{Float32}, T::R; τ=200ms, sr=50Hz) where {R<:Real}
+    interval = 1:100
+    interval = 1:round(Int,τ*sr)
+    @show  interval, τ, sr, s
+    a, r = bin_spiketimes(pre, [0, T], sr)
+    b, r = bin_spiketimes(post, [0, T], sr)
+    length(a)
+    length(r)
+    # Mean spike rates
+    r_post = length(post) / T*s  # Average firing rate of post-synaptic spikes
+    r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
+    Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]*r_post*r_pre))/T  for x in range]
+    Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1])* r_post*r_pre)/ T for x in range]
+    return vcat(reverse(-r[interval]), r[interval]), vcat(reverse(Cminus(interval)), Cplus(interval))
+end
+
+# function compute_covariance_density(pre::Spiketimes, post::Vector{}, ; τ=200ms, sr=50Hz)
+#     interval = 1:100
+#     interval = 1:round(Int,τ*sr)
+#     @show  interval, τ, sr, s
+#     a, r = bin_spiketimes(pre, [0, T], sr)
+#     b, r = bin_spiketimes(post, [0, T], sr)
+#     length(a)
+#     length(r)
+#     # Mean spike rates
+#     r_post = length(post) / T*s  # Average firing rate of post-synaptic spikes
+#     r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
+#     Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]*r_post*r_pre))/T  for x in range]
+#     Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1])* r_post*r_pre)/ T for x in range]
+#     return vcat(reverse(-r[interval]), r[interval]),vcat(reverse(Cminus(interval)), Cplus(interval))
+# end
+
+
+function isi(spiketimes::Spiketimes)
     return diff.(spiketimes)
 end
 
-# get_isi(spiketimes::NNSpikes, pop::Symbol) = read(spiketimes, pop) |> x -> diff.(x)
+# isi(spiketimes::NNSpikes, pop::Symbol) = read(spiketimes, pop) |> x -> diff.(x)
 
-function get_CV(spikes::Spiketimes)
-    intervals = get_isi(spikes;)
+function CV(spikes::Spiketimes)
+    intervals = isi(spikes;)
     cvs = sqrt.(var.(intervals) ./ (mean.(intervals) .^ 2))
     cvs[isnan.(cvs)] .= -0.0
     return cvs
 end
 
 """
-get_spikes_in_interval(spiketimes::Spiketimes, interval::AbstractRange)
+spikes_in_interval(spiketimes::Spiketimes, interval::AbstractRange)
 
 Return the spiketimes in the selected interval
 
@@ -264,7 +403,7 @@ spiketimes::Spiketimes: Vector with each neuron spiketime
 interval: 2 dimensional array with the start and end of the interval
 
 """
-function get_spikes_in_interval(
+function spikes_in_interval(
     spiketimes::Spiketimes,
     interval,
     margin = [0, 0];
@@ -281,14 +420,14 @@ function get_spikes_in_interval(
     return neurons
 end
 
-function get_spikes_in_intervals(
+function spikes_in_intervals(
     spiketimes::Spiketimes,
     intervals::Vector{Vector{Float32}};
     margin = 0,
     floor = true,
 )
     st = tmap(intervals) do interval
-        get_spikes_in_interval(spiketimes, interval, margin)
+        spikes_in_interval(spiketimes, interval, margin)
     end
     (floor) && (interval_standard_spikes!(st, intervals))
     return st
@@ -362,29 +501,29 @@ end
 #     return CV_isi2.(spiketimes)
 # end
 
-get_isi_cv(x::Spiketimes) = CV_isi2.(x)
+isi_cv(x::Spiketimes) = CV_isi2.(x)
 
 """
-    get_st_order(spiketimes::Spiketimes)
+    st_order(spiketimes::Spiketimes)
 """
-function get_st_order(spiketimes::T) where {T<:Vector{}}
+function st_order(spiketimes::T) where {T<:Vector{}}
     ii = sort(eachindex(1:length(spiketimes)), by = x -> spiketimes[x])
     return ii
 end
 
-function get_st_order(spiketimes::Spiketimes, pop::Vector{Int}, intervals)
-    @unpack spiketime = get_spike_statistics(spiketimes[pop], intervals)
+function st_order(spiketimes::Spiketimes, pop::Vector{Int}, intervals)
+    @unpack spiketime = spike_statistics(spiketimes[pop], intervals)
     ii = sort(eachindex(pop), by = x -> spiketime[x])
     return pop[ii]
 end
 
-function get_st_order(
+function st_order(
     spiketimes::Spiketimes,
     populations::Vector{Vector{Int}},
     intervals::Vector{Vector{T}},
     unique_pop::Bool = false,
 ) where {T<:Real}
-    return [get_st_order(spiketimes, population, intervals) for population in populations]
+    return [st_order(spiketimes, population, intervals) for population in populations]
 end
 
 """
@@ -400,7 +539,7 @@ function relative_time!(spiketimes::Spiketimes, start_time)
     return spiketimes
 end
 
-get_spike_count(x::Spiketimes) = length.(x)
+spike_count(x::Spiketimes) = length.(x)
 
 
 """
@@ -523,3 +662,5 @@ function spiketimes_from_bool(P; dt = 0.1ms)
     end
     return SNN.Spiketimes(_spiketimes)
 end
+
+export spiketimes, spiketimes_from_bool, merge_spiketimes, convolve, alpha_function, autocorrelogram, bin_spiketimes, compute_covariance_density, isi, CV, CV_isi2, firing_rate, average_firing_rate, firing_rate_average, firing_rate, firing_rate_average, spikes_in_interval, spikes_in_intervals, find_interval_indices, interval_standard_spikes, interval_standard_spikes!, relative_time!, st_order, isi_cv, spike_count, CV_isi2

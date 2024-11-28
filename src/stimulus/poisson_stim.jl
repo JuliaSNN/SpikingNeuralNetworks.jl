@@ -1,9 +1,14 @@
-@snn_kw struct PoissonStimulusParameter{VFT}
+abstract type PoissonStimulusParameter end
+@snn_kw struct PoissonStimulusVariable{VFT} <: PoissonStimulusParameter
     variables::Dict{Symbol, Any}=Dict{Symbol, Any}()
     rate::Function
 end
 
-PSParam = PoissonStimulusParameter
+@snn_kw struct PoissonStimulusFixed{R} <: PoissonStimulusParameter
+    rate::Vector{R}
+end
+
+PSParam = PoissonStimulusVariable
 
 @snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
 
@@ -84,8 +89,7 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjo
     end
 
     if typeof(param) <: Real
-        r = param
-        param = PSParam(rate = (x,y)->r)
+        param = PoissonStimulusFixed(fill(param, N))
     end
 
     # Construct the SpikingSynapse instance
@@ -107,12 +111,33 @@ end
 
 Generate a Poisson stimulus for a postsynaptic population.
 """
-function stimulate!(p::PoissonStimulus, param::PoissonStimulusParameter, time::Time, dt::Float32)
+function stimulate!(p::PoissonStimulus, param::PoissonStimulusFixed, time::Time, dt::Float32)
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
-    myrate::Float32 = param.rate(get_time(time), param)
+    @unpack rate = param 
     rand!(randcache)
     @inbounds @simd for j = 1:N
-        if randcache[j] < myrate/N_pre * dt
+        if randcache[j] < rate[j]*dt/N_pre
+            fire[j] = true
+        else
+            fire[j] = false
+        end
+    end
+    for j = 1:N # loop on presynaptic cells
+        if fire[j] # presynaptic fire
+            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                g[cells[I[s]]] += W[s]
+            end
+        end
+    end
+end
+
+function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Time, dt::Float32)
+    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    myrate::Float32 = param.rate(get_time(time), param)
+    myrate*=dt/N_pre
+    rand!(randcache)
+    @inbounds @simd for j = 1:N
+        if randcache[j] < myrate
             fire[j] = true
         else
             fire[j] = false

@@ -4,7 +4,7 @@ struct no_STDPParameter <: SpikingSynapseParameter end
 ## No plasticity
 struct no_PlasticityVariables <: PlasticityVariables end
 
-function get_variables(param::no_STDPParameter, Npre, Npost)
+function plasticityvariables(param::no_STDPParameter, Npre, Npost)
     return no_PlasticityVariables()
 end
 
@@ -20,10 +20,11 @@ include("sparse_plasticity/vSTDP.jl")
 include("sparse_plasticity/iSTDP.jl")
 include("sparse_plasticity/STP.jl")
 include("sparse_plasticity/longshortSP.jl")
+include("sparse_plasticity/STDP.jl")
 
 export SpikingSynapse,
     SpikingSynapseParameter,
     no_STDPParameter,
     no_PlasticityVariables,
-    get_variables,
+    plasticityvariables,
     plasticity!

@@ -16,7 +16,7 @@ end
     _ρ::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function get_variables(param::T, Npre, Npost) where T <: STPParameter
+function plasticityvariables(param::T, Npre, Npost) where T <: STPParameter
     return STPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -45,6 +45,8 @@ After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
 function plasticity!(c::AbstractSparseSynapse, param::STPParameter, dt::Float32, T::Time)
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
@@ -80,4 +82,4 @@ function plasticity!(
     end
 end
 
-export  STPParameter, STPVariables, get_variables, plasticity!
+export  STPParameter, STPVariables, plasticityvariables, plasticity!

@@ -1,12 +1,47 @@
 function connect!(c, j, i, μ = 1e-6)
     W = sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
     W[i, j] = μ * randn(Float32)
-    c.rowptr, c.colptr, c.I, c.J, c.index, c.W = dsparse(W)
-    # c.tpre, c.tpost, c.Apre, c.Apost = zero(c.W), zero(c.W), zero(c.W), zero(c.W)
+    replace_sparse_matrix!(c, W)
+    return nothing
+end
+
+function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
+    rowptr, colptr, I, J, index, W = dsparse(W)
+    @assert length(rowptr) == length(c.rowptr) "Rowptr length mismatch"
+    @assert length(colptr) == length(c.colptr) "Colptr length mismatch"
+
+    resize!(c.I, length(I))
+    resize!(c.J, length(I))
+    resize!(c.W, length(I))
+    resize!(c.index, length(I))
+
+    @assert length(c.I) == length(c.J) == length(c.index) == length(c.W) == length(I) == length(J) == length(index) == length(W) "Length mismatch"
+    
+    @inbounds @simd for i in eachindex(I)
+        c.I[i] = I[i]
+        c.J[i] = J[i]
+        c.W[i] = W[i]
+        c.index[i] = index[i]
+    end
     return nothing
 end
 
 # """function dsparse
+
+function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
+    if isnothing(w)
+        # if w is not defined, construct a random sparse matrix with `dist` with `μ` and `σ`. 
+        w = rand(dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
+        w[[n for n in eachindex(w[:]) if rand() > ρ]] .= 0
+        w[w .< 0] .= 0 
+        w = sparse(w)
+    else
+        # if w is defined, convert it to a sparse matrix
+        w = sparse(w)
+    end
+    @assert size(w) == (Npost, Npre) "The size of the synaptic weight is not correct"
+    return w
+end
 
 function dsparse(A)
     # them in a special data structure leads to savings in space and execution time, compared to dense arrays.
@@ -89,23 +124,27 @@ If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into
 
 ## Example
 """
-function merge_models(args...;silent=false, kwargs...)
+function merge_models(args...; name=randstring(10), silent=false, kwargs...)
     pop = Dict{Symbol, Any}()
     syn = Dict{Symbol, Any}()
     stim= Dict{Symbol, Any}()
     for v in args
+        v isa String && continue
         extract_items(Symbol(""),v, pop=pop, syn=syn, stim=stim)
     end
     for (k,v) in kwargs
+        v isa String && continue
         extract_items(k,v, pop=pop, syn=syn, stim=stim)
     end
     pop = DrWatson.dict2ntuple(sort(pop, by =x->x))
     syn = DrWatson.dict2ntuple(sort(syn, by =x->x))
     stim = DrWatson.dict2ntuple(sort(stim, by =x->stim[x].name))
+    name = haskey(kwargs, :name) ? args.name : name
+    model = (pop=pop, syn=syn, stim=stim, name=name)
     if !silent
-        print_model((pop=pop, syn=syn, stim=stim))
+        print_model(model)
     end
-    return (pop=pop, syn=syn, stim=stim)
+    return model
 end
 
 """
@@ -130,7 +169,7 @@ function print_model(model, get_keys=false)
     model_graph = graph(model)
     @unpack pop, syn, stim = model
     @info "================"
-    @info "Model:"
+    @info "Model: $(model.name)"
     @info "----------------"
     @info "Populations:"
     for k in keys(pop)
@@ -203,6 +242,7 @@ function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict
         push!(stim, root => v)
     else
         for k in keys(container)
+            k == :name && continue
             v = getindex(container, k)
             (k == :pop || k == :syn || k == :stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
             new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))

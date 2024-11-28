@@ -18,13 +18,15 @@ end
     Apost::VFT = zeros(Npost) # postsynaptic trace
 end
 
-function get_variables(param::STDPParameter, Npre, Npost)
+function plasticityvariables(param::STDPParameter, Npre, Npost)
     return STDPVariables(Npre = Npre, Npost = Npost)
 end
 
 ## It's broken   !!
 
 function plasticity!(c::AbstractSparseSynapse, param::STDPParameter, dt::Float32)
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt)
 end
 
@@ -106,4 +108,4 @@ end
 # # AMPAsynapses[findall(AMPAsynapses .> max_efficacy)] .= max_efficacy
 # # AMPAsynapses[findall(AMPAsynapses .< 0.)] .=0
 
-export STDPParameter, STDPVariables, get_variables, plasticity!
+export STDPParameter, STDPVariables, plasticityvariables, plasticity!
