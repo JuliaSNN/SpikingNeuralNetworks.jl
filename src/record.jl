@@ -186,7 +186,7 @@ function record!(obj::C, T::Time) where {C<:AbstractConnection}
         (key == :timestamp) && (continue)
         (key == :fire) && (continue)
         (key == :plasticity) && (continue)
-        (key ∈ keys(records[:plasticity])) && (continue)
+        (haskey(records, :plasticity)) && (key ∈ keys(records[:plasticity])) && (continue)
         record_sym!(obj, key, T, records[:indices], records[:sr][key])
     end
 end

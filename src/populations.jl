@@ -37,7 +37,7 @@ A named tuple of populations that match the regex.
 
 # Examples
 """
-function filter_populations(P, condition= p->occursin(string(type), string(p.name)))
+function filter_populations(P, condition= p->occursin(string("noise"), string(p.name)))
     populations = Dict{Symbol, Any}()
     for k in keys(P)
         p = getfield(P, k)
