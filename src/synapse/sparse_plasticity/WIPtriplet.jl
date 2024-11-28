@@ -5,6 +5,7 @@
     Wmax::FT = 0.01
     ΔApre::FT = 0.01 * Wmax
     ΔApost::FT = -ΔApre * τpre / τpost * 1.05
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw struct STDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables

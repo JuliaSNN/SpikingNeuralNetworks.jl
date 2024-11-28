@@ -86,7 +86,7 @@ function train!(; model, kwargs...)
     pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
     syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
     stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
-    train!(pop,syn,stim; kwargs...)
+    train!(pop,syn,stim; kwargs...,)
 end
 
 function sim!(; model, kwargs...)
@@ -142,7 +142,11 @@ function train!(
     end
     for c in C
         forward!(c, c.param)
-        plasticity!(c, c.param, dt, T)
+        if hasfield(typeof(c), :active) && active
+            plasticity!(c, c.param, dt, T)
+        elseif !hasfield(typeof(c), :active) 
+            plasticity!(c, c.param, dt, T)
+        end
         record!(c, T)
     end
 end

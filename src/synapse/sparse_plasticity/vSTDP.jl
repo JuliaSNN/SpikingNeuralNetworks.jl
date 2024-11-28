@@ -8,6 +8,7 @@
     τx::FT = 15ms
     Wmax::FT = 30.0pF
     Wmin::FT = 0.1pF
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw struct vSTDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables

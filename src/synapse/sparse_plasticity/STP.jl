@@ -4,6 +4,7 @@
     U::FT = 0.2
     Wmax::FT = 1.0pF
     Wmin::FT = 0.0pF
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw struct STPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
