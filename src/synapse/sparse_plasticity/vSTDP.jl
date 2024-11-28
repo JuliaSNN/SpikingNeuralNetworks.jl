@@ -49,6 +49,8 @@ After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
 function plasticity!(c::PT, param::vSTDPParameter, dt::Float32, T::Time) where PT <: AbstractSparseSynapse
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt, T)
 end
 

@@ -142,11 +142,8 @@ function train!(
     end
     for c in C
         forward!(c, c.param)
-        if hasfield(typeof(c), :active) && active
-            plasticity!(c, c.param, dt, T)
-        elseif !hasfield(typeof(c), :active) 
-            plasticity!(c, c.param, dt, T)
-        end
+        ## I moved the control in the plasticity function for the sake of cleaner code
+        plasticity!(c, c.param, dt, T)
         record!(c, T)
     end
 end

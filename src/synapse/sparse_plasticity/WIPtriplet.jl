@@ -25,6 +25,8 @@ end
 ## It's broken   !!
 
 function plasticity!(c::AbstractSparseSynapse, param::STDPParameter, dt::Float32)
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt)
 end
 

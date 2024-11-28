@@ -56,6 +56,8 @@ function plasticity!(
     dt::Float32,
     T::Time,
 )
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
