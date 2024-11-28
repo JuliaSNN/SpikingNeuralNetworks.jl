@@ -104,19 +104,22 @@ If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into
 
 ## Example
 """
-function merge_models(args...;name="model", silent=false, kwargs...)
+function merge_models(args...; name=randstring(10), silent=false, kwargs...)
     pop = Dict{Symbol, Any}()
     syn = Dict{Symbol, Any}()
     stim= Dict{Symbol, Any}()
     for v in args
+        v isa String && continue
         extract_items(Symbol(""),v, pop=pop, syn=syn, stim=stim)
     end
     for (k,v) in kwargs
+        v isa String && continue
         extract_items(k,v, pop=pop, syn=syn, stim=stim)
     end
     pop = DrWatson.dict2ntuple(sort(pop, by =x->x))
     syn = DrWatson.dict2ntuple(sort(syn, by =x->x))
     stim = DrWatson.dict2ntuple(sort(stim, by =x->stim[x].name))
+    name = haskey(kwargs, :name) ? args.name : name
     model = (pop=pop, syn=syn, stim=stim, name=name)
     if !silent
         print_model(model)
@@ -146,7 +149,7 @@ function print_model(model, get_keys=false)
     model_graph = graph(model)
     @unpack pop, syn, stim = model
     @info "================"
-    @info "Model:"
+    @info "Model: $(model.name)"
     @info "----------------"
     @info "Populations:"
     for k in keys(pop)
@@ -219,6 +222,7 @@ function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict
         push!(stim, root => v)
     else
         for k in keys(container)
+            k == :name && continue
             v = getindex(container, k)
             (k == :pop || k == :syn || k == :stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
             new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))
