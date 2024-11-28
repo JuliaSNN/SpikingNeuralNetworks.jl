@@ -1,8 +1,12 @@
 function connect!(c, j, i, μ = 1e-6)
-    W = sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
+    W = matrix(c)
     W[i, j] = μ * randn(Float32)
     replace_sparse_matrix!(c, W)
     return nothing
+end
+
+function matrix(c)
+    return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
 function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
