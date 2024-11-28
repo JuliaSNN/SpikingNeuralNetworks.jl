@@ -13,18 +13,6 @@ end
 ReceptorVoltage = Receptor
 SynapseArray = Vector{Receptor{Float32}}
 
-
-Mg_mM = 1.0f0
-nmda_b = 3.36   # voltage dependence of nmda channels
-# nmda_k   = -0.062     #(1/V) source: http://dx.doi.org/10.1016/j.neucom.2011.04.018)
-nmda_k = -0.077     #Eyal 2018
-
-@snn_kw struct NMDAVoltageDependency{T<:Float32}
-    b::T = nmda_b
-    k::T = nmda_k
-    mg::T = Mg_mM
-end
-
 struct Synapse{T<:Receptor}
     AMPA::T
     NMDA::T
@@ -75,6 +63,18 @@ function synapsearray(syn::Synapse, indices::Vector = [])::SynapseArray
         end
     end
     return container
+end
+
+
+Mg_mM = 1.0f0
+nmda_b = 3.36   # voltage dependence of nmda channels
+# nmda_k   = -0.062     #(1/V) source: http://dx.doi.org/10.1016/j.neucom.2011.04.018)
+nmda_k = -0.077     #Eyal 2018
+
+@snn_kw struct NMDAVoltageDependency{T<:Float32}
+    b::T = nmda_b
+    k::T = nmda_k
+    mg::T = Mg_mM
 end
 
 
