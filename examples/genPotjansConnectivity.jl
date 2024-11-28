@@ -51,7 +51,7 @@ function potjans_params(ccu, scale=1.0)
     for (i, k) in enumerate(keys(ccu))
         syn_pol[i] = occursin("E", k) ? 1 : 0
     end
-    #@show(syn_pol)
+    
     return cumulative, ccu, layer_names, conn_probs, syn_pol
 end
 
@@ -112,10 +112,8 @@ function build_matrix(cumulative, conn_probs, Ncells, g_strengths, syn_pol, batc
     end
 
     Lexc = Lee + Lei
-    #@show(Lexc)
     Linh = Lie + Lii
-    #@show(Linh)
-
+    
     return w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh
 end
 
@@ -124,8 +122,7 @@ Create Potjans weights with modularized params and memory-optimized matrices
 """
 function potjans_weights(Ncells, g_strengths, ccu, scale)
     cumulative, ccu, layer_names, conn_probs, syn_pol = potjans_params(ccu, scale)
-    w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh = build_matrix(cumulative, conn_probs, Ncells, g_strengths, syn_pol)
-    w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh
+    build_matrix(cumulative, conn_probs, Ncells, g_strengths, syn_pol)
 end
 
 """
@@ -145,7 +142,6 @@ function auxil_potjans_param(scale=1.0)
 
     Ncells = trunc(Int32, sum(values(ccu)) + 1)
     Ne = trunc(Int32, ccu["23E"] + ccu["4E"] + ccu["5E"] + ccu["6E"])
-    #@show(Ne)
     Ni = Ncells - Ne
     return Ncells, Ne, Ni, ccu
 end
@@ -168,9 +164,8 @@ function potjans_layer(scale)
     jie = -0.75 * ji
     jii = -ji
     g_strengths = Float32[jee, jie, jei, jii]
-    #@show(g_strengths)
 
-    w0Weights, Lee, Lie, Lei, Lii, Lexc, Linh = potjans_weights(Ncells, g_strengths, ccu, scale)
+    potjans_weights(Ncells, g_strengths, ccu, scale)
 end
 
 
@@ -436,3 +431,7 @@ plot!(bin_edges, I_bin_counts, label = "Inhibitory neurons")
 # For example, let's plot the first matrix, `w0Weights`
 
 # Extract the matrix you want to plot
+matrix_to_plot = layer_matrices[1]  # Replace 1 with the index of the matrix you need
+
+# Plot the heatmap
+heatmap(matrix_to_plot, color=:viridis, xlabel="Source Neurons", ylabel="Target Neurons", title="Connectivity Matrix Heatmap")

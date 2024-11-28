@@ -37,14 +37,17 @@ A named tuple of populations that match the regex.
 
 # Examples
 """
-function filter_populations(P, type)
-    indices = Dict{Symbol, AbstractPopulation}()
+function filter_populations(P, condition= p->occursin(string(type), string(p.name)))
+    populations = Dict{Symbol, Any}()
     for k in keys(P)
-        !occursin(string(type), string(k)) && continue
         p = getfield(P, k)
-        push!(indices,k => p)
+        condition(p) && continue
+        @show P[k].name
+        p = getfield(P, k)
+        push!(populations,k => p)
     end
-    return dict2ntuple(sort(indices))
+
+    return dict2ntuple(sort(populations, by = x ->getfield(P,x).name))
 end
 
 """
@@ -64,7 +67,7 @@ Extracts the names and the neuron ids projected from a given set of stimuli.
 function subpopulations(stim)
     names = Vector{String}()
     pops = Vector{Int}[]
-    my_keys = sort(collect(keys(stim)))
+    my_keys = collect(keys(stim))
     for key in my_keys
         push!(names, getfield(stim, key).name)
         push!(pops, getfield(stim, key).cells)

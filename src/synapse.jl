@@ -70,7 +70,7 @@ function synapsearray(syn::Synapse, indices::Vector = [])::SynapseArray
     names = isempty(indices) ? fieldnames(Synapse) : fieldnames(Synapse)[indices]
     for name in names
         receptor = getfield(syn, name)
-        if receptor.gsyn > 0
+        if !(receptor.τr  < 0)
             push!(container, receptor)
         end
     end

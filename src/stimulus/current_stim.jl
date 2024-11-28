@@ -22,6 +22,7 @@ function CurrentStimulus(post::T; cells=:ALL, I_dist::Distribution{Univariate, C
     if cells == :ALL
         cells = 1:post.N
     end 
+    targets = Dict(:pre => :Current, :g => post.id, :sym=>:soma)
 
     α =  isa(α, Number) ? fill(α, length(cells)) : α
 
@@ -30,7 +31,8 @@ function CurrentStimulus(post::T; cells=:ALL, I_dist::Distribution{Univariate, C
         I=post.I,
         I_dist = I_dist,
         I_base = I_base,
-        α = α;
+        α = α,
+        targets=targets;
         kwargs...,
     )
 end

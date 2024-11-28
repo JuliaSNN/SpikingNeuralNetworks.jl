@@ -1,32 +1,68 @@
 using JLD2
+using ProgressMeter
+using PyCall
+using Random
 
 
 
-function bds!()
+function build_data_set_native(events,cnt,input_shape)#,l_change_cnt,l_old)
+    xx = Vector{Int32}([])
+    yy = Vector{Int32}([])
+    tts = Vector{Float32}([])
+    polarity = Vector{Int8}([])
+    label = Vector{Int32}([])
+    #A = zeros(input_shape[1]+1,input_shape[2]+1,input_shape[3]+1)
+    A = zeros((400,400))
+    I = LinearIndices(A)
+    pop_stimulation= Vector{Int32}([])#Vector{UInt32}([])
+    @inbounds for (ind_,ev) in enumerate(events)      
+        cnt+=1
+        (x,y,ts,p,l) = ev
+        #@show(x,y,ts,p,l)
+        #rows, cols = size(pop_stimulation)
+        #if 1 <= x <= rows && 1 <= y <= cols
+            #index = Int32(I[CartesianIndex(Int(x), Int(y))])
+        #if 1 <= x && 1 <= y            
+        #if 1 <= x  && 1 <= y 
+        push!(pop_stimulation,Int32(I[CartesianIndex(convert(Int32,x),convert(Int32,y))]))
+
+        #else
+        #    @warn "Index out of bounds: x=$x, y=$y"
+        #end
+
+        #push!(pop_stimulation,Int32(I[CartesianIndex(convert(Int32,x),convert(Int32,y))]))
+        push!(xx,convert(Int32,x))
+        push!(yy,convert(Int32,y))
+        ts = Float32(convert(Float32,ts)/1000.0)
+        push!(tts,ts)
+        push!(polarity,convert(Int8,p))
+        l = convert(Int32,l)
+        push!(label,l)
+    end
+    spikes_typed::Tuple{Vector{Int32}, Vector{Int32}, Vector{Float32}, Vector{Int8}, Vector{Int32},Vector{Any}} = (xx,yy,tts,polarity,label,pop_stimulation)
+    (cnt,spikes_typed)#,l_change_cnt,l_old)
+end
+
+function getNMNIST()
 
     pushfirst!(PyVector(pyimport("sys")."path"), "")
     nmnist_module = pyimport("batch_nmnist_motions")
     dataset::PyObject = nmnist_module.NMNIST("./")
     training_order = shuffle(0:dataset.get_count()-1)
-    #storage = Array{Array}([])
-    storage::Array{Tuple{Vector{UInt32}, Vector{UInt32}, Vector{Float32}, Vector{Int8}, Vector{UInt32}, Vector{Any}}} = []
-    storage = []
+    #cached_spikes::Array{Tuple{Vector{UInt32}, Vector{UInt32}, Vector{Float32}, Vector{Int8}, Vector{UInt32}, Vector{Any}}} = []
+    cached_spikes = []
     input_shape = dataset.get_element_dimensions()
-    cnt = 0
-    
+    cnt = 0    
     @time @inbounds for batch in 1:100:length(training_order)
-        if cnt<1400
+        if cnt<400
 
             events = dataset.get_dataset_item(training_order[batch:batch+100-1])
-            cnt,did_it_exec = build_data_set_native(Odesa.ConvOdesa,events,storage,cnt,input_shape)
-            push!(storage,did_it_exec)
+            cnt,batch_nmnist = build_data_set_native(events,cnt,input_shape)
+            push!(cached_spikes,batch_nmnist)
         end
     end
-    #@load "yeshes_events.jld" events_cache input_shape
-
-    @save "all_mnmist.jld" storage
-
-    
+    @save "partial_mnmist.jld" cached_spikes    
+    cached_spikes
 end
 
 
@@ -71,14 +107,10 @@ function NMNIST_pre_process_spike_data(temp_container_store;duration=25)
     return empty_spike_cont,labelsl,packet_window_boundaries
 end
 
-#if !isfile("NMNIST_spike_packet_conc_v.jld")
+cached_spikes = getNMNIST()
 
-#@time (correct_class,wrong_class,no_class) = 
-bds!()
-
-@load "../data2/all_mnmist_complete.jld" storage
-empty_spike_cont, labelsl, packet_window_boundaries = NMNIST_pre_process_spike_data(storage;duration=125)
-#empty_spike_cont, labelsl, packet_window_boundaries= NMNIST_pre_process_spike_data(storage)
+@load "partial_mnmist.jld" cached_spikes
+empty_spike_cont, labelsl, packet_window_boundaries = NMNIST_pre_process_spike_data(cached_spikes;duration=1250)
 @save "NMNIST_spike_packet_conc_v.jld"  empty_spike_cont labelsl packet_window_boundaries
 
 
