@@ -6,6 +6,7 @@ abstract type iSTDPParameter <: SpikingSynapseParameter end
     τy::FT = 50ms
     Wmax::FT = 243pF
     Wmin::FT = 0.01pF
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw mutable struct iSTDPParameterPotential{FT = Float32} <: iSTDPParameter
@@ -14,6 +15,7 @@ end
     τy::FT = 200ms
     Wmax::FT = 243pF
     Wmin::FT = 0.01pF
+    active::Vector{Bool} = [true]
 end
 
 
