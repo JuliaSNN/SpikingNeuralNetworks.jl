@@ -9,15 +9,15 @@ E = SNN.BallAndStick((150um, 200um);
 )
 
 
-model=merge_models(pop=Dict("E"=>E))
-SNN.monitor(model.pop.E, [:v_s, :v_d, :h_s, :h_d, :g_s, :g_d])
+model=merge_models(Dict(:E=>E))
+SNN.monitor(model.pop.E, [:v_s, :v_d, :he_s, :h_d, :ge_s, :g_d])
 
 SNN.sim!(model=model, duration=1000ms, dt=0.125)
 model.pop.E.v_s[1]=-50mV
-model.pop.E.g_s[1]=100nS
+model.pop.E.ge_s[1]=100nS
 SNN.integrate!(model.pop.E, model.pop.E.param, 0.125f0)
-model.pop.E.g_s
+model.pop.E.ge_s
 SNN.sim!(model=model, duration=1000ms, dt=0.125)
 
 
-SNN.vecplot(model.pop.E,:g_s, r=0.001s:2s , dt=0.125)
+SNN.vecplot(model.pop.E,:ge_s, dt=0.125)
