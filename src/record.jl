@@ -10,10 +10,10 @@ A mutable struct representing time.
 
 """
 Time
-@snn_kw mutable struct Time
-    t::Vector{Float32} = [0.0f0]
-    tt::Vector{Int} = [0]
-    dt::Float32 = 0.125f0
+@snn_kw mutable struct Time{VFT = Vector{Float32}, VIT = Vector{Int32}, FT = Float32}
+    t::VFT = [0.0f0]
+    tt::VIT = Int32[0]
+    dt::FT = 0.125f0
 end
 
 """
@@ -102,7 +102,9 @@ Record the plasticity variable `key` of the `plasticity` object into the `obj.re
 
 """
 function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, sr::Float32, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
-    (get_step(T) % round(Int, 1/sr/get_dt(T))) != 0 && return
+    # my_record = getfield(obj, key)
+    # @unpack records = obj
+    (get_time(T) % trunc(Int, 1.f0/sr)) != 0 && return
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
     push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
@@ -118,12 +120,14 @@ Record the firing activity of the `obj` object into the `obj.records[:fire]` arr
 - `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
 
 """
-function record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: Union{AbstractPopulation, AbstractStimulus}}
-    sum(obj.fire) == 0 && return
-    ind::Vector{Int} = haskey(indices, :fire) ? indices[:fire] : collect(eachindex(obj.fire))
+function record_fire!(fire::Vector{Bool}, record::Dict{Symbol,AbstractVector}, T::Time, indices::Dict{Symbol,Vector{Int}})
+    # @unpack fire = obj
+    # @unpack records = obj
+    sum(fire) == 0 && return
+    ind::Vector{Int} = haskey(indices, :fire) ? indices[:fire] : collect(eachindex(fire))
     t::Float32 = get_time(T)
-    push!(obj.records[:fire][:time], t)
-    push!(obj.records[:fire][:neurons], findall(obj.fire[ind]))
+    push!(record[:time], t)
+    push!(record[:neurons], findall(fire[ind]))
 end
 
 """
@@ -139,10 +143,19 @@ Record the variable `key` of the `obj` object into the `obj.records[key]` array.
 
 """
 function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, sr::Float32) 
-    (get_step(T) % floor(Int, 1/sr/get_dt(T))) != 0 && return
-    ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(getfield(obj,key),1)
-    isa(getfield(obj, key), Vector) && push!(obj.records[key], getfield(obj, key)[ind])
-    isa(getfield(obj, key), AbstractMatrix) && push!(obj.records[key], getfield(obj, key)[ind,:])
+    my_record = getfield(obj, key)
+    @unpack records = obj
+    (get_time(T) % trunc(Int, 1.f0/sr)) != 0 && return
+    ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(my_record,1)
+    @inbounds _record_sym(my_record, records[key], ind)
+end
+
+@inline function _record_sym(my_record::Vector{T}, records::Vector{Vector{T}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, my_record[ind])
+end
+
+@inline function _record_sym(my_record::Matrix{T}, records::Vector{Matrix{T}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, my_record[ind,:])
 end
 
 """
@@ -152,30 +165,42 @@ Store values into the dictionary named `records` in the object given
 - `obj`: An object whose values are to be recorded
 
 """
-function record!(obj, T::Time)
-    records::Dict{Symbol,Any} = obj.records
-    for key in keys(records)
+function record!(obj::P, T::Time) where {P<:Union{AbstractPopulation, AbstractStimulus}}
+    @unpack records = obj
+    haskey(records, :fire) && record_fire!(obj.fire, obj.records[:fire], T, records[:indices])
+    # timestamp::Vector{Float32} = records[:timestamp]
+    # if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
+    #     push!(timestamp, get_time(T))
+    # end
+    @inbounds for key::Symbol in keys(records)
         (key == :indices) && (continue)
         (key == :sr) && (continue)
-        if (key == :timestamp) 
-            if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
-                push!(records[:timestamp], get_time(T))
+        (key == :timestamp) && (continue)
+        (key == :fire) && (continue)
+        record_sym!(obj, key, T, records[:indices], records[:sr][key])
+    end
+end
+
+function record!(obj::C, T::Time) where {C<:AbstractConnection}
+    @unpack records = obj
+    # timestamp::Vector{Float32} = records[:timestamp]
+    # if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
+    #     push!(timestamp, get_time(T))
+    # end
+    @inbounds if haskey(records, :plasticity)
+        for name_plasticity::Symbol in keys(records[:plasticity])
+            for key::Symbol in records[:plasticity][name_plasticity]
+                record_plast!(obj, obj.plasticity, key, T, records[:indices], records[:sr][name_plasticity], name_plasticity)
             end
-            continue
         end
-        if key == :fire
-            record_fire!(obj, T, records[:indices])
-        elseif key == :plasticity
-            for name_plasticity in keys(records[:plasticity])
-                for p_k in records[:plasticity][name_plasticity]
-                    record_plast!(obj, obj.plasticity, p_k, T, records[:indices], records[:sr][name_plasticity], name_plasticity)
-                end
-            end
-        elseif haskey(records,:plasticity) && (key ∈ keys(records[:plasticity]))
-            continue
-        else
-            record_sym!(obj, key, T, records[:indices], records[:sr][key])
-        end
+    end
+    for key::Symbol in keys(records)
+        (key == :indices) && (continue)
+        (key == :sr) && (continue)
+        (key == :timestamp) && (continue)
+        (key == :fire) && (continue)
+        (key == :plasticity) && (continue)
+        record_sym!(obj, key, T, records[:indices], records[:sr][key])
     end
 end
 
