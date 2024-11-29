@@ -8,6 +8,7 @@
     τx::FT = 15ms
     Wmax::FT = 30.0pF
     Wmin::FT = 0.1pF
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw struct vSTDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
@@ -48,6 +49,8 @@ After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
 function plasticity!(c::PT, param::vSTDPParameter, dt::Float32, T::Time) where PT <: AbstractSparseSynapse
+    @unpack active = param
+    !active[1] && return
     plasticity!(c, param, c.plasticity, dt, T)
 end
 

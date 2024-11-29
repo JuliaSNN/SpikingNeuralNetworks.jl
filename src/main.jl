@@ -86,7 +86,7 @@ function train!(; model, kwargs...)
     pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
     syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
     stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
-    train!(pop,syn,stim; kwargs...)
+    train!(pop,syn,stim; kwargs...,)
 end
 
 function sim!(; model, kwargs...)
@@ -142,6 +142,7 @@ function train!(
     end
     for c in C
         forward!(c, c.param)
+        ## I moved the control in the plasticity function for the sake of cleaner code
         plasticity!(c, c.param, dt, T)
         record!(c, T)
     end
