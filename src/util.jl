@@ -5,7 +5,7 @@ function connect!(c, j, i, μ = 1e-6)
     return nothing
 end
 
-function matrix(c)
+function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
