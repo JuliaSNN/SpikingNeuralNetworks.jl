@@ -284,4 +284,4 @@ function remove_element(model, key)
 end
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix
