@@ -307,11 +307,22 @@ function copy_model(model_path)
     return (model=model, seq=seq, mytime=mytime, lexicon=lexicon)
 end
 
+"""
+    print_summary(p)
 
-
+    Prints a summary of the given element.
+"""
+function print_summary(p)
+    println("Type: $(nameof(typeof(p))) $(nameof(typeof(p.param)))")
+    println("  Name: ", p.name)
+    println("  Number of Neurons: ", p.N)
+    for k in fieldnames(typeof(p.param))
+        println("   $k: $(getfield(p.param,k))")
+    end
+end
 
 
 
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix, load_model, print_model, copy_model, extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix, load_model, print_model, copy_model, extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary
