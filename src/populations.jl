@@ -72,7 +72,7 @@ function subpopulations(stim)
         push!(names, getfield(stim, key).name)
         push!(pops, getfield(stim, key).cells)
     end
-    return names, pops
+    return sort(names, rev=true), pops[sort(1:length(pops), by=x->names[x], rev=true)]
 end
 
 export population_indices, filter_populations, subpopulations
