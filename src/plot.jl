@@ -327,13 +327,13 @@ Returns:
 Example:
 """
 function plot_activity(network, Trange; conductance=false)
-    frE, interval = SNN.firing_rate(network.pop.E, interval = Trange, τ=10ms)
+    frE, interval  = SNN.firing_rate(network.pop.E,  interval = Trange, τ=10ms)
     frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
     frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    plot!(Trange, mean(frE), label = "E", c = :black)
-    plot!(Trange, mean(frI1), label = "I1", c = :red)
-    plot!( Trange,mean(frI2), label = "I2", c = :green)
+    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
+    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
+    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
     pv =SNN.vecplot(network.pop.E, :v_d, r = Trange,  pop_average = true, label="dendrite")
     SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")

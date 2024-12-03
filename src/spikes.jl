@@ -226,7 +226,7 @@ function firing_rate(
     )
     # rates = vcat(rates'...)
 
-    rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:1200, interval)
+    rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
     return rates, interval
 end
 
