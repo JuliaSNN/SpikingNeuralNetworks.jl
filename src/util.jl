@@ -151,6 +151,11 @@ function merge_models(args...; name=randstring(10), silent=false, kwargs...)
     return model
 end
 
+
+
+
+
+
 """
     print_model(model)
 
@@ -283,5 +288,30 @@ function remove_element(model, key)
     merge_models(pop, syn, stim)
 end
 
+function load_model(model_path)
+    model = DrWatson.load(model_path)["model"]
+    seq = DrWatson.load(model_path)["seq"]
+    mytime = DrWatson.load(model_path)["mytime"]
+    lexicon = DrWatson.load(model_path)["lexicon"]
+    return (model=model, seq=seq, mytime=mytime, lexicon=lexicon)
+end
+
+function copy_model(model_path)
+    model = deepcopy(DrWatson.load(model_path)["model"])
+    seq   = deepcopy(DrWatson.load(model_path)["seq"])
+    mytime = deepcopy(DrWatson.load(model_path)["mytime"])
+    lexicon = deepcopy(DrWatson.load(model_path)["lexicon"])
+    clear_monitor(model.pop)
+    clear_monitor(model.syn)
+    clear_monitor(model.stim)
+    return (model=model, seq=seq, mytime=mytime, lexicon=lexicon)
+end
+
+
+
+
+
+
+
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix, load_model, print_model, copy_model, extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256
