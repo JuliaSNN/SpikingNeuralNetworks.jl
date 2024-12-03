@@ -168,6 +168,7 @@ function vecplot!(
     # get the neurons to plot
     neurons = isnothing(neurons) ? axes(y, 1) : neurons
     neurons = isa(neurons,Int) ? [neurons] : neurons
+    ribbon = pop_average ? std(y[neurons,r], dims = 1) : nothing
     y = pop_average ? mean(y[neurons,r], dims = 1) : y[neurons, r]
     
     @info "Vector plot in: $(r[1])s to $(round(Int, r[end]))s"
@@ -175,9 +176,11 @@ function vecplot!(
         my_plot,
         r./1000,
         y',
+        ribbon = ribbon,
         leg = :none,
         xaxis = ("t", extrema(r./1000)),
         yaxis = (string(sym), extrema(y));
+        lw = 3,
         kwargs...,
     )
 end
@@ -323,28 +326,38 @@ Returns:
 
 Example:
 """
-function plot_activity(network, Trange)
-    frE, interval = SNN.firing_rate(network.pop.E, interval = Trange)
-    frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange)
-    frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange)
+function plot_activity(network, Trange; conductance=false)
+    frE, interval  = SNN.firing_rate(network.pop.E,  interval = Trange, τ=10ms)
+    frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
+    frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    plot!(Trange, mean(frE), label = "E", c = :black)
-    plot!(Trange, mean(frI1), label = "I1", c = :red)
-    plot!( Trange,mean(frI2), label = "I2", c = :green)
+    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
+    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
+    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
     pv =SNN.vecplot(network.pop.E, :v_d, r = Trange,  pop_average = true, label="dendrite")
     SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
-    dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")
-    soma_gplot(network.pop.E, r=Trange, margin=5Plots.mm, xlabel="", ax=dgplot)
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
-    layout = @layout  [ 
-                c{0.25h}
-                e{0.25h}
-                a{0.25h}
-                d{0.25h}]
-    plot(pr, rplot,pv,  dgplot, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
+    ## Conductance
+    if conductance 
+        dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")
+        soma_gplot(network.pop.E, r=Trange, margin=5Plots.mm, xlabel="", ax=dgplot)
+        layout = @layout  [ 
+                    c{0.25h}
+                    e{0.25h}
+                    a{0.25h}
+                    d{0.25h}]
+        return plot(pr, rplot,pv,  dgplot, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
+    else
+        layout = @layout  [ 
+            c{0.3h}
+            e{0.4h}
+            d{0.3h}]
+        return plot(pr, rplot,pv, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
+    end
 end
+
 """
     plot_weights(network)
 

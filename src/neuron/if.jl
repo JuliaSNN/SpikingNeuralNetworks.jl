@@ -19,10 +19,12 @@
     τw::FT = 0.0 #144ms # adaptation time constant (~Ca-activated K current inactivation)
 end
 
-function IFParameterGsyn(;gsyn_i=1., gsyn_e=1., τde=6ms, τre=1ms, τdi=2ms, τri=0.5ms, kwargs...)
+function IFParameterGsyn(;gsyn_i=1., gsyn_e=1., τde=6ms, τre=1ms, τdi=2ms, τri=0.5ms,kwargs...)
     gsyn_e *= norm_synapse(τre, τde) 
     gsyn_i *= norm_synapse(τri, τdi)
     return IFParameter(
+        τre=τre, τde=τde, 
+        τri=τri, τdi=τdi,
         gsyn_e=Float32(gsyn_e), 
         gsyn_i=Float32(gsyn_i),
         ; kwargs...)
@@ -145,3 +147,4 @@ function update_synapses!(p::IF, param::IFParameterSingleExponential, dt::Float3
 end
 
 export IF, IFParameter, IFParameterSingleExponential, IFParameterGsyn
+
