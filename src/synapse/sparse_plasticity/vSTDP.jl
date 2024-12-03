@@ -64,7 +64,7 @@ function plasticity!(
     @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, index = c
     @unpack u, v, x = plasticity
     @unpack A_LTD, A_LTP, θ_LTD, θ_LTP, τu, τv, τx, Wmax, Wmin = param
-    R(x::Float32) = x < 0.0f0 ? 0.0f0 : x
+    # R(x::Float32) = x < 0.0f0 ? 0.0f0 : x
 
     # update pre-synaptic spike trace
     @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
@@ -77,18 +77,14 @@ function plasticity!(
         @inbounds v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron
     end
     # @simd for s = colptr[j]:(colptr[j+1]-1) 
-
-    @inbounds @fastmath for i in eachindex(Is) # Iterate over postsynaptic neurons
-        ltd_v = v[i] - θ_LTD
-        ltp = v_post[i] - θ_LTP
-        for s = rowptr[i]:(rowptr[i+1]-1)
-            j = J[index[s]]
-            if fireJ[j]
-                W[index[s]] += -A_LTD * R(u[i] - θ_LTD)
+    @inbounds for j in eachindex(fireJ) # Iterate over presynaptic neurons
+        if fireJ[j]
+            @turbo for s = colptr[j]:(colptr[j+1]-1)
+                @fastmath W[s] += -A_LTD * clamp(u[I[s]] - θ_LTD, 0.0f0, Inf) 
             end
-            if ltp > 0.0f0 && ltd_v > 0.0f0
-                W[index[s]] += A_LTP * x[j] * ltp * ltd_v
-            end
+        end
+         @turbo for s = colptr[j]:(colptr[j+1]-1)
+            @fastmath W[s] += A_LTP * x[j] * clamp(v[I[s]] - θ_LTD, 0.0f0, Inf) * clamp(v_post[I[s]] - θ_LTP, 0.0f0, Inf)
         end
     end
 
@@ -104,18 +100,17 @@ export vSTDPParameter, vSTDPVariables, plasticityvariables, plasticity!
 #     u[i] += dt * (-u[i] + v_post[i]) / τu # postsynaptic neuron
 #     v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron
 # end
-# Threads.@threads for j in eachindex(fireJ) # Iterate over presynaptic neurons
-#     # @simd for s = colptr[j]:(colptr[j+1]-1) 
-#     @inbounds @fastmath @simd for s = colptr[j]:(colptr[j+1]-1)
-#         i = I[s] # get_postsynaptic cell
-#         ltd_u = R(u[i] - θ_LTD)
-#         if fireJ[j] && ltd_u >0
-#             W[s] += -A_LTD * ltd_u
-#         end
-#         ltd_v = v[i] - θ_LTD
-#         ltp = v_post[i] - θ_LTP
-#         if ltp > 0.0f0 && ltd_v > 0.0f0
-#             W[index[s]] += A_LTP * x[j] * ltp * ltd_v
-#         end
-#     end
-# end
+
+    # @inbounds @fastmath  for i in eachindex(Is) # Iterate over postsynaptic neurons
+    #     ltd_v = (v[i] - θ_LTD)
+    #     ltp = (v_post[i] - θ_LTP)
+    #     @simd for s = rowptr[i]:(rowptr[i+1]-1)
+    #         j = J[index[s]]
+    #         if fireJ[j] && (u[i] - θ_LTD) > 0.0f0
+    #             W[index[s]] += -A_LTD * (u[i] - θ_LTD)
+    #         end
+    #         if ltp > 0.0f0 && ltd_v > 0.0f0
+    #             W[index[s]] += A_LTP * x[j] * ltp * ltd_v
+    #         end
+    #     end
+    # end
