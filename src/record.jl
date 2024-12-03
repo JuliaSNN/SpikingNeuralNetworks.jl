@@ -423,6 +423,7 @@ function clear_records(objs::AbstractArray)
     end
 end
 
+
 """
 clear_monitor(obj)
 
@@ -431,6 +432,12 @@ Clears all the records of a given object.
 function clear_monitor(obj)
     for (k, val) in obj.records
         delete!(obj.records, k)
+    end
+end
+
+function clear_monitor(objs::NamedTuple)
+    for obj in values(objs)
+        clear_monitor(obj)
     end
 end
 
