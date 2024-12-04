@@ -157,4 +157,4 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Ti
     end
 end
 
-export PoissonStimuli, stimulate!, PSParam, PoissonStimulusParameter
+export PoissonStimulus, stimulate!, PSParam, PoissonStimulusParameter
