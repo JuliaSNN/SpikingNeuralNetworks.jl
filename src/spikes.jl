@@ -16,7 +16,6 @@ Compute the spike times of a population.
 Arguments:
 - `p`: The network parameters.
 - `interval`: The time interval within which to compute the spike times. If `nothing`, the interval is set to (0, firing_time[end]).
-- `indices`: The indices of the neurons for which to compute the spike times. If `nothing`, spike times are computed for all neurons.
 
 Returns:
 - `spiketimes`: A vector of vectors containing the spike times of each neuron.
@@ -24,15 +23,9 @@ Returns:
 function spiketimes(
     p::T;
     interval = nothing,
-    indices = nothing,
     kwargs...
 ) where {T<:Union{AbstractPopulation, AbstractStimulus}}
-    if isnothing(indices)
-        _spiketimes = init_spiketimes(p.N)
-        indices = 1:p.N
-    else
-        _spiketimes = init_spiketimes(length(indices))
-    end
+    _spiketimes = init_spiketimes(p.N)
 
     firing_time = p.records[:fire][:time]
     neurons = p.records[:fire][:neurons]
@@ -45,7 +38,7 @@ function spiketimes(
         interval = (0, firing_time[end])
     end
     tt0, tt1 = findfirst(x -> x > interval[1], firing_time),
-    findlast(x -> x < interval[2], firing_time)
+    findlast(x -> x < interval[end], firing_time)
     if isnothing(tt0) || isnothing(tt1)
         return _spiketimes
     end
@@ -56,6 +49,8 @@ function spiketimes(
     end
     return _spiketimes
 end
+
+
 
 """
     spiketimes(Ps; kwargs...)
@@ -86,6 +81,20 @@ function spiketimes_split(Ps; kwargs...)
     end
     return st_ps, names
 end
+
+
+"""
+    spikecount(model, Trange, cells)
+
+    Return the total number of spikes of the cells in the selected interval
+"""
+function spikecount(pop::T, Trange::Q, cells::Vector{Int}) where {T<:AbstractPopulation, Q<:AbstractVector}
+    return length.(spiketimes(pop, interval=Trange)[cells]) |>sum
+end
+
+export spikecount
+
+# spikecount(x::Spiketimes) = length.(x)
 
 """
     alpha_function(t::T; t0::T, τ::T) where T <: AbstractFloat
@@ -541,7 +550,6 @@ function relative_time!(spiketimes::Spiketimes, start_time)
     return spiketimes
 end
 
-spike_count(x::Spiketimes) = length.(x)
 
 
 """
@@ -665,4 +673,4 @@ function spiketimes_from_bool(P; dt = 0.1ms)
     return SNN.Spiketimes(_spiketimes)
 end
 
-export spiketimes, spiketimes_from_bool, merge_spiketimes, convolve, alpha_function, autocorrelogram, bin_spiketimes, compute_covariance_density, isi, CV, CV_isi2, firing_rate, average_firing_rate, firing_rate_average, firing_rate, firing_rate_average, spikes_in_interval, spikes_in_intervals, find_interval_indices, interval_standard_spikes, interval_standard_spikes!, relative_time!, st_order, isi_cv, spike_count, CV_isi2
+export spiketimes, spiketimes_from_bool, merge_spiketimes, convolve, alpha_function, autocorrelogram, bin_spiketimes, compute_covariance_density, isi, CV, CV_isi2, firing_rate, average_firing_rate, firing_rate_average, firing_rate, firing_rate_average, spikes_in_interval, spikes_in_intervals, find_interval_indices, interval_standard_spikes, interval_standard_spikes!, relative_time!, st_order, isi_cv, CV_isi2
