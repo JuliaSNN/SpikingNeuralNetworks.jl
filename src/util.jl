@@ -288,9 +288,15 @@ function remove_element(model, key)
     merge_models(pop, syn, stim)
 end
 
-function load_data(path)
-    data = DrWatson.load(path)
-    return dict2ntuple(data)
+function load_data(path="", name="", info=nothing)
+    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
+    if isnothing(info)
+        throw(ArgumentError("If path is not file, config is required"))
+    end
+    path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    @info "Loading model from $(path)"
+    DATA = DrWatson.load(path)
+    return dict2ntuple(DATA)
 end
 
 function load_model(path="", name="", info=nothing)
@@ -327,6 +333,8 @@ function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
     @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
     return data_path
 end
+
+export save_model, load_model, load_data
 
    
 
