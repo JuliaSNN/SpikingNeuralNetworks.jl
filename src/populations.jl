@@ -42,7 +42,6 @@ function filter_populations(P, condition= p->occursin(string("noise"), string(p.
     for k in keys(P)
         p = getfield(P, k)
         condition(p) && continue
-        @show P[k].name
         p = getfield(P, k)
         push!(populations,k => p)
     end
