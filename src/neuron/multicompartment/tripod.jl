@@ -201,13 +201,13 @@ function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseAr
     @unpack he_d1, he_d2, hi_d1, hi_d2, exc_receptors, inh_receptors, α = p
 
     @inbounds for n in exc_receptors
-        @turbo for i ∈ 1:N
+        @simd for i ∈ 1:N
             h_d1[i, n] += he_d1[i] * α[n]
             h_d2[i, n] += he_d2[i] * α[n]
         end
     end
     @inbounds for n in inh_receptors
-        @turbo for i ∈ 1:N
+        @simd for i ∈ 1:N
             h_d1[i, n] += hi_d1[i] * α[n]
             h_d2[i, n] += hi_d2[i] * α[n]
         end
@@ -218,7 +218,7 @@ function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseAr
     fill!(hi_d2, 0.0f0)
     for n in eachindex(dend_syn)
         @unpack τr⁻, τd⁻ = dend_syn[n]
-        @fastmath @turbo for i ∈ 1:N
+        @fastmath @simd for i ∈ 1:N
             g_d1[i, n] = exp32(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
             h_d1[i, n] = exp32(-dt * τr⁻) * (h_d1[i, n])
             g_d2[i, n] = exp32(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
@@ -227,12 +227,12 @@ function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseAr
     end
 
     @unpack τr⁻, τd⁻ = soma_syn[1]
-    @fastmath @turbo for i ∈ 1:N
+    @fastmath @simd for i ∈ 1:N
         ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
         he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
     end
     @unpack τr⁻, τd⁻ = soma_syn[2]
-    @fastmath @turbo for i ∈ 1:N
+    @fastmath @simd for i ∈ 1:N
         gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
         hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
     end
@@ -281,7 +281,7 @@ function update_tripod!(
                 is[3] += gsyn * g_d2[i, r] * (v_d2[i] + Δv[3] * dt - E_rev)
             end
         end
-        @turbo for _i ∈ 1:3
+        @simd for _i ∈ 1:3
             is[_i] = clamp(is[_i], -1500, 1500)
         end
         # @info Δv
