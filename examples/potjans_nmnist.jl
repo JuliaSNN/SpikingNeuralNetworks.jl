@@ -11,126 +11,10 @@ using Plots
 using SpikingNeuralNetworks
 using SNNUtils
 using JLD2
+using Distributions
 include("Tonic_NMNIST_Stimulus.jl")
 using .Tonic_NMNIST_Stimulus
 
-
-
-
-""" 
-https://github.com/OpenSourceBrain/PotjansDiesmann2014/blob/master/PyNN/network_params.py#L139-L146
-Creates matrix containing the delay of all connections.
-
-Arguments
----------
-mean_delay_exc
-    Delay of the excitatory connections.
-mean_delay_inh
-    Delay of the inhibitory connections.
-number_of_pop
-    Number of populations.
-
-Returns
--------
-mean_delays
-    Matrix specifying the mean delay of all connections.
-
-"""
-function get_mean_delays(mean_delay_exc, mean_delay_inh, number_of_pop)
-
-    dim = number_of_pop
-    mean_delays = np.zeros((dim, dim))
-    mean_delays[:, 0:dim:2] = mean_delay_exc
-    mean_delays[:, 1:dim:2] = mean_delay_inh
-    return mean_delays
-
-""" 
-https://github.com/OpenSourceBrain/PotjansDiesmann2014/blob/master/PyNN/network_params.py#L139-L146
-Creates matrix containing the standard deviations of all delays.
-
-Arguments
----------
-std_delay_exc
-    Standard deviation of excitatory delays.
-std_delay_inh
-    Standard deviation of inhibitory delays.
-number_of_pop
-    Number of populations in the microcircuit.
-
-Returns
--------
-std_delays
-    Matrix specifying the standard deviation of all delays.
-
-"""
-function get_std_delays(std_delay_exc, std_delay_inh, number_of_pop)
-
-    dim = number_of_pop
-    std_delays = np.zeros((dim, dim))
-    std_delays[:, 0:dim:2] = std_delay_exc
-    std_delays[:, 1:dim:2] = std_delay_inh
-    return std_delays
-
-""" 
-https://github.com/OpenSourceBrain/PotjansDiesmann2014/blob/master/PyNN/network_params.py#L139-L146
-Creates a matrix of the mean evoked postsynaptic potential.
-
-The function creates a matrix of the mean evoked postsynaptic
-potentials between the recurrent connections of the microcircuit.
-The weight of the connection from L4E to L23E is doubled.
-
-Arguments
----------
-PSP_e
-    Mean evoked potential.
-g
-    Relative strength of the inhibitory to excitatory connection.
-number_of_pop
-    Number of populations in the microcircuit.
-
-Returns
--------
-weights
-    Matrix of the weights for the recurrent connections.
-
-"""
-
-function get_mean_PSP_matrix(PSP_e, g, number_of_pop)
-    dim = number_of_pop
-    weights = zeros((dim, dim))
-    exc = PSP_e
-    inh = PSP_e * g
-    weights[:, 0:dim:2] = exc
-    weights[:, 1:dim:2] = inh
-    weights[1, 3] = exc * 2
-    return weights
-
-""" 
-https://github.com/OpenSourceBrain/PotjansDiesmann2014/blob/master/PyNN/network_params.py#L139-L146
-Relative standard deviation matrix of postsynaptic potential created.
-
-The relative standard deviation matrix of the evoked postsynaptic potential
-for the recurrent connections of the microcircuit is created.
-
-Arguments
----------
-PSP_rel
-    Relative standard deviation of the evoked postsynaptic potential.
-number_of_pop
-    Number of populations in the microcircuit.
-
-Returns
--------
-std_mat
-    Matrix of the standard deviation of postsynaptic potentials.
-
-"""
-
-function get_std_PSP_matrix(PSP_rel, number_of_pop)
-    dim = number_of_pop
-    std_mat = zeros((dim, dim))
-    std_mat[:, :] = PSP_rel
-    return std_mat
 
 
 """
@@ -151,7 +35,7 @@ function potjans_neurons(scale=1.0)
     neurons = Dict{Symbol, SNN.AbstractPopulation}()
     for (k, v) in ccu
         if occursin("E", String(k))
-            neurons[k] = AdEx(N = v, param=LKD2014SingleExp.AdEx, name=string(k))
+            neurons[k] = IF(N = v, param=LKD2014SingleExp.PV, name=string(k))
         else
             neurons[k] = IF(N = v, param=LKD2014SingleExp.PV, name=string(k))
         end
@@ -164,15 +48,22 @@ Define Potjans parameters for neuron populations and connection probabilities
 """
 function potjans_conn(Ne)
 
-    function j_from_name(pre, post, g)
+    function j_from_name(pre, post)
         if occursin("E", String(pre)) && occursin("E", String(post))
-            return g.jee
+            syn_weight_dist = Normal(0.15, 0.1)
+            
+            return rand(syn_weight_dist)
         elseif occursin("I", String(pre)) && occursin("E", String(post))
-            return g.jei
+            syn_weight_dist = Normal(0.15, 0.1)
+            return -4.0*rand(syn_weight_dist)
+
         elseif occursin("E", String(pre)) && occursin("I", String(post))
-            return g.jie
+            syn_weight_dist = Normal(0.15, 0.1)
+            
+            return rand(syn_weight_dist)
         elseif occursin("I", String(pre)) && occursin("I", String(post))
-            return g.jii
+            syn_weight_dist = Normal(0.15, 0.1)
+            return -4.0*rand(syn_weight_dist)
         else 
             throw(ArgumentError("Invalid pre-post combination: $pre-$post"))
         end
@@ -186,7 +77,7 @@ function potjans_conn(Ne)
 
     total_cortical_thickness = 1500.0
     N_full = [20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948] 
-    N_E_total = N_full[0]+N_full[2]+N_full[4]+N_full[6]
+    N_E_total = N_full[1]+N_full[3]+N_full[5]+N_full[7]
     dimensions_3D = Dict(
         "x_dimension"=> 1000,
         "z_dimension"=>  1000,
@@ -194,14 +85,15 @@ function potjans_conn(Ne)
 
         # Have the thicknesses proportional to the numbers of E cells in each layer
         "layer_thicknesses"=> Dict(
-        "L23"=> total_cortical_thickness*N_full[0]/N_E_total,
-        "L4" => total_cortical_thickness*N_full[2]/N_E_total,
-        "L5" => total_cortical_thickness*N_full[4]/N_E_total,
-        "L6" => total_cortical_thickness*N_full[6]/N_E_total,
+        "L23"=> total_cortical_thickness*N_full[1]/N_E_total,
+        "L4" => total_cortical_thickness*N_full[3]/N_E_total,
+        "L5" => total_cortical_thickness*N_full[5]/N_E_total,
+        "L6" => total_cortical_thickness*N_full[7]/N_E_total,
         "thalamus" => 100
         )
     )
-    net_dict = Dict(
+    
+    net_dict = Dict{String, Any}(
         "PSP_e"=> 0.15,
         # Relative standard deviation of the postsynaptic potential.
         "PSP_sd"=> 0.1,
@@ -210,7 +102,7 @@ function potjans_conn(Ne)
         # Rate of the Poissonian spike generator (in Hz).
         "bg_rate"=> 8.,
         # Turn Poisson input on or off (True or False).
-        "poisson_input"=> True,
+        "poisson_input"=> true,
         # Delay of the Poisson generator (in ms).
         "poisson_delay"=> 1.5,
         # Mean delay of excitatory connections (in ms).
@@ -219,31 +111,8 @@ function potjans_conn(Ne)
         "mean_delay_inh"=> 0.75,
         # Relative standard deviation of the delay of excitatory and
         # inhibitory connections (in relative units).
-        "rel_std_delay"=> 0.5,
+        "rel_std_delay"=> 0.5
     )
-    updated_dict = Dict(
-        # PSP mean matrix.
-        "PSP_mean_matrix"=> get_mean_PSP_matrix(
-            net_dict['PSP_e'], net_dict['g'], len(layer_names)
-            ),
-        # PSP std matrix.
-        "PSP_std_matrix"=> get_std_PSP_matrix(
-            net_dict['PSP_sd'], len(layer_names)
-            ),
-        # mean delay matrix.
-        "mean_delay_matrix"=> get_mean_delays(
-            net_dict['mean_delay_exc'], net_dict['mean_delay_inh'],
-            len(layer_names)
-            ),
-        # std delay matrix.
-        "std_delay_matrix"=> get_std_delays(
-            net_dict['mean_delay_exc'] * net_dict['rel_std_delay'],
-            net_dict['mean_delay_inh'] * net_dict['rel_std_delay'],
-            len(layer_names])
-            ),
-    )
-    merge!(net_dict, updated_dict)
-
     # Replace static matrix with a regular matrix for `conn_probs`
     # ! the convention is j_post_pre. This is how the matrices `w` are built. Are you using that when defining the parameters?
     conn_probs = Float32[
@@ -257,36 +126,16 @@ function potjans_conn(Ne)
         0.0364  0.001  0.0034 0.0005 0.0277 0.008   0.0658 0.1443
     ]
 
-    # !Assign dimensions to these parameters, and some reference
-    pree = 0.1
-    g = 1.0
-    tau_meme = 10.0   # (ms)
-    # Synaptic strengths for each connection type
-        #=
-    K = round(Int, Ne * pree)
-    sqrtK = sqrt(K)
 
-    # !Same, the convention is j_post_pre
-    je = 2.0 / sqrtK * tau_meme * g
-    ji = 2.0 / sqrtK * tau_meme * g 
-    jee = 0.15 * je
-    jie = je
-    jei = -0.75 * ji
-    jii = -ji
-    =#
-
-    jii = jie = -4.0
-    jee = jei = 0.15
-    g_strengths = dict2ntuple(SNN.@symdict jee jie jei jii)
-    
     conn_j = zeros(Float32, size(conn_probs))
     for pre in eachindex(layer_names)
         for post in eachindex(layer_names)
-            conn_j[post, pre ] = j_from_name(layer_names[pre], layer_names[post], g_strengths)
+            
+            conn_j[post, pre ] = j_from_name(layer_names[pre], layer_names[post])     
+
         end
     end
-
-    return layer_names, conn_probs, conn_j
+    return layer_names, conn_probs, conn_j,net_dict
 end
 
 
@@ -301,11 +150,18 @@ function potjans_layer(scale)
     inh_pop = filter(x -> occursin("I", String(x)), keys(neurons))
     Ne = trunc(Int32, sum([neurons[k].N for k in exc_pop]))
     Ni = trunc(Int32, sum([neurons[k].N for k in inh_pop]))
-    @show exc_pop, Ne, Ni
-    layer_names, conn_probs, conn_j = potjans_conn(Ne)
+    layer_names, conn_probs, conn_j,net_dict = potjans_conn(Ne)
+    syn_weight_dist = Normal(0.15, 0.1)
+    delay_dist_exc = Normal(1.5, 0.5)
+    delay_dist_inh = Normal( 0.75, 0.5)
 
     ## Create the synaptic connections based on the connection probabilities and synaptic weights assigned to each pre-post pair
     connections = Dict()
+    stdp_param = STDPParameter(A_pre =5e-1, 
+        A_post=-5e-1,
+        τpre  =20ms,
+        τpost =15ms)
+
     for i in eachindex(layer_names)
         for j in eachindex(layer_names)
             pre = layer_names[i]
@@ -314,12 +170,16 @@ function potjans_layer(scale)
             J = conn_j[j, i]
             sym = J>=0 ? :ge : :gi
             μ = abs(J)
-            s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0)
+            if J>=0        
+                s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0,param=stdp_param, delay_dist=delay_dist_exc)
+            else
+                s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0, delay_dist=delay_dist_inh)
+            
+            end
             connections[Symbol(string(pre,"_", post))] = s
         end
     end
 
-    #'full_mean_rates':
     full_mean_rates = [0.971, 2.868, 4.746, 5.396, 8.142, 9.078, 0.991, 7.523]
     stimuli = Dict()
     for (ind,pop) in enumerate(exc_pop)
@@ -328,28 +188,24 @@ function potjans_layer(scale)
         s = SNN.PoissonStimulus(post, :ge; param = νe, cells=:ALL, μ=1.f0, name="PoissonE_$(post.name)")
         stimuli[Symbol(string("PoissonE_", pop))] = s
     end
-    return merge_models(neurons,connections, stimuli),neurons,connections,stimuli
+    return merge_models(neurons,connections, stimuli),neurons,connections,stimuli,net_dict
 end
 
 if !isfile("cached_potjans_model.jld2")
-    model,neurons_,connections_,stimuli_ = potjans_layer(0.125)
-    @save "cached_potjans_model.jld2" model neurons_ connections_ stimuli_
+    model,neurons_,connections_,stimuli_,net_dict = potjans_layer(0.085)
+    @save "cached_potjans_model.jld2" model neurons_ connections_ stimuli_ net_dict
 else
-    @load "cached_potjans_model.jld2" model neurons_ connections_ stimuli_
+    @load "cached_potjans_model.jld2" model neurons_ connections_ stimuli_ net_dict
 end
+
 duration = 15000ms
 SNN.monitor([model.pop...], [:fire])
 SNN.monitor([model.pop...], [:v], sr=200Hz)
 SNN.sim!(model=model; duration = duration, pbar = true, dt = 0.125)
-display(SNN.raster(model.pop, [0s, 15s]))
+display(SNN.raster(model.pop, [1.75s, 2s]))
 savefig("without_stimulus.png")
 
-
-
-
-
 training_order = shuffle(0:60000-1)
-
 cached_spikes=[]
 for i in 1:40
     push!(cached_spikes,Tonic_NMNIST_Stimulus.getNMNIST(training_order[i]))
@@ -378,13 +234,13 @@ end
 
 p1 = Plots.scatter()
 scatter!(p1,
-time_and_offset,
-population_code,    
-ms = 1,  # Marker size
-ylabel = "Time (ms)",
-xlabel = "Neuron Index",
-title = "Spiking Activity with Distinct Characters", 
-legend=false
+    time_and_offset,
+    population_code,    
+    ms = 0.5,  # Marker size
+    ylabel = "Neuron Index" ,
+    xlabel ="Time (ms)",
+    title = "Spiking Activity with Distinct Characters", 
+    legend=false
 )
 display(plot(p1))
 savefig("stimulus.png")
@@ -398,19 +254,20 @@ w = ones(Float32,neurons_[:E4].N,max_neurons(inputs))*15
 
 st = Identity(N=max_neurons(inputs))
 stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
-stdp_param = STDPParameter(A_pre =5e-1, 
-                           A_post=-5e-1,
-                           τpre  =20ms,
-                           τpost =15ms)
 
-syn = SpikingSynapse( st, neurons_[:E4], nothing, w = w,  param = stdp_param)
+
+#s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0)
+
+syn = SpikingSynapse( st, neurons_[:E4], nothing, w = w)#,  param = stdp_param)
 model2 = merge_models(pop=[st,model], stim=[stim,stimuli_], syn=[syn,connections_], silent=false)
 
 duration = 15000ms
 SNN.monitor([model2.pop...], [:fire])
 SNN.monitor([model2.pop...], [:v], sr=200Hz)
 SNN.sim!(model=model2; duration = duration, pbar = true, dt = 0.125)
-display(SNN.raster(model2.pop, [0s, 15s]))
+#display(SNN.raster(model2.pop, [0s, 15s]))
+display(SNN.raster(model2.pop, [1.75s, 2s]))
+
 savefig("with_stimulus.png")
 
 Trange = 0:10:15s
@@ -426,97 +283,3 @@ layer_names, conn_probs, conn_j = potjans_conn(4000)
 pj = heatmap(conn_j, xticks=(1:8,layer_names), yticks=(1:8,layer_names), aspect_ratio=1, color=:bluesreds,  title="Synaptic weights", xlabel="Presynaptic", ylabel="Postsynaptic", size=(500,500), clims=(-maximum(abs.(conn_j)), maximum(abs.(conn_j))))
 pprob=heatmap(conn_probs, xticks=(1:8,layer_names), yticks=(1:8,layer_names), aspect_ratio=1, color=:viridis,  title="Connection probability", xlabel="Presynaptic", ylabel="Postsynaptic", size=(500,500))
 plot(pprob, pj, layout=(1,2), size=(1000,500), margin=5Plots.mm)
-
-##
-
-    #Tonic_NMNIST_Stimulus.spike_chara
-        #labels = cached_spikes[5][:]
-        #unique_labels = unique(labels)
-        #labeled_packets = Dict()
-        #for filter_label in unique_labels
-        #    population_code,time_and_offset = Tonic_NMNIST_Stimulus.spike_packets_by_labels(filter_label,cached_spikes)
-        #    labeled_packets[filter_label] = (population_code,time_and_offset)
-        #    Tonic_NMNIST_Stimulus.spike_character_plot(filter_label,population_code,time_and_offset)
-        
-        #end
-        
-        #=
-        labels = cached_spikes[5][:]
-        unique_labels = unique(labels)
-        labeled_packets = Dict()
-        for filter_label in unique_labels
-            population_code,time_and_offset = Tonic_NMNIST_Stimulus.spike_packets_by_labels(filter_label,cached_spikes)
-            labeled_packets[filter_label] = (population_code,time_and_offset)
-            Tonic_NMNIST_Stimulus.spike_character_plot(filter_label,population_code,time_and_offset)
-        
-        end
-        =#
-        #scatter_plot(filter_label,population_code,time_and_offset)
-
-
-
-#array_size = maximum(unique_neurons)
-#w = zeros(Float32, array_size,array_size)
-
-#w[population_code, population_code] = 1f0
-
-#stparam = SpikeTimeStimulusParameter(time_and_offset,population_code)
-#SpikeTimeStimulus(stim_size,neurons,param=stparam)
-#=
-function times_x_neurons(spikes::Spiketimes)
-	all_times = Dict{Float64, Vector{Int}}()
-	for n in eachindex(spikes)
-		if !isempty(spikes[n])
-			for tt in spikes[n]
-				# tt = round(Int,t*1000/dt) ## from seconds to timesteps
-				if haskey(all_times,tt)
-					push!(all_times[tt], n)
-				else
-					push!(all_times, tt=>[n])
-				end
-			end
-		end
-	end
-	return collect(keys(all_times)), collect(values(all_times))
-end
-=#
-#neurons = convert(Vector{Int64},population_code)
-
-
-#stimulus_spikes_dist_neurons = cached_spikes[6][:]
-#neurons = convert(Vector{Int64},stimulus_spikes_dist_neurons)
-
-#times = cached_spikes[3][:]
-
-#inputs = SpikeTime(time_and_offset,neurons)
-#stim_size = length(unique(stimulus_spikes_dist_neurons))
-#display(plot(scatter(neurons,times)))
-#stparam = SpikeTimeStimulusParameter(times,stimulus_spikes_dist_neurons)
-#SpikeTimeStimulus(stim_size,neurons,param=stparam)
-
-#=
-Extreme levels of fatigue excerbated by medication.
-
-ΔTs = -100:1:100ms
-ΔWs = zeros(Float32, length(ΔTs))
-Threads.@threads for i in eachindex(ΔTs)
-    ΔT = ΔTs[i]
-    spiketime = [2000ms, 2000ms+ΔT]
-
-    neurons = [[1], [2]]
-    inputs = SpikeTime(spiketime, neurons)
-    w = zeros(Float32, 2,2)
-    w[1, 2] = 1f0
-    st = Identity(N=max_neurons(inputs))
-    stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
-    syn = SpikingSynapse( st, st, nothing, w = w,  param = stdp_param)
-    model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
-    SNN.monitor(model.pop..., [:fire])
-    SNN.monitor(model.syn..., [:tpre, :tpost])
-    train!(model=model, duration=3000ms, dt=0.1ms)
-    ΔWs[i] = model.syn[1].W[1] - 1
-end
-=#
-
-#SpikingNeuralNetworks.SpikeTimeStimulus
-#@show(help(SpikingNeuralNetworks.stimulate))

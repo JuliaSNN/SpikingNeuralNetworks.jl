@@ -26,7 +26,7 @@ module Tonic_NMNIST_Stimulus
         l = convert(Int32,l)
         x = Vector{Int32}([e[1] for e in events])
         y = Vector{Int32}([e[2] for e in events])
-        ts = Vector{Float32}([e[3]/10000.0 for e in events])
+        ts = Vector{Float32}([e[3]/100000.0 for e in events])
         p = Vector{Int8}([e[4] for e in events])
         for (x_,y_) in zip(x,y)
             push!(pop_stimulation,Int32(I[CartesianIndex(convert(Int32,x_+1),convert(Int32,y_+1))]))
