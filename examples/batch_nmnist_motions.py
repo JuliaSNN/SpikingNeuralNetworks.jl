@@ -35,13 +35,20 @@ class NMNIST(object):
         all_events = []
 
         for id,index in enumerate(indices):
-            (grid_x,grid_y) = np.unravel_index(id,(10,10))
+            #(grid_x,grid_y) = np.unravel_index(id,(10,10))
 
             events, label = self._dataset[index]
+            #print(events)
             label_array = np.full(events['x'].shape[0],label,dtype=[('label','i8')])
             event_array = merge_arrays((events,label_array),flatten=True)
-            event_array['x'] = grid_x*36 + event_array['x'] + 1
-            event_array['y'] = grid_y*36 + event_array['y'] + 1
+            ##
+            # Its possible that the 36 is depreciated.
+            ##
+            #event_array['x'] = grid_x + event_array['x'] + 1
+            #event_array['y'] = grid_y + event_array['y'] + 1
+            #event_array['x'] = grid_x*36 + event_array['x'] + 1
+            #event_array['y'] = grid_y*36 + event_array['y'] + 1
+
             # event_array[:,3] -= event_array[0,3]
             all_events.append(event_array)
         
