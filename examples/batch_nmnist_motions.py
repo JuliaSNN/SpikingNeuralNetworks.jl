@@ -13,7 +13,7 @@ from os.path import exists
 #import h5py
 import numpy as np
 import tonic
-from numpy.lib.recfunctions import merge_arrays
+#from numpy.lib.recfunctions import merge_arrays
 
 
 class NMNIST(object):
@@ -28,36 +28,21 @@ class NMNIST(object):
             raise Exception("Specified dataset path does not exist")
         self._dataset = tonic.datasets.NMNIST(save_to='./data', train=train, first_saccade_only=first_saccade_only,transform=transform)
         # self.transform = transform
-
+    """
     def get_dataset_item(self, indices):
   
         assert(len(indices) <= 100)
         all_events = []
 
         for id,index in enumerate(indices):
-            #(grid_x,grid_y) = np.unravel_index(id,(10,10))
-
             events, label = self._dataset[index]
-            #print(events)
             label_array = np.full(events['x'].shape[0],label,dtype=[('label','i8')])
             event_array = merge_arrays((events,label_array),flatten=True)
-            ##
-            # Its possible that the 36 is depreciated.
-            ##
-            #event_array['x'] = grid_x + event_array['x'] + 1
-            #event_array['y'] = grid_y + event_array['y'] + 1
-            #event_array['x'] = grid_x*36 + event_array['x'] + 1
-            #event_array['y'] = grid_y*36 + event_array['y'] + 1
-
-            # event_array[:,3] -= event_array[0,3]
             all_events.append(event_array)
         
         super_events = np.hstack(all_events)
         super_events = super_events[super_events['t'].argsort()]
-            
-  
         return super_events
-
 		
     def get_count(self):
         """ Returns the number of  items """
@@ -70,3 +55,4 @@ class NMNIST(object):
     def get_element_dimensions(self):
         """ Returns a tuple containing the dimensions of each image in the dataset """
         return self._dataset.sensor_size
+    """
