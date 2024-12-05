@@ -301,6 +301,9 @@ end
     The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
 """
 function interpolated_record(p, sym)
+    if sym==:fire
+        return firing_rate(p, τ=20ms)
+    end
     sr = p.records[:sr][sym]
     v_dt = SNN.getvariable(p, sym)
 
@@ -423,6 +426,7 @@ function clear_records(objs::AbstractArray)
     end
 end
 
+
 """
 clear_monitor(obj)
 
@@ -431,6 +435,12 @@ Clears all the records of a given object.
 function clear_monitor(obj)
     for (k, val) in obj.records
         delete!(obj.records, k)
+    end
+end
+
+function clear_monitor(objs::NamedTuple)
+    for obj in values(objs)
+        clear_monitor(obj)
     end
 end
 

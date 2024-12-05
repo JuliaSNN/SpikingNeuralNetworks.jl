@@ -2,6 +2,7 @@ abstract type PoissonStimulusParameter end
 @snn_kw struct PoissonStimulusVariable{VFT} <: PoissonStimulusParameter
     variables::Dict{Symbol, Any}=Dict{Symbol, Any}()
     rate::Function
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw struct PoissonStimulusFixed{R} <: PoissonStimulusParameter
@@ -132,6 +133,10 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusFixed, time::Time,
 end
 
 function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Time, dt::Float32)
+    @unpack active = param
+    if !active[1]
+        return
+    end
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
     myrate::Float32 = param.rate(get_time(time), param)
     myrate*=dt/N_pre
@@ -152,4 +157,4 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Ti
     end
 end
 
-export PoissonStimuli, stimulate!, PSParam, PoissonStimulusParameter
+export PoissonStimulus, stimulate!, PSParam, PoissonStimulusParameter

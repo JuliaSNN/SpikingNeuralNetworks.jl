@@ -5,7 +5,7 @@ function connect!(c, j, i, μ = 1e-6)
     return nothing
 end
 
-function matrix(c)
+function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
@@ -151,6 +151,11 @@ function merge_models(args...; name=randstring(10), silent=false, kwargs...)
     return model
 end
 
+
+
+
+
+
 """
     print_model(model)
 
@@ -283,5 +288,72 @@ function remove_element(model, key)
     merge_models(pop, syn, stim)
 end
 
+function load_data(path="", name="", info=nothing)
+    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
+    if isnothing(info)
+        throw(ArgumentError("If path is not file, config is required"))
+    end
+    path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    @info "Loading model from $(path)"
+    DATA = DrWatson.load(path)
+    return dict2ntuple(DATA)
+end
+
+function load_model(path="", name="", info=nothing)
+    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
+    if isnothing(info)
+        throw(ArgumentError("If path is not file, config is required"))
+    end
+    path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    @info "Loading model from $(path)"
+    DATA = DrWatson.load(path)
+    return dict2ntuple(DATA)
+end
+export load_data, load_model, save_model, savemodel
+
+function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
+    @info "Model: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
+    isdir(path) || mkpath(path)
+
+    data_path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    Logging.LogLevel(0) == Logging.Error
+    @time DrWatson.save(data_path, merge((@strdict model=model), kwargs))
+    Logging.LogLevel(0) == Logging.Info
+    @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
+
+    _model = deepcopy(model)
+    clear_monitor(_model.pop)
+    clear_monitor(_model.syn)
+    clear_monitor(_model.stim)
+
+    model_path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    Logging.LogLevel(0) == Logging.Error
+    @time DrWatson.save(model_path, merge((@strdict model=_model), kwargs))
+    Logging.LogLevel(0) == Logging.Info
+    @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
+    return data_path
+end
+
+export save_model, load_model, load_data
+
+   
+
+"""
+    print_summary(p)
+
+    Prints a summary of the given element.
+"""
+function print_summary(p)
+    println("Type: $(nameof(typeof(p))) $(nameof(typeof(p.param)))")
+    println("  Name: ", p.name)
+    println("  Number of Neurons: ", p.N)
+    for k in fieldnames(typeof(p.param))
+        println("   $k: $(getfield(p.param,k))")
+    end
+end
+
+
+
+
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary
