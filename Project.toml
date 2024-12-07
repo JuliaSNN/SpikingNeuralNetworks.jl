@@ -42,6 +42,7 @@ MetaGraphs = "0.8.0"
 Requires = "0.5, 1"
 SGtSNEpi = "0.4.0"
 StatsBase = "0.34.3"
+ThreadTools = "0.2"
 UnPack = "1"
 julia = "1"
 
