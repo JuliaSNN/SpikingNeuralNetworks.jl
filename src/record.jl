@@ -440,7 +440,11 @@ end
 
 function clear_monitor(objs::NamedTuple)
     for obj in values(objs)
-        clear_monitor(obj)
+        try 
+            clear_monitor(obj)
+        catch 
+            @warn "Could not clear monitor for $obj"
+        end
     end
 end
 
