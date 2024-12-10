@@ -1,0 +1,39 @@
+name: CI - Julia
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Julia
+        uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9' # Adjust to your preferred Julia version
+
+      - name: Install Dependencies
+        run: julia --project=. -e '
+          using Pkg;
+          Pkg.add(PackageSpec(url="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl"));
+          Pkg.instantiate()
+        '
+
+      - name: Run tests
+        run: julia --project=@. -e 'using Pkg; Pkg.test()'
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test/
