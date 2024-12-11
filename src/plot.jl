@@ -155,23 +155,24 @@ function vecplot!(
 ) 
     # get the record and its sampling rate
     y, r_v = interpolated_record(p, sym)
-
-    # check if the record is     a vector or a matrix
-    if length(size(y)) == 3
-        isnothing(sym_id) & (throw(ArgumentError("The record is a matrix, please specify the index of the matrix to plot with `sym_id`")))
-        y = y[:, sym_id, :]
-    end
-
-    # set the plot range
     r = _match_r(r, r_v)
 
-    # get the neurons to plot
+
     neurons = isnothing(neurons) ? axes(y, 1) : neurons
     neurons = isa(neurons,Int) ? [neurons] : neurons
-    ribbon = pop_average ? std(y[neurons,r], dims = 1) : nothing
-    y = pop_average ? mean(y[neurons,r], dims = 1) : y[neurons, r]
+
+    # check if the record is     a vector or a matrix
+    if ndims(y) == 3
+        isnothing(sym_id) && (throw(ArgumentError("The record is a matrix, please specify the index ($sym_id) of the matrix to plot with `sym_id`")))
+        y = y[neurons, sym_id, r]
+    else
+        y = y[neurons, r]
+    end
+
+    ribbon = pop_average ? std(y, dims = 1) : nothing
+    y = pop_average ? mean(y, dims = 1) : y
     
-    @info "Vector plot in: $(r[1])s to $(round(Int, r[end]))s"
+    @info "Vector plot in: $(r[1])ms to $(round(Int, r[end]))ms"
     return plot!(
         my_plot,
         r./1000,
