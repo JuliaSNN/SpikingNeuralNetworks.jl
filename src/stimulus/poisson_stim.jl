@@ -83,10 +83,14 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjo
     if isnothing(target) 
         g = getfield(post, sym)
         targets = Dict(:pre => :Poisson, :g => post.id, :sym=>:soma)
-    else
+    elseif typeof(target) == Symbol
         sym= Symbol("$(sym)_$target")
         g = getfield(post, sym)
         targets = Dict(:pre => :Poisson, :g => post.id, :sym=>target)
+    elseif typeof(target) == Int
+        sym= Symbol("$(sym)_d")
+        g = getfield(post, sym)[target]
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>Symbol(string(sym, target)))
     end
 
     if typeof(param) <: Real
