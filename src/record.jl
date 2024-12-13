@@ -1,4 +1,4 @@
-import Interpolations: scale, interpolate, BSpline, Linear
+import Interpolations: scale, interpolate, BSpline, Linear, NoInterp
 
 """
     struct Time
@@ -155,6 +155,14 @@ end
 
 @inline function _record_sym(my_record::Vector{T}, records::Vector{Vector{T}}, ind::Vector{Int}) where {T<:Real}
     push!(records, my_record[ind])
+end
+
+@inline function _record_sym(my_record::Array{T,3}, records::Vector{Array{T,3}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, my_record[ind, :, :])
+end
+
+@inline function _record_sym(my_record::Vector{Vector{T}}, records::Vector{Vector{Vector{T}}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, deepcopy(my_record[ind]))
 end
 
 @inline function _record_sym(my_record::Matrix{T}, records::Vector{Matrix{T}}, ind::Vector{Int}) where {T<:Real}
@@ -347,12 +355,26 @@ Returns the recorded values for a given object and key. If an id is provided, re
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
     if isa(rec[1], Matrix)
+        @info "Matrix recording"
         array = zeros(size(rec[1])..., length(rec))
         for i in eachindex(rec)
             array[:,:,i] = rec[i]
         end
         return array
+    elseif typeof(rec[1]) <: Vector{Vector{typeof(rec[1][1][1])}} # it is a multipod
+        @info "Multipod recording"        
+        i = length(rec) 
+        n = length(rec[1])
+        d = length(rec[1][1])
+        array = zeros(d, n, i)
+        for i in eachindex(rec)
+            for n in eachindex(rec[i])
+                array[:,n,i] = rec[i][n]
+            end
+        end
+        return array
     else
+        @info "Vector recording"
         isnothing(id) && return hcat(rec...)
         return hcat(rec...)[id,:]
     end
