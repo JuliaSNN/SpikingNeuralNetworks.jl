@@ -54,18 +54,9 @@ Constructs a BalancedStimulus object for a spiking neural network.
 # Returns
 A `BalancedStimulus` object.
 """
-function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothing; cells=[], μ=1.f0, param::Union{BalancedStimulusParameter,R}) where {T <: AbstractPopulation, R <: Real}
+function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothing; cells=[], μ=1.f0, param::Union{BalancedStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
 
-    if cells == :ALL
-        cells = 1:post.N
-    end 
-    if isempty(cells)
-        for i in 1:post.N
-            if rand() < p_post
-                push!(cells, i)
-            end
-        end
-    end
+    cells = 1:post.N
     w = zeros(Float32, length(cells), length(cells))
     w = μ* sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
@@ -102,7 +93,7 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
     r= ones(Float32, post.N)*param.r0
     noise = zeros(Float32, post.N)
 
-    N_pre = round(Int, param.r0 *20)
+    N_pre = round(Int, param.r0 * maximum([1, param.β/100]) )
 
     # Construct the SpikingSynapse instance
     return BalancedStimulus(;
@@ -116,6 +107,7 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
         ge = ge,
         gi = gi,
         @symdict(rowptr, colptr, I, J, index, W)...,
+        kwargs...,
     )
 end
 
