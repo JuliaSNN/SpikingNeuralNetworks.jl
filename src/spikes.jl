@@ -246,7 +246,7 @@ end
 
 function firing_rate(populations; kwargs...)
     spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
-    fr_pop = Vector{Vector{Float32}}[]
+    fr_pop = []
     interval_pop = Vector{StepRangeLen}()
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
