@@ -26,9 +26,10 @@ BSParam = BalancedStimulusParameter
     r::VFT
     noise::VFT
     W::VFT
-    fire::VBT = zeros(Bool, N)
+    fire::VBT = zeros(Bool, N_pre)
     ##
-    randcache::VFT = rand(N) # random cache
+    randcache::VFT = rand(N_pre) # random cache
+    randcache_β::VFT = rand(N) # random cache
     records::Dict = Dict()
     targets::Dict = Dict()
 end
@@ -66,10 +67,6 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
         end
     end
     w = zeros(Float32, length(cells), length(cells))
-
-    for i in 1:length(cells)
-        w[i, i] = 1
-    end
     w = μ* sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -105,11 +102,13 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
     r= ones(Float32, post.N)*param.r0
     noise = zeros(Float32, post.N)
 
+    N_pre = round(Int, param.r0 *20)
+
     # Construct the SpikingSynapse instance
     return BalancedStimulus(;
         param = param,
         N = length(cells),
-        N_pre = 1,
+        N_pre = N_pre,
         cells = cells,
         targets = targets,
         r = r,
@@ -127,50 +126,41 @@ end
 Generate a Balanced stimulus for a postsynaptic population.
 """
 function stimulate!(p::BalancedStimulus, param::BalancedStimulusParameter, time::Time, dt::Float32)
-    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, ge, gi = p
+    @unpack N, N_pre, randcache, randcache_β, fire, cells, colptr, W, I, ge, gi = p
 
     ## Inhomogeneous Poisson process
     @unpack r0, β, τ, kIE, wIE = param
     @unpack noise, r = p
-    Erate::Float32 = r0
-    Irate::Float32 = r0 * kIE
+    # Irate::Float32 = r0 * kIE
+    R(x::Float32, v0::Float32=0.f0) = x > 0.f0 ? x : v0
 
     # Inhibitory spike
     rand!(randcache)
-    @inbounds @simd for j = 1:N
-        if randcache[j] < Irate/N_pre * dt
-            fire[j] = true
-        else
-            fire[j] = false
-        end
-    end
-    for j = 1:N # loop on presynaptic cells
-        if fire[j] # presynaptic fire
-            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                gi[cells[I[s]]] += W[s] * wIE
+    for i in 1:N
+        @simd for j = 1:N_pre # loop on presynaptic cells
+            if randcache[j] < r0*kIE/N_pre * dt 
+                gi[i] += 1 * wIE
             end
         end
     end
-
-    R(x::Float32, v0::Float32=0.f0) = x > 0.f0 ? x : v0
 
     # Excitatory spike
+    re::Float32 = 0.f0
+    cc::Float32 = 0.f0
+    Erate::Float32 = 0.f0
+    rand!(randcache_β)
     rand!(randcache)
-    @inbounds @simd for j = 1:N
-        re::Float32 = randcache[j] - 0.5f0
-        cc::Float32 = 1.0f0 - dt / τ
-        noise[j] = ( noise[j] - re) * cc + re
-        Erate = R(r0./2 *  R(noise[j] * β, 1.f0) + r[j], 0.f0)
-        r[j] += (r0 - Erate)/400ms * dt
-        # @info "$j: Erate: $Erate Hz, r: $(r[j]), r0: $r0, noise: $(noise[j]), β"
+    @inbounds @fastmath for i = 1:N
+        re= randcache_β[i] - 0.5f0
+        cc = 1.0f0 - dt / τ
+        noise[i] = ( noise[i] - re) * cc + re
+        Erate = R(r0./2 *  R(noise[i] * β, 1.f0) + r[i], 0.f0) 
+        r[i] += (r0 - Erate)/400ms * dt
         @assert Erate >= 0
-        if rand() < Erate  * dt
-            fire[j] = true
-            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                ge[cells[I[s]]] += W[s] * (Erate*dt > 1.0f0 ? Erate*dt : 1.0f0)
+        @simd for j in 1:N_pre # loop on presynaptic cells
+            if randcache[j] < Erate/N_pre * dt 
+                ge[i] += 1.
             end
-        else
-            fire[j] = false
         end
     end
 
