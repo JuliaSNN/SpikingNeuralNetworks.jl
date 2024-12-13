@@ -328,7 +328,7 @@ function interpolated_record(p, sym)
         axes(v_dt, i)
     end
     y = scale(v, ax..., r_v)
-    return y, extrema(r_v)
+    return y, r_v
 end
 
 function squeeze(A::AbstractArray)
