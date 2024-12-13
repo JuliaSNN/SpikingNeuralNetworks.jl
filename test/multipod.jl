@@ -7,15 +7,14 @@ SNN.@load_units;
 
 ### Define neurons and synapses in the network
 N = 1
-dendrites = [300um, 300um]
-E = SNN.MultipodNeurons(dendrites, N)
-Ie = SNN.PoissonStimulus(E, :he, 1, cells=:ALL, param=2.8kHz)
+dendrites = [200um, 300um, 300um, 300um]
+E = SNN.Multipod(dendrites, N=N)
+Ie = SNN.PoissonStimulus(E, :he, 1, cells=:ALL, param=3.2kHz)
 Ii = SNN.PoissonStimulus(E, :hi, 1, cells=:ALL, param=3.8kHz)
-I1.W
 
 model = merge_models(E=E, I1=Ie, I2=Ii)
 SNN.monitor(E, [:v_d, :v_s, :g_d])
-@btime sim!(model=model, duration=10s, pbar=true)
+sim!(model=model, duration=10s, pbar=true)
 
 g_d = E.records[:g_d]
 plot([E.records[:g_d][i][1,1,2] for i in eachindex(g_d)])

@@ -9,6 +9,27 @@ function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
+function update_weights!(c::C, j, i, w) where C <: AbstractConnection
+    @unpack colptr, I,  W = c
+    for s in colptr[j]:(colptr[j+1]-1)
+        if I[s] == i
+            W[s] = w
+            break
+        end
+    end
+end
+
+function update_weights!(c::C, js::Vector, is::Vector, w) where C <: AbstractConnection
+    @unpack colptr, I,  W = c
+    for j in js
+        for s in colptr[j]:(colptr[j+1]-1)
+            if I[s] ∈ is
+                W[s] = w
+            end
+        end
+    end
+end
+
 function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
     rowptr, colptr, I, J, index, W = dsparse(W)
     @assert length(rowptr) == length(c.rowptr) "Rowptr length mismatch"
@@ -356,4 +377,4 @@ end
 
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!
