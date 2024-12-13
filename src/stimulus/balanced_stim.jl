@@ -66,6 +66,7 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
         end
     end
     w = zeros(Float32, length(cells), length(cells))
+
     for i in 1:length(cells)
         w[i, i] = 1
     end
@@ -73,20 +74,35 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
     rowptr, colptr, I, J, index, W = dsparse(w)
 
     if isnothing(target) 
-        ge = getfield(post, sym_e)
-        gi = getfield(post, sym_i)
-    else
+        g = getfield(post, sym)
+        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>:soma)
+    elseif typeof(target) == Symbol
         ge = getfield(post, Symbol("$(sym_e)_$target"))
         gi = getfield(post, Symbol("$(sym_i)_$target"))
+        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>target)
+    elseif typeof(target) == Int
+        sym_i= Symbol("$(sym_i)_d")
+        sym_e= Symbol("$(sym_e)_d")
+        ge = getfield(post, sym_e)[target]
+        gi = getfield(post, sym_i)[target]
+        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>Symbol(target))
     end
-    targets = Dict(:pre => :Balanced, :g => post.id, :compartment=>target)
+
+    # if isnothing(target) 
+    #     ge = getfield(post, sym_e)
+    #     gi = getfield(post, sym_i)
+    # else
+    #     ge = getfield(post, Symbol("$(sym_e)_$target"))
+    #     gi = getfield(post, Symbol("$(sym_i)_$target"))
+    # end
+
 
     if typeof(param) <: Real
         r = param
         param = BSParam(rate = (x,y)->r, r* param.kIE)
     end
 
-    r= ones(Float32, post.N)
+    r= ones(Float32, post.N)*param.r0
     noise = zeros(Float32, post.N)
 
     # Construct the SpikingSynapse instance
@@ -144,10 +160,10 @@ function stimulate!(p::BalancedStimulus, param::BalancedStimulusParameter, time:
         re::Float32 = randcache[j] - 0.5f0
         cc::Float32 = 1.0f0 - dt / τ
         noise[j] = ( noise[j] - re) * cc + re
-        Erate = r0 *  R(noise[j] * β, 1.f0) * R(r[j], 1.f0 )
-        @assert Erate >= 0
-        r[j] += (1 - r[j] + (r0 - Erate)/r0) * dt
+        Erate = R(r0./2 *  R(noise[j] * β, 1.f0) + r[j], 0.f0)
+        r[j] += (r0 - Erate)/400ms * dt
         # @info "$j: Erate: $Erate Hz, r: $(r[j]), r0: $r0, noise: $(noise[j]), β"
+        @assert Erate >= 0
         if rand() < Erate  * dt
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
