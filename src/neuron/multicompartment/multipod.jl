@@ -276,6 +276,7 @@ function update_multipod!(
     end
 end
 
+export Multipod, MultipodNeurons
 
 # @inline @fastmath function ΔvAdEx(v::Float32, w::Float32, θ::Float32, axial::Float32, synaptic::Float32, AdEx::AdExSoma)::Float32
 #     return 1/ AdEx.C * (

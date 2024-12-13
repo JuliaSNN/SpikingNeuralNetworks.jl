@@ -355,14 +355,14 @@ Returns the recorded values for a given object and key. If an id is provided, re
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
     if isa(rec[1], Matrix)
-        @info "Matrix recording"
+        @debug "Matrix recording"
         array = zeros(size(rec[1])..., length(rec))
         for i in eachindex(rec)
             array[:,:,i] = rec[i]
         end
         return array
     elseif typeof(rec[1]) <: Vector{Vector{typeof(rec[1][1][1])}} # it is a multipod
-        @info "Multipod recording"        
+        @debug "Multipod recording"        
         i = length(rec) 
         n = length(rec[1])
         d = length(rec[1][1])
@@ -374,7 +374,7 @@ function getvariable(obj, key, id=nothing)
         end
         return array
     else
-        @info "Vector recording"
+        @debug "Vector recording"
         isnothing(id) && return hcat(rec...)
         return hcat(rec...)[id,:]
     end

@@ -151,6 +151,7 @@ function vecplot!(
     pop_average = false,
     r=nothing,
     sym_id = nothing,
+    factor = 1.f0,
     kwargs...,
 ) 
     # get the record and its sampling rate
@@ -176,7 +177,7 @@ function vecplot!(
     return plot!(
         my_plot,
         r./1000,
-        y',
+        y' .* factor,
         ribbon = ribbon,
         leg = :none,
         xaxis = ("t", extrema(r./1000)),
