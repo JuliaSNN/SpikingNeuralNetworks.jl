@@ -67,12 +67,12 @@ function plasticity!(
     # R(x::Float32) = x < 0.0f0 ? 0.0f0 : x
 
     # update pre-synaptic spike trace
-    @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
+    @simd for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
         @inbounds @fastmath x[j] += dt * (-x[j] + fireJ[j]) / τx
     end
 
     Is = 1:(length(rowptr)-1)
-    @turbo for i in eachindex(Is) # Iterate over postsynaptic neurons
+    @simd for i in eachindex(Is) # Iterate over postsynaptic neurons
         @inbounds u[i] += dt * (-u[i] + v_post[i]) / τu # postsynaptic neuron
         @inbounds v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron
     end
@@ -88,7 +88,7 @@ function plasticity!(
         end
     end
 
-    @turbo for i in eachindex(W)
+    @simd for i in eachindex(W)
         @inbounds W[i] = clamp(W[i], Wmin, Wmax)
     end
 end
