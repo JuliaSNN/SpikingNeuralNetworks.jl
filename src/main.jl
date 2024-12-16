@@ -97,6 +97,10 @@ function sim!(; model, kwargs...)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
+function initialize!(; kwargs...)
+    train!(; kwargs...)
+end
+
 #########
 
 function sim!(

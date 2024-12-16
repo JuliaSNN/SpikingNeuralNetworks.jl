@@ -9,6 +9,27 @@ function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
+function update_weights!(c::C, j, i, w) where C <: AbstractConnection
+    @unpack colptr, I,  W = c
+    for s in colptr[j]:(colptr[j+1]-1)
+        if I[s] == i
+            W[s] = w
+            break
+        end
+    end
+end
+
+function update_weights!(c::C, js::Vector, is::Vector, w) where C <: AbstractConnection
+    @unpack colptr, I,  W = c
+    for j in js
+        for s in colptr[j]:(colptr[j+1]-1)
+            if I[s] ∈ is
+                W[s] = w
+            end
+        end
+    end
+end
+
 function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
     rowptr, colptr, I, J, index, W = dsparse(W)
     @assert length(rowptr) == length(c.rowptr) "Rowptr length mismatch"
@@ -288,24 +309,55 @@ function remove_element(model, key)
     merge_models(pop, syn, stim)
 end
 
-function load_model(model_path)
-    model = DrWatson.load(model_path)["model"]
-    seq = DrWatson.load(model_path)["seq"]
-    mytime = DrWatson.load(model_path)["mytime"]
-    lexicon = DrWatson.load(model_path)["lexicon"]
-    return (model=model, seq=seq, mytime=mytime, lexicon=lexicon)
+function load_data(path="", name="", info=nothing)
+    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
+    if isnothing(info)
+        throw(ArgumentError("If path is not file, config is required"))
+    end
+    path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    @info "Loading model from $(path)"
+    DATA = DrWatson.load(path)
+    return dict2ntuple(DATA)
 end
 
-function copy_model(model_path)
-    model = deepcopy(DrWatson.load(model_path)["model"])
-    seq   = deepcopy(DrWatson.load(model_path)["seq"])
-    mytime = deepcopy(DrWatson.load(model_path)["mytime"])
-    lexicon = deepcopy(DrWatson.load(model_path)["lexicon"])
-    clear_monitor(model.pop)
-    clear_monitor(model.syn)
-    clear_monitor(model.stim)
-    return (model=model, seq=seq, mytime=mytime, lexicon=lexicon)
+function load_model(path="", name="", info=nothing)
+    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
+    if isnothing(info)
+        throw(ArgumentError("If path is not file, config is required"))
+    end
+    path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    @info "Loading model from $(path)"
+    DATA = DrWatson.load(path)
+    return dict2ntuple(DATA)
 end
+export load_data, load_model, save_model, savemodel
+
+function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
+    @info "Model: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
+    isdir(path) || mkpath(path)
+
+    data_path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    Logging.LogLevel(0) == Logging.Error
+    @time DrWatson.save(data_path, merge((@strdict model=model), kwargs))
+    Logging.LogLevel(0) == Logging.Info
+    @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
+
+    _model = deepcopy(model)
+    clear_monitor(_model.pop)
+    clear_monitor(_model.syn)
+    clear_monitor(_model.stim)
+
+    model_path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    Logging.LogLevel(0) == Logging.Error
+    @time DrWatson.save(model_path, merge((@strdict model=_model), kwargs))
+    Logging.LogLevel(0) == Logging.Info
+    @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
+    return data_path
+end
+
+export save_model, load_model, load_data
+
+   
 
 """
     print_summary(p)
@@ -325,4 +377,4 @@ end
 
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix, load_model, print_model, copy_model, extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!

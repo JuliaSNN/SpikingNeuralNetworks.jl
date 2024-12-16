@@ -1,4 +1,4 @@
-import Interpolations: scale, interpolate, BSpline, Linear
+import Interpolations: scale, interpolate, BSpline, Linear, NoInterp
 
 """
     struct Time
@@ -157,6 +157,14 @@ end
     push!(records, my_record[ind])
 end
 
+@inline function _record_sym(my_record::Array{T,3}, records::Vector{Array{T,3}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, my_record[ind, :, :])
+end
+
+@inline function _record_sym(my_record::Vector{Vector{T}}, records::Vector{Vector{Vector{T}}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, deepcopy(my_record[ind]))
+end
+
 @inline function _record_sym(my_record::Matrix{T}, records::Vector{Matrix{T}}, ind::Vector{Int}) where {T<:Real}
     push!(records, my_record[ind,:])
 end
@@ -301,6 +309,9 @@ end
     The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
 """
 function interpolated_record(p, sym)
+    if sym==:fire
+        return firing_rate(p, τ=20ms)
+    end
     sr = p.records[:sr][sym]
     v_dt = SNN.getvariable(p, sym)
 
@@ -317,7 +328,7 @@ function interpolated_record(p, sym)
         axes(v_dt, i)
     end
     y = scale(v, ax..., r_v)
-    return y, extrema(r_v)
+    return y, r_v
 end
 
 function squeeze(A::AbstractArray)
@@ -344,12 +355,26 @@ Returns the recorded values for a given object and key. If an id is provided, re
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
     if isa(rec[1], Matrix)
+        @debug "Matrix recording"
         array = zeros(size(rec[1])..., length(rec))
         for i in eachindex(rec)
             array[:,:,i] = rec[i]
         end
         return array
+    elseif typeof(rec[1]) <: Vector{Vector{typeof(rec[1][1][1])}} # it is a multipod
+        @debug "Multipod recording"        
+        i = length(rec) 
+        n = length(rec[1])
+        d = length(rec[1][1])
+        array = zeros(d, n, i)
+        for i in eachindex(rec)
+            for n in eachindex(rec[i])
+                array[:,n,i] = rec[i][n]
+            end
+        end
+        return array
     else
+        @debug "Vector recording"
         isnothing(id) && return hcat(rec...)
         return hcat(rec...)[id,:]
     end
@@ -437,7 +462,11 @@ end
 
 function clear_monitor(objs::NamedTuple)
     for obj in values(objs)
-        clear_monitor(obj)
+        try 
+            clear_monitor(obj)
+        catch 
+            @warn "Could not clear monitor for $obj"
+        end
     end
 end
 
