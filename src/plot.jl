@@ -137,7 +137,7 @@ function vecplot(P::Array, sym; kwargs...)
 end
 
 function _match_r(r, r_v)
-    r = isnothing(r) ? range(r_v[1]+1, r_v[2]-1) : r
+    r = isnothing(r) ? range(r_v[1], r_v[end]) : r
     r[end] > r_v[end] && throw(ArgumentError("The end time is greater than the record time"))
     r[1] < r_v[1] && throw(ArgumentError("The start time is less than the record time"))
     return r
