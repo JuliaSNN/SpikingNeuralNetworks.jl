@@ -42,7 +42,7 @@ function raster(spiketimes::Spiketimes, t = nothing, populations=nothing, names=
     return plt
 end
 
-function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, kwargs...)
+function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, every=1, kwargs...)
     t = t[[1,end]]
     if isnothing(populations)
         y0 = Int32[0]
@@ -72,8 +72,8 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         @warn "Subsampling raster plot, 1 out of $s spikes"
     end
     plt = scatter(
-        X,
-        Y,
+        X[1:every:end],
+        Y[1:every:end],
         m = (1, :black),
         leg = :none,
         xaxis = ("Time (ms)", (0, Inf)),

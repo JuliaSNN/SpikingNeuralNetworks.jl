@@ -208,7 +208,7 @@ function stp_plot(model, interval, assemblies)
     weff = ρ.*w ./μee_assembly
     in_assembly = 1:length(indices(syn.EE, assemblies[1].cells, assemblies[1].cells))
     out_assembly = length(in_assembly)+1:size(weff,1)
-    p12 = SNN.raster(pop, interval, yrotation=90)
+    p12 = SNN.raster(pop, interval, yrotation=90, every=10)
     p11 = plot(SNN.vecplot( pop.I, :v, r=interval, neurons=1, pop_average=true, label="Excitatory", ylabel="", xlabel=""),
                 SNN.vecplot(pop.E, :v, r=interval, neurons=1, pop_average=true, label="Inhibitory", ylabel="Membrane potential (mV)"), layout=(2,1), topmargin=0Plots.mm, bottommargin=0Plots.mm)
     p1 = plot(p11, p12, layout=(1,2), size=(800,400), margin=5Plots.mm, legend=:topleft)
@@ -216,7 +216,10 @@ function stp_plot(model, interval, assemblies)
     interval
     p2 = plot(interval./1000, mean(fr[1], dims=1)', label="Excitatory", lw=3)
     plot!(interval./1000, mean(fr[2], dims=1)', label="Inhibitory", lw=3)
-    plot!(interval./1000, mean(fr[1][assemblies[1].cells, interval], dims=1)', label="Assembly", lw=3)
+    for a in assemblies
+        plot!(interval./1000, mean(fr[1][a.cells, interval], dims=1)', label="Assembly $(a.id)", lw=3)
+    end
+    # plot!(interval./1000, mean(fr[1][assemblies[1].cells, interval], dims=1)', label="Assembly", lw=3)
     plot!(ylabel="Firing rate (Hz)")
     p3 = plot(r_t./1000, mean(weff[out_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label=L"w_{base}", ls=:dash)
     p3 = plot!(r_t./1000, mean(weff[in_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label=L"w_{eff}")
@@ -229,7 +232,7 @@ function stp_plot(model, interval, assemblies)
     p23 = plot(p2,p3)
     in_assembly = [a.cells for a in assemblies]
     control = StatsBase.sample(1:pop.E.N, length(assemblies[1].cells), replace=false)
-    p4 = SNN.raster(pop.E, interval, yrotation=90, populations=[in_assembly..., control], names=["Assembly 1", "Assembly 2"])
+    p4 = SNN.raster(pop.E, interval, yrotation=90, populations=[in_assembly..., control], every=10, names=["Assembly 1", "Assembly 2"])
     plot_network = plot!(p1, p23, p4, layout=(3,1), size=(1300,900), margin=5Plots.mm, legend=:topleft)
     return plot_network
 end
