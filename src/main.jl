@@ -38,6 +38,7 @@ function sim!(
     for t in pbar
         sim!(P, C, S, dt, time)
     end
+    return time
 end
 
 
@@ -79,6 +80,7 @@ function train!(
     for t in pbar
         train!(P, C, S, dt, time)
     end
+    return time
 end
 
 
