@@ -281,7 +281,9 @@ function monitor_plast(obj, plasticity, sym)
     if !haskey(obj.records[:plasticity], name)
        obj.records[:plasticity][name] = Vector{Symbol}()
     end
-    push!(obj.records[:plasticity][name], sym)
+    if !(sym ∈ obj.records[:plasticity][name])
+        push!(obj.records[:plasticity][name], sym)
+    end
     typ = typeof(getfield(plasticity, sym))
     if !haskey(obj.records, name)
        obj.records[name] = Dict{Symbol,AbstractVector}()
@@ -317,6 +319,7 @@ function interpolated_record(p, sym)
 
     # ! adjust the end time to account for the added first element 
     _end = (size(v_dt,)[end]-1)/sr  
+    @show sr, _end
     # ! this is the recorded time (in ms), it assumes all recordings are contained in v_dt
     r_v = 0:1/sr:_end 
 
@@ -328,7 +331,7 @@ function interpolated_record(p, sym)
         axes(v_dt, i)
     end
     y = scale(v, ax..., r_v)
-    return y, extrema(r_v)
+    return y, r_v
 end
 
 function squeeze(A::AbstractArray)
@@ -355,14 +358,14 @@ Returns the recorded values for a given object and key. If an id is provided, re
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
     if isa(rec[1], Matrix)
-        @info "Matrix recording"
+        @debug "Matrix recording"
         array = zeros(size(rec[1])..., length(rec))
         for i in eachindex(rec)
             array[:,:,i] = rec[i]
         end
         return array
     elseif typeof(rec[1]) <: Vector{Vector{typeof(rec[1][1][1])}} # it is a multipod
-        @info "Multipod recording"        
+        @debug "Multipod recording"        
         i = length(rec) 
         n = length(rec[1])
         d = length(rec[1][1])
@@ -374,7 +377,7 @@ function getvariable(obj, key, id=nothing)
         end
         return array
     else
-        @info "Vector recording"
+        @debug "Vector recording"
         isnothing(id) && return hcat(rec...)
         return hcat(rec...)[id,:]
     end
