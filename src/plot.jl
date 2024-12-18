@@ -2,29 +2,11 @@ using .Plots, Statistics
 
 ## Raster plot
 
-function raster(spiketimes::Spiketimes, t = nothing, populations=nothing, names=nothing, kwargs...)
-    if isnothing(t)
-        t = [0, maximum(vcat(spiketimes...))]
-    end
-    t = t[[1,end]]
-    X = Float32[]
-    Y = Float32[]
-    for n in eachindex(spiketimes)
-        for st in spiketimes[n]
-            if isnothing(st) || (st > t[1] && st < t[2])
-                push!(X, st)
-                push!(Y, n)
-            end
-        end
-    end
-    if length(X) > 200_000 
-        s = ceil(Int, length(X) / 200_000)
-        points = Vector{Int}(eachindex(X))
-        points = sample(points, 200_000, replace = false)
-        X = X[points]
-        Y = Y[points]
-        @warn "Subsampling raster plot, 1 out of $s spikes"
-    end
+
+function raster(spiketimes::Spiketimes, t = nothing, kwargs...)
+    t=  isnothing(t) ? [0, maximum(vcat(spiketimes...))] : t
+    X, Y = _raster(spiketimes, t)
+    X, Y = _resample_spikes(X,Y)
     plt = scatter(
         X,
         Y,
@@ -35,14 +17,15 @@ function raster(spiketimes::Spiketimes, t = nothing, populations=nothing, names=
         label=""
     )
     !isnothing(t) && plot!(xlims = t)
-    # plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
-    # y0 = y0[2:(end-1)]
-    # !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
     plot!(plt; kwargs...)
     return plt
 end
 
-function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, every=1, kwargs...)
+function raster(P, t = nothing;  kwargs...)
+    raster!(plot(), P, t; kwargs...)
+end
+
+function raster!(p, P, t = nothing; dt = 0.125ms, populations=nothing, names=nothing, every=1, kwargs...)
     t = t[[1,end]]
     if isnothing(populations)
         y0 = Int32[0]
@@ -63,15 +46,9 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
     end
     names = isnothing(names) ? ["pop_$i" for i in 1:length(P)] : names
 
-    if length(X) > 200_000 
-        s = ceil(Int, length(X) / 200_000)
-        points = Vector{Int}(eachindex(X))
-        points = sample(points, 200_000, replace = false)
-        X = X[points]
-        Y = Y[points]
-        @warn "Subsampling raster plot, 1 out of $s spikes"
-    end
-    plt = scatter(
+    X, Y = _resample_spikes(X,Y)
+
+    plt = scatter!(p,
         X[1:every:end],
         Y[1:every:end],
         m = (1, :black),
@@ -106,6 +83,32 @@ function _raster_populations(p, interval = nothing; populations::Vector{T} ) whe
     end
     return x, y, y0
 end
+
+function _raster(spiketimes::Spiketimes, t = nothing)
+    t, X, Y = t[[1,end]], Float32[], Float32[]
+    for n in eachindex(spiketimes)
+        for st in spiketimes[n]
+            if isnothing(st) || (st > t[1] && st < t[2])
+                push!(X, st)
+                push!(Y, n)
+            end
+        end
+    end
+    return X, Y
+end
+
+function _resample_spikes(X,Y)
+    if length(X) > 200_000 
+        s = ceil(Int, length(X) / 200_000)
+        points = Vector{Int}(eachindex(X))
+        points = sample(points, 200_000, replace = false)
+        X = X[points]
+        Y = Y[points]
+        @warn "Subsampling raster plot, 1 out of $s spikes"
+    end
+    return X, Y
+end
+
 
 
 function _raster(p::T, interval = nothing) where T<: AbstractPopulation

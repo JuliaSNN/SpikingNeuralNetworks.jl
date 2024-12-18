@@ -230,12 +230,20 @@ function stp_plot(model, interval, assemblies)
     SNN.vecplot!(p3, syn.EE, :x, r=interval, dt=0.125, neurons=assemblies[1].cells, pop_average=true, label="x", c=:red)
     plot!(p3, ylims=(0,1), legend=:topleft, ylabel="STP")
     p23 = plot(p2,p3)
-    in_assembly = [a.cells for a in assemblies]
-    control = StatsBase.sample(1:pop.E.N, length(assemblies[1].cells), replace=false)
-    p4 = SNN.raster(pop.E, interval, yrotation=90, populations=[in_assembly..., control], every=10, names=["Assembly 1", "Assembly 2"])
+    in_ass = [a.cells for a in assemblies]
+    push!(in_ass,StatsBase.sample(1:pop.E.N, length(assemblies[1].cells), replace=false))
+    p = plot()
+    rectangle(_start, _end) = Shape([_start, _start, _end, _end],
+                                    [0, length(vcat(in_ass...)),length(vcat(in_ass...)), 0 ])
+    for stim in stimuli
+        plot!(rectangle(stim[1], stim[end]), c=:grey, opacity=.5, label="", lc=:transparent)
+    end
+    p4 = SNN.raster!(p, pop.E, interval, yrotation=90, populations=in_ass, every=10, names=["Assembly 1", "Assembly 2"])
     plot_network = plot!(p1, p23, p4, layout=(3,1), size=(1300,900), margin=5Plots.mm, legend=:topleft)
     return plot_network
 end
+
+
 
 export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
 
