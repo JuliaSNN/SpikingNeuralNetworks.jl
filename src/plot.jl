@@ -32,6 +32,7 @@ function raster(spiketimes::Spiketimes, t = nothing, populations=nothing, names=
         leg = :none,
         xaxis = ("Time (ms)", (0, Inf)),
         yaxis = ("Neuron",),
+        label=""
     )
     !isnothing(t) && plot!(xlims = t)
     # plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
@@ -41,7 +42,7 @@ function raster(spiketimes::Spiketimes, t = nothing, populations=nothing, names=
     return plt
 end
 
-function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, kwargs...)
+function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, every=1, kwargs...)
     t = t[[1,end]]
     if isnothing(populations)
         y0 = Int32[0]
@@ -71,17 +72,18 @@ function raster(P, t = nothing, dt = 0.1ms; populations=nothing, names=nothing, 
         @warn "Subsampling raster plot, 1 out of $s spikes"
     end
     plt = scatter(
-        X,
-        Y,
+        X[1:every:end],
+        Y[1:every:end],
         m = (1, :black),
         leg = :none,
         xaxis = ("Time (ms)", (0, Inf)),
         yaxis = ("Neuron",),
+        label=""
     )
     !isnothing(t) && plot!(xlims = t)
     plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
     y0 = y0[2:(end-1)]
-    !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red)
+    !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red, label="")
     plot!(plt; kwargs...)
     return plt
 end
@@ -137,7 +139,7 @@ function vecplot(P::Array, sym; kwargs...)
 end
 
 function _match_r(r, r_v)
-    r = isnothing(r) ? range(r_v[1]+1, r_v[2]-1) : r
+    r = isnothing(r) ? range(r_v[1], r_v[end]) : r
     r[end] > r_v[end] && throw(ArgumentError("The end time is greater than the record time"))
     r[1] < r_v[1] && throw(ArgumentError("The start time is less than the record time"))
     return r
@@ -151,6 +153,7 @@ function vecplot!(
     pop_average = false,
     r=nothing,
     sym_id = nothing,
+    factor = 1.f0,
     kwargs...,
 ) 
     # get the record and its sampling rate
@@ -176,7 +179,7 @@ function vecplot!(
     return plot!(
         my_plot,
         r./1000,
-        y',
+        y' .* factor,
         ribbon = ribbon,
         leg = :none,
         xaxis = ("t", extrema(r./1000)),
@@ -194,238 +197,6 @@ end
 
 export raster, vecplot, vecplot!
 
-
-## Dendrite and soma plot
-"""
-    dendrite_gplot(population, target; sym_id=1, r, dt, param=:dend_syn, nmda=true, kwargs...)
-
-    Plot the synaptic current in the dendrite of a population of neurons. 
-    The function uses the synaptic conductance and the membrane potential to calculate the synaptic current.
-    
-    Parameters
-    ----------
-    population : AbstractPopulation
-        The population of neurons to plot
-    target : Symbol
-        The target of the plot, either `:d` for single dendrite or `:d1/:d2` 
-    neuron : Int
-        The neuron to plot
-    r : Array{Int}
-        The time range to plot
-    nmda : Bool
-        If true, the NMDA conductance is used to calculate the synaptic current
-    kwargs... : Any
-
-"""
-function dendrite_gplot(population, target; neuron=1, r, param=:dend_syn, nmda=true, kwargs...)
-    syn = getfield(population, param)
-    if nmda
-        @unpack mg, b, k = getfield(population, :NMDA)
-    end
-    # r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
-    v_sym = Symbol("v_", target) 
-    g_sym = Symbol("g_", target)
-    indices =  haskey(population.records[:indices], g_sym) ? population.records[:indices][g_sym] : 1:population.N
-    v, r_v= interpolated_record(population, v_sym)
-    g, r_v = interpolated_record(population, g_sym)
-    r = _match_r(r, r_v)
-    v = Float32.(v[indices, r])
-    g = Float32.(g[:, :, r])
-
-    @assert length(axes(g,1)) == length(axes(v,1))
-    @assert length(axes(g,2)) == length(syn) "Syn size: $(length(syn)) != $(length(axes(g,2)))"
-    @assert length(axes(g,3)) == length(axes(v,2))
-    curr = zeros(size(g))
-    for i in axes(g,3)
-        for r in axes(g,2)
-            @unpack gsyn, E_rev, nmda = syn[r]
-            for n in axes(g,1)
-                if nmda > 0.
-                    curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)/ (1.0f0 + (mg / b) * SNN.exp32(k * v[n,i]))
-                else
-                    curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)
-                end
-            end
-        end
-    end
-    curr .= curr ./1000
-    @info size(curr), size(r)
-
-    ylims =abs.(maximum(abs.(curr[neuron,:,:]))) |> x->(-x, x)
-    plot(r, curr[neuron,1,:].+curr[neuron,2,:], label="Glu")
-    plot!(r, curr[neuron,3,:].+curr[neuron,4,:], label="GABA")
-    plot!(ylims=ylims, xlabel="Time (ms)", ylabel="Syn. curr. dendrite (μA)")
-    hline!([0.0], c=:black, label="") 
-    plot!(;kwargs...)
-end
-
-"""
-    soma_gplot( population, target; neuron=1, r, dt, param=:soma_syn, nmda=true, ax=plot(), kwargs...)
-
-    Plot the synaptic current in the soma of a population of neurons.
-    The function uses the synaptic conductance and the membrane potential to calculate the synaptic current.
-    
-    Parameters
-    ----------
-    population : AbstractPopulation
-        The population of neurons to plot
-    neuron : Int
-        The neuron to plot
-    r : Array{Int}:
-        The time range to plot
-    param : Symbol
-        The parameter to use for the synaptic conductance
-    ax : Plots.Plot
-        Plot over the current axis 
-"""
-function soma_gplot( population; neuron=1, r, param=:soma_syn, ax=plot(), kwargs...)
-    syn = getfield(population, param)
-    v_sym = :v_s
-    ge_sym = :ge_s
-    gi_sym = :gi_s
-    indices =  haskey(population.records[:indices], ge_sym) ? population.records[:indices][ge_sym] : 1:population.N
-    v, r_v= interpolated_record(population, v_sym)
-    ge, r_v = interpolated_record(population, ge_sym)
-    gi, r_v = interpolated_record(population, gi_sym)
-
-    r = _match_r(r, r_v)
-    v = Float32.(v[indices, r])
-    ge = Float32.(ge[:,  r])
-    gi = Float32.(gi[:,  r])
-
-    @assert length(axes(ge,1)) == length(axes(v,1))
-    @assert length(axes(ge,2)) == length(axes(v,2))
-    curr = zeros(size(ge,1), 2, size(ge,2))
-    r = _match_r(r, r_v)
-    for i in axes(ge,2)
-        for n in axes(ge,1)
-            @unpack gsyn, E_rev, nmda = syn[1]
-            curr[n,1,i] = - gsyn * ge[n,i] * (v[n,i]-E_rev)
-            @unpack gsyn, E_rev, nmda = syn[2]
-            curr[n,2,i] = - gsyn * gi[n,i] * (v[n,i]-E_rev)
-        end
-    end
-    curr .= curr ./1000
-
-    plot!(ax, r, curr[neuron,1,:], label="Glu soma")
-    plot!(r, curr[neuron,2,:], label="GABA soma")
-    plot!(ylims=:auto, xlabel="Time (ms)", ylabel="Syn. curr. (μA)")
-    hline!([0.0], c=:black, label="") 
-    plot!(;kwargs...)
-end
-"""
-    plot_activity(network, Trange)
-
-Plot the activity of a spiking neural network with one dendritic excitatory population and two inhibitory populations. The function plots the firing rate of the populations, the membrane potential of the neurons, the synaptic conductance in the dendrite, the synaptic current in the dendrite, and the raster plot of the excitatory population.
-
-Arguments:
-- `network`: The spiking neural network object.
-- `Trange`: The time range for plotting.
-
-Returns:
-- Nothing.
-
-Example:
-"""
-function plot_activity(network, Trange; conductance=false)
-    frE, interval  = SNN.firing_rate(network.pop.E,  interval = Trange, τ=10ms)
-    frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
-    frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
-    pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
-    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
-    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
-    plot!(margin = 5Plots.mm, xlabel="")
-    pv =SNN.vecplot(network.pop.E, :v_d, r = Trange,  pop_average = true, label="dendrite")
-    SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")
-    plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
-    rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
-    ## Conductance
-    if conductance 
-        dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")
-        soma_gplot(network.pop.E, r=Trange, margin=5Plots.mm, xlabel="", ax=dgplot)
-        layout = @layout  [ 
-                    c{0.25h}
-                    e{0.25h}
-                    a{0.25h}
-                    d{0.25h}]
-        return plot(pr, rplot,pv,  dgplot, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
-    else
-        layout = @layout  [ 
-            c{0.3h}
-            e{0.4h}
-            d{0.3h}]
-        return plot(pr, rplot,pv, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
-    end
-end
-
-"""
-    plot_weights(network)
-
-Plot the synaptic weights of:
-    - inhibitory to excitatory neurons
-    - correlation of synaptic weights between inhibitory and excitatory neurons
-    - distribution of firing rates of the network
-
-# Arguments
-- `network`: The spiking neural network object.
-
-# Returns
-- `plot`: The plot object.
-
-"""
-function plot_weights(network)
-    W = network.syn.I1_to_E.W
-    h_I1E = histogram(W, bins=minimum(W):maximum(W)/200:maximum(W)+1, title = "Synaptic weights from I1 to E",  xlabel="Synaptic weight", ylabel="Number of synapses", yticks=:none, c=:black)
-    W = network.syn.I2_to_E.W
-    h_I2E = histogram(W, bins=minimum(W):maximum(W)/200:maximum(W)+1, title = "Synaptic weights from I2 to E", xlabel="Synaptic weight", ylabel="Number of synapses", yticks=:none, c=:black)
-    sc_w = scatter(network.syn.I2_to_E.W, network.syn.I1_to_E.W,  xlabel="Synaptic weight from I2 to E", ylabel="Synaptic weight from I1 to E", alpha=0.01, c=:black)
-    frE= SNN.average_firing_rate(network.pop.E, interval = Trange)
-    sc_fr=histogram(frE, c=:black, label="E", xlabel="Firing rate (Hz)",bins=-0.5:0.2:12, ylabel="Number of neurons")
-    layout = @layout  [ 
-                grid(2,2)
-                ]
-    return plot(h_I2E, h_I1E, sc_w, sc_fr, layout=layout, size=(800, 600), legend=false, margin=5Plots.mm)
-end
-
-export soma_gplot, dendrite_gplot, plot_activity, plot_weights
-## 
-
-## conductance plot
-function gegi_plot(population; r, dt, param=:soma_syn, nmda=true, kwargs...)
-    syn = getfield(population, param)
-    if nmda
-        @unpack mg, b, k = getfield(population, :NMDA)
-    end
-    r_dt =  r[2:(end-1)] |> r-> round.(Int, r ./ dt)[1:(end-1)]
-    indices =  haskey(population.records[:indices], sym) ? population.records[:indices][sym] : 1:population.N
-    v_sym = :v
-    ge_sym = :ge
-    gi_sym = :gi
-    v = getvariable(population, v_sym)[indices, r_dt]
-    ge = getvariable(population, ge_sym)[:, r_dt]
-    gi = getvariable(population, gi_sym)[:, r_dt]
-
-    # curr = zeros(2, size(ge,2), )
-    # for i in axes(g,3)
-    #     for r in axes(g,2)
-    #         @unpack gsyn, E_rev, nmda = syn[r]
-    #         for n in axes(g,1)
-    #             if nmda > 0.
-    #                 curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)/ (1.0f0 + (mg / b) * SNN.exp32(k * v[n,i]))
-    #             else
-    #                 curr[n,r,i] = - gsyn * g[n,r,i] * (v[n,i]-E_rev)
-    #             end
-    #         end
-    #     end
-    # end
-    # curr .= curr ./1000
-
-    plot(r_dt.*dt, curr[1,1,:].+curr[1,2,:], label="Glu")
-    plot!(r_dt*dt, curr[1,3,:].+curr[1,4,:], label="GABA")
-    plot!(ylims=(-maximum(abs.(curr)), maximum(abs.(curr))), xlabel="Time (ms)", ylabel="Syn Curr dendrite (μA)")
-    hline!([0.0], c=:black, label="") 
-end
 ##
 
 

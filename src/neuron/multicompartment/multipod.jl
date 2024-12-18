@@ -33,7 +33,7 @@
     gax::MFT = zeros(Nd, N)
     cd::MFT = zeros(Nd, N)
     gm::MFT = zeros(Nd, N)
-    v_d::VST = Vector{Vector{Float32}}([zeros(N) for n in 1:Nd])   #! target
+    v_d::VST = Vector{Vector{Float32}}([param.Vr .+ rand(N) .* (param.Vt - param.Vr) for n in 1:Nd])   #! target
 
     # Synapses dendrites
     g_d::TFT = zeros(N, Nd, 4)
@@ -66,9 +66,9 @@
 end
 
 
-function MultipodNeurons(
-    ds::Vector,
-    N::Int;
+function Multipod(
+    ds::Vector;
+    N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
     NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k), kwargs...)
@@ -115,13 +115,11 @@ function integrate!(p::Multipod, param::AdExSoma, dt::Float32)
         # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
         if after_spike[i] > (τabs + up - up)/dt # backpropagation
             v_s[i] = BAP
-            ## backpropagation effect
             for d in 1:Nd
                 v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d,i] / cd[d,i]
             end
         elseif after_spike[i] > 0 # absolute refractory period
             v_s[i] = Vr
-            # ## apply currents
             for d in 1:Nd
                 v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d,i] / cd[d,i]
             end
@@ -276,6 +274,7 @@ function update_multipod!(
     end
 end
 
+export Multipod, MultipodNeurons
 
 # @inline @fastmath function ΔvAdEx(v::Float32, w::Float32, θ::Float32, axial::Float32, synaptic::Float32, AdEx::AdExSoma)::Float32
 #     return 1/ AdEx.C * (
