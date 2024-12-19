@@ -201,11 +201,11 @@ export soma_gplot, dendrite_gplot, plot_activity, plot_weights
 
     Plot the activity of a spiking neural network with short-term plasticity. The function plots the membrane potential, the firing rate, the synaptic weights, and the raster plot of the excitatory population.
 """
-function stp_plot(model, interval, assemblies)
+function stp_plot(model, interval, assemblies, stimuli=[])
     @unpack pop, syn = model
     ρ, r_t= SNN.interpolated_record(syn.EE, :ρ)
     w,r_t= SNN.interpolated_record(syn.EE, :W)
-    weff = ρ.*w ./μee_assembly
+    weff = ρ.*w ./ maximum(w)
     in_assembly = 1:length(indices(syn.EE, assemblies[1].cells, assemblies[1].cells))
     out_assembly = length(in_assembly)+1:size(weff,1)
     p12 = SNN.raster(pop, interval, yrotation=90, every=10)
@@ -221,8 +221,8 @@ function stp_plot(model, interval, assemblies)
     end
     # plot!(interval./1000, mean(fr[1][assemblies[1].cells, interval], dims=1)', label="Assembly", lw=3)
     plot!(ylabel="Firing rate (Hz)")
-    p3 = plot(r_t./1000, mean(weff[out_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label=L"w_{base}", ls=:dash)
-    p3 = plot!(r_t./1000, mean(weff[in_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label=L"w_{eff}")
+    p3 = plot(r_t./1000, mean(weff[out_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label="w_{base}", ls=:dash)
+    p3 = plot!(r_t./1000, mean(weff[in_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label="w_{eff}")
     SNN.vecplot!(p3, syn.EE, :u, r=interval, dt=0.125, pop_average=true, ls=:dash, ribbon=false, c=:blue, label="")
     SNN.vecplot!(p3, syn.EE, :x, r=interval, dt=0.125, pop_average=true, ls=:dash, ribbon=false, c=:red, label="")
     interval
@@ -242,6 +242,49 @@ function stp_plot(model, interval, assemblies)
     plot_network = plot!(p1, p23, p4, layout=(3,1), size=(1300,900), margin=5Plots.mm, legend=:topleft)
     return plot_network
 end
+
+"""
+    plot_average_word_activity(sym, word, model, seq; target=:d, before=100ms, after=300ms, zscore=true)
+
+    Plot the value of the `sym` variable for the cells associated to the `word` stimulus. 
+    `cells = getcells(model.stim, seq.symbols.words[w], target)`
+
+    Arguments:
+    - `sym`: The variable to plot.
+    - `word`: The word stimulus.
+    - `model`: The spiking neural network model.
+    - `seq`: The sequence of stimuli.
+    - `target`: The target compartment (default=:d).
+    - `before`: The time before the stimulus (default=100ms).
+    - `after`: The time after the stimulus (default=300ms).
+    - `zscore`: Whether to z-score the activity (default=true).
+"""
+function plot_average_word_activity(sym, word, model, seq; target=:d, before=100ms, after=300ms, zscore=true)
+    membrane, r_v = SNN.interpolated_record(model.pop.E, sym)
+    myintervals = sign_intervals(word, seq)
+    Trange = -before:1ms:diff(myintervals[1])[1]+after
+    activity = zeros(length(seq.symbols.words),size(Trange,1))
+    for w in eachindex(seq.symbols.words)
+        cells = getcells(model.stim, seq.symbols.words[w], :d)
+        ave_fr = mean(membrane[cells, :])
+        std_fr = std(membrane[cells, :])
+        n = 0
+        for myinterval in myintervals
+            _range = myinterval[1]-before:1ms:myinterval[2]+after
+            _range[end] > r_v[end] && continue
+            v = mean(membrane[cells, _range], dims=1)[1,:]
+            activity[w, :] += zscore ? (v .- ave_fr)./std_fr : v
+            n+=1
+        end
+        activity[w, :] ./= n
+    end
+    plot(Trange, activity[:,:]', label=hcat(string.(seq.symbols.words)...), xlabel="Time (ms)", ylabel="Membrane potential (mV)", title="")
+    vline!([0, diff(myintervals[1])[1]], c=:black, ls=:dash, label="")
+    word_id = findfirst(seq.symbols.words .== word)
+    plot!(Trange, activity[word_id,:], c=:black, label=string(word), lw=5, )
+end
+
+export plot_average_word_activity
 
 
 
