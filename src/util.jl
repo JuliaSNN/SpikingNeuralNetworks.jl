@@ -9,6 +9,11 @@ function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
+function matrix(c::C, sym::Symbol) where C <: AbstractConnection
+    return sparse(c.I, c.J, getfield(c,sym), length(c.rowptr) - 1, length(c.colptr) - 1)
+end
+
+
 function update_weights!(c::C, j, i, w) where C <: AbstractConnection
     @unpack colptr, I,  W = c
     for s in colptr[j]:(colptr[j+1]-1)
@@ -28,6 +33,19 @@ function update_weights!(c::C, js::Vector, is::Vector, w) where C <: AbstractCon
             end
         end
     end
+end
+
+function indices(c::C, js::AbstractVector, is::AbstractVector) where C <: AbstractConnection
+    @unpack colptr, I,  W = c
+    indices = Int[]
+    for j in js
+        for s in colptr[j]:(colptr[j+1]-1)
+            if I[s] ∈ is
+                push!(indices, s)
+            end
+        end
+    end
+    return indices
 end
 
 function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
@@ -312,7 +330,7 @@ end
 function load_data(path="", name="", info=nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
     if isnothing(info)
-        throw(ArgumentError("If path is not file, config is required"))
+        throw(ArgumentError("$path is not file, config is required"))
     end
     path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
     @info "Loading model from $(path)"
@@ -377,4 +395,4 @@ end
 
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!, indices

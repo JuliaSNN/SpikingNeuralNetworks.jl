@@ -281,7 +281,9 @@ function monitor_plast(obj, plasticity, sym)
     if !haskey(obj.records[:plasticity], name)
        obj.records[:plasticity][name] = Vector{Symbol}()
     end
-    push!(obj.records[:plasticity][name], sym)
+    if !(sym ∈ obj.records[:plasticity][name])
+        push!(obj.records[:plasticity][name], sym)
+    end
     typ = typeof(getfield(plasticity, sym))
     if !haskey(obj.records, name)
        obj.records[name] = Dict{Symbol,AbstractVector}()
@@ -317,6 +319,7 @@ function interpolated_record(p, sym)
 
     # ! adjust the end time to account for the added first element 
     _end = (size(v_dt,)[end]-1)/sr  
+    @show sr, _end
     # ! this is the recorded time (in ms), it assumes all recordings are contained in v_dt
     r_v = 0:1/sr:_end 
 
