@@ -248,12 +248,13 @@ function firing_rate(populations; kwargs...)
     spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
     fr_pop = []
     interval_pop = Vector{StepRangeLen}()
+    interval = nothing
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
         push!(fr_pop, rates)
-        push!(interval_pop, interval)
+        # push!(interval_pop, interval)
     end
-    return fr_pop, interval_pop, names_pop
+    return fr_pop, interval, names_pop
 end
 
 function average_firing_rate(

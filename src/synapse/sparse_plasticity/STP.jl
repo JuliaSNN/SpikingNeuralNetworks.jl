@@ -1,6 +1,6 @@
 @snn_kw struct STPParameter{FT = Float32} <: SpikingSynapseParameter
-    τD::FT = 1500ms
-    τF::FT = 200ms
+    τD::FT = 200ms
+    τF::FT = 1500ms
     U::FT = 0.2
     Wmax::FT = 1.0pF
     Wmin::FT = 0.0pF
@@ -12,8 +12,8 @@ end
     Npost::IT
     Npre::IT
     u::VFT = zeros(Npost) # presynaptic spiking time
-    x::VFT = zeros(Npost) # postsynaptic spiking time
-    _ρ::VFT = zeros(Npost) # postsynaptic spiking time
+    x::VFT = ones(Npost) # postsynaptic spiking time
+    _ρ::VFT = ones(Npost) # postsynaptic spiking time
 end
 
 function plasticityvariables(param::T, Npre, Npost) where T <: STPParameter
@@ -63,15 +63,15 @@ function plasticity!(
 
     @simd for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
         if fireJ[j]
-            u[j] += dt*(U * (1 - x[j]))
-            x[j] += dt*(- u[j] * x[j])
+            u[j] += U * (1 - u[j])
+            x[j] += (- u[j] * x[j])
         end
     end
 
     # update pre-synaptic spike trace
     @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
-        @fastmath u[j] += dt * (U- u[j])/τF  
-        @fastmath x[j] += dt * (1- x[j])/τD 
+        @fastmath u[j] += dt*(U- u[j])/τF  
+        @fastmath x[j] += dt*(1- x[j])/τD 
         @fastmath _ρ[j] = u[j] * x[j]
     end
 
