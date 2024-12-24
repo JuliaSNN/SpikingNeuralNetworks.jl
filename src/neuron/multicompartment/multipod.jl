@@ -255,7 +255,7 @@ function update_multipod!(
             end
         end
         @turbo for _i ∈ 1:Nd+1
-            is[_i] = clamp(is[_i], -1500, 1500)
+            is[_i] = clamp(is[_i], -1000, 1000)
         end
 
         # update membrane potential
