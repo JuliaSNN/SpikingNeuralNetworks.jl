@@ -120,28 +120,28 @@ function integrate!(p::Multipod, param::AdExSoma, dt::Float32)
         # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
         if after_spike[i] > (τabs + up - up)/dt # backpropagation
             v_s[i] = BAP
-            for d in 1:Nd
+            for d in eachindex(v_d)
                 v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d,i] / cd[d,i]
             end
         elseif after_spike[i] > 0 # absolute refractory period
             v_s[i] = Vr
-            for d in 1:Nd
-                v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d,i] / cd[d,i]
-            end
+            # for d in eachindex(v_d)
+            #     v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d,i] / cd[d,i]
+            # end
         else
             ## Heun integration
-            for _i ∈ 1:Nd
-                Δv_temp[_i] = 0.0f0
-                Δv[_i] = 0.0f0
-            end
+            # for _i ∈ 1:Nd
+            fill!(Δv_temp, 0.0f0)
+            fill!(Δv, 0.0f0)
+            # end
             update_multipod!(p, Δv, i, param, 0.0f0)
-            for _i ∈ 1:Nd
+            for _i ∈ eachindex(Δv)
                 Δv_temp[_i] = Δv[_i]
             end
             update_multipod!(p, Δv, i, param, dt)
             @fastmath v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
             @fastmath w_s[i] += dt * (param.a * (v_s[i] - param.Er) - w_s[i]) / param.τw
-            for d in 1:Nd
+            for d in eachindex(v_d)
                 @fastmath v_d[d][i] += 0.5 * dt * (Δv_temp[d+1] + Δv[d+1])
             end
         end
@@ -175,14 +175,14 @@ function update_synapses!(p::Multipod, dend_syn::SynapseArray, soma_syn::Synapse
     @unpack he_d, hi_d, exc_receptors, inh_receptors, α = p
 
     @inbounds for n in exc_receptors
-        for d in 1:Nd
+        for d in eachindex(v_d)
             @turbo for i ∈ 1:N
                 h_d[i, d, n] += he_d[d][i] * α[n]
             end
         end
     end
     @inbounds for n in inh_receptors
-        for d in 1:Nd
+        for d in eachindex(v_d)
             @turbo  for i ∈ 1:N
                 h_d[i, d, n] += hi_d[d][i] * α[n]
             end
@@ -196,7 +196,7 @@ function update_synapses!(p::Multipod, dend_syn::SynapseArray, soma_syn::Synapse
 
     for n in eachindex(dend_syn)
         @unpack τr⁻, τd⁻ = dend_syn[n]
-        for d in 1:Nd
+        for d in eachindex(v_d)
             @fastmath @turbo for i ∈ 1:N
                 g_d[i, d, n] = exp32(-dt * τd⁻) * (g_d[i, d, n] + dt * h_d[i, d, n])
                 h_d[i, d, n] = exp32(-dt * τr⁻) * (h_d[i, d, n])
@@ -233,11 +233,11 @@ function update_multipod!(
         @unpack mg, b, k = NMDA
 
         #compute axial currents
-        for d in 1:Nd
+        for d in eachindex(v_d)
             cs[d] = -((v_d[d][i] + Δv[d+1] * dt) - (v_s[i] + Δv[1] * dt)) * gax[d,i]
         end
 
-        for _i ∈ 1:Nd + 1
+        for _i ∈ eachindex(is)
             is[_i] = 0.0f0
         end
         # update synaptic currents soma
@@ -248,7 +248,7 @@ function update_multipod!(
 
         # update synaptic currents dendrites
         for r in eachindex(dend_syn)
-            for d in 1:Nd
+            for d in eachindex(v_d)
                 @unpack gsyn, E_rev, nmda = dend_syn[r]
                 if nmda > 0.0f0
                     is[d+1] +=
@@ -259,7 +259,7 @@ function update_multipod!(
                 end
             end
         end
-        @turbo for _i ∈ 1:Nd+1
+        @turbo for _i ∈ eachindex(is)
             is[_i] = clamp(is[_i], -1000, 1000)
         end
 
@@ -273,7 +273,7 @@ function update_multipod!(
                 ) - w_s[i] - is[1] - sum(cs)
             ) / C
 
-        for d in 1:Nd
+        for d in eachindex(v_d)
             Δv[d+1] = ((-(v_d[d][i] + Δv[d+1] * dt) + Er) * gm[d, i] - is[d+1] + cs[d]) / cd[d,i]
         end
     end
