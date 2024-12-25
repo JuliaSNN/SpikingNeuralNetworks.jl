@@ -66,6 +66,11 @@
 end
 
 
+function Multipod(ds::R; N, Nd, kwargs...) where {R <: Real}
+    dendrites = [ds for d in 1:Nd]
+    return Multipod(dendrites, N=N, Nd=Nd; kwargs...)
+end
+
 function Multipod(
     ds::Vector;
     N::Int,
