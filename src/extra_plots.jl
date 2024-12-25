@@ -136,11 +136,16 @@ function plot_activity(network, Trange; conductance=false)
     frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
     frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
-    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
-    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
+    # plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
+    # plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
+    # plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
-    pv =SNN.vecplot(network.pop.E, :v_d, sym_id=1, r = Trange,  pop_average = true, label="dendrite")
+    pv = nothing
+    try
+        pv =SNN.vecplot(network.pop.E, :v_d, sym_id=1, r = Trange,  pop_average = true, label="dendrite")
+    catch
+        pv =SNN.vecplot(network.pop.E, :v_d1, r = Trange,  pop_average = true, label="dendrite")
+    end
     SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
@@ -286,6 +291,33 @@ end
 
 export plot_average_word_activity
 
+function get_updown_hist(model)
+	hist = [fit(Histogram,getvariable(model.pop.E, :v_s)[x, :], -75:1:-30).weights for x in 1:1000]
+	hist = hcat(hist...).+0.001
+	zscored = fit(ZScoreTransform, hist.+0.001, dims=1) |> x->StatsBase.transform(x,hist)
+	pca_transform = MultivariateStats.fit(PCA,zscored, maxoutdim=2)
+	h = predict(pca_transform, zscored)'
+	scatter(h[:,1], h[:,2], c=:blue, ms=2, subplot=1)
+	pca1 = sort(1:1000, by = x->h[x,1])
+	neurons = [pca1[50], pca1[500], pca1[950]]
+	scatter!(h[neurons,1], h[neurons,2], c=:red, ms=5, subplot=1)
+	histogram!(getvariable(model.pop.E, :v_s)[neurons[1], :], bins=-75:1:-30, normed=true, label="", 
+			inset = (1, bbox(0,0.8,0.3,0.2)), subplot=2, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_s)[neurons[2], :], bins=-75:1:-30, normed=true, label="", 
+			inset = (1, bbox(0.35,0.8,0.3,0.2)), subplot=3, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_s)[neurons[3], :], bins=-75:1:-30, normed=true, label="", 
+			inset = (1, bbox(0.7,0.8,0.3,0.2)), subplot=4, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_d)[neurons[1],1, :], bins=-75:1:-10, normed=true, label="", 
+			inset = (1, bbox(0,0.,0.3,0.2)), subplot=5, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_d)[neurons[2],1, :], bins=-75:1:-10, normed=true, label="", 
+			inset = (1, bbox(0.35,0.,0.3,0.2)), subplot=6, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_d)[neurons[3],1, :], bins=-75:1:-10, normed=true, label="", 
+			inset = (1, bbox(0.7,0.,0.3,0.2)), subplot=7, frame=:none, c=:black)
+
+	return plot!(ylims=(-4, 4), xlims=(-5, 5), xlabel="PC1", ylabel="PC2", legend=false, subplot=1, background=:white)
+end
+
+export get_updown_hist
 
 
 export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
