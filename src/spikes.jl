@@ -277,7 +277,7 @@ function average_firing_rate(
         cache = cache,
         pop = pop,
     )
-    return mean.(rates)
+    return mean(rates, dims=2)[:,1]
 end
 
 function average_firing_rate(populations; kwargs...)
