@@ -171,7 +171,7 @@ end
 # const soma_receptors::Vector{Symbol} = [:AMPA, :GABAa]
 
 function update_synapses!(p::Multipod, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
-    @unpack N, Nd, ge_s, g_d, he_s, h_d, hi_s, gi_s = p
+    @unpack N, Nd, ge_s, g_d, he_s, v_d, h_d, hi_s, gi_s = p
     @unpack he_d, hi_d, exc_receptors, inh_receptors, α = p
 
     @inbounds for n in exc_receptors
