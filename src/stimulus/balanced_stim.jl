@@ -4,6 +4,7 @@
     τ::Float32 = 50.0
     r0::Float32 = 1kHz
     wIE::Float32 = 1.0
+    same_input::Bool = false
 end
 
 BSParam = BalancedStimulusParameter
@@ -121,7 +122,7 @@ function stimulate!(p::BalancedStimulus, param::BalancedStimulusParameter, time:
     @unpack N, N_pre, randcache, randcache_β, fire, cells, colptr, W, I, ge, gi = p
 
     ## Inhomogeneous Poisson process
-    @unpack r0, β, τ, kIE, wIE = param
+    @unpack r0, β, τ, kIE, wIE, same_input = param
     @unpack noise, r = p
     # Irate::Float32 = r0 * kIE
     R(x::Float32, v0::Float32=0.f0) = x > 0.f0 ? x : v0
@@ -142,16 +143,33 @@ function stimulate!(p::BalancedStimulus, param::BalancedStimulusParameter, time:
     Erate::Float32 = 0.f0
     rand!(randcache_β)
     rand!(randcache)
-    @inbounds @fastmath for i = 1:N
+    if same_input
+        i = 1
         re= randcache_β[i] - 0.5f0
         cc = 1.0f0 - dt / τ
         noise[i] = ( noise[i] - re) * cc + re
         Erate = R(r0./2 *  R(noise[i] * β, 1.f0) + r[i], 0.f0) 
         r[i] += (r0 - Erate)/400ms * dt
         @assert Erate >= 0
-        @simd for j in 1:N_pre # loop on presynaptic cells
-            if randcache[j] < Erate/N_pre * dt 
-                ge[i] += 1.
+        @inbounds @fastmath for i = 1:N
+            @simd for j in 1:N_pre # loop on presynaptic cells
+                if randcache[j] < Erate/N_pre * dt 
+                    ge[i] += 1.
+                end
+            end
+        end
+    else
+        @inbounds @fastmath for i = 1:N
+            re= randcache_β[i] - 0.5f0
+            cc = 1.0f0 - dt / τ
+            noise[i] = ( noise[i] - re) * cc + re
+            Erate = R(r0./2 *  R(noise[i] * β, 1.f0) + r[i], 0.f0) 
+            r[i] += (r0 - Erate)/400ms * dt
+            @assert Erate >= 0
+            @simd for j in 1:N_pre # loop on presynaptic cells
+                if randcache[j] < Erate/N_pre * dt 
+                    ge[i] += 1.
+                end
             end
         end
     end
