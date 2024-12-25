@@ -57,7 +57,7 @@ function raster!(p, P, t = nothing; dt = 0.125ms, populations=nothing, names=not
         yaxis = ("Neuron",),
         label=""
     )
-    !isnothing(t) && plot!(xlims = t)
+    !isnothing(t) && plot!(xlims = t./1000)
     plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red, label="")
@@ -121,7 +121,7 @@ function _raster(p::T, interval = nothing) where T<: AbstractPopulation
     # which neurons to plot
         for n in fire[:neurons][i]
             if isnothing(interval) || (t > interval[1] && t < interval[2])
-                push!(x, t)
+                push!(x, t/1000)
                 push!(y, n)
             end
         end
@@ -198,7 +198,7 @@ function vecplot(P, syms::Array; kwargs...)
     plot(plts..., size = (600, 400N), layout = (N, 1))
 end
 
-export raster, vecplot, vecplot!
+export raster, raster!, vecplot, vecplot!
 
 ##
 
