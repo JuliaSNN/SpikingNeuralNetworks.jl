@@ -149,6 +149,8 @@ function plot_activity(network, Trange; conductance=false)
     SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
+
+    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Firing rate (Hz)")
     ## Conductance
     if conductance 
         dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")
@@ -163,8 +165,8 @@ function plot_activity(network, Trange; conductance=false)
         layout = @layout  [ 
             c{0.3h}
             e{0.4h}
-            d{0.3h}]
-        return plot(pr, rplot,pv, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
+            d{1.0h} e{0.4w}]
+        return plot(pr, rplot,pv, p5, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
     end
 end
 
