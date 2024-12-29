@@ -94,7 +94,7 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
     r= ones(Float32, post.N)*param.r0
     noise = zeros(Float32, post.N)
 
-    N_pre = round(Int, param.r0 * maximum([1, param.β/100]) )
+    N_pre = ceil(Int, param.r0 * maximum([1, param.β/100]) )
 
     # Construct the SpikingSynapse instance
     return BalancedStimulus(;
