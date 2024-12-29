@@ -130,10 +130,8 @@ function integrate!(p::Multipod, param::AdExSoma, dt::Float32)
             # end
         else
             ## Heun integration
-            # for _i ∈ 1:Nd
             fill!(Δv_temp, 0.0f0)
             fill!(Δv, 0.0f0)
-            # end
             update_multipod!(p, Δv, i, param, 0.0f0)
             for _i ∈ eachindex(Δv)
                 Δv_temp[_i] = Δv[_i]
@@ -260,7 +258,7 @@ function update_multipod!(
             end
         end
         @turbo for _i ∈ eachindex(is)
-            is[_i] = clamp(is[_i], -1000, 1000)
+            is[_i] = clamp(is[_i], -5000, 5000)
         end
 
         # update membrane potential
