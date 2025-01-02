@@ -47,17 +47,18 @@ function raster!(p, P, t = nothing; dt = 0.125ms, populations=nothing, names=not
     names = isnothing(names) ? ["pop_$i" for i in 1:length(P)] : names
 
     X, Y = _resample_spikes(X,Y)
+    X = X ./ s
 
     plt = scatter!(p,
         X[1:every:end],
         Y[1:every:end],
         m = (1, :black),
         leg = :none,
-        xaxis = ("Time (ms)", (0, Inf)),
+        xaxis = ("Time (s)", (0, Inf)),
         yaxis = ("Neuron",),
         label=""
     )
-    !isnothing(t) && plot!(xlims = t./1000)
+    !isnothing(t) && plot!(xlims = t./s)
     plot!(yticks = (cumsum(y0)[1:end-1] .+ (y0 ./ 2)[2:end], names), yrotation=45)
     y0 = y0[2:(end-1)]
     !isempty(y0) && hline!(plt, cumsum(y0), linecolor = :red, label="")
@@ -65,16 +66,16 @@ function raster!(p, P, t = nothing; dt = 0.125ms, populations=nothing, names=not
     return plt
 end
 
-function _raster_populations(p, interval = nothing; populations::Vector{T} ) where T<: AbstractVector
+function _raster_populations(p, t = nothing; populations::Vector{T} ) where T<: AbstractVector
     all_spiketimes = spiketimes(p)
     x, y = Float32[], Float32[]
     y0 = Int32[0]
     for pop in populations
         spiketimes_pop = all_spiketimes[pop] ## population spiketimes
         for n in eachindex(spiketimes_pop) ## neuron spiketimes
-            for t in spiketimes_pop[n] ## spiketime
-                if isnothing(interval) || (t > interval[1] && t < interval[2])
-                    push!(x, t)
+            for st in spiketimes_pop[n] ## spiketime
+                if isnothing(st) || (st > t[1] && st < t[2])
+                    push!(x, st)
                     push!(y, n + cumsum(y0)[end])
                 end
             end
@@ -121,7 +122,7 @@ function _raster(p::T, interval = nothing) where T<: AbstractPopulation
     # which neurons to plot
         for n in fire[:neurons][i]
             if isnothing(interval) || (t > interval[1] && t < interval[2])
-                push!(x, t/1000)
+                push!(x, t)
                 push!(y, n)
             end
         end
