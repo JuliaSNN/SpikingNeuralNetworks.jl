@@ -208,7 +208,7 @@ export soma_gplot, dendrite_gplot, plot_activity, plot_weights
 
     Plot the activity of a spiking neural network with short-term plasticity. The function plots the membrane potential, the firing rate, the synaptic weights, and the raster plot of the excitatory population.
 """
-function stp_plot(model, interval, assemblies, stimuli=[])
+function stp_plot(model, interval, assemblies, stimuli=[]; every=10)
     @unpack pop, syn = model
     ρ, r_t= SNN.interpolated_record(syn.EE, :ρ)
     w,r_t= SNN.interpolated_record(syn.EE, :W)
@@ -245,7 +245,7 @@ function stp_plot(model, interval, assemblies, stimuli=[])
     for stim in stimuli
         plot!(rectangle(stim[1], stim[end]), c=:grey, opacity=.5, label="", lc=:transparent)
     end
-    p4 = SNN.raster!(p, pop.E, interval, yrotation=90, populations=in_ass, every=1, names=["Assembly 1", "Assembly 2"])
+    p4 = SNN.raster!(p, pop.E, interval, yrotation=90, populations=in_ass, every=every, names=["Assembly 1", "Assembly 2"])
     plot_network = plot!(p1, p23, p4, layout=(3,1), size=(1300,900), margin=5Plots.mm, legend=:topleft)
     return plot_network
 end
