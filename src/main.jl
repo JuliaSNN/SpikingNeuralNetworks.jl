@@ -26,7 +26,7 @@ function sim!(
     P::Vector{TP},
     C::Vector{TC} = [EmptySynapse()],
     S::Vector{TS} = [EmptyStimulus()];
-    dt = 0.1f0,
+    dt = 0.125f0,
     duration = 10.0f0,
     pbar = false,
     time = Time(),
@@ -69,7 +69,7 @@ function train!(
     P::Vector{TP},
     C::Vector{TC} = [EmptySynapse()],
     S::Vector{TS} = [EmptyStimulus()];
-    dt = 0.1ms,
+    dt = 0.125ms,
     duration = 10ms,
     time = Time(),
     pbar = false,

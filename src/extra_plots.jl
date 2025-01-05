@@ -1,4 +1,4 @@
-
+# using StatsBase
 ## Dendrite and soma plot
 """
     dendrite_gplot(population, target; sym_id=1, r, dt, param=:dend_syn, nmda=true, kwargs...)
@@ -136,14 +136,21 @@ function plot_activity(network, Trange; conductance=false)
     frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
     frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
-    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
-    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
+    # plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
+    # plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
+    # plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
-    pv =SNN.vecplot(network.pop.E, :v_d, r = Trange,  pop_average = true, label="dendrite")
+    pv = nothing
+    try
+        pv =SNN.vecplot(network.pop.E, :v_d, sym_id=1, r = Trange,  pop_average = true, label="dendrite")
+    catch
+        pv =SNN.vecplot(network.pop.E, :v_d1, r = Trange,  pop_average = true, label="dendrite")
+    end
     SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
+
+    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Firing rate (Hz)")
     ## Conductance
     if conductance 
         dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")
@@ -158,8 +165,8 @@ function plot_activity(network, Trange; conductance=false)
         layout = @layout  [ 
             c{0.3h}
             e{0.4h}
-            d{0.3h}]
-        return plot(pr, rplot,pv, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
+            d{1.0h} e{0.4w}]
+        return plot(pr, rplot,pv, p5, layout=layout, size=(900, 1200), topmargn=0Plots.mm, bottommargin=0Plots.mm, bgcolorlegend=:transparent, fgcolorlegend=:transparent)
     end
 end
 
@@ -201,11 +208,11 @@ export soma_gplot, dendrite_gplot, plot_activity, plot_weights
 
     Plot the activity of a spiking neural network with short-term plasticity. The function plots the membrane potential, the firing rate, the synaptic weights, and the raster plot of the excitatory population.
 """
-function stp_plot(model, interval, assemblies)
+function stp_plot(model, interval, assemblies, stimuli=[]; every=10)
     @unpack pop, syn = model
     ρ, r_t= SNN.interpolated_record(syn.EE, :ρ)
     w,r_t= SNN.interpolated_record(syn.EE, :W)
-    weff = ρ.*w ./μee_assembly
+    weff = ρ.*w ./ maximum(w)
     in_assembly = 1:length(indices(syn.EE, assemblies[1].cells, assemblies[1].cells))
     out_assembly = length(in_assembly)+1:size(weff,1)
     p12 = SNN.raster(pop, interval, yrotation=90, every=10)
@@ -221,8 +228,8 @@ function stp_plot(model, interval, assemblies)
     end
     # plot!(interval./1000, mean(fr[1][assemblies[1].cells, interval], dims=1)', label="Assembly", lw=3)
     plot!(ylabel="Firing rate (Hz)")
-    p3 = plot(r_t./1000, mean(weff[out_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label=L"w_{base}", ls=:dash)
-    p3 = plot!(r_t./1000, mean(weff[in_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label=L"w_{eff}")
+    p3 = plot(r_t./1000, mean(weff[out_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label="w_{base}", ls=:dash)
+    p3 = plot!(r_t./1000, mean(weff[in_assembly,:], dims=1)', c=:black, lw=4, ylims=:auto, label="w_{eff}")
     SNN.vecplot!(p3, syn.EE, :u, r=interval, dt=0.125, pop_average=true, ls=:dash, ribbon=false, c=:blue, label="")
     SNN.vecplot!(p3, syn.EE, :x, r=interval, dt=0.125, pop_average=true, ls=:dash, ribbon=false, c=:red, label="")
     interval
@@ -230,12 +237,90 @@ function stp_plot(model, interval, assemblies)
     SNN.vecplot!(p3, syn.EE, :x, r=interval, dt=0.125, neurons=assemblies[1].cells, pop_average=true, label="x", c=:red)
     plot!(p3, ylims=(0,1), legend=:topleft, ylabel="STP")
     p23 = plot(p2,p3)
-    in_assembly = [a.cells for a in assemblies]
-    control = StatsBase.sample(1:pop.E.N, length(assemblies[1].cells), replace=false)
-    p4 = SNN.raster(pop.E, interval, yrotation=90, populations=[in_assembly..., control], every=10, names=["Assembly 1", "Assembly 2"])
+    in_ass = [a.cells for a in assemblies]
+    push!(in_ass, (pop.E.N - length(assemblies[1].cells) : pop.E.N))
+    p = plot()
+    rectangle(_start, _end) = Shape([_start, _start, _end, _end],
+                                    [0, length(vcat(in_ass...)),length(vcat(in_ass...)), 0 ])
+    for stim in stimuli
+        plot!(rectangle(stim[1], stim[end]), c=:grey, opacity=.5, label="", lc=:transparent)
+    end
+    p4 = SNN.raster!(p, pop.E, interval, yrotation=90, populations=in_ass, every=every, names=["Assembly 1", "Assembly 2"])
     plot_network = plot!(p1, p23, p4, layout=(3,1), size=(1300,900), margin=5Plots.mm, legend=:topleft)
     return plot_network
 end
+
+"""
+    plot_average_word_activity(sym, word, model, seq; target=:d, before=100ms, after=300ms, zscore=true)
+
+    Plot the value of the `sym` variable for the cells associated to the `word` stimulus. 
+    `cells = getcells(model.stim, seq.symbols.words[w], target)`
+
+    Arguments:
+    - `sym`: The variable to plot.
+    - `word`: The word stimulus.
+    - `model`: The spiking neural network model.
+    - `seq`: The sequence of stimuli.
+    - `target`: The target compartment (default=:d).
+    - `before`: The time before the stimulus (default=100ms).
+    - `after`: The time after the stimulus (default=300ms).
+    - `zscore`: Whether to z-score the activity (default=true).
+"""
+function plot_average_word_activity(sym, word, model, seq; target=:d, before=100ms, after=300ms, zscore=true)
+    membrane, r_v = SNN.interpolated_record(model.pop.E, sym)
+    myintervals = sign_intervals(word, seq)
+    Trange = -before:1ms:diff(myintervals[1])[1]+after
+    activity = zeros(length(seq.symbols.words),size(Trange,1))
+    for w in eachindex(seq.symbols.words)
+        cells = getcells(model.stim, seq.symbols.words[w], :d)
+        ave_fr = mean(membrane[cells, :])
+        std_fr = std(membrane[cells, :])
+        n = 0
+        for myinterval in myintervals
+            _range = myinterval[1]-before:1ms:myinterval[2]+after
+            _range[end] > r_v[end] && continue
+            v = mean(membrane[cells, _range], dims=1)[1,:]
+            activity[w, :] += zscore ? (v .- ave_fr)./std_fr : v
+            n+=1
+        end
+        activity[w, :] ./= n
+    end
+    plot(Trange, activity[:,:]', label=hcat(string.(seq.symbols.words)...), xlabel="Time (ms)", ylabel="Membrane potential (mV)", title="")
+    vline!([0, diff(myintervals[1])[1]], c=:black, ls=:dash, label="")
+    word_id = findfirst(seq.symbols.words .== word)
+    plot!(Trange, activity[word_id,:], c=:black, label=string(word), lw=5, )
+end
+
+export plot_average_word_activity
+
+function get_updown_hist(model)
+	hist = [fit(Histogram,getvariable(model.pop.E, :v_s)[x, :], -75:1:-30).weights for x in 1:1000]
+	hist = hcat(hist...).+0.001
+	zscored = fit(ZScoreTransform, hist.+0.001, dims=1) |> x->StatsBase.transform(x,hist)
+	pca_transform = MultivariateStats.fit(PCA,zscored, maxoutdim=2)
+	h = predict(pca_transform, zscored)'
+	scatter(h[:,1], h[:,2], c=:blue, ms=2, subplot=1)
+	pca1 = sort(1:1000, by = x->h[x,1])
+	neurons = [pca1[50], pca1[500], pca1[950]]
+	scatter!(h[neurons,1], h[neurons,2], c=:red, ms=5, subplot=1)
+	histogram!(getvariable(model.pop.E, :v_s)[neurons[1], :], bins=-75:1:-30, normed=true, label="", 
+			inset = (1, bbox(0,0.8,0.3,0.2)), subplot=2, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_s)[neurons[2], :], bins=-75:1:-30, normed=true, label="", 
+			inset = (1, bbox(0.35,0.8,0.3,0.2)), subplot=3, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_s)[neurons[3], :], bins=-75:1:-30, normed=true, label="", 
+			inset = (1, bbox(0.7,0.8,0.3,0.2)), subplot=4, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_d)[neurons[1],1, :], bins=-75:1:-10, normed=true, label="", 
+			inset = (1, bbox(0,0.,0.3,0.2)), subplot=5, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_d)[neurons[2],1, :], bins=-75:1:-10, normed=true, label="", 
+			inset = (1, bbox(0.35,0.,0.3,0.2)), subplot=6, frame=:none, c=:black)
+	histogram!(getvariable(model.pop.E, :v_d)[neurons[3],1, :], bins=-75:1:-10, normed=true, label="", 
+			inset = (1, bbox(0.7,0.,0.3,0.2)), subplot=7, frame=:none, c=:black)
+
+	return plot!(ylims=(-4, 4), xlims=(-5, 5), xlabel="PC1", ylabel="PC2", legend=false, subplot=1, background=:white)
+end
+
+export get_updown_hist
+
 
 export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
 

@@ -6,6 +6,7 @@ abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
     id::String = randstring(12)
+    name::String = "SpikingSynapse"
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W
@@ -29,6 +30,7 @@ end
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
     id::String = randstring(12)
+    name::String = "SpikingSynapseDelay"
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W

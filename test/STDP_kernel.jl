@@ -7,11 +7,12 @@ using Statistics, Random
 
 
 ##
-stdp_param = STDPParameter(A_pre =5e-1, 
+stdp_param = STDPParameter(A_pre =-5e-1, 
                            A_post=-5e-1,
                            τpre  =20ms,
                            τpost =15ms)
-ΔTs = -100:1:100ms
+# istdp_param = iSTDPParameterTime(η=0.2, τy=20ms)
+ΔTs = -97.5:5:100ms
 ΔWs = zeros(Float32, length(ΔTs))
 Threads.@threads for i in eachindex(ΔTs)
     ΔT = ΔTs[i]
@@ -22,7 +23,7 @@ Threads.@threads for i in eachindex(ΔTs)
     w[1, 2] = 1f0
     st = Identity(N=max_neurons(inputs))
     stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
-    syn = SpikingSynapse( st, st, nothing, w = w,  param = stdp_param)
+    syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
     model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
     SNN.monitor(model.pop..., [:fire])
     SNN.monitor(model.syn..., [:tpre, :tpost])
@@ -34,7 +35,7 @@ n_plus = findall(ΔTs .>= 0)
 n_minus = findall(ΔTs .< 0)
 # R(X; f=maximum) = [f([x,0]) for x in X]
 plot(ΔTs[n_minus],ΔWs[n_minus] , legend=false, fill=true,xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alpha=0.5)
-plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=true,xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alpha=0.5)
+plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=true,xlabel="T_pre - T_post ", ylabel="ΔW", title="STDP", size=(500, 300), alpha=0.5)
 ##
 
 st = Poisson(N=50, param=PoissonParameter(rate=10Hz))
