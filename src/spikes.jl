@@ -221,13 +221,14 @@ function firing_rate(
     tt0 = -1,
     cache = true,
     pop::Union{Symbol,Vector{Int}} = :ALL,
+    interpolate = true,
 )
-    all(isempty.(spiketimes)) && return [0], [0]
     if isempty(interval)
         tt0 = tt0 > 0 ? tt0 : 0.0f0
         ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
         interval = tt0:sampling:ttf
     end
+    all(isempty.(spiketimes)) && return Spiketimes([zeros(Float32, length(interval)) for n in eachindex(spiketimes)]), interval
     spiketimes = pop == :ALL ? spiketimes : spiketimes[pop]
     rates = tmap(
         n -> convolve(spiketimes[n], interval = interval, τ = τ),
@@ -235,7 +236,9 @@ function firing_rate(
     )
     # rates = vcat(rates'...)
 
-    rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
+    if interpolate
+        rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
+    end
     return rates, interval
 end
 
@@ -246,13 +249,11 @@ end
 
 function firing_rate(populations; kwargs...)
     spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
-    fr_pop = []
-    interval_pop = Vector{StepRangeLen}()
+    fr_pop = Spiketimes[]
     interval = nothing
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
         push!(fr_pop, rates)
-        # push!(interval_pop, interval)
     end
     return fr_pop, interval, names_pop
 end
@@ -277,7 +278,7 @@ function average_firing_rate(
         cache = cache,
         pop = pop,
     )
-    return mean.(rates)
+    return mean(rates, dims=2)[:,1]
 end
 
 function average_firing_rate(populations; kwargs...)

@@ -9,6 +9,11 @@ end
     rate::Vector{R}
 end
 
+@snn_kw struct PoissonStimulusInterval{R=Float32, } <: PoissonStimulusParameter
+    rate::Vector{R}
+    intervals::Vector{Vector{R}}
+end
+
 PSParam = PoissonStimulusVariable
 
 @snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
@@ -136,6 +141,32 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusFixed, time::Time,
     end
 end
 
+function stimulate!(p::PoissonStimulus, param::PoissonStimulusInterval, time::Time, dt::Float32)
+    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    @unpack rate, intervals = param 
+    for int in intervals
+        if !(get_time(time) > int[1] &&  get_time(time) < int[end])
+            return
+        end
+    end
+    # @info "Stimulating at $(get_time(time))"
+    rand!(randcache)
+    @inbounds @simd for j = 1:N
+        if randcache[j] < rate[j]*dt/N_pre
+            fire[j] = true
+        else
+            fire[j] = false
+        end
+    end
+    for j = 1:N # loop on presynaptic cells
+        if fire[j] # presynaptic fire
+            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                g[cells[I[s]]] += W[s]
+            end
+        end
+    end
+end
+
 function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Time, dt::Float32)
     @unpack active = param
     if !active[1]
@@ -161,4 +192,4 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Ti
     end
 end
 
-export PoissonStimulus, stimulate!, PSParam, PoissonStimulusParameter
+export PoissonStimulus, stimulate!, PSParam, PoissonStimulusParameter, PoissonStimulusVariable, PoissonStimulusFixed, PoissonStimulusInterval

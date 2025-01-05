@@ -50,9 +50,8 @@ function plasticity!(
         end
     end
 
-
     # Update weights based on pre-post spike timing
-    @fastmath for i in eachindex(fireI)
+    @fastmath for i in 1:length(colptr)-1
         for s = colptr[i]:(colptr[i+1]-1)
             if fireI[I[s]]
                 W[s] += tpre[J[s]]  # pre-post

@@ -373,7 +373,21 @@ function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
     return data_path
 end
 
-export save_model, load_model, load_data
+function save_parameters(;path, parameters, name=randstring(10),info=nothing, file_path, force=false)
+    @info "Parameters: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
+
+    isdir(path) || mkpath(path)
+
+    params_path = joinpath(path, savename(name, info, "params.jld2", connector="-"))
+    DrWatson.save(params_path, @strdict parameters)  # Here you are saving a Julia object to a file
+
+    params_path = joinpath(path, savename(name, info, "params.jl.script", connector="-"))
+    isfile(params_path) && !force && throw("File already exists, use force=true to overwrite")
+    !isfile(params_path) &&  cp(file_path, params_path)
+    return 
+end
+
+export save_model, load_model, load_data, save_parameters
 
    
 
