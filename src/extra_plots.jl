@@ -321,6 +321,79 @@ end
 
 export get_updown_hist
 
+function stdp_integral(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+    ΔWs = zeros(Float32, length(ΔTs))
+    Threads.@threads for i in eachindex(ΔTs)
+        ΔT = ΔTs[i]
+        spiketime = [2000ms, 2000ms+ΔT]
+        neurons = [[1], [2]]
+        inputs = SpikeTime(spiketime, neurons)
+        w = zeros(Float32, 2,2)
+        w[1, 2] = 1f0
+        st = Identity(N=max_neurons(inputs))
+        stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
+        syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
+        model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
+        SNN.monitor(model.pop..., [:fire])
+        train!(model=model, duration=3000ms, dt=0.1ms)
+        ΔWs[i] = model.syn[1].W[1] - 1
+    end
+    return sum([w * Float32(ΔTs.step) for w in ΔWs])
+end
+
+"""
+    stdp_kernel(stdp_param; ΔT= -97.5:5:100ms)
+
+    Plot the STDP kernel for the given STDP parameters. 
+    
+    # Arguments
+    - `stdp_param::STDPParameter`: STDP parameters
+    - `ΔT::Array{Float32}`: Arrays of time differences between pre and post-synaptic spikes
+
+    # Return
+    - `Plots.Plot`: Plot of the STDP kernel
+
+"""
+function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+    ΔWs = zeros(Float32, length(ΔTs))
+    Threads.@threads for i in eachindex(ΔTs)
+        ΔT = ΔTs[i]
+        spiketime = [2000ms, 2000ms+ΔT]
+        neurons = [[1], [2]]
+        inputs = SpikeTime(spiketime, neurons)
+        w = zeros(Float32, 2,2)
+        w[1, 2] = 1f0
+        st = Identity(N=max_neurons(inputs))
+        stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
+        syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
+        model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
+        SNN.monitor(model.pop..., [:fire])
+        train!(model=model, duration=3000ms, dt=0.1ms)
+        ΔWs[i] = model.syn[1].W[1] - 1
+    end
+
+    n_plus = findall(ΔTs .>= 0)
+    n_minus = findall(ΔTs .< 0)
+    # R(X; f=maximum) = [f([x,0]) for x in X]
+    plot(ΔTs[n_minus],ΔWs[n_minus] , legend=false, fill=fill, xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
+    plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=fill,xlabel="T_post - T_pre ", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
+    plot!(ylims=:auto)
+end
+
+## Measure the weight change for decorrelated spike trains
+function stdp_weight_decorrelated(stdp_param)
+    st = Poisson(N=50, param=PoissonParameter(rate=10Hz))
+    syn = SpikingSynapse( st, st, nothing ,p=1.f0, μ=1, param = stdp_param)
+    model = merge_models(pop=st, syn=syn, silent=true)
+    SNN.monitor(model.pop..., [:fire])
+    # SNN.monitor(model.syn..., [:W])
+    T = 20_000ms
+    train!(model=model, duration=T, dt=0.1ms)
+    # plot(SNN.getvariable(model.syn..., :W)[1,:])
+    # SNN.getvariable(model.syn..., :W)
+    violin((model.syn[1].W .-1)/T*60^2, legend=false, xlabel="Neuron", ylabel="ΔW/h ", title="STDP", size=(500, 300))
+end
+
 
 export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
 
