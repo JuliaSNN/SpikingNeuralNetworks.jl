@@ -12,16 +12,18 @@ end
     I_dist::DT = Normal(0.0, 0.0)
     α::VFT = ones(Float32, length(cells))
     randcache::VFT = rand(length(cells)) # random cache
-    I::VFT # target conductance for soma
+    I::VFT # target input current
     records::Dict = Dict()
     targets::Dict = Dict()
 end
 
 
-function CurrentStimulus(post::T; cells=:ALL, α::R2=1, kwargs...) where {T <: AbstractPopulation, R<:Real, R2<:Real}
+function CurrentStimulus(post::T; cells=:ALL, α::R2=1, I_base = 10pA, kwargs...) where {T <: AbstractPopulation, R<:Real, R2<:Real}
     if cells == :ALL
         cells = 1:post.N
     end 
+
+    I_base = isa(I_base, Number) ? fill(I_base, length(cells)) : I_base
     targets = Dict(:pre => :Current, :g => post.id, :sym=>:soma)
     α =  isa(α, Number) ? fill(α, length(cells)) : α
 
@@ -30,6 +32,7 @@ function CurrentStimulus(post::T; cells=:ALL, α::R2=1, kwargs...) where {T <: A
         I=post.I,
         α = α,
         targets=targets;
+        I_base=I_base,
         kwargs...,
     )
 end

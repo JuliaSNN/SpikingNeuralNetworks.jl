@@ -10,7 +10,7 @@ end
 end
 
 @snn_kw struct PoissonStimulusInterval{R=Float32, } <: PoissonStimulusParameter
-    rate::Vector{R}
+    rate::Vector{R} = fill(0.0, N)
     intervals::Vector{Vector{R}}
 end
 
