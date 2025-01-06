@@ -9,6 +9,7 @@ function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
+
 function matrix(c::C, sym::Symbol) where C <: AbstractConnection
     return sparse(c.I, c.J, getfield(c,sym), length(c.rowptr) - 1, length(c.colptr) - 1)
 end

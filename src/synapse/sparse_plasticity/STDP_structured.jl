@@ -120,20 +120,24 @@ function plasticity!(
 
     # Update weights based on pre-post spike timing
     @inbounds @fastmath begin 
-        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
-            @simd for st = rowptr[i]:(rowptr[i+1]-1)
-                s = index[st]
-                if fireJ[J[s]]
+        # for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
+        for j in 1:length(colptr)-1 # loop over post-synaptic neurons
+            if fireJ[j]
+                @turbo for st = colptr[j]:(colptr[j+1]-1)
+                    s = index[st]
+                    i = I[s]
                     W[s] += αpre +( A_x/2τ_x *  to_x[i]   - A_y/2τ_y * to_y[i])  # pre spike
                 end
             end
         end
 
         # Update weights based on pre-post spike timing
-        for j in 1:length(colptr)-1 # loop over pre-synaptic neurons
-            @simd for s = colptr[j]:(colptr[j+1]-1)
-                if fireI[I[s]]
-                    W[s] += αpost +( A_x/2τ_x *  tr_x[j]   - A_y/2τ_y * tr_y[j])/2  # pre spike
+        # for j in 1:length(colptr)-1 # loop over pre-synaptic neurons
+        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
+            if fireI[i]
+                @turbo for st = rowptr[i]:(rowptr[i+1]-1)
+                    j = J[index[st]]
+                    W[index[st]] += αpost +( A_x/2τ_x *  tr_x[j]   - A_y/2τ_y * tr_y[j])  # pre spike
                 end
             end
         end

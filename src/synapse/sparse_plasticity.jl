@@ -21,6 +21,8 @@ include("sparse_plasticity/iSTDP.jl")
 include("sparse_plasticity/STP.jl")
 include("sparse_plasticity/longshortSP.jl")
 include("sparse_plasticity/STDP.jl")
+include("sparse_plasticity/STDP_structured.jl")
+
 
 export SpikingSynapse,
     SpikingSynapseParameter,
