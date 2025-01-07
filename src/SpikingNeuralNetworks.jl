@@ -8,6 +8,7 @@ using DrWatson
 using LinearAlgebra
 using SparseArrays
 using Requires
+using Documenter
 using UnPack
 using Random
 using Logging

@@ -231,7 +231,7 @@ Initialize dictionary records for the given object, by assigning empty vectors t
 - `keys`: The variables to be monitored
 
 """
-function monitor(obj, keys; sr=1000Hz, T::Time=Time())
+function monitor(obj::Item, keys; sr=1000Hz, T::Time=Time()) where {Item<:Union{AbstractPopulation, AbstractStimulus, AbstractConnection}}
     if !haskey(obj.records, :indices)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
     end
@@ -301,6 +301,13 @@ function monitor(objs::Array, keys; sr=200Hz)
     end
 end
 
+function monitor(objs::NamedTuple, keys; sr=200Hz)
+    for obj in values(objs)
+        monitor(obj, keys, sr=sr)
+    end
+end
+
+
 """
     interpolated_record(p, sym)
 
@@ -348,6 +355,15 @@ function get_interpolator(A::AbstractArray)
     end
     return Tuple(interp)
 end
+
+function record(p, sym; interpolate=true)
+    if interpolate
+        return interpolated_record(p, sym)
+    else
+        return getvariable(p, sym)
+    end
+end
+
 
 
 
@@ -418,16 +434,31 @@ clear_records(obj)
 Clears all the records of a given object.
 """
 function clear_records(obj)
-    function clean(z)
-        for (key, val) in z
-            if isa(val, Dict) 
-                clean(val)
-            else
-                empty!(val)
+    if obj isa AbstractPopulation || obj isa AbstractStimulus || obj isa AbstractConnection
+        _clean(obj.records)
+    else
+        for v in obj
+        @debug "Removing records from $(v.name)"
+            if v isa AbstractPopulation || v isa AbstractStimulus || v isa AbstractConnection
+                _clean(v.records)
             end
         end
     end
-    clean(obj.records)
+
+end
+
+function _clean(z)
+    for (key, val) in z
+        (key == :indices) && (continue)
+        (key == :sr) && (continue)
+        (key == :timestamp) && (continue)
+        (key == :plasticity) && (continue)
+        if isa(val, Dict) 
+            _clean(val)
+        else
+            empty!(val)
+        end
+    end
 end
 
 """
@@ -475,4 +506,4 @@ function clear_monitor(objs::NamedTuple)
 end
 
 
-export Time, get_time, get_step, get_dt, get_interval, update_time!, record_plast!, record_fire!, record_sym!, record!, monitor, monitor_plast, getvariable, getrecord, clear_records, clear_monitor
+export Time, get_time, get_step, get_dt, get_interval, update_time!, record_plast!, record_fire!, record_sym!, record!, monitor, monitor_plast, getvariable, getrecord, clear_records, clear_monitor, record

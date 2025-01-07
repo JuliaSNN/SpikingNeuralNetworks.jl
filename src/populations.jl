@@ -10,11 +10,10 @@ Given a dictionary `P` containing population names as keys and population object
 # Returns
 A named tuple `indices` where each population name is mapped to a range of indices.
 """
-function population_indices(P, type = "#")
+function population_indices(P)
     n = 1
     indices = Dict{Symbol,Vector{Int}}()
     for k in keys(P)
-        !occursin(string(type), string(k)) && continue
         p = getfield(P, k)
         indices[k] = n:(n+p.N-1)
         n += p.N
@@ -37,7 +36,10 @@ A named tuple of populations that match the regex.
 
 # Examples
 """
-function filter_populations(P, condition= p->occursin(string("noise"), string(p.name)))
+
+no_noise(p) = !occursin(string("noise"), string(p.name))
+
+function filter_populations(P, condition::Function=no_noise)
     populations = Dict{Symbol, Any}()
     for k in keys(P)
         p = getfield(P, k)
@@ -48,6 +50,21 @@ function filter_populations(P, condition= p->occursin(string("noise"), string(p.
 
     return dict2ntuple(sort(populations, by = x ->getfield(P,x).name))
 end
+
+
+function filter_items(P; condition::Function=no_noise)
+    populations = Dict{Symbol, Any}()
+    for k in keys(P)
+        p = getfield(P, k)
+        hasfield(typeof(p), :name) || continue
+        condition(p) || continue
+        p = getfield(P, k)
+        push!(populations,k => p)
+    end
+    return dict2ntuple(sort(populations, by = x ->getfield(P,x).name))
+end
+
+
 
 """
     subpopulations(stim)
@@ -74,4 +91,4 @@ function subpopulations(stim)
     return sort(names, rev=true), pops[sort(1:length(pops), by=x->names[x], rev=true)]
 end
 
-export population_indices, filter_populations, subpopulations
+export population_indices, filter_populations, subpopulations, filter_items

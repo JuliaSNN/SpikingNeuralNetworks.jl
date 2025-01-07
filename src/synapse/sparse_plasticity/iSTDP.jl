@@ -9,6 +9,14 @@ abstract type iSTDPParameter <: SpikingSynapseParameter end
     active::Vector{Bool} = [true]
 end
 
+@snn_kw struct iSTDPParameterTime{FT = Float32} <: iSTDPParameter
+    η::FT = 0.01pA
+    τy::FT = 50ms
+    Wmax::FT = 243pF
+    Wmin::FT = 0.01pF
+    active::Vector{Bool} = [true]
+end
+
 @snn_kw mutable struct iSTDPParameterPotential{FT = Float32} <: iSTDPParameter
     η::FT = 0.001pA
     v0::FT = -50mV
@@ -73,29 +81,81 @@ function plasticity!(
     @unpack η, r, τy, Wmax, Wmin = param
     @unpack tpre, tpost = plasticity
     # @inbounds 
-    # if pre-synaptic inhibitory neuron fires
-    for j in eachindex(fireJ) # presynaptic indices j
-        tpre[j] += dt * (-tpre[j]) / τy
-        if fireJ[j] # presynaptic neuron
-            tpre[j] += 1
-            for st = colptr[j]:(colptr[j+1]-1)
-                W[st] = clamp(W[st] + η * (tpost[I[st]] - 2 * r * τy), Wmin, Wmax)
+    # if pre-synaptic inhibitory neuron fires, it aims to modify the synaptic weight to achieve the target post synaptic rate
+    @fastmath begin
+        @inbounds for j in eachindex(fireJ) # presynaptic indices j
+            tpre[j] += dt * (-tpre[j]) / τy
+            if fireJ[j] # presynaptic neuron
+                tpre[j] += 1
+                @turbo for st = colptr[j]:(colptr[j+1]-1)
+                    W[st] = clamp(W[st] + η * (tpost[I[st]] - 2 * r * τy), Wmin, Wmax)
+                end
             end
         end
-    end
-    # if post-synaptic excitatory neuron fires
-    # @inbounds 
-    for i in eachindex(fireI) # postsynaptic indices i
-        tpost[i] += dt * (-tpost[i]) / τy
-        if fireI[i] # postsynaptic neuron
-            tpost[i] += 1
-            for st = rowptr[i]:(rowptr[i+1]-1) ## 
-                st = index[st]
-                W[st] = clamp(W[st] + η * tpre[J[st]], Wmin, Wmax)
+        # if post-synaptic excitatory neuron fires
+        # @inbounds 
+        @inbounds for i in eachindex(fireI) # postsynaptic indices i
+            tpost[i] += dt * (-tpost[i]) / τy
+            if fireI[i] # postsynaptic neuron
+                tpost[i] += 1
+                @turbo for st = rowptr[i]:(rowptr[i+1]-1) ## 
+                    st = index[st]
+                    W[st] = clamp(W[st] + η * tpre[J[st]], Wmin, Wmax)
+                end
             end
         end
     end
 end
+
+##
+function plasticity!(
+    c::AbstractSparseSynapse,
+    param::iSTDPParameterTime,
+    dt::Float32,
+    T::Time,
+)
+    @unpack active = param
+    !active[1] && return
+    plasticity!(c, param, c.plasticity, dt, T)
+end
+
+##
+function plasticity!(
+    c::AbstractSparseSynapse,
+    param::iSTDPParameterTime,
+    plasticity::iSTDPVariables,
+    dt::Float32,
+    T::Time,
+)
+    @unpack rowptr, colptr, index, I, J, W, fireI, fireJ, g = c
+    @unpack η, τy, Wmax, Wmin = param
+    @unpack tpre, tpost = plasticity
+    # @inbounds 
+    # if pre-synaptic inhibitory neuron fires, it aims to modify the synaptic weight to achieve the target post synaptic rate
+    @fastmath begin
+        @inbounds for j in eachindex(fireJ) # presynaptic indices j
+            tpre[j] += dt * (-tpre[j]) / τy
+            if fireJ[j] # presynaptic neuron
+                tpre[j] += 1
+                @turbo for st = colptr[j]:(colptr[j+1]-1)
+                    W[st] = clamp(W[st] + η * (tpost[I[st]] - 1/τy), Wmin, Wmax)
+                end
+            end
+        end
+        # if post-synaptic excitatory neuron fires
+        @inbounds for i in eachindex(fireI) # postsynaptic indices i
+            tpost[i] += dt * (-tpost[i]) / τy
+            if fireI[i] # postsynaptic neuron
+                tpost[i] += 1
+                @turbo for st = rowptr[i]:(rowptr[i+1]-1) ## 
+                    st = index[st]
+                    W[st] = clamp(W[st] + η * (tpre[J[st]] - 1/τy), Wmin, Wmax)
+                end
+            end
+        end
+    end
+end
+
 
 """
     plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, dt::Float32)
@@ -159,5 +219,5 @@ function plasticity!(
     end
 end
 
-export iSTDPParameterRate,
+export iSTDPParameterRate, iSTDPParameterTime, 
     iSTDPParameterPotential, iSTDPVariables, plasticityvariables, plasticity!
