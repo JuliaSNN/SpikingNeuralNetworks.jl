@@ -34,8 +34,7 @@ function Synapse(glu::Glutamatergic, gaba::GABAergic)
     return Synapse(glu.AMPA, glu.NMDA, gaba.GABAa, gaba.GABAb)
 end
 
-export Receptor,
-    Synapse, ReceptorVoltage, GABAergic, Glutamatergic, SynapseArray, NMDAVoltageDependency
+export Receptor, Synapse, ReceptorVoltage, GABAergic, Glutamatergic, SynapseArray, NMDAVoltageDependency
 
 function norm_synapse(synapse::Receptor)
     norm_synapse(synapse.τr, synapse.τd)

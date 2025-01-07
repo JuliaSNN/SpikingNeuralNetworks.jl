@@ -1,13 +1,13 @@
 ## Set physiology
 SNN.@load_units
 struct Physiology
-    Ri::Float32 ## in Ω*cm
-    Rd::Float32 ## in Ω*cm^2
-    Cd::Float32 ## in pF/cm^2
+    Ri::Float32 ## in Ω*cm # Intracellular resistance
+    Rd::Float32 ## in Ω*cm^2 # Membrane resistance
+    Cd::Float32 ## in pF/cm^2 # Membrane capacitance
 end
 
-HUMAN = Physiology(200 * Ω * cm, 38907 * Ω * cm^2, 0.5μF / cm^2)
-MOUSE = Physiology(200 * Ω * cm, 1700Ω * cm^2, 1μF / cm^2)
+HUMAN = Physiology(200 * Ω * cm, 38907 * Ω * cm^2, 0.5μF / cm^2) 
+MOUSE = Physiology(200 * Ω * cm, 1700 * Ω * cm^2, 1μF / cm^2)
 
 """
     G_axial(;Ri=Ri,d=d,l=l)
