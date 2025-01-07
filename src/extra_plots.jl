@@ -397,6 +397,97 @@ end
 
 export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
 
+
+"""
+    plot_network_plasticity(model, simtime; interval = nothing, ΔT=1s, every=1)
+
+    Plot the network activity with (raster plot and average firing rate_ and the synaptic weight dynamics
+
+    Arguments:
+    - `model`: the model to plot
+    - `simtime`: the simulation time object
+    - `interval`: the interval to plot the firing rate and synaptic weight dynamics
+    - `ΔT`: the time window to plot the raster plot
+    - `every`: plot 1 out of `every` spikes in the raster plot
+
+    If `interval` is not provided, the function will plot the last 10 seconds of the simulation time
+
+
+
+"""
+function plot_network_plasticity(model, simtime; interval = nothing, ΔT=1s, every=1)
+    T = get_time(simtime)
+    p1 =raster(model.pop, [T-ΔT, T], every=every)
+
+    interval = isnothing(interval) ? range(T-10*ΔT, T, step = ΔT/20) : interval
+    @info "Plotting network activity in interval: $(interval[1]/s) to $(interval[end]/s)"
+    rates, interval =firing_rate(model.pop, interpolate=false, interval=interval)
+    p2A = plot(interval./1000, mean(rates[1]), ribbon=std(rates[1]), label="E", lw=4)
+    plot!(interval./1000, mean(rates[2]), ribbon=std(rates[1]), label="I1", xlabel="Time (s)", ylabel="Firing rate (Hz)", lw=4, ylims=:auto)
+    p2B = plot()
+    histogram!(mean.(rates[1]), normalize=true, label="Exc", bins=0.01:1:40.1)
+    histogram!(mean.(rates[2]), normalize=true, label="Inh", bins=0.01:1:40.1, alpha=0.8)
+    plot!(xlabel="Firing rate (Hz)", ylabel="Probability", legend=:topright)
+    p2B = plot()
+    histogram!(mean.(rates[1]), normalize=true, label="Exc", bins=0.01:0.6:40.1, permute=(:x, :y))
+    histogram!(mean.(rates[2]), normalize=true, label="Inh", bins=0.01:1:40.1, alpha=0.5,permute=(:x, :y))
+    plot!(ylabel="Firing rate (Hz)", xlabel="Probability", legend=:topright, )
+    plot!(xlims=(0,0.6), ylims=(-1, 50), size=(400, 400), legend=false)
+    layout = @layout [a{0.6w} b{0.4w}]
+    p2 = plot(p2A, p2B, layout=layout, size=(800, 800), margin=5Plots.mm, ylims=(-5, 50))
+
+
+    synapses = filter_items(model.syn, condition= p->p isa SpikingSynapse)
+    p3 = plot()
+    for k in keys(synapses)
+        syn = synapses[k]
+        W = mean(record(syn, :W, interpolate=false), dims=1)[1,:]
+        plot!(W, label=string(k), lw=4)
+    end
+    plot!(ylims=:auto, xlabel="Time (s)", ylabel="Synaptic weight")
+    plot!(xlims=extrema(interval)./1000)
+    plot(p1,p2,p3, layout=(3,1), size=(800, 900), legend=:topleft)
+end
+
+## Find mutual connections:
+"""
+    mutual_EI_connections(synapses, pre, post)
+
+This function calculates the mutual and unidirectional connections between two populations of neurons, where one population inhibits the other.
+The function takes a `synapses` object as input, which contains the synaptic weights between the two populations.
+
+# Arguments
+- `synapses`: A struct containing the synaptic weights between the two populations of neurons.
+
+# Output
+- `mutual`: An array containing the weights of the mutual connections.
+"""
+function mutual_EI_connections(synapses, forward=:I1_to_E, feedback=:E_to_I1)
+    mutual = []
+    unidirectional = []
+    forward_conn = getfield(synapses,forward)
+    feedback_conn = getfield(synapses,feedback)
+    for s in eachindex(synapses.I1_to_E.W)
+        @unpack I, colptr  = feedback_conn
+        @unpack W = forward_conn
+        inh_pre, exc_j  =  forward_conn.J[s],forward_conn.I[s]
+        all_inh_posts  =  I[colptr[exc_j]:colptr[exc_j+1]-1]
+        if inh_pre in all_inh_posts
+            push!(mutual, W[s])
+        else
+            push!(unidirectional, W[s])
+        end
+    end
+    plot()
+    bins = 0:1:60
+    histogram(unidirectional, label="Unidirectional connections", bins=bins, normalize=true, alpha=0.5, c=:blue)
+    histogram!(mutual, label="Mutual connections", bins=bins, alpha=0.5, c=:darkorange, normalize=true)
+    plot!(xlabel="Synaptic weight", ylabel="Probability")
+end
+
+
+export plot_network_plasticity, mutual_EI_connections
+
 # ## conductance plot
 # function gegi_plot(population; r, dt, param=:soma_syn, nmda=true, kwargs...)
 #     syn = getfield(population, param)
