@@ -328,6 +328,8 @@ function remove_element(model, key)
     merge_models(pop, syn, stim)
 end
 
+load_data(;path="", name="", info=nothing) = load_data(path, name, info)
+
 function load_data(path="", name="", info=nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
     if isnothing(info)
