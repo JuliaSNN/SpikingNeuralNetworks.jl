@@ -89,14 +89,14 @@ function plasticity!(
             to_y[i] += dt * (-to_y[i]) / τ_y
         end
         @simd for i in findall(fireI)
-                to_y[i] += 1
+            to_y[i] += 1
         end
 
         @turbo for j in eachindex(fireJ)
-             tr_x[j] += dt * (- tr_x[j]) / τ_x
+            tr_x[j] += dt * (- tr_x[j]) / τ_x
         end
         @simd for j in findall(fireJ)
-                 tr_x[j] += 1
+            tr_x[j] += 1
         end
 
     end
@@ -123,10 +123,9 @@ function plasticity!(
         # for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
         for j in 1:length(colptr)-1 # loop over post-synaptic neurons
             if fireJ[j]
-                @turbo for st = colptr[j]:(colptr[j+1]-1)
-                    s = index[st]
+                @turbo for s = colptr[j]:(colptr[j+1]-1)
                     i = I[s]
-                    W[s] += αpre +( A_x/2τ_x *  to_x[i]   - A_y/2τ_y * to_y[i])  # pre spike
+                    W[s] += αpre +( A_x/2τ_x * to_x[i] - A_y/2τ_y * to_y[i])  # pre spike
                 end
             end
         end
@@ -137,7 +136,8 @@ function plasticity!(
             if fireI[i]
                 @turbo for st = rowptr[i]:(rowptr[i+1]-1)
                     j = J[index[st]]
-                    W[index[st]] += αpost +( A_x/2τ_x *  tr_x[j]   - A_y/2τ_y * tr_y[j])  # pre spike
+                    s = index[st]
+                    W[s] += αpost +( A_x/2τ_x * tr_x[j]  - A_y/2τ_y * tr_y[j])  # post spike
                 end
             end
         end
@@ -146,8 +146,8 @@ function plasticity!(
             to_y[i] += dt * (-to_y[i]) / τ_y
         end
         @simd for i in findall(fireI)
-                to_x[i] += 1
-                to_y[i] += 1
+            to_x[i] += 1
+            to_y[i] += 1
         end
 
         @turbo for j in eachindex(fireJ)
@@ -156,8 +156,8 @@ function plasticity!(
         end
 
         @simd for j in findall(fireJ)
-                tr_x[j] += 1
-                tr_y[j] += 1
+            tr_x[j] += 1
+            tr_y[j] += 1
         end
 
     end
