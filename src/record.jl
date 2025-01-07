@@ -314,6 +314,7 @@ function interpolated_record(p, sym)
     if sym==:fire
         return firing_rate(p, τ=20ms)
     end
+
     sr = p.records[:sr][sym]
     v_dt = SNN.getvariable(p, sym)
 

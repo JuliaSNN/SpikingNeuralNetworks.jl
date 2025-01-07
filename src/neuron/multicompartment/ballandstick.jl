@@ -135,14 +135,20 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
             v_d[i] += dt * c1 / d.C[i]
         else
             ## Heun integration
-            for _i ∈ 1:2
+
+            # Initialize temporary variables
+            for _i ∈ 1:2 
                 Δv_temp[_i] = 0.0f0
                 Δv[_i] = 0.0f0
             end
+
+            # Compute the first slope estimate
             update_ballandstick!(p, Δv, i, param, 0.0f0)
             for _i ∈ 1:2
                 Δv_temp[_i] = Δv[_i]
             end
+
+            # Compute the second slope estimate
             update_ballandstick!(p, Δv, i, param, dt)
             @fastmath v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
             @fastmath v_d[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
@@ -161,7 +167,7 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
                 fire[i] = true
                 θ[i] += postspike.A
                 v_s[i] = AP_membrane
-                w_s[i] += b ##  *τw
+                w_s[i] += b  #/ param.τw # CHANGED added τw
                 after_spike[i] = (up + τabs) / dt
             end
         end
