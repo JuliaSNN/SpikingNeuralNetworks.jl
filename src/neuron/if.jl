@@ -11,7 +11,7 @@
     τdi::FT = 2ms # Decay time for inhibitory synapses
     E_i::FT = -75mV # Reversal potential
     E_e::FT = 0mV # Reversal potential
-    τabs::FT = 1ms # Absolute refractory period
+    τabs::FT = 2ms # Absolute refractory period
     gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
     gsyn_i::FT = 1.f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
     a::FT = 0.0 # Subthreshold adaptation parameter
@@ -65,7 +65,10 @@ end
     fire::VBT = zeros(Bool, N)
     I::VFT = zeros(N)
     records::Dict = Dict()
+    Δv::VFT = zeros(Float32, N)
+    Δv_temp::VFT = zeros(Float32, N)
 end
+
 
 """
     [Integrate-And-Fire Neuron](https://neuronaldynamics.epfl.ch/online/Ch1.S3.html)
@@ -74,7 +77,7 @@ IF
 
 function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     update_synapses!(p, param, dt)
-    update_neuron!(p, param, dt)
+    HeunIntegration!(p, param, dt)
     update_spike!(p, param, dt)
 end
 
@@ -106,15 +109,15 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
             continue
         end
         # Membrane potential
-        v[i] +=
-            dt * (
-                -(v[i] - El)  # leakage
-                +
-                R * ge[i] * (E_e - v[i])* gsyn_e +
-                R * gi[i] * (E_i - v[i])* gsyn_i +
-                - R * w[i] # adaptation
-                + R * I[i] #synaptic term
-            ) / τm
+        # v[i] +
+        @fastmath v[i]= 
+            (
+                -  (v[i] +  - El)/R  +# leakage
+                -  ge[i] * (v[i] - E_e)* gsyn_e +
+                -  gi[i] * (v[i] - E_i)* gsyn_i +
+                - w[i] # adaptation
+                + I[i] #synaptic term
+            ) * R / τm
     end
     # Adaptation current
     # if the adaptation timescale is zero, return
@@ -123,6 +126,49 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
     @inbounds for i = 1:N
         (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
     end
+
+end
+
+function HeunIntegration!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
+    @unpack Δv_temp, Δv = p
+    Heun_update_neuron!(Δv, p, param, dt)
+    @turbo for i in 1:p.N
+        Δv_temp[i] = Δv[i]
+    end
+    Heun_update_neuron!(Δv, p, param, dt)
+    @turbo for i in 1:p.N
+        p.v[i] += 0.5f0 * (Δv_temp[i] + Δv[i]) * dt
+    end
+end
+
+function Heun_update_neuron!(Δv::Vector{Float32}, p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
+    @unpack N, v, ge, gi, w, I, tabs, fire = p
+    @unpack τm,Vr, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
+    @inbounds for i = 1:N
+        if tabs[i] > 0
+            v[i] = Vr
+            fire[i] = false
+            tabs[i] -= 1
+            continue
+        end
+        # Membrane potential
+        # v[i] +
+        @fastmath Δv[i]= 
+            (
+                -  (v[i] + Δv[i]*dt - El)/R  +# leakage
+                -  ge[i] * (v[i] +Δv[i]*dt - E_e)* gsyn_e +
+                -  gi[i] * (v[i] +Δv[i]*dt - E_i)* gsyn_i +
+                - w[i] # adaptation
+                + I[i] #synaptic term
+            ) * R / τm
+    end
+    # Adaptation current
+    # if the adaptation timescale is zero, return
+    # !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
+    # @unpack a, b, τw = param
+    # @inbounds for i = 1:N
+    #     (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
+    # end
 
 end
 
@@ -143,6 +189,9 @@ function update_synapses!(p::IF, param::IFParameterSingleExponential, dt::Float3
     @inbounds for i = 1:N
         ge[i] += dt * (-ge[i] / τe)
         gi[i] += dt * (-gi[i] / τi)
+
+        ge[i] = clamp(ge[i], 0, 500pA)
+        gi[i] = clamp(gi[i], 0, 500pA)
     end
 end
 
