@@ -192,4 +192,22 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Ti
     end
 end
 
+function OrnsteinUhlenbeckProcess(x::Float32, param::PSParam) 
+    X::Float32 = param.variables[:X]
+	θ::Float32 = param.variables[:θ]
+	μ::Float32 = param.variables[:μ]
+	σ::Float32 = param.variables[:σ]
+	dt::Float32 = param.variables[:dt]
+
+	W = σ * rand(Normal()) * sqrt(dt)
+	X = X + θ * (μ-X)*dt + W
+	X = X > 0.f0 ? X : 0.f0
+
+    param.variables[:X] = X 
+	return X
+end
+
+
+
+
 export PoissonStimulus, stimulate!, PSParam, PoissonStimulusParameter, PoissonStimulusVariable, PoissonStimulusFixed, PoissonStimulusInterval
