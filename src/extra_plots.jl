@@ -136,9 +136,9 @@ function plot_activity(network, Trange; conductance=false)
     frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
     frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    # plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
-    # plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
-    # plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
+    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
+    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
+    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
     pv = nothing
     try
@@ -150,7 +150,9 @@ function plot_activity(network, Trange; conductance=false)
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
 
-    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Firing rate (Hz)")
+    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Excitatory", normalize=true)
+    p5 = histogram!(average_firing_rate(network.pop.I1), c=:red, lc=:red, alpha=0.5, label="Inhibitory 1", normalize=true)
+    p5 = histogram!(average_firing_rate(network.pop.I2), c=:green, lc=:green, alpha=0.5, label="Inhibitory 2", normalize=true)
     ## Conductance
     if conductance 
         dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")

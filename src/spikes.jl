@@ -1,4 +1,5 @@
 using RollingFunctions
+using Interpolations
 
 function init_spiketimes(N)
     _s = Vector{Vector{Float32}}()
@@ -237,7 +238,8 @@ function firing_rate(
     # rates = vcat(rates'...)
 
     if interpolate
-        rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
+        @info typeof(rates), typeof(interval), size(rates), size(interval)
+        rates = Interpolations.scale(Interpolations.interpolate(copy(hcat(rates...)'), BSpline(Interpolations.Linear)), 1:length(spiketimes), interval)
     end
     return rates, interval
 end
