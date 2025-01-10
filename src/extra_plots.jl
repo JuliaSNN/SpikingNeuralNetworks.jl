@@ -356,7 +356,7 @@ end
     - `Plots.Plot`: Plot of the STDP kernel
 
 """
-function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+function stdp_kernel(stdp_param; ΔTs= -200.5:5:200ms, fill=true)
     ΔWs = zeros(Float32, length(ΔTs))
     Threads.@threads for i in eachindex(ΔTs)
         ΔT = ΔTs[i]
@@ -364,7 +364,7 @@ function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
         neurons = [[1], [2]]
         inputs = SpikeTime(spiketime, neurons)
         w = zeros(Float32, 2,2)
-        w[1, 2] = 1f0
+        w[2, 1] = 1f0
         st = Identity(N=max_neurons(inputs))
         stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
         syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
@@ -379,7 +379,8 @@ function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
     # R(X; f=maximum) = [f([x,0]) for x in X]
     plot(ΔTs[n_minus],ΔWs[n_minus] , legend=false, fill=fill, xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
     plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=fill,xlabel="T_post - T_pre ", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
-    plot!(ylims=:auto)
+    plot!(ylims=extrema(ΔWs).*1.4, xlims=extrema(ΔTs), framestyle=:zerolines)
+    # plot!(ylims=(-10,10), xlims=extrema(ΔTs))
 end
 
 ## Measure the weight change for decorrelated spike trains
