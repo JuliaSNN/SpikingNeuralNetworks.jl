@@ -69,22 +69,29 @@ function plasticity!(
     @unpack A_x, A_y, τ_x, τ_y, Wmax, Wmin, αpre, αpost = param
     # Update weights based on pre-post spike timing
     @inbounds @fastmath begin 
-        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
-            @simd for st = rowptr[i]:(rowptr[i+1]-1)
-                s = index[st]
-                if fireJ[J[s]]
+
+        for j in 1:length(colptr)-1 # loop over post-synaptic neurons
+            if fireJ[j]
+                @turbo for s = colptr[j]:(colptr[j+1]-1)
+                    i = I[s]
+                    # @info "Pre synaptic firing, time: $(get_time(T)) trace: $(to_y[i])"
                     W[s] += αpre - A_y/τ_y * to_y[i]  # pre spike
                 end
             end
         end
-        # Update weights based on pre-post spike timing
-        for j in 1:length(colptr)-1 # loop over pre-synaptic neurons
-            @simd for s = colptr[j]:(colptr[j+1]-1)
-                if fireI[I[s]]
+
+        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
+            if fireI[i]
+                @turbo for st = rowptr[i]:(rowptr[i+1]-1)
+                    j = J[index[st]]
+                    s = index[st]
+                    # @info "Post synaptic firing, time: $(get_time(T)) trace: $(tr_x[j])"
                     W[s] += αpost + A_x/τ_x *  tr_x[j]  # post spike
                 end
             end
         end
+
+        # Update traces based on pre synpatic firing
         @turbo for i in eachindex(fireI)
             to_y[i] += dt * (-to_y[i]) / τ_y
         end
@@ -92,6 +99,7 @@ function plasticity!(
             to_y[i] += 1
         end
 
+        # Update traces based on pre synpatic firing
         @turbo for j in eachindex(fireJ)
             tr_x[j] += dt * (- tr_x[j]) / τ_x
         end

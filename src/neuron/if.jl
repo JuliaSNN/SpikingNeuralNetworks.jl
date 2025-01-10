@@ -190,8 +190,8 @@ function update_synapses!(p::IF, param::IFParameterSingleExponential, dt::Float3
         ge[i] += dt * (-ge[i] / τe)
         gi[i] += dt * (-gi[i] / τi)
 
-        ge[i] = clamp(ge[i], 0, 500pA)
-        gi[i] = clamp(gi[i], 0, 500pA)
+        ge[i] = clamp(ge[i], 0, 1000pA)
+        gi[i] = clamp(gi[i], 0, 1000pA)
     end
 end
 
