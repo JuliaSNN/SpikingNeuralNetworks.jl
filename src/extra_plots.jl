@@ -136,9 +136,9 @@ function plot_activity(network, Trange; conductance=false)
     frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
     frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
-    # plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
-    # plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
-    # plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
+    plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
+    plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
+    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
     pv = nothing
     try
@@ -150,7 +150,9 @@ function plot_activity(network, Trange; conductance=false)
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
 
-    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Firing rate (Hz)")
+    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Excitatory", normalize=true)
+    p5 = histogram!(average_firing_rate(network.pop.I1), c=:red, lc=:red, alpha=0.5, label="Inhibitory 1", normalize=true)
+    p5 = histogram!(average_firing_rate(network.pop.I2), c=:green, lc=:green, alpha=0.5, label="Inhibitory 2", normalize=true)
     ## Conductance
     if conductance 
         dgplot = dendrite_gplot(network.pop.E, :d, r=Trange, dt=0.125, margin=5Plots.mm, xlabel="")
@@ -321,8 +323,172 @@ end
 
 export get_updown_hist
 
+function stdp_integral(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+    ΔWs = zeros(Float32, length(ΔTs))
+    Threads.@threads for i in eachindex(ΔTs)
+        ΔT = ΔTs[i]
+        spiketime = [2000ms, 2000ms+ΔT]
+        neurons = [[1], [2]]
+        inputs = SpikeTime(spiketime, neurons)
+        w = zeros(Float32, 2,2)
+        w[1, 2] = 1f0
+        st = Identity(N=max_neurons(inputs))
+        stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
+        syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
+        model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
+        SNN.monitor(model.pop..., [:fire])
+        train!(model=model, duration=3000ms, dt=0.1ms)
+        ΔWs[i] = model.syn[1].W[1] - 1
+    end
+    return sum([w * Float32(ΔTs.step) for w in ΔWs])
+end
+
+"""
+    stdp_kernel(stdp_param; ΔT= -97.5:5:100ms)
+
+    Plot the STDP kernel for the given STDP parameters. 
+    
+    # Arguments
+    - `stdp_param::STDPParameter`: STDP parameters
+    - `ΔT::Array{Float32}`: Arrays of time differences between pre and post-synaptic spikes
+
+    # Return
+    - `Plots.Plot`: Plot of the STDP kernel
+
+"""
+function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+    ΔWs = zeros(Float32, length(ΔTs))
+    Threads.@threads for i in eachindex(ΔTs)
+        ΔT = ΔTs[i]
+        spiketime = [2000ms, 2000ms+ΔT]
+        neurons = [[1], [2]]
+        inputs = SpikeTime(spiketime, neurons)
+        w = zeros(Float32, 2,2)
+        w[1, 2] = 1f0
+        st = Identity(N=max_neurons(inputs))
+        stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
+        syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
+        model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
+        SNN.monitor(model.pop..., [:fire])
+        train!(model=model, duration=3000ms, dt=0.1ms)
+        ΔWs[i] = model.syn[1].W[1] - 1
+    end
+
+    n_plus = findall(ΔTs .>= 0)
+    n_minus = findall(ΔTs .< 0)
+    # R(X; f=maximum) = [f([x,0]) for x in X]
+    plot(ΔTs[n_minus],ΔWs[n_minus] , legend=false, fill=fill, xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
+    plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=fill,xlabel="T_post - T_pre ", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
+    plot!(ylims=:auto)
+end
+
+## Measure the weight change for decorrelated spike trains
+function stdp_weight_decorrelated(stdp_param)
+    st = Poisson(N=50, param=PoissonParameter(rate=10Hz))
+    syn = SpikingSynapse( st, st, nothing ,p=1.f0, μ=1, param = stdp_param)
+    model = merge_models(pop=st, syn=syn, silent=true)
+    SNN.monitor(model.pop..., [:fire])
+    # SNN.monitor(model.syn..., [:W])
+    T = 20_000ms
+    train!(model=model, duration=T, dt=0.1ms)
+    # plot(SNN.getvariable(model.syn..., :W)[1,:])
+    # SNN.getvariable(model.syn..., :W)
+    violin((model.syn[1].W .-1)/T*60^2, legend=false, xlabel="Neuron", ylabel="ΔW/h ", title="STDP", size=(500, 300))
+end
+
 
 export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
+
+
+"""
+    plot_network_plasticity(model, simtime; interval = nothing, ΔT=1s, every=1)
+
+    Plot the network activity with (raster plot and average firing rate_ and the synaptic weight dynamics
+
+    Arguments:
+    - `model`: the model to plot
+    - `simtime`: the simulation time object
+    - `interval`: the interval to plot the firing rate and synaptic weight dynamics
+    - `ΔT`: the time window to plot the raster plot
+    - `every`: plot 1 out of `every` spikes in the raster plot
+
+    If `interval` is not provided, the function will plot the last 10 seconds of the simulation time
+
+
+
+"""
+function plot_network_plasticity(model, simtime; interval = nothing, ΔT=1s, every=1)
+    T = get_time(simtime)
+    p1 =raster(model.pop, [T-ΔT, T], every=every)
+
+    interval = isnothing(interval) ? range(T-10*ΔT, T, step = ΔT/20) : interval
+    @info "Plotting network activity in interval: $(interval[1]/s) to $(interval[end]/s)"
+    rates, interval =firing_rate(model.pop, interpolate=false, interval=interval)
+    p2A = plot(interval./1000, mean(rates[1]), ribbon=std(rates[1]), label="E", lw=4)
+    plot!(interval./1000, mean(rates[2]), ribbon=std(rates[1]), label="I1", xlabel="Time (s)", ylabel="Firing rate (Hz)", lw=4, ylims=:auto)
+    p2B = plot()
+    histogram!(mean.(rates[1]), normalize=true, label="Exc", bins=0.01:1:40.1)
+    histogram!(mean.(rates[2]), normalize=true, label="Inh", bins=0.01:1:40.1, alpha=0.8)
+    plot!(xlabel="Firing rate (Hz)", ylabel="Probability", legend=:topright)
+    p2B = plot()
+    histogram!(mean.(rates[1]), normalize=true, label="Exc", bins=0.01:0.6:40.1, permute=(:x, :y))
+    histogram!(mean.(rates[2]), normalize=true, label="Inh", bins=0.01:1:40.1, alpha=0.5,permute=(:x, :y))
+    plot!(ylabel="Firing rate (Hz)", xlabel="Probability", legend=:topright, )
+    plot!(xlims=(0,0.6), ylims=(-1, 50), size=(400, 400), legend=false)
+    layout = @layout [a{0.6w} b{0.4w}]
+    p2 = plot(p2A, p2B, layout=layout, size=(800, 800), margin=5Plots.mm, ylims=(-5, 50))
+
+
+    synapses = filter_items(model.syn, condition= p->p isa SpikingSynapse)
+    p3 = plot()
+    for k in keys(synapses)
+        syn = synapses[k]
+        W = mean(record(syn, :W, interpolate=false), dims=1)[1,:]
+        plot!(W, label=string(k), lw=4)
+    end
+    plot!(ylims=:auto, xlabel="Time (s)", ylabel="Synaptic weight")
+    plot!(xlims=extrema(interval)./1000)
+    plot(p1,p2,p3, layout=(3,1), size=(800, 900), legend=:topleft)
+end
+
+## Find mutual connections:
+"""
+    mutual_EI_connections(synapses, pre, post)
+
+This function calculates the mutual and unidirectional connections between two populations of neurons, where one population inhibits the other.
+The function takes a `synapses` object as input, which contains the synaptic weights between the two populations.
+
+# Arguments
+- `synapses`: A struct containing the synaptic weights between the two populations of neurons.
+
+# Output
+- `mutual`: An array containing the weights of the mutual connections.
+"""
+function mutual_EI_connections(synapses, forward=:I1_to_E, feedback=:E_to_I1)
+    mutual = []
+    unidirectional = []
+    forward_conn = getfield(synapses,forward)
+    feedback_conn = getfield(synapses,feedback)
+    for s in eachindex(synapses.I1_to_E.W)
+        @unpack I, colptr  = feedback_conn
+        @unpack W = forward_conn
+        inh_pre, exc_j  =  forward_conn.J[s],forward_conn.I[s]
+        all_inh_posts  =  I[colptr[exc_j]:colptr[exc_j+1]-1]
+        if inh_pre in all_inh_posts
+            push!(mutual, W[s])
+        else
+            push!(unidirectional, W[s])
+        end
+    end
+    plot()
+    bins = 0:1:60
+    histogram(unidirectional, label="Unidirectional connections", bins=bins, normalize=true, alpha=0.5, c=:blue)
+    histogram!(mutual, label="Mutual connections", bins=bins, alpha=0.5, c=:darkorange, normalize=true)
+    plot!(xlabel="Synaptic weight", ylabel="Probability")
+end
+
+
+export plot_network_plasticity, mutual_EI_connections
 
 # ## conductance plot
 # function gegi_plot(population; r, dt, param=:soma_syn, nmda=true, kwargs...)

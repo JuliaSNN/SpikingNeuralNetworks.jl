@@ -82,24 +82,26 @@ function plasticity!(
     @unpack tpre, tpost = plasticity
     # @inbounds 
     # if pre-synaptic inhibitory neuron fires, it aims to modify the synaptic weight to achieve the target post synaptic rate
-    for j in eachindex(fireJ) # presynaptic indices j
-        tpre[j] += dt * (-tpre[j]) / τy
-        if fireJ[j] # presynaptic neuron
-            tpre[j] += 1
-            for st = colptr[j]:(colptr[j+1]-1)
-                W[st] = clamp(W[st] + η * (tpost[I[st]] - 2 * r * τy), Wmin, Wmax)
+    @fastmath begin
+        @inbounds for j in eachindex(fireJ) # presynaptic indices j
+            tpre[j] += dt * (-tpre[j]) / τy
+            if fireJ[j] # presynaptic neuron
+                tpre[j] += 1
+                @turbo for st = colptr[j]:(colptr[j+1]-1)
+                    W[st] = clamp(W[st] + η * (tpost[I[st]] - 2 * r * τy), Wmin, Wmax)
+                end
             end
         end
-    end
-    # if post-synaptic excitatory neuron fires
-    # @inbounds 
-    for i in eachindex(fireI) # postsynaptic indices i
-        tpost[i] += dt * (-tpost[i]) / τy
-        if fireI[i] # postsynaptic neuron
-            tpost[i] += 1
-            for st = rowptr[i]:(rowptr[i+1]-1) ## 
-                st = index[st]
-                W[st] = clamp(W[st] + η * tpre[J[st]], Wmin, Wmax)
+        # if post-synaptic excitatory neuron fires
+        # @inbounds 
+        @inbounds for i in eachindex(fireI) # postsynaptic indices i
+            tpost[i] += dt * (-tpost[i]) / τy
+            if fireI[i] # postsynaptic neuron
+                tpost[i] += 1
+                @turbo for st = rowptr[i]:(rowptr[i+1]-1) ## 
+                    st = index[st]
+                    W[st] = clamp(W[st] + η * tpre[J[st]], Wmin, Wmax)
+                end
             end
         end
     end
@@ -130,24 +132,25 @@ function plasticity!(
     @unpack tpre, tpost = plasticity
     # @inbounds 
     # if pre-synaptic inhibitory neuron fires, it aims to modify the synaptic weight to achieve the target post synaptic rate
-    for j in eachindex(fireJ) # presynaptic indices j
-        tpre[j] += dt * (-tpre[j]) / τy
-        if fireJ[j] # presynaptic neuron
-            tpre[j] += 1
-            for st = colptr[j]:(colptr[j+1]-1)
-                W[st] = clamp(W[st] + η * (tpost[I[st]] - 1/τy), Wmin, Wmax)
+    @fastmath begin
+        @inbounds for j in eachindex(fireJ) # presynaptic indices j
+            tpre[j] += dt * (-tpre[j]) / τy
+            if fireJ[j] # presynaptic neuron
+                tpre[j] += 1
+                @turbo for st = colptr[j]:(colptr[j+1]-1)
+                    W[st] = clamp(W[st] + η * (tpost[I[st]] - 1/τy), Wmin, Wmax)
+                end
             end
         end
-    end
-    # if post-synaptic excitatory neuron fires
-    # @inbounds 
-    for i in eachindex(fireI) # postsynaptic indices i
-        tpost[i] += dt * (-tpost[i]) / τy
-        if fireI[i] # postsynaptic neuron
-            tpost[i] += 1
-            for st = rowptr[i]:(rowptr[i+1]-1) ## 
-                st = index[st]
-                W[st] = clamp(W[st] + η * (tpre[J[st]] - 1/τy), Wmin, Wmax)
+        # if post-synaptic excitatory neuron fires
+        @inbounds for i in eachindex(fireI) # postsynaptic indices i
+            tpost[i] += dt * (-tpost[i]) / τy
+            if fireI[i] # postsynaptic neuron
+                tpost[i] += 1
+                @turbo for st = rowptr[i]:(rowptr[i+1]-1) ## 
+                    st = index[st]
+                    W[st] = clamp(W[st] + η * (tpre[J[st]] - 1/τy), Wmin, Wmax)
+                end
             end
         end
     end
