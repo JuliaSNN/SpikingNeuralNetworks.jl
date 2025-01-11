@@ -9,6 +9,7 @@ function matrix(c::C) where C <: AbstractConnection
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
+
 function matrix(c::C, sym::Symbol) where C <: AbstractConnection
     return sparse(c.I, c.J, getfield(c,sym), length(c.rowptr) - 1, length(c.colptr) - 1)
 end
@@ -326,6 +327,8 @@ function remove_element(model, key)
     end
     merge_models(pop, syn, stim)
 end
+
+load_data(;path="", name="", info=nothing) = load_data(path, name, info)
 
 function load_data(path="", name="", info=nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))

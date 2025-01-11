@@ -231,7 +231,7 @@ Initialize dictionary records for the given object, by assigning empty vectors t
 - `keys`: The variables to be monitored
 
 """
-function monitor(obj, keys; sr=1000Hz, T::Time=Time())
+function monitor(obj::Item, keys; sr=1000Hz, T::Time=Time()) where {Item<:Union{AbstractPopulation, AbstractStimulus, AbstractConnection}}
     if !haskey(obj.records, :indices)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
     end
@@ -300,6 +300,13 @@ function monitor(objs::Array, keys; sr=200Hz)
         monitor(obj, keys, sr=sr)
     end
 end
+
+function monitor(objs::NamedTuple, keys; sr=200Hz)
+    for obj in values(objs)
+        monitor(obj, keys, sr=sr)
+    end
+end
+
 
 """
     interpolated_record(p, sym)
