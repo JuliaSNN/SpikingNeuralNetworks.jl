@@ -26,7 +26,7 @@ function sim!(
     P::Vector{TP},
     C::Vector{TC} = [EmptySynapse()],
     S::Vector{TS} = [EmptyStimulus()];
-    dt = 0.1f0,
+    dt = 0.125f0,
     duration = 10.0f0,
     pbar = false,
     time = Time(),
@@ -38,6 +38,7 @@ function sim!(
     for t in pbar
         sim!(P, C, S, dt, time)
     end
+    return time
 end
 
 
@@ -68,7 +69,7 @@ function train!(
     P::Vector{TP},
     C::Vector{TC} = [EmptySynapse()],
     S::Vector{TS} = [EmptyStimulus()];
-    dt = 0.1ms,
+    dt = 0.125ms,
     duration = 10ms,
     time = Time(),
     pbar = false,
@@ -79,6 +80,7 @@ function train!(
     for t in pbar
         train!(P, C, S, dt, time)
     end
+    return time
 end
 
 
@@ -95,6 +97,10 @@ function sim!(; model, kwargs...)
     stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
     sim!(pop,syn,stim; kwargs...)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
+end
+
+function initialize!(; kwargs...)
+    train!(; kwargs...)
 end
 
 #########
