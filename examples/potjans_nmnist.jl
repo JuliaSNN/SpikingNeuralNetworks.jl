@@ -173,7 +173,7 @@ function potjans_layer(scale)
             if J>=0        
                 s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0,param=stdp_param, delay_dist=delay_dist_exc)
             else
-                s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0, delay_dist=delay_dist_inh)
+                s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = -μ, p=p, σ=0, delay_dist=delay_dist_inh)
             
             end
             connections[Symbol(string(pre,"_", post))] = s
@@ -191,19 +191,90 @@ function potjans_layer(scale)
     return merge_models(neurons,connections, stimuli),neurons,connections,stimuli,net_dict
 end
 
-if !isfile("cached_potjans_model.jld2")
+#if !isfile("cached_potjans_model.jld2")
     model,neurons_,connections_,stimuli_,net_dict = potjans_layer(0.085)
     @save "cached_potjans_model.jld2" model neurons_ connections_ stimuli_ net_dict
-else
+#else
     @load "cached_potjans_model.jld2" model neurons_ connections_ stimuli_ net_dict
+#end
+#@show(connections_.vals)
+
+before_learnning_weights = model.syn[1].W
+#=
+ΔTs = -100:1:100ms
+ΔWs = zeros(Float32, length(ΔTs))
+Threads.@threads for i in eachindex(ΔTs)
+    ΔT = ΔTs[i]
+    #spiketime = [2000ms, 2000ms+ΔT]
+    #neurons = [[1], [2]]
+    #inputs = SpikeTime(spiketime, neurons)
+    w = zeros(Float32, 2,2)
+    w[1, 2] = 1f0
+    st = Identity(N=max_neurons(inputs))
+    stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
+    syn = SpikingSynapse( st, st, nothing, w = w,  param = stdp_param)
+    
+    model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
+    SNN.monitor(model.pop..., [:fire])
+    SNN.monitor(model.syn..., [:tpre, :tpost])
+    train!(model=model, duration=3000ms, dt=0.1ms)
+    ΔWs[i] = model.syn[1].W[1] - 1
 end
+=#
 
 duration = 15000ms
 SNN.monitor([model.pop...], [:fire])
-SNN.monitor([model.pop...], [:v], sr=200Hz)
-SNN.sim!(model=model; duration = duration, pbar = true, dt = 0.125)
-display(SNN.raster(model.pop, [1.75s, 2s]))
+#SNN.monitor([model.pop...], [:v], sr=200Hz)
+SNN.sim!(model=model, duration=3000ms, dt=0.125, pbar = true)#, dt = 0.125)
+
+#=
+# Example data: Spike times and trial start times
+s#pike_times = [0.1, 0.15, 0.2, 0.4, 0.6, 0.65, 0.8, 1.0, 1.1, 1.3, 1.5]
+t#rial_starts = [0.0, 1.0, 2.0]  # Start times of each trial
+num_trials = length(trial_starts)
+
+# Parameters
+bin_width = 0.1  # Bin width in seconds
+time_window = (0.0, 1.0)  # Time window relative to each trial start
+
+# Create bins
+edges = collect(time_window[1]:bin_width:time_window[2])
+num_bins = length(edges) - 1
+
+# Initialize a matrix to hold spike counts
+spike_counts = zeros(num_trials, num_bins)
+
+# Bin spikes for each trial
+for (i, trial_start) in enumerate(trial_starts)
+    aligned_spikes = spike_times .- trial_start  # Align spikes to trial start
+    filtered_spikes = aligned_spikes[aligned_spikes .>= time_window[1] .& aligned_spikes .< time_window[2]]
+    spike_counts[i, :] = histcounts(filtered_spikes, edges)
+end
+
+# Compute average spike activity (optional)
+average_spike_activity = mean(spike_counts, dims=1)
+
+# Plot heatmap
+heatmap(
+    edges[1:end-1] .+ bin_width / 2,  # Bin centers
+    1:num_trials,  # Trial indices
+    spike_counts,
+    xlabel="Time (s)",
+    ylabel="Trial",
+    color=:viridis,
+    title="Spike Activity Heatmap"
+)
+=#
+SNN.train!(model=model, duration=3000ms, dt=0.125, pbar = true)#, dt = 0.125)
+
+#SNN.sim!(model=model; duration = duration, pbar = true, dt = 0.125)
+display(SNN.raster(model.pop, [1.0s, 2s]))
 savefig("without_stimulus.png")
+
+
+
+
+after_learnning_weights0 = model.syn[1].W
 
 training_order = shuffle(0:60000-1)
 cached_spikes=[]
@@ -256,16 +327,27 @@ st = Identity(N=max_neurons(inputs))
 stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
 
 
-#s = SNN.SpikingSynapse(neurons[pre], neurons[post], sym; μ = μ, p=p, σ=0)
-
 syn = SpikingSynapse( st, neurons_[:E4], nothing, w = w)#,  param = stdp_param)
 model2 = merge_models(pop=[st,model], stim=[stim,stimuli_], syn=[syn,connections_], silent=false)
 
 duration = 15000ms
 SNN.monitor([model2.pop...], [:fire])
 SNN.monitor([model2.pop...], [:v], sr=200Hz)
-SNN.sim!(model=model2; duration = duration, pbar = true, dt = 0.125)
+SNN.train!(model=model2; duration = duration, pbar = true, dt = 0.125)
 #display(SNN.raster(model2.pop, [0s, 15s]))
+
+after_learnning_weights1 = model.syn[1].W
+
+@show(mean(before_learnning_weights))
+@show(mean(after_learnning_weights0))
+@show(mean(after_learnning_weights1))
+
+#mean(model2.syn[1].W)
+
+SNN.spiketimes(model.pop[1])
+
+#x, y, y0 = SNN._raster(model2.pop.pop_2_E5,[1.95s, 2s]))
+
 display(SNN.raster(model2.pop, [1.75s, 2s]))
 
 savefig("with_stimulus.png")
