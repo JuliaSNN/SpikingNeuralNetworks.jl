@@ -238,7 +238,6 @@ function firing_rate(
     # rates = vcat(rates'...)
 
     if interpolate
-        @info typeof(rates), typeof(interval), size(rates), size(interval)
         rates = Interpolations.scale(Interpolations.interpolate(copy(hcat(rates...)'), BSpline(Interpolations.Linear)), 1:length(spiketimes), interval)
     end
     return rates, interval
