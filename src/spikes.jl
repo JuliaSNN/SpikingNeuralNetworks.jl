@@ -1,4 +1,5 @@
 using RollingFunctions
+using Interpolations
 
 function init_spiketimes(N)
     _s = Vector{Vector{Float32}}()
@@ -221,13 +222,14 @@ function firing_rate(
     tt0 = -1,
     cache = true,
     pop::Union{Symbol,Vector{Int}} = :ALL,
+    interpolate = true,
 )
-    all(isempty.(spiketimes)) && return [0], [0]
     if isempty(interval)
         tt0 = tt0 > 0 ? tt0 : 0.0f0
         ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
         interval = tt0:sampling:ttf
     end
+    all(isempty.(spiketimes)) && return Spiketimes([zeros(Float32, length(interval)) for n in eachindex(spiketimes)]), interval
     spiketimes = pop == :ALL ? spiketimes : spiketimes[pop]
     rates = tmap(
         n -> convolve(spiketimes[n], interval = interval, τ = τ),
@@ -235,7 +237,10 @@ function firing_rate(
     )
     # rates = vcat(rates'...)
 
-    rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
+    if interpolate
+        @info typeof(rates), typeof(interval), size(rates), size(interval)
+        rates = Interpolations.scale(Interpolations.interpolate(copy(hcat(rates...)'), BSpline(Interpolations.Linear)), 1:length(spiketimes), interval)
+    end
     return rates, interval
 end
 
@@ -246,14 +251,13 @@ end
 
 function firing_rate(populations; kwargs...)
     spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
-    fr_pop = Vector{Vector{Float32}}[]
-    interval_pop = Vector{StepRangeLen}()
+    fr_pop = Spiketimes[]
+    interval = nothing
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
         push!(fr_pop, rates)
-        push!(interval_pop, interval)
     end
-    return fr_pop, interval_pop, names_pop
+    return fr_pop, interval, names_pop
 end
 
 function average_firing_rate(
@@ -276,7 +280,7 @@ function average_firing_rate(
         cache = cache,
         pop = pop,
     )
-    return mean.(rates)
+    return mean(rates, dims=2)[:,1]
 end
 
 function average_firing_rate(populations; kwargs...)
@@ -297,7 +301,7 @@ Compute the autocorrelogram of a spike train.
 # Returns
 - `taus`: Array{Float64} - The time differences between each spike and its surrounding spikes within the time window.
 """
-function autocorrelogram(t_pre::Spiketimes; τ=200ms)
+function autocorrelogram(t_pre::Vector{Float32}; τ=200ms)
     taus =[]
     t_pre = sort(t_pre)
     for n in eachindex(t_pre)
@@ -348,7 +352,7 @@ The function returns the covariance density vectors for positive and negative ti
 # Arguments
 - `t_post`: Array of post-synaptic spike times.
 - `t_pre`: Array of pre-synaptic spike times.
-- `T`: Total time duration.
+- `T`: Spike train duration.
 
 # Optional Arguments
 - `τ`: Time constant for the kernel (default: 200ms).
@@ -369,9 +373,12 @@ function compute_covariance_density(pre::Vector{Float32}, post::Vector{Float32},
     # Mean spike rates
     r_post = length(post) / T*s  # Average firing rate of post-synaptic spikes
     r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
-    Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]*r_post*r_pre))/T  for x in range]
-    Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1])* r_post*r_pre)/ T for x in range]
-    return vcat(reverse(-r[interval]), r[interval]), vcat(reverse(Cminus(interval)), Cplus(interval))
+
+    Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]) / r_post*r_pre)/T   for x in range]
+    Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1]) / r_post*r_pre)/ T for x in range]
+    delays = vcat(reverse(-r[interval]), r[interval])
+    corrs = vcat(reverse(Cminus(interval)), Cplus(interval))
+    return delays, corrs .- mean(corrs)
 end
 
 # function compute_covariance_density(pre::Spiketimes, post::Vector{}, ; τ=200ms, sr=50Hz)
