@@ -65,6 +65,10 @@ function synapsearray(syn::Synapse, indices::Vector = [])::SynapseArray
     return container
 end
 
+function synapsearray(syn::SynapseArray)::SynapseArray
+    return syn
+end
+
 
 Mg_mM = 1.0f0
 nmda_b = 3.36   # voltage dependence of nmda channels

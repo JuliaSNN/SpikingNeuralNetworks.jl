@@ -8,6 +8,7 @@ using DrWatson
 using LinearAlgebra
 using SparseArrays
 using Requires
+using Documenter
 using UnPack
 using Random
 using Logging
@@ -38,6 +39,7 @@ include("stimulus/stimuli.jl")
 
 function __init__()
     @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("plot.jl")
+    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("extra_plots.jl")
 end
 
 end

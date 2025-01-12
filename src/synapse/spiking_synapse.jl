@@ -6,6 +6,7 @@ abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
     id::String = randstring(12)
+    name::String = "SpikingSynapse"
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W
@@ -29,6 +30,7 @@ end
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
     id::String = randstring(12)
+    name::String = "SpikingSynapseDelay"
     param::SpikingSynapseParameter = no_STDPParameter()
     plasticity::PlasticityVariables = no_PlasticityVariables()
     rowptr::VIT # row pointer of sparse W
@@ -68,12 +70,28 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
     targets = Dict{Symbol,Any}(:fire => pre.id, :g => post.id)
     g = zeros(Float32, post.N)
     v_post = zeros(Float32, post.N)
-    if !isnothing(sym)
-        _sym = isnothing(target) ? sym : Symbol("$(sym)_$target")
-        _v   = isnothing(target) ? :v : Symbol("v_$target")
-        g = getfield(post, _sym)
-        hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-        push!(targets, :sym => _sym)
+
+    if isnothing(sym)
+        g = zeros(Float32, post.N)
+    else
+        if isnothing(target) 
+            g = getfield(post, sym)
+            _v = :v
+            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
+            push!(targets, :sym => sym)
+        elseif typeof(target) == Symbol
+            _sym= Symbol("$(sym)_$target")
+            _v = Symbol("v_$target")
+            g = getfield(post, _sym)
+            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
+            push!(targets, :sym => _sym)
+        elseif typeof(target) == Int
+            _sym= Symbol("$(sym)_d")
+            _v   = Symbol("v_d")
+            g = getfield(post, _sym)[target]
+            v_post = getfield(post, _v)[target]
+            push!(targets, :sym => Symbol(string(_sym, target)))
+        end
     end
 
     # set the paramter for the synaptic plasticity

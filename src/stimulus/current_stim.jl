@@ -8,31 +8,31 @@ end
     id::String = randstring(12)
     cells::VIT
     ##
-    I_base::FT = 0.0
+    I_base::VFT = zeros(Float32, length(cells))
     I_dist::DT = Normal(0.0, 0.0)
     α::VFT = ones(Float32, length(cells))
     randcache::VFT = rand(length(cells)) # random cache
-    I::VFT # target conductance for soma
+    I::VFT # target input current
     records::Dict = Dict()
     targets::Dict = Dict()
 end
 
 
-function CurrentStimulus(post::T; cells=:ALL, I_dist::Distribution{Univariate, Continuous}=Normal(0,0), I_base::R, α::R2=1, kwargs...) where {T <: AbstractPopulation, R<:Real, R2<:Real}
+function CurrentStimulus(post::T; cells=:ALL, α::R2=1, I_base = 10pA, kwargs...) where {T <: AbstractPopulation, R<:Real, R2<:Real}
     if cells == :ALL
         cells = 1:post.N
     end 
-    targets = Dict(:pre => :Current, :g => post.id, :sym=>:soma)
 
+    I_base = isa(I_base, Number) ? fill(I_base, length(cells)) : I_base
+    targets = Dict(:pre => :Current, :g => post.id, :sym=>:soma)
     α =  isa(α, Number) ? fill(α, length(cells)) : α
 
     return CurrentStimulus(
         cells=cells,
         I=post.I,
-        I_dist = I_dist,
-        I_base = I_base,
         α = α,
         targets=targets;
+        I_base=I_base,
         kwargs...,
     )
 end
@@ -47,7 +47,7 @@ function stimulate!(p, param::CurrentStimulusParameter, time::Time, dt::Float32)
     @unpack I, I_base, cells, randcache, I_dist, α = p
     rand!(I_dist,randcache)
     @inbounds @simd for i in p.cells
-        I[i] = (I_base .+ randcache[i]) * α[i] + I[i] * (1 - α[i])
+        I[i] = (I_base[i] .+ randcache[i]) * α[i] + I[i] * (1 - α[i])
     end
 end
 

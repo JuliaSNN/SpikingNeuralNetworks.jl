@@ -302,16 +302,4 @@ function update_tripod!(
 end
 
 
-# @inline @fastmath function ΔvAdEx(v::Float32, w::Float32, θ::Float32, axial::Float32, synaptic::Float32, AdEx::AdExSoma)::Float32
-#     return 1/ AdEx.C * (
-#         AdEx.gl * (
-#                 (-v + AdEx.Er) + 
-#                 AdEx.ΔT * exp32(1 / AdEx.ΔT * (v - θ))
-#                 ) 
-#                 - w 
-#                 - synaptic 
-#                 - axial
-#         ) 
-# end ## external currents
-
 export Tripod
