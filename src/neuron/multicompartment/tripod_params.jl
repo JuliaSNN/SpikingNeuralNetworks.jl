@@ -42,8 +42,8 @@ AdExSoma
     # After spike timescales and membrane
     AP_membrane::FT = 10.0f0mV
     BAP::FT = 1.0f0mV
-    up::IT = 1ms
-    τabs::IT = 2ms
+    up::FT = 1ms
+    τabs::FT = 2ms
 end
 
 ## Synapses Tripod neuron
