@@ -34,6 +34,7 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+BenchmarkTools = "1"
 CairoMakie = "0.12.16"
 Colors = "0.12.11, 0.13"
 Dagger = "0.18"
