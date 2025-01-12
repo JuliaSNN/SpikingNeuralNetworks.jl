@@ -63,7 +63,8 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
     rowptr, colptr, I, J, index, W = dsparse(w)
 
     if isnothing(target) 
-        g = getfield(post, sym)
+        ge = getfield(post, sym_e)
+        gi = getfield(post, sym_i)
         targets = Dict(:pre => :Balanced, :g => post.id, :sym=>:soma)
     elseif typeof(target) == Symbol
         ge = getfield(post, Symbol("$(sym_e)_$target"))
@@ -74,7 +75,7 @@ function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothin
         sym_e= Symbol("$(sym_e)_d")
         ge = getfield(post, sym_e)[target]
         gi = getfield(post, sym_i)[target]
-        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>Symbol(target))
+        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>Symbol(string(sym_e, target)))
     end
 
     # if isnothing(target) 
