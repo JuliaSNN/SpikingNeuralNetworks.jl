@@ -1,4 +1,4 @@
-import Interpolations: scale, interpolate, BSpline, Linear
+import Interpolations: scale, interpolate, BSpline, Linear, NoInterp
 
 """
     struct Time
@@ -157,6 +157,14 @@ end
     push!(records, my_record[ind])
 end
 
+@inline function _record_sym(my_record::Array{T,3}, records::Vector{Array{T,3}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, my_record[ind, :, :])
+end
+
+@inline function _record_sym(my_record::Vector{Vector{T}}, records::Vector{Vector{Vector{T}}}, ind::Vector{Int}) where {T<:Real}
+    push!(records, deepcopy(my_record[ind]))
+end
+
 @inline function _record_sym(my_record::Matrix{T}, records::Vector{Matrix{T}}, ind::Vector{Int}) where {T<:Real}
     push!(records, my_record[ind,:])
 end
@@ -223,7 +231,7 @@ Initialize dictionary records for the given object, by assigning empty vectors t
 - `keys`: The variables to be monitored
 
 """
-function monitor(obj, keys; sr=1000Hz, T::Time=Time())
+function monitor(obj::Item, keys; sr=1000Hz, T::Time=Time()) where {Item<:Union{AbstractPopulation, AbstractStimulus, AbstractConnection}}
     if !haskey(obj.records, :indices)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
     end
@@ -273,7 +281,9 @@ function monitor_plast(obj, plasticity, sym)
     if !haskey(obj.records[:plasticity], name)
        obj.records[:plasticity][name] = Vector{Symbol}()
     end
-    push!(obj.records[:plasticity][name], sym)
+    if !(sym ∈ obj.records[:plasticity][name])
+        push!(obj.records[:plasticity][name], sym)
+    end
     typ = typeof(getfield(plasticity, sym))
     if !haskey(obj.records, name)
        obj.records[name] = Dict{Symbol,AbstractVector}()
@@ -290,6 +300,13 @@ function monitor(objs::Array, keys; sr=200Hz)
         monitor(obj, keys, sr=sr)
     end
 end
+
+function monitor(objs::NamedTuple, keys; sr=200Hz)
+    for obj in values(objs)
+        monitor(obj, keys, sr=sr)
+    end
+end
+
 
 """
     interpolated_record(p, sym)
@@ -309,6 +326,7 @@ function interpolated_record(p, sym)
 
     # ! adjust the end time to account for the added first element 
     _end = (size(v_dt,)[end]-1)/sr  
+    @show sr, _end
     # ! this is the recorded time (in ms), it assumes all recordings are contained in v_dt
     r_v = 0:1/sr:_end 
 
@@ -320,7 +338,7 @@ function interpolated_record(p, sym)
         axes(v_dt, i)
     end
     y = scale(v, ax..., r_v)
-    return y, extrema(r_v)
+    return y, r_v
 end
 
 function squeeze(A::AbstractArray)
@@ -337,6 +355,15 @@ function get_interpolator(A::AbstractArray)
     return Tuple(interp)
 end
 
+function record(p, sym; interpolate=true)
+    if interpolate
+        return interpolated_record(p, sym)
+    else
+        return getvariable(p, sym)
+    end
+end
+
+
 
 
 """
@@ -347,12 +374,26 @@ Returns the recorded values for a given object and key. If an id is provided, re
 function getvariable(obj, key, id=nothing)
     rec = getrecord(obj, key)
     if isa(rec[1], Matrix)
+        @debug "Matrix recording"
         array = zeros(size(rec[1])..., length(rec))
         for i in eachindex(rec)
             array[:,:,i] = rec[i]
         end
         return array
+    elseif typeof(rec[1]) <: Vector{Vector{typeof(rec[1][1][1])}} # it is a multipod
+        @debug "Multipod recording"        
+        i = length(rec) 
+        n = length(rec[1])
+        d = length(rec[1][1])
+        array = zeros(d, n, i)
+        for i in eachindex(rec)
+            for n in eachindex(rec[i])
+                array[:,n,i] = rec[i][n]
+            end
+        end
+        return array
     else
+        @debug "Vector recording"
         isnothing(id) && return hcat(rec...)
         return hcat(rec...)[id,:]
     end
@@ -392,16 +433,31 @@ clear_records(obj)
 Clears all the records of a given object.
 """
 function clear_records(obj)
-    function clean(z)
-        for (key, val) in z
-            if isa(val, Dict) 
-                clean(val)
-            else
-                empty!(val)
+    if obj isa AbstractPopulation || obj isa AbstractStimulus || obj isa AbstractConnection
+        _clean(obj.records)
+    else
+        for v in obj
+        @debug "Removing records from $(v.name)"
+            if v isa AbstractPopulation || v isa AbstractStimulus || v isa AbstractConnection
+                _clean(v.records)
             end
         end
     end
-    clean(obj.records)
+
+end
+
+function _clean(z)
+    for (key, val) in z
+        (key == :indices) && (continue)
+        (key == :sr) && (continue)
+        (key == :timestamp) && (continue)
+        (key == :plasticity) && (continue)
+        if isa(val, Dict) 
+            _clean(val)
+        else
+            empty!(val)
+        end
+    end
 end
 
 """
@@ -440,9 +496,13 @@ end
 
 function clear_monitor(objs::NamedTuple)
     for obj in values(objs)
-        clear_monitor(obj)
+        try 
+            clear_monitor(obj)
+        catch 
+            @warn "Could not clear monitor for $obj"
+        end
     end
 end
 
 
-export Time, get_time, get_step, get_dt, get_interval, update_time!, record_plast!, record_fire!, record_sym!, record!, monitor, monitor_plast, getvariable, getrecord, clear_records, clear_monitor
+export Time, get_time, get_step, get_dt, get_interval, update_time!, record_plast!, record_fire!, record_sym!, record!, monitor, monitor_plast, getvariable, getrecord, clear_records, clear_monitor, record
