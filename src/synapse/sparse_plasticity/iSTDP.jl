@@ -149,7 +149,7 @@ function plasticity!(
                 tpost[i] += 1
                 @turbo for st = rowptr[i]:(rowptr[i+1]-1) ## 
                     st = index[st]
-                    W[st] = clamp(W[st] + η * (tpre[J[st]] - 1/τy), Wmin, Wmax)
+                    W[st] = clamp(W[st] + η * (tpre[J[st]]), Wmin, Wmax)
                 end
             end
         end
