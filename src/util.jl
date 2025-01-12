@@ -217,19 +217,16 @@ Raises an assertion error if any component in the populations is not a subtype o
 function print_model(model, get_keys=false)
     model_graph = graph(model)
     @unpack pop, syn, stim = model
-    @info "================"
-    @info "Model: $(model.name)"
-    @info "----------------"
-    @info "Populations:"
+    populations = Vector{String}()
     for k in keys(pop)
         v = filter_first_vertex(model_graph, (g, v) -> get_prop(model_graph, v, :key) == k)
         name = props(model_graph, v)[:name]
         _k = get_keys ? "($k)" : ""
-        @info "$name $(_k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))"
         @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
+        push!(populations,  "$name $(_k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))")
+
     end
-    @info "----------------"
-    @info "Synapses:"
+    synapses = Vector{String}()
     for k in keys(syn)
         isa(syn[k], SNN.SynapseNormalization) && continue
         _edges, _ids = filter_edge_props(model_graph, :key, k)
@@ -238,21 +235,41 @@ function print_model(model, get_keys=false)
             _k = get_keys ? "($k)" : ""
             norm = props(model_graph, e)[:norm][i] !== :none ? "<-> norm: $(props(model_graph, e)[:norm][i])" : ""
             # @info "$name $(_k) $norm: \n $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
-            @info "$name $(_k) $norm: $(nameof(typeof(getfield(syn,k).param)))"
             @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
+            push!(synapses,"$name $(_k) $norm: $(nameof(typeof(getfield(syn,k).param)))")
         end
     end
-    @info "----------------"
-    @info "Stimuli:"
+    stimuli = Vector{String}()
     for k in keys(stim)
         _edges, _ids = filter_edge_props(model_graph, :key, k)
         for (e, i) in zip(_edges, _ids)
             name = props(model_graph, e)[:name][i]
             _k = get_keys ? "($k)" : ""
-            @info "$name $(_k): $(nameof(typeof(getfield(stim,k))))"
             # @info "$name $(_k): $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
             @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
+            push!(stimuli, "$name $(_k): $(nameof(typeof(getfield(stim,k))))")
         end
+    end
+    sort!(stimuli)
+    sort!(synapses)
+    sort!(populations)
+
+    @info "================"
+    @info "Model: $(model.name)"
+    @info "----------------"
+    @info "Populations ($(length(populations))):"
+    for p in populations
+        @info p
+    end
+    @info "----------------"
+    @info "Synapses ($(length(synapses))): "
+    for s in synapses
+        @info s
+    end
+    @info "----------------"
+    @info "Stimuli ($(length(stimuli))):"
+    for s in stimuli
+        @info s
     end
     @info "================"
 end
