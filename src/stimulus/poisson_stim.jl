@@ -207,6 +207,22 @@ function OrnsteinUhlenbeckProcess(x::Float32, param::PSParam)
 	return X
 end
 
+function SinWaveNoise(x::Float32, param::PSParam) 
+    X::Float32 = param.variables[:X]
+	θ::Float32 = param.variables[:θ]
+	μ::Float32 = param.variables[:μ]
+	σ::Float32 = param.variables[:σ]
+	dt::Float32 = param.variables[:dt]
+    ν::Float32 = param.variables[:ν]
+
+	W = σ * rand(Normal()) * sqrt(dt)
+	X = X + θ * (μ-X)*dt + W
+    param.variables[:X] = X
+
+    Y = sin(x * 2π * ν)
+    return X*0.1 + Y*μ
+end
+
 
 
 

@@ -87,7 +87,7 @@ function add_connection!(graph, pre_id, post_id, k, syn, type)
     pre_name = get_prop(graph, pre_node, :name)
     post_name = get_prop(graph, post_node, :name)
     sym = haskey(syn.targets, :sym) ? syn.targets[:sym] : :soma
-    syn_name = "$(pre_name) -> $(post_name).$sym"
+    syn_name = "$(syn.name): $(pre_name) -> $(post_name).$sym"
     id = syn.id
     if !has_edge(graph, pre_node, post_node)
         add_edge!(graph, pre_node, post_node, 

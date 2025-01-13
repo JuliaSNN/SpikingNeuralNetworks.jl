@@ -53,7 +53,6 @@ function dendrite_gplot(population, target; neuron=1, r, param=:dend_syn, nmda=t
         end
     end
     curr .= curr ./1000
-    @info size(curr), size(r)
 
     ylims =abs.(maximum(abs.(curr[neuron,:,:]))) |> x->(-x, x)
     plot(r, curr[neuron,1,:].+curr[neuron,2,:], label="Glu")
@@ -132,9 +131,9 @@ Returns:
 Example:
 """
 function plot_activity(network, Trange; conductance=false)
-    frE, interval  = SNN.firing_rate(network.pop.E,  interval = Trange, τ=10ms)
-    frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms)
-    frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms)
+    frE, interval  = SNN.firing_rate(network.pop.E,  interval = Trange, τ=10ms, interpolate=true)
+    frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms, interpolate=true)
+    frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms, interpolate=true)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
     plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
     plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
@@ -150,7 +149,8 @@ function plot_activity(network, Trange; conductance=false)
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
     rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
 
-    p5 = histogram(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Excitatory", normalize=true)
+    p5 = plot()
+    p5 = histogram!(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Excitatory", normalize=true)
     p5 = histogram!(average_firing_rate(network.pop.I1), c=:red, lc=:red, alpha=0.5, label="Inhibitory 1", normalize=true)
     p5 = histogram!(average_firing_rate(network.pop.I2), c=:green, lc=:green, alpha=0.5, label="Inhibitory 2", normalize=true)
     ## Conductance
@@ -356,7 +356,7 @@ end
     - `Plots.Plot`: Plot of the STDP kernel
 
 """
-function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+function stdp_kernel(stdp_param; ΔTs= -200.5:5:200ms, fill=true)
     ΔWs = zeros(Float32, length(ΔTs))
     Threads.@threads for i in eachindex(ΔTs)
         ΔT = ΔTs[i]
@@ -364,7 +364,7 @@ function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
         neurons = [[1], [2]]
         inputs = SpikeTime(spiketime, neurons)
         w = zeros(Float32, 2,2)
-        w[1, 2] = 1f0
+        w[2, 1] = 1f0
         st = Identity(N=max_neurons(inputs))
         stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
         syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
@@ -379,7 +379,8 @@ function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
     # R(X; f=maximum) = [f([x,0]) for x in X]
     plot(ΔTs[n_minus],ΔWs[n_minus] , legend=false, fill=fill, xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
     plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=fill,xlabel="T_post - T_pre ", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
-    plot!(ylims=:auto)
+    plot!(ylims=extrema(ΔWs).*1.4, xlims=extrema(ΔTs), framestyle=:zerolines)
+    # plot!(ylims=(-10,10), xlims=extrema(ΔTs))
 end
 
 ## Measure the weight change for decorrelated spike trains
