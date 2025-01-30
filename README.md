@@ -1,5 +1,7 @@
 # SpikingNeuralNetworks
-[![CI](https://github.com/JuliaNeuroscience/SpikingNeuralNetworks.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaNeuroscience/SpikingNeuralNetworks.jl/actions/workflows/ci.yml)
+![CI](https://github.com/JuliaNeuroscience/SpikingNeuralNetworks.jl/actions/workflows/ci.yml/badge.svg)
+
+#(https://github.com/JuliaNeuroscience/SpikingNeuralNetworks.jl/actions/workflows/ci.yml)
 
 ## Installation
 
