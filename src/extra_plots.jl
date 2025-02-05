@@ -137,7 +137,7 @@ function plot_activity(network, Trange; conductance=false)
     pr = plot(xlabel = "Time (ms)", ylabel = "Firing rate (Hz)")
     plot!(Trange, mean(frE[:,Trange], dims=1)[1,:], label = "E", c = :black)
     plot!(Trange, mean(frI1[:,Trange], dims=1)[1,:], label = "I1", c = :red)
-    plot!( Trange,mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
+    plot!(Trange, mean(frI2[:,Trange], dims=1)[1,:], label = "I2", c = :green)
     plot!(margin = 5Plots.mm, xlabel="")
     pv = nothing
     try
