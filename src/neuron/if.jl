@@ -77,7 +77,8 @@ IF
 
 function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     update_synapses!(p, param, dt)
-    HeunIntegration!(p, param, dt)
+    # Heun_update_neuron!(p, param, dt)
+    update_neuron!(p, param, dt)
     update_spike!(p, param, dt)
 end
 
@@ -109,10 +110,9 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
             continue
         end
         # Membrane potential
-        # v[i] +
-        @fastmath v[i]= 
-            (
-                -  (v[i] +  - El)/R  +# leakage
+        v[i] += 
+            dt*(
+                -  (v[i] - El)/R  +# leakage
                 -  ge[i] * (v[i] - E_e)* gsyn_e +
                 -  gi[i] * (v[i] - E_i)* gsyn_i +
                 - w[i] # adaptation
@@ -129,48 +129,43 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
 
 end
 
-function HeunIntegration!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
+function Heun_update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
+    function _update_neuron!(Δv::Vector{Float32}, p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
+        @unpack N, v, ge, gi, w, I, tabs, fire = p
+        @unpack τm,Vr, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
+        @inbounds for i = 1:N
+            if tabs[i] > 0
+                v[i] = Vr
+                fire[i] = false
+                tabs[i] -= 1
+                continue
+            end
+            Δv[i] = 
+                (
+                    -  (v[i] + Δv[i]*dt - El)/R  +# leakage
+                    -  ge[i] * (v[i] +Δv[i]*dt - E_e)* gsyn_e +
+                    -  gi[i] * (v[i] +Δv[i]*dt - E_i)* gsyn_i +
+                    - w[i] # adaptation
+                    + I[i] #synaptic term
+                ) * R / τm
+        end
+    end
     @unpack Δv_temp, Δv = p
-    Heun_update_neuron!(Δv, p, param, dt)
+    _update_neuron!(Δv, p, param, dt)
     @turbo for i in 1:p.N
         Δv_temp[i] = Δv[i]
     end
-    Heun_update_neuron!(Δv, p, param, dt)
+    _update_neuron!(Δv, p, param, dt)
     @turbo for i in 1:p.N
         p.v[i] += 0.5f0 * (Δv_temp[i] + Δv[i]) * dt
     end
-end
-
-function Heun_update_neuron!(Δv::Vector{Float32}, p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
-    @unpack N, v, ge, gi, w, I, tabs, fire = p
-    @unpack τm,Vr, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
+    !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
+    @unpack a, b, τw = param
     @inbounds for i = 1:N
-        if tabs[i] > 0
-            v[i] = Vr
-            fire[i] = false
-            tabs[i] -= 1
-            continue
-        end
-        # Membrane potential
-        # v[i] +
-        @fastmath Δv[i]= 
-            (
-                -  (v[i] + Δv[i]*dt - El)/R  +# leakage
-                -  ge[i] * (v[i] +Δv[i]*dt - E_e)* gsyn_e +
-                -  gi[i] * (v[i] +Δv[i]*dt - E_i)* gsyn_i +
-                - w[i] # adaptation
-                + I[i] #synaptic term
-            ) * R / τm
+        (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
     end
-    # Adaptation current
-    # if the adaptation timescale is zero, return
-    # !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
-    # @unpack a, b, τw = param
-    # @inbounds for i = 1:N
-    #     (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
-    # end
-
 end
+
 
 function update_synapses!(p::IF, param::IFParameter, dt::Float32)
     @unpack N, ge, gi, he, hi = p
