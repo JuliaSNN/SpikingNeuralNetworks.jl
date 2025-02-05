@@ -49,6 +49,13 @@ function indices(c::C, js::AbstractVector, is::AbstractVector) where C <: Abstra
     return indices
 end
 
+function set_plasticity!(synapse::AbstractConnection, bool::Bool )
+        synapse.param.active[1] = bool
+end
+function has_plasticity(synapse::AbstractConnection)
+        synapse.param.active[1] |> Bool
+end
+
 function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
     rowptr, colptr, I, J, index, W = dsparse(W)
     @assert length(rowptr) == length(c.rowptr) "Rowptr length mismatch"
@@ -347,9 +354,9 @@ end
 
 load_data(;path="", name="", info=nothing) = load_data(path, name, info)
 
-function load_data(path="", name="", info=nothing)
+function load_data(path="", name=nothing, info=nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
-    if isnothing(info)
+    if isnothing(name)
         throw(ArgumentError("$path is not file, config is required"))
     end
     path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
@@ -358,9 +365,9 @@ function load_data(path="", name="", info=nothing)
     return dict2ntuple(DATA)
 end
 
-function load_model(path="", name="", info=nothing)
+function load_model(path="", name=nothing, info=nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
-    if isnothing(info)
+    if isnothing(name)
         throw(ArgumentError("If path is not file, config is required"))
     end
     path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
@@ -429,4 +436,4 @@ end
 
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!, indices
+    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!, indices, set_plasticity!, has_plasticity
