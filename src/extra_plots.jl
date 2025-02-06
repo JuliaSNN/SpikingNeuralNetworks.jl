@@ -130,7 +130,7 @@ Returns:
 
 Example:
 """
-function plot_activity(network, Trange; conductance=false)
+function plot_activity(network, Trange; conductance=false, every=1)
     frE, interval  = SNN.firing_rate(network.pop.E,  interval = Trange, τ=10ms, interpolate=true)
     frI1, interval = SNN.firing_rate(network.pop.I1, interval = Trange, τ=10ms, interpolate=true)
     frI2, interval = SNN.firing_rate(network.pop.I2, interval = Trange, τ=10ms, interpolate=true)
@@ -147,7 +147,7 @@ function plot_activity(network, Trange; conductance=false)
     end
     SNN.vecplot!(pv, network.pop.E, :v_s, r = Trange, pop_average = true, label="soma")
     plot!(ylims=:auto, margin = 5Plots.mm, ylabel = "Membrane potential (mV)", legend=true, xlabel="")
-    rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="")
+    rplot = SNN.raster(network.pop, Trange, size=(900,500), margin=5Plots.mm, xlabel="", every=every)
 
     p5 = plot()
     p5 = histogram!(average_firing_rate(network.pop.E), c=:black, lc=:black, label="Excitatory", normalize=true)
