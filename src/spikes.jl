@@ -225,8 +225,9 @@ function firing_rate(
     interpolate = true,
 )
     if isempty(interval)
+        max_time =  all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
         tt0 = tt0 > 0 ? tt0 : 0.0f0
-        ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
+        ttf = ttf > 0 ? ttf : max_time
         interval = tt0:sampling:ttf
     end
     all(isempty.(spiketimes)) && return Spiketimes([zeros(Float32, length(interval)) for n in eachindex(spiketimes)]), interval
@@ -278,8 +279,9 @@ function average_firing_rate(
         tt0 = tt0,
         cache = cache,
         pop = pop,
+        interpolate=false       
     )
-    return mean(rates, dims=2)[:,1]
+    return mean.(rates)
 end
 
 function average_firing_rate(populations; kwargs...)

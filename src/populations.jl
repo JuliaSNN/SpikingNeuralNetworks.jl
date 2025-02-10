@@ -80,14 +80,23 @@ Extracts the names and the neuron ids projected from a given set of stimuli.
 
 # Example
 """
-function subpopulations(stim)
-    names = Vector{String}()
-    pops = Vector{Int}[]
+function subpopulations(stim, merge=true)
+    # names = Vector{String}()
+    # pops = Vector{Int}[]
+    populations =  Dict{String, Vector{Int}}()
     my_keys = collect(keys(stim))
     for key in my_keys
-        push!(names, getfield(stim, key).name)
-        push!(pops, getfield(stim, key).cells)
+        target = merge ? "" : "_$(getfield(stim, key).targets[:sym])"
+        name = getfield(stim, key).name*"$target"
+        cells = getfield(stim, key).cells
+        if haskey(populations, name) 
+            populations[name] = vcat(populations[name], cells) |> unique |> collect
+        else
+            push!(populations, name => cells)
+        end
     end
+    names = collect(keys(populations))
+    pops = collect(values(populations))
     return sort(names, rev=true), pops[sort(1:length(pops), by=x->names[x], rev=true)]
 end
 

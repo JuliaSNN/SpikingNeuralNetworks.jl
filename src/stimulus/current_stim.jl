@@ -18,7 +18,7 @@ end
 end
 
 
-function CurrentStimulus(post::T; cells=:ALL, α::R2=1, I_base = 10pA, kwargs...) where {T <: AbstractPopulation, R<:Real, R2<:Real}
+function CurrentStimulus(post::T; cells=:ALL, α::R=1, I_base = 10pA, kwargs...) where {T <: AbstractPopulation, R<:Real}
     if cells == :ALL
         cells = 1:post.N
     end 
