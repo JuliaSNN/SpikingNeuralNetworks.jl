@@ -1,6 +1,6 @@
 # Define the struct to hold synapse parameters for both Exponential and Mexican Hat STDP
 # STDP Parameters Structure
-using Documenter: @doc_str
+using Documenter
 abstract type STDPAbstractParameter <: SpikingSynapseParameter end
 
 ##################################################################################################
