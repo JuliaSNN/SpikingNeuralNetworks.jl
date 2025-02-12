@@ -22,13 +22,13 @@ function population_indices(P)
 end
 
 """
-    filter_populations(P, regex)
+    filter_items(P, regex)
 
 Filter populations in dictionary `P` based on a regular expression `regex`.
 Returns a named tuple of populations that match the regex.
 
 # Arguments
-- `P`: Dictionary of populations.
+- `P`: Container of items.
 - `regex`: Regular expression to match population names.
 
 # Returns
@@ -38,19 +38,6 @@ A named tuple of populations that match the regex.
 """
 
 no_noise(p) = !occursin(string("noise"), string(p.name))
-
-function filter_populations(P, condition::Function=no_noise)
-    populations = Dict{Symbol, Any}()
-    for k in keys(P)
-        p = getfield(P, k)
-        condition(p) && continue
-        p = getfield(P, k)
-        push!(populations,k => p)
-    end
-
-    return dict2ntuple(sort(populations, by = x ->getfield(P,x).name))
-end
-
 
 function filter_items(P; condition::Function=no_noise)
     populations = Dict{Symbol, Any}()
