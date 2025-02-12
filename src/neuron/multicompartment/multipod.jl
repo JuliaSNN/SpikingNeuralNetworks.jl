@@ -67,7 +67,7 @@ end
 
 
 function Multipod(ds::R; N, Nd, kwargs...) where {R <: Real}
-    dendrites = [ds for d in 1:Nd]
+    dendrites = [ds for _ in 1:Nd]
     return Multipod(dendrites, N=N, Nd=Nd; kwargs...)
 end
 
@@ -82,27 +82,40 @@ function Multipod(
     dend_syn = synapsearray(dend_syn)
 
     Nd = length(ds)
-    dendrites = [create_dendrite(N, d) for d in ds]
-    gax, cd, gm = zeros(Nd, N), zeros(Nd, N), zeros(Nd, N)
-    for i in eachindex(dendrites)
-        local d = dendrites[i]
-        gax[i, :] = d.gax
-        cd[i, :] = d.C
-        gm[i, :] = d.gm
-    end
-    return Multipod(
-        Nd = Nd,
-        N = N,
-        dendrites= dendrites,
-        soma_syn = synapsearray(soma_syn),
-        dend_syn = synapsearray(dend_syn),
-        NMDA = NMDA,
-        α= [syn.α for syn in dend_syn],
-        gax = gax,
-        cd = cd,
-        gm = gm;
-        kwargs...
-    )
+
+    # if Nd == 2
+    #     return Tripod(
+    #         ds[1],
+    #         ds[2];
+    #         N=N,
+    #         soma_syn = soma_syn,
+    #         dend_syn = dend_syn,
+    #         NMDA=NMDA,
+    #         kwargs...
+    #     )
+    # else
+        dendrites = [create_dendrite(N, d) for d in ds]
+        gax, cd, gm = zeros(Nd, N), zeros(Nd, N), zeros(Nd, N)
+        for i in eachindex(dendrites)
+            local d = dendrites[i]
+            gax[i, :] = d.gax
+            cd[i, :] = d.C
+            gm[i, :] = d.gm
+        end
+        return Multipod(
+            Nd = Nd,
+            N = N,
+            dendrites= dendrites,
+            soma_syn = synapsearray(soma_syn),
+            dend_syn = synapsearray(dend_syn),
+            NMDA = NMDA,
+            α= [syn.α for syn in dend_syn],
+            gax = gax,
+            cd = cd,
+            gm = gm;
+            kwargs...
+        )
+    # end
 end
 
 function integrate!(p::Multipod, param::AdExSoma, dt::Float32)
