@@ -32,7 +32,7 @@ function spiketimes(
     neurons = p.records[:fire][:neurons]
 
     if length(firing_time) < 2
-        @warn "No spikes in population"
+        # @warn "No spikes in population"
         return _spiketimes
     end
     if isnothing(interval)

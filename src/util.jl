@@ -360,7 +360,9 @@ function load_data(path="", name=nothing, info=nothing)
     end
     path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
     @info "Loading model from $(path)"
+    tic = time()
     DATA = DrWatson.load(path)
+    @info "Data loaded in $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
 
@@ -372,8 +374,10 @@ function load_model(path="", name=nothing, info=nothing)
         throw(ArgumentError("If path is not file, config is required"))
     end
     path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    tic = time()
     @info "Loading model from $(path)"
     DATA = DrWatson.load(path)
+    @info "Model loaded in $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
 export load_data, load_model, save_model, savemodel
