@@ -364,14 +364,14 @@ function stdp_kernel(stdp_param; ΔTs= -200.5:5:200ms, fill=true)
         neurons = [[1], [2]]
         inputs = SpikeTime(spiketime, neurons)
         w = zeros(Float32, 2,2)
-        w[2, 1] = 1f0
+        w[2, 1] = 50f0
         st = Identity(N=max_neurons(inputs))
         stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
         syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
         model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
         SNN.monitor(model.pop..., [:fire])
         train!(model=model, duration=3000ms, dt=0.1ms)
-        ΔWs[i] = model.syn[1].W[1] - 1
+        ΔWs[i] = model.syn[1].W[1] - 50f0
     end
 
     n_plus = findall(ΔTs .>= 0)
@@ -397,8 +397,43 @@ function stdp_weight_decorrelated(stdp_param)
     violin((model.syn[1].W .-1)/T*60^2, legend=false, xlabel="Neuron", ylabel="ΔW/h ", title="STDP", size=(500, 300))
 end
 
+#
+function plot_iSTDP_activity(network, config; interval= 1s:20ms:15s)
+    i_to_e1 = SNN.filter_items(network.syn, condition=p->occursin("I1_to_E", p.name))
+    i_to_e2 = SNN.filter_items(network.syn, condition=p->occursin("I2_to_E", p.name))
+    w_i1 = map(eachindex(i_to_e1)) do i
+        w, r_t = record(i_to_e1[i], :W, interpolate=true)
+        mean(w, dims=1)[1,:]
+    end |> collect
+    w_i2 = map(eachindex(i_to_e2)) do i
+        w, r_t = record(i_to_e2[i], :W, interpolate=true)
+        mean(w, dims=1)[1,:]
+    end |> collect
 
-export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot
+    i_to_e = SNN.filter_items(network.syn, condition=p->occursin("I1_to_E", p.name))
+    _, r_t= record(i_to_e[1], :W, interpolate=true)
+    p11 = plot(r_t./1000, w_i1, xlabel="Time (s)", ylabel="Synaptic weight", legend=:topleft, title="I to E synapse", labels=["pop 1" "pop 2" "pop 3" "pop 4"], lw=4)
+    p12 = plot(r_t./1000, w_i2, xlabel="Time (s)", ylabel="Synaptic weight", legend=:topleft, title="I to E synapse", labels=["pop 1" "pop 2" "pop 3" "pop 4"], lw=4)
+    p1 = plot(p11,p12,layout=(2,1))
+
+    p31 = SNN.stdp_kernel(i_to_e1[1].param, fill=false)
+    p32 = SNN.stdp_kernel(i_to_e2[1].param, fill=false)
+    @unpack istdp_ratio = config
+    annotate!(p31, (0, 1), text("$(round(Int,100*(istdp_ratio)))%", 18, :black))
+    annotate!(p32, (0, 1), text("$(round(Int,100*(1-istdp_ratio)))%", 18, :black))
+    p3 = plot(p31, p32, layout=(2,1))
+
+    Epop = SNN.filter_items(network.pop, condition=p->occursin("E", p.name))
+    rates, interval = SNN.firing_rate(Epop, interval=interval, interpolate=false)
+    rates = mean.(rates)
+    p2 = plot(interval./1000, rates, xlabel="Time (s)", ylabel="Firing rate (Hz)", legend=:topleft, title="Firing rate of the exc. pop", lw=4, labels= ["pop 1" "pop 2" "pop 3" "pop 4"])#, yscale=:log10, ylims=(0.1,50))
+    p4 = SNN.raster(network.pop, interval, every=3)
+    plot(p3, p1, p4, p2, layout=(2,2), size=(1800,1800), margin=5Plots.mm)
+    # plot(p4, p2, layout=(2,1), size=(800,800), margin=5Plots.mm)
+end
+
+
+export stp_plot, plot_weights, plot_activity, dendrite_gplot, soma_gplot, stdp_kernel, stdp_integral, stdp_weight_decorrelated, plot_iSTDP_activity
 
 
 """
