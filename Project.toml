@@ -4,6 +4,7 @@ version = "0.1.1"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Dagger = "d58978e5-989f-55fb-8d15-ea34adc7bf54"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -25,17 +26,20 @@ RollingFunctions = "b0e4dd01-7b14-53d8-9b45-175a3e362653"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 ThreadTools = "dbf13d8f-d36e-4350-8970-f3a99faba1a8"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
+DSP = "0.8.2"
 Distributions = "0.25.112"
 Documenter = "1.8.0"
 Graphs = "1.12.0"
 Interpolations = "0.15.1"
 MetaGraphs = "0.8.0"
 Requires = "0.5, 1"
+StatsBase = "0.34.4"
 UnPack = "1"
 julia = "1"
 
