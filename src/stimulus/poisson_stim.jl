@@ -60,8 +60,9 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjoint=nothing, N::Int=200,N_pre::Int=5, p_post =0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
+function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjoint=nothing, N::Int=100,N_pre::Int=50, p_post =0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
 
+    ## select the cells that receive the stimulus
     if cells == :ALL
         cells = 1:post.N
     end 
@@ -74,6 +75,8 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjo
             end
         end
     end
+
+    ## construct the connectivity matrix
     w = zeros(Float32, length(cells), N)
     for i in 1:length(cells)
         pre = rand(1:N, N_pre)
@@ -128,20 +131,20 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusFixed, time::Time,
     @inbounds @simd for j = 1:N
         if randcache[j] < rate[j]*dt/N_pre
             fire[j] = true
-        else
-            fire[j] = false
-        end
-    end
-    for j = 1:N # loop on presynaptic cells
-        if fire[j] # presynaptic fire
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
                 g[cells[I[s]]] += W[s]
             end
+        else
+            fire[j] = false
         end
     end
 end
 
 function stimulate!(p::PoissonStimulus, param::PoissonStimulusInterval, time::Time, dt::Float32)
+    @unpack active = param
+    if !active[1]
+        return
+    end
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
     @unpack rate, intervals = param 
     for int in intervals
@@ -154,17 +157,17 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusInterval, time::Ti
     @inbounds @simd for j = 1:N
         if randcache[j] < rate[j]*dt/N_pre
             fire[j] = true
+            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                g[cells[I[s]]] += W[s]
+            end
         else
             fire[j] = false
         end
     end
-    for j = 1:N # loop on presynaptic cells
-        if fire[j] # presynaptic fire
-            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[cells[I[s]]] += W[s]
-            end
-        end
-    end
+    # for j = 1:N # loop on presynaptic cells
+    #     if fire[j] # presynaptic fire
+    #     end
+    # end
 end
 
 function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Time, dt::Float32)
@@ -199,8 +202,8 @@ function OrnsteinUhlenbeckProcess(x::Float32, param::PSParam)
 	σ::Float32 = param.variables[:σ]
 	dt::Float32 = param.variables[:dt]
 
-	W = σ * rand(Normal()) * sqrt(dt)
-	X = X + θ * (μ-X)*dt + W
+	ξ =  rand(Normal())  
+	X = X + θ * (μ-X)*dt + σ*ξ*dt
 	X = X > 0.f0 ? X : 0.f0
 
     param.variables[:X] = X 
@@ -210,13 +213,13 @@ end
 function SinWaveNoise(x::Float32, param::PSParam) 
     X::Float32 = param.variables[:X]
 	θ::Float32 = param.variables[:θ]
-	μ::Float32 = param.variables[:μ]
 	σ::Float32 = param.variables[:σ]
 	dt::Float32 = param.variables[:dt]
     ν::Float32 = param.variables[:ν]
+	μ::Float32 = param.variables[:μ]
 
 	W = σ * rand(Normal()) * sqrt(dt)
-	X = X + θ * (μ-X)*dt + W
+	X = X + θ * (μ-X)*dt - W
     param.variables[:X] = X
 
     Y = sin(x * 2π * ν)
