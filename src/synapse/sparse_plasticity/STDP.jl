@@ -85,14 +85,14 @@ function plasticity!(
             tpost[i] += dt * (-tpost[i]) / τpost
         end
         @simd for i in findall(fireI)
-                tpost[i] += A_post/τpost
+                tpost[i] += A_post
         end
 
         @turbo for j in eachindex(fireJ)
             tpre[j] += dt * (-tpre[j]) / τpre
         end
         @simd for j in findall(fireJ)
-                tpre[j] += A_pre/τpre
+                tpre[j] += A_pre
         end
 
     end
