@@ -144,3 +144,5 @@ macro snn_kw(str)
         $(esc(ctor))
     end
 end
+
+export @symdict, @snn_kw
