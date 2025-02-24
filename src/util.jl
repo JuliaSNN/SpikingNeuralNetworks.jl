@@ -84,7 +84,7 @@ function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
         # if w is not defined, construct a random sparse matrix with `dist` with `μ` and `σ`. 
         w = rand(dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
         w[[n for n in eachindex(w[:]) if rand() > ρ]] .= 0
-        w[w .< 0] .= 0 
+        w[w .<= 0] .= 0 
         w = sparse(w)
     else
         # if w is defined, convert it to a sparse matrix
@@ -405,6 +405,12 @@ function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
     return data_path
 end
 
+
+function save_name(;path, name=randstring(10),info=nothing, kwargs...)
+    model_path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    return model_path
+end
+
 function save_parameters(;path, parameters, name=randstring(10),info=nothing, file_path, force=false)
     @info "Parameters: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
 
@@ -419,7 +425,7 @@ function save_parameters(;path, parameters, name=randstring(10),info=nothing, fi
     return 
 end
 
-export save_model, load_model, load_data, save_parameters
+export save_model, load_model, load_data, save_parameters, save_name
 
    
 
