@@ -8,17 +8,20 @@ end
     param::IdentityParam = IdentityParam()
     N::IT = 100
     g::VFT = zeros(N)
+    spikecount::VFT = zeros(N)
     h::VFT = zeros(N)
     fire::VBT = zeros(Bool, N)
     records::Dict = Dict()
 end
 
 function integrate!(p::Identity, param::IdentityParam, dt::Float32)
-    @unpack g,h, fire = p
+    @unpack g,h, fire, spikecount = p
     for i = eachindex(g)
         h[i]+=g[i]
+        spikecount[i] = 0f0
         if g[i] > 0
             fire[i] = true
+            spikecount[i] += Float32(g[i])
         else
             fire[i] = false
         end
