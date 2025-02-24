@@ -88,14 +88,14 @@ function train!(; model, kwargs...)
     pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
     syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
     stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
-    train!(pop,syn,stim; kwargs...,)
+    train!(pop, syn, stim; kwargs...)
 end
 
 function sim!(; model, kwargs...)
     pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
     syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
     stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
-    sim!(pop,syn,stim; kwargs...)
+    sim!(pop, syn, stim; kwargs...)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
@@ -112,7 +112,7 @@ function sim!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
-    record_zero!(P,C,S,T)
+    record_zero!(P, C, S, T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
@@ -135,7 +135,7 @@ function train!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
-    record_zero!(P,C,S,T)
+    record_zero!(P, C, S, T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
@@ -154,16 +154,16 @@ function train!(
     end
 end
 
-function record_zero!(P,C,S,T)
+function record_zero!(P, C, S, T)
     get_time(T) > 0.0f0 && return
     for p in P
-        record!(p,T)
+        record!(p, T)
     end
     for c in C
-        record!(c,T)
+        record!(c, T)
     end
     for s in S
-        record!(s,T)
+        record!(s, T)
     end
 end
 

@@ -22,7 +22,7 @@ end
     ΔT::FT = 2mV # Slope factor
     τabs::FT = 2ms # Absolute refractory period
     #synapses
-end 
+end
 
 
 
@@ -30,7 +30,7 @@ end
     VFT = Vector{Float32},
     VBT = Vector{Bool},
     VIT = Vector{Int32},
-    IFT <:AbstractIFParameter,
+    IFT<:AbstractIFParameter,
 } <: AbstractGeneralizedIF
     name::String = "IFCurrent"
     id::String = randstring(12)
@@ -61,11 +61,10 @@ function integrate!(p::IFCurrent, param::T, dt::Float32) where {T<:AbstractIFPar
             continue
         end
 
-        v[i] +=
-            dt * (
-                -(v[i] - El)  # leakage
-                + R * (ge[i] - gi[i] + I[i]) #synaptic term
-            ) / τm
+        v[i] += dt * (
+            -(v[i] - El)  # leakage
+            + R * (ge[i] - gi[i] + I[i]) #synaptic term
+        ) / τm
 
     end
     update_synapses!(p, param, dt)
@@ -73,7 +72,7 @@ function integrate!(p::IFCurrent, param::T, dt::Float32) where {T<:AbstractIFPar
     @inbounds for i = 1:N
         fire[i] = v[i] > Vt
         v[i] = ifelse(fire[i], Vr, v[i])
-        tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
+        tabs[i] = ifelse(fire[i], round(Int, τabs / dt), tabs[i])
     end
 end
 
@@ -89,8 +88,8 @@ end
 function update_synapses!(p::IFCurrent, param::IFCurrentDeltaParameter, dt::Float32)
     @unpack N, ge, gi = p
     @inbounds for i = 1:N
-        ge[i] = 0.f0   
-        gi[i] = 0.f0
+        ge[i] = 0.0f0
+        gi[i] = 0.0f0
     end
 end
 

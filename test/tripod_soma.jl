@@ -42,11 +42,11 @@ vcat(SNN.getrecord(E, :ge_s)...)
 vcat(SNN.getrecord(E, :gi_s)...)
 
 plot(
-    SNN.vecplot(E, :ge_s, r=1:0.01:250),
-    SNN.vecplot(E, :gi_s, r=1:0.01:250),
-    SNN.vecplot(E, :v_s, r=1:0.01:250),
-    SNN.vecplot(E, :v_d1, r=1:0.01:250),
-    SNN.vecplot(E, :w_s, r=1:0.01:250),
+    SNN.vecplot(E, :ge_s, r = 1:0.01:250),
+    SNN.vecplot(E, :gi_s, r = 1:0.01:250),
+    SNN.vecplot(E, :v_s, r = 1:0.01:250),
+    SNN.vecplot(E, :v_d1, r = 1:0.01:250),
+    SNN.vecplot(E, :w_s, r = 1:0.01:250),
     layout = (5, 1),
     size = (500, 900),
     linky = true,

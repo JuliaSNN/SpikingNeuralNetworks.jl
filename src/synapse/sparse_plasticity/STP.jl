@@ -16,7 +16,7 @@ end
     _ρ::VFT = ones(Npost) # postsynaptic spiking time
 end
 
-function plasticityvariables(param::T, Npre, Npost) where T <: STPParameter
+function plasticityvariables(param::T, Npre, Npost) where {T<:STPParameter}
     return STPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -56,22 +56,22 @@ function plasticity!(
     plasticity::STPVariables,
     dt::Float32,
     T::Time,
-) where PT <: AbstractSparseSynapse
-    @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, ρ,index = c
+) where {PT<:AbstractSparseSynapse}
+    @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, ρ, index = c
     @unpack u, x, _ρ = plasticity
     @unpack U, τF, τD, Wmax, Wmin = param
 
     @simd for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
         if fireJ[j]
             u[j] += U * (1 - u[j])
-            x[j] += (- u[j] * x[j])
+            x[j] += (-u[j] * x[j])
         end
     end
 
     # update pre-synaptic spike trace
     @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
-        @fastmath u[j] += dt*(U- u[j])/τF  
-        @fastmath x[j] += dt*(1- x[j])/τD 
+        @fastmath u[j] += dt * (U - u[j]) / τF
+        @fastmath x[j] += dt * (1 - x[j]) / τD
         @fastmath _ρ[j] = u[j] * x[j]
     end
 
@@ -82,4 +82,4 @@ function plasticity!(
     end
 end
 
-export  STPParameter, STPVariables, plasticityvariables, plasticity!
+export STPParameter, STPVariables, plasticityvariables, plasticity!

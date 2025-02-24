@@ -2,7 +2,8 @@
     lr::FT = 1e-3
 end
 
-@snn_kw mutable struct RateSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:AbstractConnection
+@snn_kw mutable struct RateSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:
+                       AbstractConnection
     id::String = randstring(12)
     param::RateSynapseParameter = RateSynapseParameter()
     colptr::VIT # column pointer of sparse W

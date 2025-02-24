@@ -1,7 +1,12 @@
 abstract type AbstractGeneralizedIFParameter <: AbstractPopulationParameter end
 abstract type AbstractGeneralizedIF <: AbstractPopulation end
 integrate!(p::AbstractPopulation, param::AbstractPopulationParameter, dt::Float32) = nothing
-plasticity!(p::AbstractPopulation, param::AbstractPopulationParameter, dt::Float32, T::Time) = nothing
+plasticity!(
+    p::AbstractPopulation,
+    param::AbstractPopulationParameter,
+    dt::Float32,
+    T::Time,
+) = nothing
 
 include("noisy_if.jl")
 include("poisson.jl")

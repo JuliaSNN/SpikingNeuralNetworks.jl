@@ -1,6 +1,6 @@
 abstract type PoissonStimulusParameter end
 @snn_kw struct PoissonStimulusVariable{VFT} <: PoissonStimulusParameter
-    variables::Dict{Symbol, Any}=Dict{Symbol, Any}()
+    variables::Dict{Symbol,Any} = Dict{Symbol,Any}()
     rate::Function
     active::Vector{Bool} = [true]
 end
@@ -9,16 +9,20 @@ end
     rate::Vector{R}
 end
 
-@snn_kw struct PoissonStimulusInterval{R=Float32, } <: PoissonStimulusParameter
+@snn_kw struct PoissonStimulusInterval{R = Float32} <: PoissonStimulusParameter
     rate::Vector{R} = fill(0.0, N)
     intervals::Vector{Vector{R}}
 end
 
 PSParam = PoissonStimulusVariable
 
-@snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
-
-                       AbstractStimulus
+@snn_kw struct PoissonStimulus{
+    VFT = Vector{Float32},
+    VBT = Vector{Bool},
+    VIT = Vector{Int},
+    IT = Int32,
+} <:
+               AbstractStimulus
     id::String = randstring(12)
     name::String = "Poisson"
     param::PoissonStimulusParameter
@@ -60,14 +64,26 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjoint=nothing, N::Int=100,N_pre::Int=50, p_post =0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
+function PoissonStimulus(
+    post::T,
+    sym::Symbol,
+    target = nothing;
+    cells = [],
+    disjoint = nothing,
+    N::Int = 100,
+    N_pre::Int = 50,
+    p_post = 0.05f0,
+    μ = 1.0f0,
+    param::Union{PoissonStimulusParameter,R},
+    kwargs...,
+) where {T<:AbstractPopulation,R<:Real}
 
     ## select the cells that receive the stimulus
     if cells == :ALL
         cells = 1:post.N
-    end 
+    end
     if isempty(cells)
-        for i in  1:post.N
+        for i = 1:post.N
             if !isnothing(disjoint) && (i in disjoint)
                 continue
             elseif rand() < p_post
@@ -78,27 +94,27 @@ function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjo
 
     ## construct the connectivity matrix
     w = zeros(Float32, length(cells), N)
-    for i in 1:length(cells)
+    for i = 1:length(cells)
         pre = rand(1:N, N_pre)
         w[i, pre] .= 1
     end
-    w = μ* sparse(w)
+    w = μ * sparse(w)
 
     # normalize the strength of the synapses to each postsynaptic cell
     # w = SNN.dropzeros(w .* μ ./sum(w, dims=2))
 
     rowptr, colptr, I, J, index, W = dsparse(w)
-    if isnothing(target) 
+    if isnothing(target)
         g = getfield(post, sym)
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>:soma)
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym => :soma)
     elseif typeof(target) == Symbol
-        sym= Symbol("$(sym)_$target")
+        sym = Symbol("$(sym)_$target")
         g = getfield(post, sym)
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>target)
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym => target)
     elseif typeof(target) == Int
-        sym= Symbol("$(sym)_d")
+        sym = Symbol("$(sym)_d")
         g = getfield(post, sym)[target]
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>Symbol(string(sym, target)))
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym => Symbol(string(sym, target)))
     end
 
     if typeof(param) <: Real
@@ -124,12 +140,17 @@ end
 
 Generate a Poisson stimulus for a postsynaptic population.
 """
-function stimulate!(p::PoissonStimulus, param::PoissonStimulusFixed, time::Time, dt::Float32)
+function stimulate!(
+    p::PoissonStimulus,
+    param::PoissonStimulusFixed,
+    time::Time,
+    dt::Float32,
+)
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
-    @unpack rate = param 
+    @unpack rate = param
     rand!(randcache)
     @inbounds @simd for j = 1:N
-        if randcache[j] < rate[j]*dt/N_pre
+        if randcache[j] < rate[j] * dt / N_pre
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
                 g[cells[I[s]]] += W[s]
@@ -140,22 +161,27 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusFixed, time::Time,
     end
 end
 
-function stimulate!(p::PoissonStimulus, param::PoissonStimulusInterval, time::Time, dt::Float32)
+function stimulate!(
+    p::PoissonStimulus,
+    param::PoissonStimulusInterval,
+    time::Time,
+    dt::Float32,
+)
     @unpack active = param
     if !active[1]
         return
     end
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
-    @unpack rate, intervals = param 
+    @unpack rate, intervals = param
     for int in intervals
-        if !(get_time(time) > int[1] &&  get_time(time) < int[end])
+        if !(get_time(time) > int[1] && get_time(time) < int[end])
             return
         end
     end
     # @info "Stimulating at $(get_time(time))"
     rand!(randcache)
     @inbounds @simd for j = 1:N
-        if randcache[j] < rate[j]*dt/N_pre
+        if randcache[j] < rate[j] * dt / N_pre
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
                 g[cells[I[s]]] += W[s]
@@ -170,14 +196,19 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusInterval, time::Ti
     # end
 end
 
-function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Time, dt::Float32)
+function stimulate!(
+    p::PoissonStimulus,
+    param::PoissonStimulusVariable,
+    time::Time,
+    dt::Float32,
+)
     @unpack active = param
     if !active[1]
         return
     end
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
     myrate::Float32 = param.rate(get_time(time), param)
-    myrate*=dt/N_pre
+    myrate *= dt / N_pre
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < myrate
@@ -195,38 +226,44 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Ti
     end
 end
 
-function OrnsteinUhlenbeckProcess(x::Float32, param::PSParam) 
+function OrnsteinUhlenbeckProcess(x::Float32, param::PSParam)
     X::Float32 = param.variables[:X]
-	θ::Float32 = param.variables[:θ]
-	μ::Float32 = param.variables[:μ]
-	σ::Float32 = param.variables[:σ]
-	dt::Float32 = param.variables[:dt]
+    θ::Float32 = param.variables[:θ]
+    μ::Float32 = param.variables[:μ]
+    σ::Float32 = param.variables[:σ]
+    dt::Float32 = param.variables[:dt]
 
-	ξ =  rand(Normal())  
-	X = X + θ * (μ-X)*dt + σ*ξ*dt
-	X = X > 0.f0 ? X : 0.f0
+    ξ = rand(Normal())
+    X = X + θ * (μ - X) * dt + σ * ξ * dt
+    X = X > 0.0f0 ? X : 0.0f0
 
-    param.variables[:X] = X 
-	return X
+    param.variables[:X] = X
+    return X
 end
 
-function SinWaveNoise(x::Float32, param::PSParam) 
+function SinWaveNoise(x::Float32, param::PSParam)
     X::Float32 = param.variables[:X]
-	θ::Float32 = param.variables[:θ]
-	σ::Float32 = param.variables[:σ]
-	dt::Float32 = param.variables[:dt]
+    θ::Float32 = param.variables[:θ]
+    σ::Float32 = param.variables[:σ]
+    dt::Float32 = param.variables[:dt]
     ν::Float32 = param.variables[:ν]
-	μ::Float32 = param.variables[:μ]
+    μ::Float32 = param.variables[:μ]
 
-	W = σ * rand(Normal()) * sqrt(dt)
-	X = X + θ * (μ-X)*dt - W
+    W = σ * rand(Normal()) * sqrt(dt)
+    X = X + θ * (μ - X) * dt - W
     param.variables[:X] = X
 
     Y = sin(x * 2π * ν)
-    return X*0.1 + Y*μ
+    return X * 0.1 + Y * μ
 end
 
 
 
 
-export PoissonStimulus, stimulate!, PSParam, PoissonStimulusParameter, PoissonStimulusVariable, PoissonStimulusFixed, PoissonStimulusInterval
+export PoissonStimulus,
+    stimulate!,
+    PSParam,
+    PoissonStimulusParameter,
+    PoissonStimulusVariable,
+    PoissonStimulusFixed,
+    PoissonStimulusInterval

@@ -26,8 +26,8 @@ Returns:
 function spiketimes(
     p::T;
     interval = nothing,
-    kwargs...
-) where {T<:Union{AbstractPopulation, AbstractStimulus}}
+    kwargs...,
+) where {T<:Union{AbstractPopulation,AbstractStimulus}}
     _spiketimes = init_spiketimes(p.N)
 
     firing_time = p.records[:fire][:time]
@@ -91,8 +91,12 @@ end
 
     Return the total number of spikes of the cells in the selected interval
 """
-function spikecount(pop::T, Trange::Q, cells::Vector{Int}) where {T<:AbstractPopulation, Q<:AbstractVector}
-    return length.(spiketimes(pop, interval=Trange)[cells]) |>sum
+function spikecount(
+    pop::T,
+    Trange::Q,
+    cells::Vector{Int},
+) where {T<:AbstractPopulation,Q<:AbstractVector}
+    return length.(spiketimes(pop, interval = Trange)[cells]) |> sum
 end
 
 export spikecount
@@ -199,51 +203,63 @@ function firing_rate(
 )
     # Check if the interval is empty and create an interval
     if isempty(interval)
-        max_time =  all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
+        max_time =
+            all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
         tt0 = tt0 > 0 ? tt0 : 0.0f0
         ttf = ttf > 0 ? ttf : max_time
         interval = tt0:sampling:ttf
     end
-    all(isempty.(spiketimes)) && return Spiketimes([zeros(Float32, length(interval)) for n in eachindex(spiketimes)]), interval
+    all(isempty.(spiketimes)) && return Spiketimes([
+        zeros(Float32, length(interval)) for n in eachindex(spiketimes)
+    ]),
+    interval
 
     # Create the alpha kernel
-    kernel_length = τ*10  # Length of the kernel in ms
+    kernel_length = τ * 10  # Length of the kernel in ms
     bin_width = step(interval)
     kernel_time = Float32.(0.0:bin_width:kernel_length)
     τ = Float32(τ)
     alpha_kernel = [alpha_function(t, τ) for t in kernel_time]
     alpha_kernel ./= sum(alpha_kernel)
 
-    rates = tmap(eachindex(spiketimes)) do n 
-        spike_train, _ = bin_spiketimes(spiketimes[n]; time_range=interval, do_sparse=false)
-        conv(spike_train, alpha_kernel)[1:length(interval)].*s
-    end 
+    rates = tmap(eachindex(spiketimes)) do n
+        spike_train, _ =
+            bin_spiketimes(spiketimes[n]; time_range = interval, do_sparse = false)
+        conv(spike_train, alpha_kernel)[1:length(interval)] .* s
+    end
     # )
 
     if interpolate
         _rates = hcat(rates...)'
         interp = get_interpolator(_rates)
-        rates = Interpolations.scale(Interpolations.interpolate(_rates, interp), 1:length(spiketimes), interval)
+        rates = Interpolations.scale(
+            Interpolations.interpolate(_rates, interp),
+            1:length(spiketimes),
+            interval,
+        )
     else
         rates = copy(hcat(rates...)')
     end
     return rates, interval
 end
 
-function firing_rate(population::T; kwargs...) where {T<:Union{AbstractPopulation, AbstractStimulus}}
+function firing_rate(
+    population::T;
+    kwargs...,
+) where {T<:Union{AbstractPopulation,AbstractStimulus}}
     return firing_rate(SNN.spiketimes(population); kwargs...)
 end
 
-function firing_rate(populations; mean_pop=false, kwargs...)
-    spiketimes_pop, names_pop  = spiketimes_split(populations)
+function firing_rate(populations; mean_pop = false, kwargs...)
+    spiketimes_pop, names_pop = spiketimes_split(populations)
     fr_pop = Matrix{Float32}[]
     interval = nothing
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
         push!(fr_pop, rates)
     end
-    if mean_pop == true 
-        fr_pop = [mean(fr, dims=1)[1,:] for fr in fr_pop]
+    if mean_pop == true
+        fr_pop = [mean(fr, dims = 1)[1, :] for fr in fr_pop]
     end
     return fr_pop, interval, names_pop
 end
@@ -267,14 +283,15 @@ function average_firing_rate(
         tt0 = tt0,
         cache = cache,
         pop = pop,
-        interpolate=false       
+        interpolate = false,
     )
     return mean.(rates)
 end
 
 function average_firing_rate(populations; interval)
     spiketimes = SNN.spiketimes(populations)
-    return sort(vcat(spiketimes...))  |> x-> fit(Histogram, x, interval ).weights, interval[1:end-1]
+    return sort(vcat(spiketimes...)) |> x -> fit(Histogram, x, interval).weights,
+    interval[1:end-1]
 end
 
 """
@@ -292,12 +309,18 @@ Calculate the cross-correlation of two spike trains.
 - `lags`: The time lags in milliseconds.
 - `auto_corr`: The auto-correlation for each time lag.
 """
-function compute_cross_correlogram(spike_times1::Vector{Float32}, spike_times2::Vector{Float32}=Float32[]; bin_width=1.0ms, max_lag=100.0, shift_predictor=false)
+function compute_cross_correlogram(
+    spike_times1::Vector{Float32},
+    spike_times2::Vector{Float32} = Float32[];
+    bin_width = 1.0ms,
+    max_lag = 100.0,
+    shift_predictor = false,
+)
     # Create a binary spike train
     # bin_width = 1000/sr
 
     spike_train1, time_range = bin_spiketimes(spike_times1; max_lag, bin_width)
-    if !isempty(spike_times2) 
+    if !isempty(spike_times2)
         if shift_predictor
             spike_times2 = spike_times2 .+ 1000.0
         end
@@ -308,18 +331,18 @@ function compute_cross_correlogram(spike_times1::Vector{Float32}, spike_times2::
 
     # Compute the auto-correlation (cross-correlogram with itself)
     _corr = xcorr(spike_train1, spike_train2)
-    
+
     # Compute time lags
     bins = length(_corr) ÷ 2
     lags = (-bins:bins) .* bin_width
-    
+
     # Trim the lags and auto-correlation to the specified max_lag
     lag_mask = abs.(lags) .<= max_lag
     lags = lags[lag_mask]
     _corr = _corr[lag_mask]
 
-    isempty(spike_times2) && (auto_corr[length(lags)÷2+1 ] = 0)
-    
+    isempty(spike_times2) && (auto_corr[length(lags)÷2+1] = 0)
+
     return lags, _corr
 end
 
@@ -339,19 +362,25 @@ The function returns the covariance density vectors for positive and negative ti
 - `lags`:: Vector{Float32}: The time lags in milliseconds.
 - `covariance_density`:: Vector{Float32}: The covariance density for each time lag.
 """
-function compute_covariance_density(spike_times1::Vector{Float32}, spike_times2::Vector{Float32}; bin_width=1ms, max_lag=200ms)
+function compute_covariance_density(
+    spike_times1::Vector{Float32},
+    spike_times2::Vector{Float32};
+    bin_width = 1ms,
+    max_lag = 200ms,
+)
     # Compute the cross-correlogram
-    lags, cross_corr = compute_cross_correlogram(spike_times1, spike_times2; bin_width, max_lag)
+    lags, cross_corr =
+        compute_cross_correlogram(spike_times1, spike_times2; bin_width, max_lag)
     spike_train1, _ = bin_spiketimes(spike_times1; max_lag, bin_width)
     spike_train2, _ = bin_spiketimes(spike_times2; max_lag, bin_width)
-    
+
     # Compute mean firing rates
     λ_x = mean(spike_train1) / bin_width
     λ_y = mean(spike_train2) / bin_width
-    
+
     # Compute covariance density
     covariance_density = cross_corr .- (λ_x * λ_y * bin_width * length(spike_train1))
-    
+
     return lags, covariance_density
 end
 
@@ -373,8 +402,15 @@ containing the time points corresponding to the center of each bin.
 - `count`: A sparse matrix containing the spike counts for each time bin.
 - `r`: An array of time points corresponding to the center of each time bin.
 """
-function bin_spiketimes(spike_times::Vector{Float32}; time_range=nothing, max_lag=500ms, bin_width=1.0ms, do_sparse=true)
-    time_range = !isnothing(time_range) ? time_range : (0.0:bin_width:maximum(spike_times) + max_lag)
+function bin_spiketimes(
+    spike_times::Vector{Float32};
+    time_range = nothing,
+    max_lag = 500ms,
+    bin_width = 1.0ms,
+    do_sparse = true,
+)
+    time_range =
+        !isnothing(time_range) ? time_range : (0.0:bin_width:maximum(spike_times)+max_lag)
     spike_train = zeros(length(time_range))
     for t in spike_times
         index = Int(round(t / bin_width)) + 1
@@ -673,4 +709,28 @@ function spiketimes_from_bool(P; dt = 0.1ms)
     return SNN.Spiketimes(_spiketimes)
 end
 
-export spiketimes, spiketimes_from_bool, merge_spiketimes, convolve, alpha_function, autocorrelogram, bin_spiketimes, compute_covariance_density, isi, CV, CV_isi2, firing_rate, average_firing_rate, firing_rate_average, firing_rate, firing_rate_average, spikes_in_interval, spikes_in_intervals, find_interval_indices, interval_standard_spikes, interval_standard_spikes!, relative_time!, st_order, isi_cv, CV_isi2
+export spiketimes,
+    spiketimes_from_bool,
+    merge_spiketimes,
+    convolve,
+    alpha_function,
+    autocorrelogram,
+    bin_spiketimes,
+    compute_covariance_density,
+    isi,
+    CV,
+    CV_isi2,
+    firing_rate,
+    average_firing_rate,
+    firing_rate_average,
+    firing_rate,
+    firing_rate_average,
+    spikes_in_interval,
+    spikes_in_intervals,
+    find_interval_indices,
+    interval_standard_spikes,
+    interval_standard_spikes!,
+    relative_time!,
+    st_order,
+    isi_cv,
+    CV_isi2

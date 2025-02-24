@@ -39,16 +39,16 @@ A named tuple of populations that match the regex.
 
 no_noise(p) = !occursin(string("noise"), string(p.name))
 
-function filter_items(P; condition::Function=no_noise)
-    populations = Dict{Symbol, Any}()
+function filter_items(P; condition::Function = no_noise)
+    populations = Dict{Symbol,Any}()
     for k in keys(P)
         p = getfield(P, k)
         hasfield(typeof(p), :name) || continue
         condition(p) || continue
         p = getfield(P, k)
-        push!(populations,k => p)
+        push!(populations, k => p)
     end
-    return dict2ntuple(sort(populations, by = x ->getfield(P,x).name))
+    return dict2ntuple(sort(populations, by = x -> getfield(P, x).name))
 end
 
 
@@ -67,16 +67,16 @@ Extracts the names and the neuron ids projected from a given set of stimuli.
 
 # Example
 """
-function subpopulations(stim, merge=true)
+function subpopulations(stim, merge = true)
     # names = Vector{String}()
     # pops = Vector{Int}[]
-    populations =  Dict{String, Vector{Int}}()
+    populations = Dict{String,Vector{Int}}()
     my_keys = collect(keys(stim))
     for key in my_keys
         target = merge ? "" : "_$(getfield(stim, key).targets[:sym])"
-        name = getfield(stim, key).name*"$target"
+        name = getfield(stim, key).name * "$target"
         cells = getfield(stim, key).cells
-        if haskey(populations, name) 
+        if haskey(populations, name)
             populations[name] = vcat(populations[name], cells) |> unique |> collect
         else
             push!(populations, name => cells)
@@ -84,7 +84,8 @@ function subpopulations(stim, merge=true)
     end
     names = collect(keys(populations))
     pops = collect(values(populations))
-    return sort(names, rev=true), pops[sort(1:length(pops), by=x->names[x], rev=true)]
+    return sort(names, rev = true),
+    pops[sort(1:length(pops), by = x -> names[x], rev = true)]
 end
 
 export population_indices, filter_populations, subpopulations, filter_items

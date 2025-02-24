@@ -1,3 +1,3 @@
 using SpikingNeuralNetworks, Documenter
 
-makedocs(sitename="My Documentation")
+makedocs(sitename = "My Documentation")

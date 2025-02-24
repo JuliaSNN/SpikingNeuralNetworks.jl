@@ -57,7 +57,7 @@ function graph(model)
             type = :fire_to_g
             add_connection!(graph, pre_id, post_id, k, syn, type)
         elseif isa(syn, SNN.SynapseNormalization)
-            push!(norms, k=>syn)
+            push!(norms, k => syn)
         else
             throw(ArgumentError("Only SpikingSynapse is supported"))
         end
@@ -70,11 +70,11 @@ function graph(model)
         type = :fire_to_g
         add_connection!(graph, pre_id, post_id, k, stim, type)
     end
-    for (k,v) in norms
+    for (k, v) in norms
         for id in v.targets[:synapses]
             _edges, _ids = filter_edge_props(graph, :id, id)
             for (e, i) in zip(_edges, _ids)
-                props(graph, e.src, e.dst )[:norm][i] = k
+                props(graph, e.src, e.dst)[:norm][i] = k
             end
         end
     end
@@ -90,17 +90,21 @@ function add_connection!(graph, pre_id, post_id, k, syn, type)
     syn_name = "$(syn.name): $(pre_name) -> $(post_name).$sym"
     id = syn.id
     if !has_edge(graph, pre_node, post_node)
-        add_edge!(graph, pre_node, post_node, 
+        add_edge!(
+            graph,
+            pre_node,
+            post_node,
             Dict(
-                :type => [type], 
-                :name => [syn_name], 
-                :key => [k], 
-                :id => [id], 
-                :norm => [:none], 
-                :target => [sym], 
+                :type => [type],
+                :name => [syn_name],
+                :key => [k],
+                :id => [id],
+                :norm => [:none],
+                :target => [sym],
                 :count => [1],
-                :multi => 1)
-                )
+                :multi => 1,
+            ),
+        )
     else
         multi_dict = props(graph, pre_node, post_node)
         _multi = multi_dict[:multi] + 1

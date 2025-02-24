@@ -2,7 +2,8 @@
     rate::FT = 1Hz
 end
 
-@snn_kw mutable struct Poisson{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:AbstractPopulation
+@snn_kw mutable struct Poisson{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:
+                       AbstractPopulation
     id::String = randstring(12)
     name::String = "Poisson"
     param::PoissonParameter = PoissonParameter()

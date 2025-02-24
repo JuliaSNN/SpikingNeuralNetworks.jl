@@ -20,7 +20,7 @@ end
     x::VFT = zeros(Npost) # postsynaptic spiking time
 end
 
-function plasticityvariables(param::T, Npre, Npost) where T <: vSTDPParameter
+function plasticityvariables(param::T, Npre, Npost) where {T<:vSTDPParameter}
     return vSTDPVariables(Npre = Npre, Npost = Npost)
 end
 
@@ -48,7 +48,12 @@ where if `τ > 0.0f0` then normalization will occur at intervals approximately e
 After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
-function plasticity!(c::PT, param::vSTDPParameter, dt::Float32, T::Time) where PT <: AbstractSparseSynapse
+function plasticity!(
+    c::PT,
+    param::vSTDPParameter,
+    dt::Float32,
+    T::Time,
+) where {PT<:AbstractSparseSynapse}
     @unpack active = param
     !active[1] && return
     plasticity!(c, param, c.plasticity, dt, T)
@@ -60,7 +65,7 @@ function plasticity!(
     plasticity::vSTDPVariables,
     dt::Float32,
     T::Time,
-) where PT <: AbstractSparseSynapse
+) where {PT<:AbstractSparseSynapse}
     @unpack rowptr, colptr, I, J, index, W, v_post, fireJ, g, index = c
     @unpack u, v, x = plasticity
     @unpack A_LTD, A_LTP, θ_LTD, θ_LTP, τu, τv, τx, Wmax, Wmin = param
@@ -80,11 +85,15 @@ function plasticity!(
     @inbounds for j in eachindex(fireJ) # Iterate over presynaptic neurons
         if fireJ[j]
             @turbo for s = colptr[j]:(colptr[j+1]-1)
-                @fastmath W[s] += -A_LTD * clamp(u[I[s]] - θ_LTD, 0.0f0, Inf) 
+                @fastmath W[s] += -A_LTD * clamp(u[I[s]] - θ_LTD, 0.0f0, Inf)
             end
         end
-         @turbo for s = colptr[j]:(colptr[j+1]-1)
-            @fastmath W[s] += A_LTP * x[j] * clamp(v[I[s]] - θ_LTD, 0.0f0, Inf) * clamp(v_post[I[s]] - θ_LTP, 0.0f0, Inf)
+        @turbo for s = colptr[j]:(colptr[j+1]-1)
+            @fastmath W[s] +=
+                A_LTP *
+                x[j] *
+                clamp(v[I[s]] - θ_LTD, 0.0f0, Inf) *
+                clamp(v_post[I[s]] - θ_LTP, 0.0f0, Inf)
         end
     end
 
@@ -101,16 +110,16 @@ export vSTDPParameter, vSTDPVariables, plasticityvariables, plasticity!
 #     v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron
 # end
 
-    # @inbounds @fastmath  for i in eachindex(Is) # Iterate over postsynaptic neurons
-    #     ltd_v = (v[i] - θ_LTD)
-    #     ltp = (v_post[i] - θ_LTP)
-    #     @simd for s = rowptr[i]:(rowptr[i+1]-1)
-    #         j = J[index[s]]
-    #         if fireJ[j] && (u[i] - θ_LTD) > 0.0f0
-    #             W[index[s]] += -A_LTD * (u[i] - θ_LTD)
-    #         end
-    #         if ltp > 0.0f0 && ltd_v > 0.0f0
-    #             W[index[s]] += A_LTP * x[j] * ltp * ltd_v
-    #         end
-    #     end
-    # end
+# @inbounds @fastmath  for i in eachindex(Is) # Iterate over postsynaptic neurons
+#     ltd_v = (v[i] - θ_LTD)
+#     ltp = (v_post[i] - θ_LTP)
+#     @simd for s = rowptr[i]:(rowptr[i+1]-1)
+#         j = J[index[s]]
+#         if fireJ[j] && (u[i] - θ_LTD) > 0.0f0
+#             W[index[s]] += -A_LTD * (u[i] - θ_LTD)
+#         end
+#         if ltp > 0.0f0 && ltd_v > 0.0f0
+#             W[index[s]] += A_LTP * x[j] * ltp * ltd_v
+#         end
+#     end
+# end

@@ -15,5 +15,4 @@ E = SNN.TripodHet(
     param = SNN.AdExSoma(b = 0.0f0, Vr = -50),
 )
 
-E_to_E =
-    SNN.CompartmentSynapse(E, E, :d1, :he, μ = 30, param = SNN.vSTDPParameter())
+E_to_E = SNN.CompartmentSynapse(E, E, :d1, :he, μ = 30, param = SNN.vSTDPParameter())

@@ -1,16 +1,24 @@
-@snn_kw struct SpikeTimeStimulusParameter{VFT=Vector{Float32}, VVIT=Vector{Vector{Int}}} <: AbstractStimulusParameter
+@snn_kw struct SpikeTimeStimulusParameter{
+    VFT = Vector{Float32},
+    VVIT = Vector{Vector{Int}},
+} <: AbstractStimulusParameter
     spiketimes::VFT
     neurons::VVIT
-end 
+end
 
-SpikeTime(;neurons, spiketimes) = SpikeTime(spiketimes, neurons)
+SpikeTime(; neurons, spiketimes) = SpikeTime(spiketimes, neurons)
 
-function SpikeTime(spiketimes::VFT, neurons::Vector{Vector{Int}}) where {VFT <: Vector}
-    order = sort(1:length(spiketimes), by=x->spiketimes[x])
+function SpikeTime(spiketimes::VFT, neurons::Vector{Vector{Int}}) where {VFT<:Vector}
+    order = sort(1:length(spiketimes), by = x -> spiketimes[x])
     return SpikeTimeStimulusParameter(Float32.(spiketimes[order]), neurons[order])
 end
 
-@snn_kw struct SpikeTimeStimulus{FT=Float32, VFT = Vector{Float32}, DT=Distribution{Univariate, Continuous}, VIT = Vector{Int}} <: AbstractStimulus
+@snn_kw struct SpikeTimeStimulus{
+    FT = Float32,
+    VFT = Vector{Float32},
+    DT = Distribution{Univariate,Continuous},
+    VIT = Vector{Int},
+} <: AbstractStimulus
     N::Int
     name::String = "SpikeTime"
     id::String = randstring(12)
@@ -29,19 +37,30 @@ end
     targets::Dict = Dict()
 end
 
-function SpikeTimeStimulus(N, post::T, sym::Symbol, target = nothing; p::R=0.05f0,  μ=1.0, σ = 0.0, w = nothing,dist=Normal, param::SpikeTimeStimulusParameter) where {T <: AbstractPopulation, R <: Real}
+function SpikeTimeStimulus(
+    N,
+    post::T,
+    sym::Symbol,
+    target = nothing;
+    p::R = 0.05f0,
+    μ = 1.0,
+    σ = 0.0,
+    w = nothing,
+    dist = Normal,
+    param::SpikeTimeStimulusParameter,
+) where {T<:AbstractPopulation,R<:Real}
     # set the synaptic weight matrix
     @assert N >= maximum(vcat(param.neurons...)) "Projections must be within the range of the presynaptic population"
 
     w = sparse_matrix(w, N, post.N, dist, μ, σ, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
-    if isnothing(target) 
+    if isnothing(target)
         g = getfield(post, sym)
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>:soma)
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym => :soma)
     else
         g = getfield(post, Symbol("$(sym)_$target"))
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym=>target)
+        targets = Dict(:pre => :Poisson, :g => post.id, :sym => target)
     end
 
     next_spike = zeros(Float32, 1)
@@ -60,9 +79,15 @@ function SpikeTimeStimulus(N, post::T, sym::Symbol, target = nothing; p::R=0.05f
     )
 end
 
-function SpikeTimeStimulusIdentity(post::T, sym::Symbol, target = nothing; param::SpikeTimeStimulusParameter, kwargs...) where {T <: AbstractPopulation}
-    w = LinearAlgebra.I(post.N) 
-    return  SpikeTimeStimulus(post.N, post, sym, target; w=w, param = param, kwargs...)
+function SpikeTimeStimulusIdentity(
+    post::T,
+    sym::Symbol,
+    target = nothing;
+    param::SpikeTimeStimulusParameter,
+    kwargs...,
+) where {T<:AbstractPopulation}
+    w = LinearAlgebra.I(post.N)
+    return SpikeTimeStimulus(post.N, post, sym, target; w = w, param = param, kwargs...)
 end
 
 # """
@@ -70,7 +95,12 @@ end
 
 # Generate a Poisson stimulus for a postsynaptic population.
 # """
-function stimulate!(s::SpikeTimeStimulus, param::SpikeTimeStimulusParameter, time::Time, dt::Float32)
+function stimulate!(
+    s::SpikeTimeStimulus,
+    param::SpikeTimeStimulusParameter,
+    time::Time,
+    dt::Float32,
+)
     @unpack colptr, I, W, fireJ, g, next_spike, next_index = s
     @unpack spiketimes, neurons = param
     if next_spike[1] < get_time(time)
@@ -97,9 +127,15 @@ function next_neurons(p::SpikeTimeStimulus)
     end
 end
 
-max_neurons(param::SpikeTimeStimulusParameter)= maximum(vcat(param.neurons...))
+max_neurons(param::SpikeTimeStimulusParameter) = maximum(vcat(param.neurons...))
 
 
 
-export SpikeTimeStimulusParameter, SpikeTimeStimulusParameter, SpikeTimeStimulus, SpikeTimeStimulusIdentity, stimulate!, next_neurons, max_neurons, SpikeTime
-
+export SpikeTimeStimulusParameter,
+    SpikeTimeStimulusParameter,
+    SpikeTimeStimulus,
+    SpikeTimeStimulusIdentity,
+    stimulate!,
+    next_neurons,
+    max_neurons,
+    SpikeTime

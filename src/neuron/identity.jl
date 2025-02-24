@@ -1,5 +1,4 @@
-struct IdentityParam <: AbstractPopulationParameter
-end
+struct IdentityParam <: AbstractPopulationParameter end
 
 @snn_kw mutable struct Identity{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:
                        AbstractPopulation
@@ -15,17 +14,17 @@ end
 end
 
 function integrate!(p::Identity, param::IdentityParam, dt::Float32)
-    @unpack g,h, fire, spikecount = p
-    for i = eachindex(g)
-        h[i]+=g[i]
-        spikecount[i] = 0f0
+    @unpack g, h, fire, spikecount = p
+    for i in eachindex(g)
+        h[i] += g[i]
+        spikecount[i] = 0.0f0
         if g[i] > 0
             fire[i] = true
             spikecount[i] += Float32(g[i])
         else
             fire[i] = false
         end
-        g[i]=0 
+        g[i] = 0
     end
 end
 

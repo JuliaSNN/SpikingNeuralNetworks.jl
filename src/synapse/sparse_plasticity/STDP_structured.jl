@@ -17,7 +17,7 @@ abstract type STDPStructuredAbstractParameter <: STDPAbstractParameter end
 """
 SymmetricSTDP
 @snn_kw struct SymmetricSTDP{FT = Float32} <: STDPStructuredAbstractParameter
-    A_x::FT =  3e-2    # LTP learning rate (inhibitory synapses)
+    A_x::FT = 3e-2    # LTP learning rate (inhibitory synapses)
     A_y::FT = 3e-2    # LTD learning rate (inhibitory synapses)
     τ_x::FT = 50ms       # Time constant for pre-synaptic spike trace
     τ_y::FT = 500ms      # Time constant for post-synaptic spike trace
@@ -29,7 +29,7 @@ end
 
 @snn_kw struct AntiSymmetricSTDP{FT = Float32} <: STDPStructuredAbstractParameter
     A_y::FT = 3e-2     # LTD learning rate (inhibitory synapses)
-    A_x::FT =  3e-2    # LTP learning rate (inhibitory synapses)
+    A_x::FT = 3e-2    # LTP learning rate (inhibitory synapses)
     τ_x::FT = 50ms       # Time constant for pre-synaptic spike trace
     τ_y::FT = 50ms      # Time constant for post-synaptic spike trace
     αpre::FT = -25.0pF
@@ -39,7 +39,8 @@ end
 end
 
 
-@snn_kw struct STDPStructuredVariables{VFT = Vector{Float32}, IT = Int} <: PlasticityVariables
+@snn_kw struct STDPStructuredVariables{VFT = Vector{Float32},IT = Int} <:
+               PlasticityVariables
     Npost::IT                      # Number of post-synaptic neurons
     Npre::IT                       # Number of pre-synaptic neurons
     to_x::VFT = zeros(Npost)        # Pre-synaptic spike trace
@@ -48,11 +49,20 @@ end
     tr_y::VFT = zeros(Npre)         # Post-synaptic spike trace
 end
 
-function plasticityvariables(param::T, Npre, Npost) where T <: STDPStructuredAbstractParameter
+function plasticityvariables(
+    param::T,
+    Npre,
+    Npost,
+) where {T<:STDPStructuredAbstractParameter}
     return STDPStructuredVariables(Npre = Npre, Npost = Npost)
 end
 
-function plasticity!(c::PT, param::mySTDP, dt::Float32, T::Time) where {PT <: AbstractSparseSynapse, mySTDP <: STDPStructuredAbstractParameter}
+function plasticity!(
+    c::PT,
+    param::mySTDP,
+    dt::Float32,
+    T::Time,
+) where {PT<:AbstractSparseSynapse,mySTDP<:STDPStructuredAbstractParameter}
     plasticity!(c, param, c.plasticity, dt, T)
 end
 
@@ -62,31 +72,31 @@ function plasticity!(
     param::AntiSymmetricSTDP,
     plasticity::STDPStructuredVariables,
     dt::Float32,
-    T::Time
-) where PT <: AbstractSparseSynapse
+    T::Time,
+) where {PT<:AbstractSparseSynapse}
     @unpack rowptr, colptr, I, J, index, W, fireJ, fireI, g, index = c
-    @unpack  tr_x, to_y = plasticity
+    @unpack tr_x, to_y = plasticity
     @unpack A_x, A_y, τ_x, τ_y, Wmax, Wmin, αpre, αpost = param
     # Update weights based on pre-post spike timing
-    @inbounds @fastmath begin 
+    @inbounds @fastmath begin
 
-        for j in 1:length(colptr)-1 # loop over post-synaptic neurons
+        for j = 1:length(colptr)-1 # loop over post-synaptic neurons
             if fireJ[j]
                 @turbo for s = colptr[j]:(colptr[j+1]-1)
                     i = I[s]
                     # @info "Pre synaptic firing, time: $(get_time(T)) trace: $(to_y[i])"
-                    W[s] += αpre - A_y/τ_y * to_y[i]  # pre spike
+                    W[s] += αpre - A_y / τ_y * to_y[i]  # pre spike
                 end
             end
         end
 
-        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
+        for i = 1:length(rowptr)-1 # loop over post-synaptic neurons
             if fireI[i]
                 @turbo for st = rowptr[i]:(rowptr[i+1]-1)
                     j = J[index[st]]
                     s = index[st]
                     # @info "Post synaptic firing, time: $(get_time(T)) trace: $(tr_x[j])"
-                    W[s] += αpost + A_x/τ_x *  tr_x[j]  # post spike
+                    W[s] += αpost + A_x / τ_x * tr_x[j]  # post spike
                 end
             end
         end
@@ -101,7 +111,7 @@ function plasticity!(
 
         # Update traces based on pre synpatic firing
         @turbo for j in eachindex(fireJ)
-            tr_x[j] += dt * (- tr_x[j]) / τ_x
+            tr_x[j] += dt * (-tr_x[j]) / τ_x
         end
         @simd for j in findall(fireJ)
             tr_x[j] += 1
@@ -119,33 +129,33 @@ function plasticity!(
     param::SymmetricSTDP,
     plasticity::STDPStructuredVariables,
     dt::Float32,
-    T::Time
-) where PT <: AbstractSparseSynapse
+    T::Time,
+) where {PT<:AbstractSparseSynapse}
     @unpack rowptr, colptr, I, J, index, W, fireJ, fireI, g, index = c
-    @unpack  to_x, tr_x, to_y, tr_y = plasticity
+    @unpack to_x, tr_x, to_y, tr_y = plasticity
     @unpack A_x, A_y, τ_x, τ_y, Wmax, Wmin, αpre, αpost = param
 
 
     # Update weights based on pre-post spike timing
-    @inbounds @fastmath begin 
+    @inbounds @fastmath begin
         # for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
-        for j in 1:length(colptr)-1 # loop over post-synaptic neurons
+        for j = 1:length(colptr)-1 # loop over post-synaptic neurons
             if fireJ[j]
                 @turbo for s = colptr[j]:(colptr[j+1]-1)
                     i = I[s]
-                    W[s] += αpre +( A_x/2τ_x * to_x[i] - A_y/2τ_y * to_y[i])  # pre spike
+                    W[s] += αpre + (A_x / 2τ_x * to_x[i] - A_y / 2τ_y * to_y[i])  # pre spike
                 end
             end
         end
 
         # Update weights based on pre-post spike timing
         # for j in 1:length(colptr)-1 # loop over pre-synaptic neurons
-        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
+        for i = 1:length(rowptr)-1 # loop over post-synaptic neurons
             if fireI[i]
                 @turbo for st = rowptr[i]:(rowptr[i+1]-1)
                     j = J[index[st]]
                     s = index[st]
-                    W[s] += αpost +( A_x/2τ_x * tr_x[j]  - A_y/2τ_y * tr_y[j])  # post spike
+                    W[s] += αpost + (A_x / 2τ_x * tr_x[j] - A_y / 2τ_y * tr_y[j])  # post spike
                 end
             end
         end
@@ -159,8 +169,8 @@ function plasticity!(
         end
 
         @turbo for j in eachindex(fireJ)
-            tr_x[j] += dt * (- tr_x[j]) / τ_x
-            tr_y[j] += dt * (- tr_y[j]) / τ_y
+            tr_x[j] += dt * (-tr_x[j]) / τ_x
+            tr_y[j] += dt * (-tr_y[j]) / τ_y
         end
 
         @simd for j in findall(fireJ)
@@ -176,4 +186,4 @@ function plasticity!(
 end
 # Function to implement STDP update rule
 
-export SymmetricSTDP, AntiSymmetricSTDP 
+export SymmetricSTDP, AntiSymmetricSTDP

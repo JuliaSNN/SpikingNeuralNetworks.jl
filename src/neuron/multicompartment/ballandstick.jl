@@ -64,7 +64,7 @@ BallAndStick
 
     # Synapses soma
     ge_s::VFT = zeros(N)
-    gi_s::VFT = zeros(N) 
+    gi_s::VFT = zeros(N)
     he_s::VFT = zeros(N) #! target
     hi_s::VFT = zeros(N) #! target
 
@@ -85,9 +85,9 @@ function BallAndStick(
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    NMDA::NMDAVoltageDependency = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
     param = AdExSoma(),
-    kwargs...
+    kwargs...,
 )
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
@@ -98,8 +98,8 @@ function BallAndStick(
         dend_syn = dend_syn,
         NMDA = NMDA,
         param = param,
-        α= [syn.α for syn in dend_syn],
-        kwargs...
+        α = [syn.α for syn in dend_syn],
+        kwargs...,
     )
 end
 
@@ -117,7 +117,7 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
     @unpack Er, up, τabs, BAP, AP_membrane, Vr, Vt, τw, a, b = param
     @unpack dend_syn, soma_syn = p
     @unpack d = p
-   
+
     update_synapses!(p, dend_syn, soma_syn, dt)
 
     # update the neurons
@@ -125,12 +125,12 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
         if after_spike[i] > τabs
             v_s[i] = BAP
             ## backpropagation effect
-            c1 = (BAP - v_d[i]) * d.gax[i]/100
+            c1 = (BAP - v_d[i]) * d.gax[i] / 100
             ## apply currents
             v_d[i] += dt * c1 / d.C[i]
         elseif after_spike[i] > 0
             v_s[i] = Vr
-            c1 = (Vr - v_d[i]) * d.gax[i] /100
+            c1 = (Vr - v_d[i]) * d.gax[i] / 100
             # # apply currents
             v_d[i] += dt * c1 / d.C[i]
         else
@@ -169,7 +169,12 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
     return
 end
 
-function update_synapses!(p::BallAndStick, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
+function update_synapses!(
+    p::BallAndStick,
+    dend_syn::SynapseArray,
+    soma_syn::SynapseArray,
+    dt::Float32,
+)
     @unpack N, ge_s, g_d, he_s, h_d, hi_s, gi_s = p
     @unpack he_d, hi_d, exc_receptors, inh_receptors, α = p
 

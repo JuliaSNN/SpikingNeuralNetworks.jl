@@ -58,7 +58,7 @@ function synapsearray(syn::Synapse, indices::Vector = [])::SynapseArray
     names = isempty(indices) ? fieldnames(Synapse) : fieldnames(Synapse)[indices]
     for name in names
         receptor = getfield(syn, name)
-        if !(receptor.τr  < 0)
+        if !(receptor.τr < 0)
             push!(container, receptor)
         end
     end
@@ -84,4 +84,4 @@ end
 
 EyalNMDA = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
 
-export norm_synapse , EyalNMDA
+export norm_synapse, EyalNMDA

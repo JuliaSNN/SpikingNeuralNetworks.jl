@@ -5,19 +5,19 @@ function connect!(c, j, i, μ = 1e-6)
     return nothing
 end
 
-function matrix(c::C) where C <: AbstractConnection
+function matrix(c::C) where {C<:AbstractConnection}
     return sparse(c.I, c.J, c.W, length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
 
-function matrix(c::C, sym::Symbol) where C <: AbstractConnection
-    return sparse(c.I, c.J, getfield(c,sym), length(c.rowptr) - 1, length(c.colptr) - 1)
+function matrix(c::C, sym::Symbol) where {C<:AbstractConnection}
+    return sparse(c.I, c.J, getfield(c, sym), length(c.rowptr) - 1, length(c.colptr) - 1)
 end
 
 
-function update_weights!(c::C, j, i, w) where C <: AbstractConnection
-    @unpack colptr, I,  W = c
-    for s in colptr[j]:(colptr[j+1]-1)
+function update_weights!(c::C, j, i, w) where {C<:AbstractConnection}
+    @unpack colptr, I, W = c
+    for s = colptr[j]:(colptr[j+1]-1)
         if I[s] == i
             W[s] = w
             break
@@ -25,10 +25,10 @@ function update_weights!(c::C, j, i, w) where C <: AbstractConnection
     end
 end
 
-function update_weights!(c::C, js::Vector, is::Vector, w) where C <: AbstractConnection
-    @unpack colptr, I,  W = c
+function update_weights!(c::C, js::Vector, is::Vector, w) where {C<:AbstractConnection}
+    @unpack colptr, I, W = c
     for j in js
-        for s in colptr[j]:(colptr[j+1]-1)
+        for s = colptr[j]:(colptr[j+1]-1)
             if I[s] ∈ is
                 W[s] = w
             end
@@ -36,11 +36,11 @@ function update_weights!(c::C, js::Vector, is::Vector, w) where C <: AbstractCon
     end
 end
 
-function indices(c::C, js::AbstractVector, is::AbstractVector) where C <: AbstractConnection
-    @unpack colptr, I,  W = c
+function indices(c::C, js::AbstractVector, is::AbstractVector) where {C<:AbstractConnection}
+    @unpack colptr, I, W = c
     indices = Int[]
     for j in js
-        for s in colptr[j]:(colptr[j+1]-1)
+        for s = colptr[j]:(colptr[j+1]-1)
             if I[s] ∈ is
                 push!(indices, s)
             end
@@ -49,14 +49,14 @@ function indices(c::C, js::AbstractVector, is::AbstractVector) where C <: Abstra
     return indices
 end
 
-function set_plasticity!(synapse::AbstractConnection, bool::Bool )
-        synapse.param.active[1] = bool
+function set_plasticity!(synapse::AbstractConnection, bool::Bool)
+    synapse.param.active[1] = bool
 end
 function has_plasticity(synapse::AbstractConnection)
-        synapse.param.active[1] |> Bool
+    synapse.param.active[1] |> Bool
 end
 
-function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractConnection
+function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where {S<:AbstractConnection}
     rowptr, colptr, I, J, index, W = dsparse(W)
     @assert length(rowptr) == length(c.rowptr) "Rowptr length mismatch"
     @assert length(colptr) == length(c.colptr) "Colptr length mismatch"
@@ -66,8 +66,15 @@ function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where S <: AbstractCon
     resize!(c.W, length(I))
     resize!(c.index, length(I))
 
-    @assert length(c.I) == length(c.J) == length(c.index) == length(c.W) == length(I) == length(J) == length(index) == length(W) "Length mismatch"
-    
+    @assert length(c.I) ==
+            length(c.J) ==
+            length(c.index) ==
+            length(c.W) ==
+            length(I) ==
+            length(J) ==
+            length(index) ==
+            length(W) "Length mismatch"
+
     @inbounds @simd for i in eachindex(I)
         c.I[i] = I[i]
         c.J[i] = J[i]
@@ -84,7 +91,7 @@ function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
         # if w is not defined, construct a random sparse matrix with `dist` with `μ` and `σ`. 
         w = rand(dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
         w[[n for n in eachindex(w[:]) if rand() > ρ]] .= 0
-        w[w .<= 0] .= 0 
+        w[w.<=0] .= 0
         w = sparse(w)
     else
         # if w is defined, convert it to a sparse matrix
@@ -175,23 +182,23 @@ If `syn` and/or `pop` and/or `stim` arguments are provided, they are merged into
 
 ## Example
 """
-function merge_models(args...; name=randstring(10), silent=false, kwargs...)
-    pop = Dict{Symbol, Any}()
-    syn = Dict{Symbol, Any}()
-    stim= Dict{Symbol, Any}()
+function merge_models(args...; name = randstring(10), silent = false, kwargs...)
+    pop = Dict{Symbol,Any}()
+    syn = Dict{Symbol,Any}()
+    stim = Dict{Symbol,Any}()
     for v in args
         v isa String && continue
-        extract_items(Symbol(""),v, pop=pop, syn=syn, stim=stim)
+        extract_items(Symbol(""), v, pop = pop, syn = syn, stim = stim)
     end
-    for (k,v) in kwargs
+    for (k, v) in kwargs
         v isa String && continue
-        extract_items(k,v, pop=pop, syn=syn, stim=stim)
+        extract_items(k, v, pop = pop, syn = syn, stim = stim)
     end
-    pop = DrWatson.dict2ntuple(sort(pop, by =x->x))
-    syn = DrWatson.dict2ntuple(sort(syn, by =x->x))
-    stim = DrWatson.dict2ntuple(sort(stim, by =x->stim[x].name))
+    pop = DrWatson.dict2ntuple(sort(pop, by = x -> x))
+    syn = DrWatson.dict2ntuple(sort(syn, by = x -> x))
+    stim = DrWatson.dict2ntuple(sort(stim, by = x -> stim[x].name))
     name = haskey(kwargs, :name) ? args.name : name
-    model = (pop=pop, syn=syn, stim=stim, name=name)
+    model = (pop = pop, syn = syn, stim = stim, name = name)
     if !silent
         print_model(model)
     end
@@ -221,7 +228,7 @@ Prints the graph of the model, along with the name, key, type, and parameters of
 Raises an assertion error if any component in the populations is not a subtype of `SNN.AbstractPopulation`, if any component in the synapses is not a subtype of `SNN.AbstractConnection`, or if any component in the stimuli is not a subtype of `SNN.AbstractStimulus`.
 
 """
-function print_model(model, get_keys=false)
+function print_model(model, get_keys = false)
     model_graph = graph(model)
     @unpack pop, syn, stim = model
     populations = Vector{String}()
@@ -230,7 +237,10 @@ function print_model(model, get_keys=false)
         name = props(model_graph, v)[:name]
         _k = get_keys ? "($k)" : ""
         @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
-        push!(populations,  "$name $(_k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))")
+        push!(
+            populations,
+            "$name $(_k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))",
+        )
 
     end
     synapses = Vector{String}()
@@ -240,10 +250,12 @@ function print_model(model, get_keys=false)
         for (e, i) in zip(_edges, _ids)
             name = props(model_graph, e)[:name][i]
             _k = get_keys ? "($k)" : ""
-            norm = props(model_graph, e)[:norm][i] !== :none ? "<-> norm: $(props(model_graph, e)[:norm][i])" : ""
+            norm =
+                props(model_graph, e)[:norm][i] !== :none ?
+                "<-> norm: $(props(model_graph, e)[:norm][i])" : ""
             # @info "$name $(_k) $norm: \n $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
             @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
-            push!(synapses,"$name $(_k) $norm: $(nameof(typeof(getfield(syn,k).param)))")
+            push!(synapses, "$name $(_k) $norm: $(nameof(typeof(getfield(syn,k).param)))")
         end
     end
     stimuli = Vector{String}()
@@ -302,7 +314,13 @@ Extracts items from a container and adds them to the corresponding dictionaries 
 - If the type of the item in the container is `AbstractStimulus`, it is added to the `stim` dictionary.
 - If the type of the item in the container is none of the above, the function is recursively called to extract items from the nested container.
 """
-function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict{Symbol, Any}, stim::Dict{Symbol,Any})
+function extract_items(
+    root::Symbol,
+    container;
+    pop::Dict{Symbol,Any},
+    syn::Dict{Symbol,Any},
+    stim::Dict{Symbol,Any},
+)
     v = container
     if typeof(v) <: AbstractPopulation
         @assert !haskey(pop, root) "Population $(root) already exists"
@@ -317,7 +335,9 @@ function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict
         for k in keys(container)
             k == :name && continue
             v = getindex(container, k)
-            (k == :pop || k == :syn || k == :stim) && (extract_items(root, v, pop=pop, syn=syn, stim=stim)) && continue
+            (k == :pop || k == :syn || k == :stim) &&
+                (extract_items(root, v, pop = pop, syn = syn, stim = stim)) &&
+                continue
             new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))
             if typeof(v) <: AbstractPopulation
                 @assert !haskey(pop, new_key) "Population $(new_key) already exists"
@@ -329,7 +349,7 @@ function extract_items(root::Symbol, container; pop::Dict{Symbol,Any}, syn::Dict
                 @assert !haskey(stim, new_key) "Stimulus $(new_key) already exists"
                 push!(stim, new_key => v)
             else
-                extract_items(new_key, v, pop=pop, syn=syn, stim=stim)
+                extract_items(new_key, v, pop = pop, syn = syn, stim = stim)
             end
         end
     end
@@ -353,12 +373,12 @@ function remove_element(model, key)
 end
 
 
-function load_data(path="", name=nothing, info=nothing)
+function load_data(path = "", name = nothing, info = nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
     if isnothing(name)
         throw(ArgumentError("$path is not file, config is required"))
     end
-    path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
     @info "Loading model from $(path)"
     tic = time()
     DATA = DrWatson.load(path)
@@ -368,12 +388,12 @@ end
 
 # load_data(path=""; name="", info=nothing) = load_data(path, name, info)
 
-function load_model(path="", name=nothing, info=nothing)
+function load_model(path = "", name = nothing, info = nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
     if isnothing(name)
         throw(ArgumentError("If path is not file, config is required"))
     end
-    path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     tic = time()
     @info "Loading model from $(path)"
     DATA = DrWatson.load(path)
@@ -382,13 +402,13 @@ function load_model(path="", name=nothing, info=nothing)
 end
 export load_data, load_model, save_model, savemodel
 
-function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
+function save_model(; path, model, name = randstring(10), info = nothing, kwargs...)
     @info "Model: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
     isdir(path) || mkpath(path)
 
-    data_path = joinpath(path, savename(name, info, "data.jld2", connector="-"))
+    data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
     Logging.LogLevel(0) == Logging.Error
-    @time DrWatson.save(data_path, merge((@strdict model=model), kwargs))
+    @time DrWatson.save(data_path, merge((@strdict model = model), kwargs))
     Logging.LogLevel(0) == Logging.Info
     @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
 
@@ -397,37 +417,46 @@ function save_model(;path, model, name=randstring(10),info=nothing, kwargs...)
     clear_monitor(_model.syn)
     clear_monitor(_model.stim)
 
-    model_path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+    model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     Logging.LogLevel(0) == Logging.Error
-    @time DrWatson.save(model_path, merge((@strdict model=_model), kwargs))
+    @time DrWatson.save(model_path, merge((@strdict model = _model), kwargs))
     Logging.LogLevel(0) == Logging.Info
     @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
     return data_path
 end
 
 
-function save_name(;path, name=randstring(10),info=nothing, kwargs...)
-    model_path = joinpath(path, savename(name, info, "model.jld2", connector="-"))
+function save_name(; path, name = randstring(10), info = nothing, kwargs...)
+    model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     return model_path
 end
 
-function save_parameters(;path, parameters, name=randstring(10),info=nothing, file_path, force=false)
+function save_parameters(;
+    path,
+    parameters,
+    name = randstring(10),
+    info = nothing,
+    file_path,
+    force = false,
+)
     @info "Parameters: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
 
     isdir(path) || mkpath(path)
 
-    params_path = joinpath(path, savename(name, info, "params.jld2", connector="-"))
+    params_path = joinpath(path, savename(name, info, "params.jld2", connector = "-"))
     DrWatson.save(params_path, @strdict parameters)  # Here you are saving a Julia object to a file
 
-    params_path = joinpath(path, savename(name, info, "params.jl.script", connector="-"))
-    isfile(params_path) && !force && throw("File already exists, use force=true to overwrite")
-    !isfile(params_path) &&  cp(file_path, params_path)
-    return 
+    params_path = joinpath(path, savename(name, info, "params.jl.script", connector = "-"))
+    isfile(params_path) &&
+        !force &&
+        throw("File already exists, use force=true to overwrite")
+    !isfile(params_path) && cp(file_path, params_path)
+    return
 end
 
 export save_model, load_model, load_data, save_parameters, save_name
 
-   
+
 
 """
     print_summary(p)
@@ -447,4 +476,25 @@ end
 
 
 export connect!,
-    model, dsparse, record!, monitor, getrecord, clear_records, clear_monitor, merge_models, remove_element, graph, matrix,  print_model,  extract_items, sparse_matrix, replace_sparse_matrix!, exp32, exp256, print_summary, update_weights!, indices, set_plasticity!, has_plasticity
+    model,
+    dsparse,
+    record!,
+    monitor,
+    getrecord,
+    clear_records,
+    clear_monitor,
+    merge_models,
+    remove_element,
+    graph,
+    matrix,
+    print_model,
+    extract_items,
+    sparse_matrix,
+    replace_sparse_matrix!,
+    exp32,
+    exp256,
+    print_summary,
+    update_weights!,
+    indices,
+    set_plasticity!,
+    has_plasticity

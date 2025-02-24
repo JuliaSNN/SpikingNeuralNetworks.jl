@@ -20,21 +20,26 @@ gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
     τdi::FT = 2ms # Decay time for inhibitory synapses
     E_i::FT = -75mV # Reversal potential excitatory synapses 
     E_e::FT = 0mV #Reversal potential excitatory synapses
-    gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
-    gsyn_i::FT = 1.f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
+    gsyn_e::FT = 1.0f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
+    gsyn_i::FT = 1.0f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
 
     ## Dynamic spike threshold
     At::FT = 10mV # Post spike threshold increase
     τt::FT = 30ms # Adaptive threshold time scale
 end
 
-function AdExParameterGsyn(;gsyn_i=1., gsyn_e=1., τde=6ms, τre=1ms, τdi=2ms, τri=0.5ms, kwargs...)
-    gsyn_e *= norm_synapse(τre, τde) 
+function AdExParameterGsyn(;
+    gsyn_i = 1.0,
+    gsyn_e = 1.0,
+    τde = 6ms,
+    τre = 1ms,
+    τdi = 2ms,
+    τri = 0.5ms,
+    kwargs...,
+)
+    gsyn_e *= norm_synapse(τre, τde)
     gsyn_i *= norm_synapse(τri, τdi)
-    return AdExParameter(
-        gsyn_e=Float32(gsyn_e), 
-        gsyn_i=Float32(gsyn_i),
-        ; kwargs...)
+    return AdExParameter(gsyn_e = Float32(gsyn_e), gsyn_i = Float32(gsyn_i), ; kwargs...)
 end
 
 @snn_kw struct AdExParameterSingleExponential{FT = Float32} <: AbstractAdExParameter
@@ -54,8 +59,8 @@ end
     τi::FT = 0.5ms # Rise time for inhibitory synapses
     E_i::FT = -75mV # Reversal potential excitatory synapses 
     E_e::FT = 0mV #Reversal potential excitatory synapses
-    gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
-    gsyn_i::FT = 1.f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
+    gsyn_e::FT = 1.0f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses
+    gsyn_i::FT = 1.0f0 #norm_synapse(τri, τdi) # Synaptic conductance for inhibitory synapses
 
     ## Dynamic spike threshold
     At::FT = 10mV # Post spike threshold increase
@@ -121,10 +126,10 @@ function update_synapses!(p::AdEx, param::AdExParameter, dt::Float32)
     @unpack N, ge, gi, he, hi = p
     @unpack τde, τre, τdi, τri = param
     @inbounds for i ∈ 1:N
-        ge[i] += dt * (- ge[i] / τde + he[i])
-        he[i] += dt * (- he[i] / τre)
-        gi[i] += dt * (- gi[i] / τdi + hi[i])
-        hi[i] += dt * (- hi[i] / τri)
+        ge[i] += dt * (-ge[i] / τde + he[i])
+        he[i] += dt * (-he[i] / τre)
+        gi[i] += dt * (-gi[i] / τdi + hi[i])
+        hi[i] += dt * (-hi[i] / τri)
     end
 end
 
@@ -163,8 +168,9 @@ function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExPara
                 +
                 R * ge[i] * (E_e - v[i]) * gsyn_e +
                 R * gi[i] * (E_i - v[i]) * gsyn_i +
-                - R * w[i] # adaptation
-                + R * I[i] # external current
+                -R * w[i] # adaptation
+                +
+                R * I[i] # external current
             ) / (τm * ξ_het[i])
         # Double exponential
         θ[i] += dt * (Vt - θ[i]) / τt
@@ -178,12 +184,16 @@ function update_soma!(p::AdEx, param::T, dt::Float32) where {T<:AbstractAdExPara
         w[i] = ifelse(fire[i], w[i] + b, w[i])
         θ[i] = ifelse(fire[i], θ[i] + At, θ[i])
         # Absolute refractory period
-        tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
+        tabs[i] = ifelse(fire[i], round(Int, τabs / dt), tabs[i])
         # increase adaptation current
     end
 end
 
-@inline @fastmath function ΔwAdEx(v::Float32, w::Float32, AdEx::T)::Float32 where {T<:AbstractAdExParameter}
+@inline @fastmath function ΔwAdEx(
+    v::Float32,
+    w::Float32,
+    AdEx::T,
+)::Float32 where {T<:AbstractAdExParameter}
     return (AdEx.a * (v - AdEx.Er) - w) / AdEx.τw
 end
 
