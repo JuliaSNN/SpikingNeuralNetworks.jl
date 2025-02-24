@@ -1,5 +1,7 @@
 using RollingFunctions
 using Interpolations
+using StatsBase
+using DSP
 
 function init_spiketimes(N)
     _s = Vector{Vector{Float32}}()
@@ -97,61 +99,30 @@ export spikecount
 
 # spikecount(x::Spiketimes) = length.(x)
 
+# function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
+#     return SNN.exp32(- (t - t0) / τ) * Θ((t - t0))
+# end
+
+# """
+#     Θ(x::Float64)
+
+#     Heaviside function
+# """
+# Θ(x::Float32) = x > 0.0 ? x : 0.0
+
+
 """
     alpha_function(t::T; t0::T, τ::T) where T <: AbstractFloat
 
     Alpha function for convolution of spiketimes. Evaluate the alpha function at time t, with time of peak t0 and time constant τ.
 """
-function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
-    return @fastmath SNN.exp32(- (t - t0) / τ) * Θ((t - t0))
-end
-"""
-    Θ(x::Float64)
-
-    Heaviside function
-"""
-Θ(x::Float32) = x > 0.0 ? x : 0.0
-
-"""
-    convolve(spiketime::Vector{Float32}; interval::AbstractRange, τ = 100)
-
-    Convolve one neuron spiketimes with alpha function to have an approximate rate.
-
-    Parameters
-    ----------
-    spiketime: Vector{Float32}
-        Vector of spiketimes in milliseconds
-    interval: AbstractRange
-        Time interval to evaluate the rate
-    τ: Float32
-        Time constant of the alpha function
-    Return
-    ------
-    rate: Vector{Float32}
-        Vector of rates in Hz
-"""
-function convolve(
-    spiketime::Vector{Float32};
-    interval::AbstractRange,
-    τ = 100.0f0,
-    f::Function = alpha_function,
-)
-    rate = zeros(Float32, length(interval))
-    @inbounds for i in eachindex(interval)
-        v = 0
-        t = Float32(interval[i])
-        τ = Float32(τ)
-        @simd for t0 in spiketime
-            @fastmath if (t > t0 && ((t - t0) / τ) < 10)
-                v += f(t, t0 = t0, τ = τ)
-            end
-        end
-        rate[i] = v ./τ^2 *1000
-
+function alpha_function(t::Float32, τ::Float32)
+    if t >= 0
+        return (t / τ) * exp(1 - t / τ)
+    else
+        return 0.0
     end
-    return rate ## Hz
 end
-
 
 """
     merge_spiketimes(spikes::Vector{Spiketimes}; )
@@ -180,6 +151,10 @@ function merge_spiketimes(spikes::Vector{Spiketimes};)
         end
     end
     return sort!.(neurons)
+end
+
+function merge_spiketimes(spikes::Spiketimes;)
+    sort(vcat(spikes...))
 end
 
 """
@@ -220,10 +195,9 @@ function firing_rate(
     τ = 25ms,
     ttf = -1,
     tt0 = -1,
-    cache = true,
-    pop::Union{Symbol,Vector{Int}} = :ALL,
     interpolate = true,
 )
+    # Check if the interval is empty and create an interval
     if isempty(interval)
         max_time =  all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
         tt0 = tt0 > 0 ? tt0 : 0.0f0
@@ -231,31 +205,45 @@ function firing_rate(
         interval = tt0:sampling:ttf
     end
     all(isempty.(spiketimes)) && return Spiketimes([zeros(Float32, length(interval)) for n in eachindex(spiketimes)]), interval
-    spiketimes = pop == :ALL ? spiketimes : spiketimes[pop]
-    rates = tmap(
-        n -> convolve(spiketimes[n], interval = interval, τ = τ),
-        eachindex(spiketimes),
-    )
-    # rates = vcat(rates'...)
+
+    # Create the alpha kernel
+    kernel_length = τ*10  # Length of the kernel in ms
+    bin_width = step(interval)
+    kernel_time = Float32.(0.0:bin_width:kernel_length)
+    τ = Float32(τ)
+    alpha_kernel = [alpha_function(t, τ) for t in kernel_time]
+    alpha_kernel ./= sum(alpha_kernel)
+
+    rates = tmap(eachindex(spiketimes)) do n 
+        spike_train, _ = bin_spiketimes(spiketimes[n]; time_range=interval, do_sparse=false)
+        conv(spike_train, alpha_kernel)[1:length(interval)].*s
+    end 
+    # )
 
     if interpolate
-        rates = Interpolations.scale(Interpolations.interpolate(copy(hcat(rates...)'), BSpline(Interpolations.Linear)), 1:length(spiketimes), interval)
+        _rates = hcat(rates...)'
+        interp = get_interpolator(_rates)
+        rates = Interpolations.scale(Interpolations.interpolate(_rates, interp), 1:length(spiketimes), interval)
+    else
+        rates = copy(hcat(rates...)')
     end
     return rates, interval
 end
 
 function firing_rate(population::T; kwargs...) where {T<:Union{AbstractPopulation, AbstractStimulus}}
-    return firing_rate(SNN.spiketimes(population)
-    ; kwargs...)
+    return firing_rate(SNN.spiketimes(population); kwargs...)
 end
 
-function firing_rate(populations; kwargs...)
-    spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
-    fr_pop = Spiketimes[]
+function firing_rate(populations; mean_pop=false, kwargs...)
+    spiketimes_pop, names_pop  = spiketimes_split(populations)
+    fr_pop = Matrix{Float32}[]
     interval = nothing
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
         push!(fr_pop, rates)
+    end
+    if mean_pop == true 
+        fr_pop = [mean(fr, dims=1)[1,:] for fr in fr_pop]
     end
     return fr_pop, interval, names_pop
 end
@@ -284,38 +272,89 @@ function average_firing_rate(
     return mean.(rates)
 end
 
-function average_firing_rate(populations; kwargs...)
+function average_firing_rate(populations; interval)
     spiketimes = SNN.spiketimes(populations)
-    average_firing_rate(spiketimes; kwargs...)
+    return sort(vcat(spiketimes...))  |> x-> fit(Histogram, x, interval ).weights, interval[1:end-1]
 end
 
-#
 """
-    autocorrelogram(t_pre, τ=200ms, sr=50Hz)
+    autocor(spiketimes::Spiketimes; interval = 0:1:1000)
 
-Compute the autocorrelogram of a spike train.
+Calculate the cross-correlation of two spike trains.
 
 # Arguments
-- `t_pre`: Array{Float64} - The spike times of the pre-synaptic neuron.
-- `τ`: Float64 - The time window for computing the autocorrelogram. Default is 200ms.
+- `spike_times1`: A vector of spike times for the first neuron.
+- `spike_times2`: A vector of spike times for the second neuron.
+- `bin_width`: The width of the time bins in milliseconds.
+- `max_lag`: The maximum time lag in milliseconds.
 
 # Returns
-- `taus`: Array{Float64} - The time differences between each spike and its surrounding spikes within the time window.
+- `lags`: The time lags in milliseconds.
+- `auto_corr`: The auto-correlation for each time lag.
 """
-function autocorrelogram(t_pre::Vector{Float32}; τ=200ms)
-    taus =[]
-    t_pre = sort(t_pre)
-    for n in eachindex(t_pre)
-        my_t = t_pre[n]
-        last  = findlast(t-> abs(t -my_t) < τ, t_pre)
-        first = findfirst(t-> abs(t -my_t) < τ, t_pre)
-        surrounding = first:last
-        isnothing(surrounding) && continue
-        append!(taus, t_pre[surrounding] .- my_t)
-        filter!(x-> x != 0, taus)
+function compute_cross_correlogram(spike_times1::Vector{Float32}, spike_times2::Vector{Float32}=Float32[]; bin_width=1.0ms, max_lag=100.0, shift_predictor=false)
+    # Create a binary spike train
+    # bin_width = 1000/sr
+
+    spike_train1, time_range = bin_spiketimes(spike_times1; max_lag, bin_width)
+    if !isempty(spike_times2) 
+        if shift_predictor
+            spike_times2 = spike_times2 .+ 1000.0
+        end
+        spike_train2, _ = bin_spiketimes(spike_times2; time_range)
+    else
+        spike_train2 = spike_train1
     end
-    return taus
+
+    # Compute the auto-correlation (cross-correlogram with itself)
+    _corr = xcorr(spike_train1, spike_train2)
+    
+    # Compute time lags
+    bins = length(_corr) ÷ 2
+    lags = (-bins:bins) .* bin_width
+    
+    # Trim the lags and auto-correlation to the specified max_lag
+    lag_mask = abs.(lags) .<= max_lag
+    lags = lags[lag_mask]
+    _corr = _corr[lag_mask]
+
+    isempty(spike_times2) && (auto_corr[length(lags)÷2+1 ] = 0)
+    
+    return lags, _corr
 end
+
+"""
+    compute_covariance_density(t_post, t_pre, T; τ=200ms, sr=50Hz)
+
+Compute the covariance density of spike trains `t_post` and `t_pre` over a time interval `T`.
+The function returns the covariance density vectors for positive and negative time lags.
+
+# Arguments
+- `spike_times1`:: Vector{Float32}: A vector of spike times for the first neuron.
+- `spike_times2`:: Vector{Float32}: A vector of spike times for the second neuron.
+- `bin_width`:: Float32: The width of the time bins in milliseconds.
+- `max_lag`:: Float32: The maximum time lag in milliseconds.
+
+# Returns
+- `lags`:: Vector{Float32}: The time lags in milliseconds.
+- `covariance_density`:: Vector{Float32}: The covariance density for each time lag.
+"""
+function compute_covariance_density(spike_times1::Vector{Float32}, spike_times2::Vector{Float32}; bin_width=1ms, max_lag=200ms)
+    # Compute the cross-correlogram
+    lags, cross_corr = compute_cross_correlogram(spike_times1, spike_times2; bin_width, max_lag)
+    spike_train1, _ = bin_spiketimes(spike_times1; max_lag, bin_width)
+    spike_train2, _ = bin_spiketimes(spike_times2; max_lag, bin_width)
+    
+    # Compute mean firing rates
+    λ_x = mean(spike_train1) / bin_width
+    λ_y = mean(spike_train2) / bin_width
+    
+    # Compute covariance density
+    covariance_density = cross_corr .- (λ_x * λ_y * bin_width * length(spike_train1))
+    
+    return lags, covariance_density
+end
+
 
 """
     bin_spiketimes(spiketimes, interval, sr)
@@ -334,69 +373,22 @@ containing the time points corresponding to the center of each bin.
 - `count`: A sparse matrix containing the spike counts for each time bin.
 - `r`: An array of time points corresponding to the center of each time bin.
 """
-function bin_spiketimes(spiketimes::Vector{Float32}, interval, sr)
-    delta = round(Int,1/sr)
-    r = interval[1]:delta:interval[2]
-    count = zeros(Int, size(r))
-    for i in 1:length(r)-1
-        count[i] = sum((spiketimes .> r[i]) .& (spiketimes .< r[i+1]))
+function bin_spiketimes(spike_times::Vector{Float32}; time_range=nothing, max_lag=500ms, bin_width=1.0ms, do_sparse=true)
+    time_range = !isnothing(time_range) ? time_range : (0.0:bin_width:maximum(spike_times) + max_lag)
+    spike_train = zeros(length(time_range))
+    for t in spike_times
+        index = Int(round(t / bin_width)) + 1
+        if index <= length(spike_train)
+            spike_train[index] = +1.0
+        end
     end
-    return sparse(count), r
+    if do_sparse
+        return sparse(spike_train), time_range
+    else
+        return spike_train, time_range
+    end
 end
 
-"""
-    compute_covariance_density(t_post, t_pre, T; τ=200ms, sr=50Hz)
-
-Compute the covariance density of spike trains `t_post` and `t_pre` over a time interval `T`.
-The function returns the covariance density vectors for positive and negative time lags.
-
-# Arguments
-- `t_post`: Array of post-synaptic spike times.
-- `t_pre`: Array of pre-synaptic spike times.
-- `T`: Spike train duration.
-
-# Optional Arguments
-- `τ`: Time constant for the kernel (default: 200ms).
-- `sr`: Sampling rate (default: 50Hz).
-
-# Returns
-- `covariance_density`: Tuple of two arrays representing the covariance density vectors for positive and negative time lags.
-
-"""
-function compute_covariance_density(pre::Vector{Float32}, post::Vector{Float32}, T::R; τ=200ms, sr=50Hz) where {R<:Real}
-    interval = 1:100
-    interval = 1:round(Int,τ*sr)
-    @show  interval, τ, sr, s
-    a, r = bin_spiketimes(pre, [0, T], sr)
-    b, r = bin_spiketimes(post, [0, T], sr)
-    length(a)
-    length(r)
-    # Mean spike rates
-    r_post = length(post) / T*s  # Average firing rate of post-synaptic spikes
-    r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
-
-    Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]) / r_post*r_pre)/T   for x in range]
-    Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1]) / r_post*r_pre)/ T for x in range]
-    delays = vcat(reverse(-r[interval]), r[interval])
-    corrs = vcat(reverse(Cminus(interval)), Cplus(interval))
-    return delays, corrs .- mean(corrs)
-end
-
-# function compute_covariance_density(pre::Spiketimes, post::Vector{}, ; τ=200ms, sr=50Hz)
-#     interval = 1:100
-#     interval = 1:round(Int,τ*sr)
-#     @show  interval, τ, sr, s
-#     a, r = bin_spiketimes(pre, [0, T], sr)
-#     b, r = bin_spiketimes(post, [0, T], sr)
-#     length(a)
-#     length(r)
-#     # Mean spike rates
-#     r_post = length(post) / T*s  # Average firing rate of post-synaptic spikes
-#     r_pre = length(pre) / T*s    # Average firing rate of pre-synaptic spikes
-#     Cplus(range)  = [(sum(a[1:end-x].*b[x:end-1]*r_post*r_pre))/T  for x in range]
-#     Cminus(range)  = [(sum(b[1:end-x].*a[x:end-1])* r_post*r_pre)/ T for x in range]
-#     return vcat(reverse(-r[interval]), r[interval]),vcat(reverse(Cminus(interval)), Cplus(interval))
-# end
 
 
 function isi(spiketimes::Spiketimes)
