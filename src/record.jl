@@ -486,11 +486,15 @@ function clear_records(obj)
         _clean(obj.records)
     else
         for v in obj
-            @debug "Removing records from $(v.name)"
             if v isa AbstractPopulation ||
                v isa AbstractStimulus ||
                v isa AbstractConnection
+                @debug "Removing records from $(v.name)"
                 _clean(v.records)
+            elseif v isa String
+                continue
+            else 
+                clear_records(v)
             end
         end
     end
