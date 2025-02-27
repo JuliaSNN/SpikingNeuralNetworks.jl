@@ -170,6 +170,7 @@ function vecplot!(
     sym;
     neurons = nothing,
     pop_average = false,
+    interval = nothing,
     r = nothing,
     sym_id = nothing,
     factor = 1.0f0,
@@ -177,6 +178,7 @@ function vecplot!(
 )
     # get the record and its sampling rate
     y, r_v = interpolated_record(p, sym)
+    r = isnothing(interval) ? r : interval
     r = _match_r(r, r_v)
 
 
