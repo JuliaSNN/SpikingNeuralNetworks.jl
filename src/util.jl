@@ -373,33 +373,36 @@ function remove_element(model, key)
 end
 
 
-function load_data(path = "", name = nothing, info = nothing)
+function load_data(path, name = nothing, info = nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
     if isnothing(name)
         throw(ArgumentError("$path is not file, config is required"))
     end
     path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
-    @info "Loading model from $(path)"
     tic = time()
     DATA = DrWatson.load(path)
-    @info "Data loaded in $(time()-tic) seconds"
+    @info "Data $(path) loaded in $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
+load_data(;path, name, info) = load_data(path, name, info)
 
-# load_data(path=""; name="", info=nothing) = load_data(path, name, info)
 
-function load_model(path = "", name = nothing, info = nothing)
+function load_model(path, name = nothing, info = nothing)
     isfile(path) && (return dict2ntuple(DrWatson.load(path)))
     if isnothing(name)
         throw(ArgumentError("If path is not file, config is required"))
     end
     path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     tic = time()
-    @info "Loading model from $(path)"
     DATA = DrWatson.load(path)
-    @info "Model loaded in $(time()-tic) seconds"
+    @info "Model $(path) loaded in $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
+load_model(;path, name, info) = load_model(path, name, info)
+
+# load_or_run_model(path, name, info) 
+#     data = load_model(path, name, info) : f()
+
 export load_data, load_model, save_model, savemodel
 
 function save_model(; path, model, name = randstring(10), info = nothing, kwargs...)
