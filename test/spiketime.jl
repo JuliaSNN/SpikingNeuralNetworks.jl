@@ -1,12 +1,12 @@
 spiketime = [1000ms, 1100ms]
-neurons = [[1], [2]]
-inputs = SpikeTime(spiketime, neurons)
+neurons = [1, 2]
+inputs = SpikeTimeParameter(spiketime, neurons)
 w = zeros(Float32, 2, 2)
 w[2, 1] = 1.0f0
 
 inputs.neurons
 
-st = Identity(N = max_neurons(inputs))
+st = Identity(N = max_neuron(inputs))
 stim = SpikeTimeStimulusIdentity(st, :g, param = inputs)
 syn = SpikingSynapse(st, st, nothing, w = w, param = STDPParameter())
 model = merge_models(pop = st, stim = stim, syn = syn, silent = true)

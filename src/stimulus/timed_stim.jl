@@ -1,16 +1,32 @@
 @snn_kw struct SpikeTimeStimulusParameter{
     VFT = Vector{Float32},
-    VVIT = Vector{Vector{Int}},
+    VIT = Vector{Int},
 } <: AbstractStimulusParameter
     spiketimes::VFT
-    neurons::VVIT
+    neurons::VIT
 end
 
-SpikeTime(; neurons, spiketimes) = SpikeTime(spiketimes, neurons)
+SpikeTimeParameter(; neurons, spiketimes) = SpikeTimeStimulusParameter(spiketimes, neurons)
 
-function SpikeTime(spiketimes::VFT, neurons::Vector{Vector{Int}}) where {VFT<:Vector}
+function SpikeTimeParameter(spiketimes::VFT, neurons::Vector{Int}) where {VFT<:Vector}
+    @assert length(spiketimes) == length(neurons) "spiketimes and neurons must have the same length"
     order = sort(1:length(spiketimes), by = x -> spiketimes[x])
     return SpikeTimeStimulusParameter(Float32.(spiketimes[order]), neurons[order])
+end
+
+# spiketimes2TimeStimulus()
+
+function SpikeTimeParameter(spiketimes::Spiketimes)
+    neurons = Int[]
+    times = Float32[]
+    for i in eachindex(spiketimes)
+        for t in spiketimes[i]
+            push!(neurons, i)
+            push!(times, t)
+        end
+    end
+    order = sort(1:length(times), by = x -> times[x])
+    return SpikeTimeStimulusParameter(Float32.(times[order]), neurons[order])
 end
 
 @snn_kw struct SpikeTimeStimulus{
@@ -38,7 +54,6 @@ end
 end
 
 function SpikeTimeStimulus(
-    N,
     post::T,
     sym::Symbol,
     target = nothing;
@@ -50,8 +65,7 @@ function SpikeTimeStimulus(
     param::SpikeTimeStimulusParameter,
 ) where {T<:AbstractPopulation,R<:Real}
     # set the synaptic weight matrix
-    @assert N >= maximum(vcat(param.neurons...)) "Projections must be within the range of the presynaptic population"
-
+    N =  max_neuron(param)
     w = sparse_matrix(w, N, post.N, dist, μ, σ, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -87,7 +101,7 @@ function SpikeTimeStimulusIdentity(
     kwargs...,
 ) where {T<:AbstractPopulation}
     w = LinearAlgebra.I(post.N)
-    return SpikeTimeStimulus(post.N, post, sym, target; w = w, param = param, kwargs...)
+    return SpikeTimeStimulus(post, sym, target; w = w, param = param, kwargs...)
 end
 
 # """
@@ -103,11 +117,11 @@ function stimulate!(
 )
     @unpack colptr, I, W, fireJ, g, next_spike, next_index = s
     @unpack spiketimes, neurons = param
-    if next_spike[1] < get_time(time)
-        @inbounds for j ∈ neurons[next_index[1]] # loop on presynaptic neurons
-            @inbounds @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[I[s]] += W[s]
-            end
+    while next_spike[1] <= get_time(time)
+        j = neurons[next_index[1]] # loop on presynaptic neurons
+        @inbounds @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+            g[I[s]] += W[s]
+
         end
         if next_index[1] < length(spiketimes)
             next_index[1] += 1
@@ -118,7 +132,7 @@ function stimulate!(
     end
 end
 
-function next_neurons(p::SpikeTimeStimulus)
+function next_neuron(p::SpikeTimeStimulus)
     @unpack fire, next_spike, next_index, param = p
     if next_index[1] < length(param.spiketimes)
         return param.neurons[next_index[1]]
@@ -127,7 +141,28 @@ function next_neurons(p::SpikeTimeStimulus)
     end
 end
 
-max_neurons(param::SpikeTimeStimulusParameter) = maximum(vcat(param.neurons...))
+
+function shift_spikes!(spiketimes::Spiketimes, delay::Number ) 
+        for n in eachindex(spiketimes)
+            spiketimes[n] .+= delay
+        end
+        return spiketimes
+end
+
+function shift_spikes!(param::SpikeTimeStimulusParameter, delay::Number ) 
+        param.spiketimes .+= delay
+        return param
+end
+
+function shift_spikes!(stimulus::SpikeTimeStimulus, delay::Number ) 
+        stimulus.param.spiketimes .+= delay
+        stimulus.next_index[1] = 1
+        stimulus.next_spike[1] = stimulus.param.spiketimes[1]
+        return stimulus
+end
+
+
+max_neuron(param::SpikeTimeStimulusParameter) = maximum(param.neurons)
 
 
 
@@ -135,7 +170,9 @@ export SpikeTimeStimulusParameter,
     SpikeTimeStimulusParameter,
     SpikeTimeStimulus,
     SpikeTimeStimulusIdentity,
+    SpikeTimeParameter,
     stimulate!,
-    next_neurons,
-    max_neurons,
+    next_neuron,
+    max_neuron,
+    shift_spikes!,
     SpikeTime
