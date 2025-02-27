@@ -1,7 +1,7 @@
 C = 281pF        #(pF)
 gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
 
-@snn_kw struct AdExParameter{FT = Float32} <: AbstractAdExParameter
+@snn_kw mutable struct AdExParameter{FT = Float32} <: AbstractAdExParameter
     τm::FT = C / gL # Membrane time constant
     Vt::FT = -50mV # Membrane potential threshold
     Vr::FT = -70.6mV # Reset potential
