@@ -209,18 +209,16 @@ function firing_rate(
         ttf = ttf > 0 ? ttf : max_time
         interval = tt0:sampling:ttf
     end
-    all(isempty.(spiketimes)) && return Spiketimes([
-        zeros(Float32, length(interval)) for n in eachindex(spiketimes)
-    ]),
-    interval
+    length(spiketimes) < 1  && return (zeros(Float32, 0, length(interval)), interval)
+    all(isempty.(spiketimes)) && return  (zeros(Float32, length(spiketimes),length(interval)), interval)
 
     # Create the alpha kernel
     kernel_length = τ * 10  # Length of the kernel in ms
-    bin_width = step(interval)
+    bin_width = step(interval) # kernel window in ms
     kernel_time = Float32.(0.0:bin_width:kernel_length)
     τ = Float32(τ)
     alpha_kernel = [alpha_function(t, τ) for t in kernel_time]
-    alpha_kernel ./= sum(alpha_kernel)
+    alpha_kernel ./= sum(alpha_kernel)*bin_width
 
     rates = tmap(eachindex(spiketimes)) do n
         spike_train, _ =
@@ -252,10 +250,10 @@ end
 
 function firing_rate(populations; mean_pop = false, kwargs...)
     spiketimes_pop, names_pop = spiketimes_split(populations)
-    fr_pop = Matrix{Float32}[]
+    fr_pop = []
     interval = nothing
-    for spiketimes in spiketimes_pop
-        rates, interval = firing_rate(spiketimes; kwargs...)
+    for n in eachindex(spiketimes_pop)
+        rates, interval = firing_rate( spiketimes_pop[n]; kwargs...)
         push!(fr_pop, rates)
     end
     if mean_pop == true
@@ -411,11 +409,12 @@ function bin_spiketimes(
 )
     time_range =
         !isnothing(time_range) ? time_range : (0.0:bin_width:maximum(spike_times)+max_lag)
+    bin_width = step(time_range)
     spike_train = zeros(length(time_range))
     for t in spike_times
-        index = Int(round(t / bin_width)) + 1
+        index = floor(Int, t / bin_width) + 1
         if index <= length(spike_train)
-            spike_train[index] = +1.0
+            spike_train[index] += 1.0
         end
     end
     if do_sparse
@@ -709,6 +708,54 @@ function spiketimes_from_bool(P; dt = 0.1ms)
     return SNN.Spiketimes(_spiketimes)
 end
 
+"""
+    sample_spikes(N, rate::Vector, interval::R; dt=0.125f0) where {R <: AbstractRange}
+
+Generate sample spike times for N neurons from a rate vector.
+The function generates spike times for each neuron based on the rate vector and the time interval. The spike times are generated such that during the interval of the rate, the number of spikes is Poisson distributed with the rate.
+
+# Arguments
+- `N`: The number of neurons.
+- `rate::Vector`: The vector with the rate to be sampled.
+- `interval::R`: The time interval over which the rate is recorded.
+- `dt=0.125f0`: The time step size.
+
+
+# Returns
+An array of spike times for each neuron.
+
+"""
+function sample_spikes(N, rate::Vector, interval::R; dt=0.125f0) where {R <: AbstractRange}
+    spiketimes = Vector{Float32}[[] for _ in 1:N]
+    @assert length(rate) == length(interval)
+    steps = step(interval)/dt
+    t = dt
+    for i in 1:length(interval)
+        r = rate[i]*Hz
+        for _ in 1:steps
+            for n in 1:N
+                if rand() < r*dt
+                    push!(spiketimes[n], t)
+                end
+            end
+            t = Float32(interval[i] + dt)
+        end
+    end
+    spiketimes
+end
+
+function sample_inputs(N, rate::Matrix, interval::R; dt=0.125f0) where {R <: AbstractRange}
+    inputs = Vector{Float32}[]
+    for i in 1:size(rate, 1)
+        for n in sample_spikes(N, rate[i,:], interval; dt=dt)
+            push!(inputs, n)
+        end
+    end
+    inputs
+end
+
+
+
 export spiketimes,
     spiketimes_from_bool,
     merge_spiketimes,
@@ -734,3 +781,6 @@ export spiketimes,
     st_order,
     isi_cv,
     CV_isi2
+    sample_spikes,
+    sample_inputs
+
