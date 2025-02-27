@@ -84,17 +84,39 @@ function train!(
 end
 
 
-function train!(; model, kwargs...)
-    pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
-    syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
-    stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
+function train!(args...; model, kwargs...)
+    pop = haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop))  : Vector{AbstractPopulation}([])
+    syn = haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn))  : Vector{AbstractConnection}([])
+    stim = haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) : Vector{AbstractStimulus}([])
+    for arg in args
+        if isa(arg, AbstractPopulation)
+            push!(pop, arg)
+        elseif isa(arg, AbstractConnection)
+            push!(syn, arg)
+        elseif isa(arg, AbstractStimulus)
+            push!(stim, arg)
+        else
+            error("Invalid argument type: $(typeof(arg))")
+        end
+    end
     train!(pop, syn, stim; kwargs...)
 end
 
-function sim!(; model, kwargs...)
-    pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
-    syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
-    stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
+function sim!(args...; model, kwargs...)
+    pop = haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop))  : Vector{AbstractPopulation}([])
+    syn = haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn))  : Vector{AbstractConnection}([])
+    stim = haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) : Vector{AbstractStimulus}([])
+    for arg in args
+        if isa(arg, AbstractPopulation)
+            push!(pop, arg)
+        elseif isa(arg, AbstractConnection)
+            push!(syn, arg)
+        elseif isa(arg, AbstractStimulus)
+            push!(stim, arg)
+        else
+            error("Invalid argument type: $(typeof(arg))")
+        end
+    end
     sim!(pop, syn, stim; kwargs...)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
