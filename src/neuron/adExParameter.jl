@@ -68,16 +68,16 @@ end
 end
 
 
-SomaNMDA = Glutamatergic(
+SomaGlu = Glutamatergic(
     Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
     ReceptorVoltage(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
 )
-SomaGABAb = GABAergic(
+SomaGABA = GABAergic(
     Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
     Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.006), # τd = 100.0
 )
 SomaNMDA = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
-SomaSynapse = Synapse(SomaNMDA, SomaGABAb)
+SomaSynapse = Synapse(SomaGlu, SomaGABA)
 
 @snn_kw struct AdExSynapseParameter{FT = Float32, VIT=Vector{Int},
     ST = SynapseArray,
