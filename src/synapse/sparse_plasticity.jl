@@ -23,6 +23,12 @@ include("sparse_plasticity/longshortSP.jl")
 include("sparse_plasticity/STDP.jl")
 include("sparse_plasticity/STDP_structured.jl")
 
+function change_plasticity!(syn, param)
+        syn.param = param
+        @unpack fireI, fireJ = syn
+        Npre, Npost = length(fireJ), length(fireI)
+        syn.plasticity = plasticityvariables(param, Npre, Npost)
+end
 
 export SpikingSynapse,
     SpikingSynapseParameter,
@@ -30,3 +36,4 @@ export SpikingSynapse,
     no_PlasticityVariables,
     plasticityvariables,
     plasticity!
+    change_plasticity!
