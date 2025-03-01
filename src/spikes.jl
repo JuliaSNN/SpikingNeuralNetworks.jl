@@ -128,6 +128,16 @@ function alpha_function(t::Float32, τ::Float32)
     end
 end
 
+function get_alpha_kernel(τ, interval)
+    kernel_length = τ * 10  # Length of the kernel in ms
+    bin_width = step(interval) # kernel window in ms
+    kernel_time = Float32.(0.0:bin_width:kernel_length)
+    τ = Float32(τ)
+    alpha_kernel = [alpha_function(t, τ) for t in kernel_time]
+    alpha_kernel ./= sum(alpha_kernel)*bin_width
+    return alpha_kernel
+end
+
 """
     merge_spiketimes(spikes::Vector{Spiketimes}; )
 
@@ -209,29 +219,26 @@ function firing_rate(
         ttf = ttf > 0 ? ttf : max_time
         interval = tt0:sampling:ttf
     end
-    length(spiketimes) < 1  && return (zeros(Float32, 0, length(interval)), interval)
-    all(isempty.(spiketimes)) && return  (zeros(Float32, length(spiketimes),length(interval)), interval)
 
-    # Create the alpha kernel
-    kernel_length = τ * 10  # Length of the kernel in ms
-    bin_width = step(interval) # kernel window in ms
-    kernel_time = Float32.(0.0:bin_width:kernel_length)
-    τ = Float32(τ)
-    alpha_kernel = [alpha_function(t, τ) for t in kernel_time]
-    alpha_kernel ./= sum(alpha_kernel)*bin_width
-
-    rates = tmap(eachindex(spiketimes)) do n
-        spike_train, _ =
-            bin_spiketimes(spiketimes[n]; time_range = interval, do_sparse = false)
-        conv(spike_train, alpha_kernel)[1:length(interval)] .* s
+    rates = nothing
+    if length(spiketimes) < 1 
+        rates = zeros(Float32, 0, length(interval))
+    elseif all(isempty.(spiketimes))
+        rates = zeros(Float32, length(spiketimes),length(interval))
+    else
+        alpha_kernel = get_alpha_kernel(τ, interval)
+        rates = tmap(eachindex(spiketimes)) do n
+            spike_train, _ =
+                bin_spiketimes(spiketimes[n]; time_range = interval, do_sparse = false)
+            conv(spike_train, alpha_kernel)[1:length(interval)] .* s
+        end
+        rates = hcat(rates...)'
     end
-    # )
 
     if interpolate
-        _rates = hcat(rates...)'
-        interp = get_interpolator(_rates)
+        interp = get_interpolator(rates)
         rates = Interpolations.scale(
-            Interpolations.interpolate(_rates, interp),
+            Interpolations.interpolate(rates, interp),
             1:length(spiketimes),
             interval,
         )
