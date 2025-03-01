@@ -5,6 +5,7 @@ SNN = SpikingNeuralNetworks
 export SNN
 
 using DrWatson
+import Dates: now
 using LinearAlgebra
 using SparseArrays
 using Requires
@@ -26,6 +27,7 @@ include("macros.jl")
 include("structs.jl")
 include("unit.jl")
 include("util.jl")
+include("io.jl")
 include("graph.jl")
 include("record.jl")
 include("main.jl")
