@@ -20,6 +20,7 @@ include("if.jl")
 include("if_current.jl")
 
 abstract type AbstractAdExParameter <: AbstractGeneralizedIFParameter end
+include("adExParameter.jl")
 include("adEx.jl")
 
 abstract type AbstractDendriteIF <: AbstractGeneralizedIF end
