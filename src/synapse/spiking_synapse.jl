@@ -1,6 +1,6 @@
 abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
 
-@snn_kw struct SpikingSynapse{
+@snn_kw mutable struct SpikingSynapse{
     VIT = Vector{Int32},
     VFT = Vector{Float32},
     VBT = Vector{Bool},
