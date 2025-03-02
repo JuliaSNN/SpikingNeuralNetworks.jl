@@ -11,7 +11,8 @@ function load_data(path, name = nothing, info = nothing)
                 return nothing
     end
     tic = time()
-    DATA = DrWatson.load(path)
+    # DATA = DrWatson.load(path)
+    DATA = JLD2.load(path)
     @info "Data $(name)"
     @info "Loading time:  $(time()-tic) seconds"
     return dict2ntuple(DATA)
@@ -31,7 +32,7 @@ function load_model(path, name = nothing, info = nothing)
         @warn  "Model $(path) not found"
                 return nothing
     end
-    DATA = DrWatson.load(path)
+    DATA = JLD2.load(path)
     @info "Model $(name)"
     @info "Loading time:  $(time()-tic) seconds"
     return dict2ntuple(DATA)
@@ -53,12 +54,12 @@ end
 
 export load_data, load_model, save_model, savemodel
 
-function save_model(; path, model, name = randstring(10), info = nothing, config=nothing, kwargs...)
+function save_model(; path, model, name, info, config, kwargs...)
     @info "Model: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
     isdir(path) || mkpath(path)
 
     config_path = joinpath(path, savename(name, info, "jl.config", connector = "-"))
-    write_config(config_path, config)
+    write_config(config_path, info; config, kwargs...)
 
     data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
     Logging.LogLevel(0) == Logging.Error
@@ -95,7 +96,7 @@ function data2model(; path, name = randstring(10), info = nothing, kwargs...)
     @error "Model file not saved"
 end
 
-function save_name(; path, name = randstring(10), info = nothing, kwargs...)
+function get_path(; path, name = randstring(10), info = nothing, kwargs...)
     model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     return model_path
 end
@@ -133,13 +134,26 @@ function get_git_commit_hash()
     return readchomp(`git rev-parse HEAD`)
 end
 
-function write_value(file, key, value, indent="")
+function write_value(file, key, value, indent="", equal_sign="=")
     if isa(value, Number)
-        println(file, "$indent$key = $value,")
+        println(file, "$indent$key $(equal_sign) $value,")
     elseif isa(value, String)
-        println(file, "$indent$key = \"$value\",")
+        println(file, "$indent$key $(equal_sign) \"$value\",")
     elseif isa(value, Symbol)
-        println(file, "$indent$key = :$value,")
+        println(file, "$indent$key $(equal_sign) :$value,")
+    elseif typeof(value) <: AbstractRange || isa(value,StepRange{Int64, Int64})
+        _s = step(value)
+        _end = last(value)
+        _start = first(value)
+        println(file, "$indent$key $(equal_sign) $(_start):$(_s):$(_end),")
+    elseif isa(value, Bool)
+        println(file, "$indent$key $(equal_sign) $value,")
+    elseif isa(value, Array)
+        println(file, "$indent$key $(equal_sign) [")
+        for v in value
+            write_value(file, "", v, indent * "    ", "")
+        end
+        println(file, "$indent],")
     elseif isa(value, Dict)
         println(file, "$indent$key = Dict(")
         for (k, v) in value
@@ -162,31 +176,35 @@ function write_value(file, key, value, indent="")
     end
 end
 
-function write_config(path::String, config; name=nothing, info=nothing)
+function write_config(path::String, config; name="", kwargs...)
     timestamp = get_timestamp()
     commit_hash = get_git_commit_hash()
 
-
-    config_path = joinpath(path, savename(name, info, "config", connector = "-"))
+    if name !== ""
+        config_path = joinpath(path, savename(name, info, "config", connector = "-"))
+    else    
+        config_path = path
+    end
+    
     file = open(config_path, "w")
 
     println(file, "# Configuration file generated on: $timestamp")
     println(file, "# Corresponding Git commit hash: $commit_hash")
     println(file, "")
-    println(file, "config = (")
+    println(file, "info = (")
     for (key, value) in pairs(config)
         write_value(file, key, value, "    ")
     end
     println(file, ")")
-
-    if !isnothing(info)
-        println(file, "info = (")
-        for (key, value) in pairs(info)
-            write_value(file, key, value, "        ")
+    for (info_name, info_value ) in pairs(kwargs)
+        if isa(info_value, NamedTuple)
+            println(file, "$(info_name) = (")
+            for (key, value) in pairs(info_value)
+                write_value(file, key, value, "        ")
+            end
+            println(file, "    )")
         end
-        println(file, "    )")
     end
-
     close(file)
     @info "Config file saved at $(config_path)"
 end
@@ -208,4 +226,4 @@ end
 
 
 
-export save_model, load_model, load_data, save_parameters, save_name, data2model, write_config, print_summary, load_or_run
+export save_model, load_model, load_data, save_parameters, get_path, data2model, write_config, print_summary, load_or_run
