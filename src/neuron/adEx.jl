@@ -1,7 +1,7 @@
 
 abstract type AbstractAdEx <: AbstractGeneralizedIF end
 
-@snn_kw struct AdExSimple{
+@snn_kw struct AdEx{
     VFT = Vector{Float32},
     VIT = Vector{Int},
     VBT = Vector{Bool},
@@ -56,7 +56,9 @@ end
     records::Dict = Dict()
 end
 
-function AdEx(; param::T, kwargs...) where {T<:AbstractAdExParameter}
+AdExSimple = AdEx
+
+function AdExNeuron(; param::T, kwargs...) where {T<:AbstractAdExParameter}
     if isa(param, AdExSynapseParameter)
         for n in eachindex(param.syn)
             param.α[n] = param.syn[n].α
@@ -135,6 +137,14 @@ function update_soma!(p::P, param::T, dt::Float32) where {P<:AbstractAdEx, T<:Ab
     @unpack N, v, w, fire, θ, I, ξ_het, tabs, syn_curr = p
     @unpack τm, Vt, Vr, El, R, ΔT, τw, a, b, At, τt, τabs = param
     
+    # syn_curr = hasfield(typeof(p), :syn_curr) ? p.syn_curr : zeros(N)
+    # if hasfield(typeof(p), :syn_curr)
+    #     synaptic_current!(p, param)
+    # else
+    #     synaptic_current!(p, param, syn_curr)
+    # end
+            
+
     @inbounds for i ∈ 1:N
         # Reset membrane potential after spike
         v[i] = ifelse(fire[i], Vr, v[i])
@@ -184,11 +194,11 @@ end
         @unpack gsyn, E_rev, nmda = syn[r]
         if nmda > 0.0f0
             @simd for i ∈ 1:N
-                    syn_curr[i] += gsyn * g[i, r] * (v[i] - E_rev) /  (1.0f0 + (mg / b) * exp32(k * (v[i])))
+                    syn_curr[i] += - gsyn * g[i, r] * (v[i] - E_rev) /  (1.0f0 + (mg / b) * exp32(k * (v[i])))
             end
         else
             @simd for i ∈ 1:N
-                syn_curr[i] += gsyn * g[i, r] * (v[i] - E_rev)
+                syn_curr[i] += - gsyn * g[i, r] * (v[i] - E_rev)
             end
         end
     return 
@@ -197,11 +207,12 @@ end
 
 @inline function synaptic_current!(p::AdExSimple, param::T) where {T<:AbstractAdExParameter}
     @unpack gsyn_e, gsyn_i, E_e, E_i= param
-    @unpack N, v, ge, gi, syn_curr = p
-    @inbounds for i ∈ 1:N
+    @unpack N, v, ge, gi, syn_curr= p
+    @inbounds @simd for i ∈ 1:N
             syn_curr[i] = ge[i] * (E_e - v[i]) * gsyn_e + gi[i] * (E_i - v[i]) * gsyn_i
     end
 end
+
 @inline @fastmath function ΔwAdEx(
     v::Float32,
     w::Float32,
@@ -211,4 +222,4 @@ end
 end
 
 
-export AdEx, AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn
+export AdEx, AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn, AdExSynapse, AdExSynapseParameter, AdExNeuron
