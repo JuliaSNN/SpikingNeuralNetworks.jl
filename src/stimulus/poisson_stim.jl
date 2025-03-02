@@ -1,17 +1,19 @@
 abstract type PoissonStimulusParameter end
 @snn_kw struct PoissonStimulusVariable{VFT} <: PoissonStimulusParameter
-    variables::Dict{Symbol,Any} = Dict{Symbol,Any}()
+    variables::Dict{Symbol,Any}
     rate::Function
     active::Vector{Bool} = [true]
 end
 
-@snn_kw struct PoissonStimulusFixed{R} <: PoissonStimulusParameter
+@snn_kw struct PoissonStimulusFixed{R=Float32} <: PoissonStimulusParameter
     rate::Vector{R}
+    active::Vector{Bool} = [true]
 end
 
 @snn_kw struct PoissonStimulusInterval{R = Float32} <: PoissonStimulusParameter
-    rate::Vector{R} = fill(0.0, N)
+    rate::Vector{R} 
     intervals::Vector{Vector{R}}
+    active::Vector{Bool} = [true]
 end
 
 PSParam = PoissonStimulusVariable
@@ -118,7 +120,7 @@ function PoissonStimulus(
     end
 
     if typeof(param) <: Real
-        param = PoissonStimulusFixed(fill(param, N))
+        param = PoissonStimulusFixed(fill(param, N), [true])
     end
 
     # Construct the SpikingSynapse instance
