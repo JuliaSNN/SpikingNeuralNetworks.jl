@@ -6,6 +6,7 @@ export SNN
 
 using DrWatson
 import Dates: now
+using JLD2
 using LinearAlgebra
 using SparseArrays
 using Requires
