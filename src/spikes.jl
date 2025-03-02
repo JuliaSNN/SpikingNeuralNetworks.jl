@@ -210,6 +210,7 @@ function firing_rate(
     ttf = -1,
     tt0 = -1,
     interpolate = true,
+    pop_average =false,
 )
     # Check if the interval is empty and create an interval
     if isempty(interval)
@@ -245,6 +246,10 @@ function firing_rate(
     else
         rates = copy(hcat(rates...)')
     end
+
+    if pop_average
+        rates = mean(rates, dims = 1)[1, :]
+    end
     return rates, interval
 end
 
@@ -260,11 +265,8 @@ function firing_rate(populations; mean_pop = false, kwargs...)
     fr_pop = []
     interval = nothing
     for n in eachindex(spiketimes_pop)
-        rates, interval = firing_rate( spiketimes_pop[n]; kwargs...)
+        rates, interval = firing_rate( spiketimes_pop[n]; pop_average=mean_pop, kwargs...)
         push!(fr_pop, rates)
-    end
-    if mean_pop == true
-        fr_pop = [mean(fr, dims = 1)[1, :] for fr in fr_pop]
     end
     return fr_pop, interval, names_pop
 end
