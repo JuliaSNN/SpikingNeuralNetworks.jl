@@ -108,7 +108,7 @@ SomaSynapse = Synapse(SomaGlu, SomaGABA)
     syn::ST= synapsearray(SomaSynapse)
 end
 
-function AdExSynapseParameter(synapse::Synapse; kwargs...)
+function AdExSynapseParam(synapse::Synapse; kwargs...)
     α = [syn.α for syn in synapsearray(synapse)]
     syn = synapsearray(synapse)
     return AdExSynapseParameter(α = α, syn = syn; kwargs...)
