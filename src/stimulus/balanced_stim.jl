@@ -173,6 +173,7 @@ function stimulate!(
         r[i] += (r0 - Erate) / 400ms * dt
         @assert Erate >= 0
         @inbounds @fastmath for i = 1:N
+            rand!(randcache)
             @simd for j = 1:N_pre # loop on presynaptic cells
                 if randcache[j] < Erate / N_pre * dt
                     ge[i] += 1.0
@@ -187,6 +188,7 @@ function stimulate!(
             Erate = R(r0 ./ 2 * R(noise[i] * β, 1.0f0) + r[i], 0.0f0)
             r[i] += (r0 - Erate) / 400ms * dt
             @assert Erate >= 0
+            rand!(randcache)
             @simd for j = 1:N_pre # loop on presynaptic cells
                 if randcache[j] < Erate / N_pre * dt
                     ge[i] += 1.0
