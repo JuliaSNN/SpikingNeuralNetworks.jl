@@ -97,7 +97,7 @@ function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
         # if w is defined, convert it to a sparse matrix
         w = sparse(w)
     end
-    @assert size(w) == (Npost, Npre) "The size of the synaptic weight is not correct"
+    @assert size(w) == (Npost, Npre) "The size of the synaptic weight is not correct: $(size(w)) != ($Npost, $Npre)"
     return w
 end
 
@@ -186,19 +186,22 @@ function merge_models(args...; name = randstring(10), silent = false, kwargs...)
     pop = Dict{Symbol,Any}()
     syn = Dict{Symbol,Any}()
     stim = Dict{Symbol,Any}()
+    time = Time()
     for v in args
         v isa String && continue
-        extract_items(Symbol(""), v, pop = pop, syn = syn, stim = stim)
+        v isa Time && continue
+        extract_items(Symbol(""), v, pop = pop, syn = syn, stim = stim, time=time)
     end
     for (k, v) in kwargs
         v isa String && continue
-        extract_items(k, v, pop = pop, syn = syn, stim = stim)
+        v isa Time && continue
+        extract_items(k, v, pop = pop, syn = syn, stim = stim, time=time)
     end
     pop = DrWatson.dict2ntuple(sort(pop, by = x -> x))
     syn = DrWatson.dict2ntuple(sort(syn, by = x -> x))
     stim = DrWatson.dict2ntuple(sort(stim, by = x -> stim[x].name))
     name = haskey(kwargs, :name) ? args.name : name
-    model = (pop = pop, syn = syn, stim = stim, name = name)
+    model = (pop = pop, syn = syn, stim = stim, name = name, time = time)
     if !silent
         print_model(model)
     end
@@ -320,6 +323,7 @@ function extract_items(
     pop::Dict{Symbol,Any},
     syn::Dict{Symbol,Any},
     stim::Dict{Symbol,Any},
+    time::Time 
 )
     v = container
     if typeof(v) <: AbstractPopulation
@@ -331,12 +335,14 @@ function extract_items(
     elseif typeof(v) <: AbstractStimulus
         @assert !haskey(stim, root) "Stimulus $(root) already exists"
         push!(stim, root => v)
+    elseif typeof(v) <: Time
+        update_time!(time, v)
     else
         for k in keys(container)
             k == :name && continue
             v = getindex(container, k)
             (k == :pop || k == :syn || k == :stim) &&
-                (extract_items(root, v, pop = pop, syn = syn, stim = stim)) &&
+                (extract_items(root, v; pop,  syn, stim, time)) &&
                 continue
             new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))
             if typeof(v) <: AbstractPopulation
@@ -349,7 +355,7 @@ function extract_items(
                 @assert !haskey(stim, new_key) "Stimulus $(new_key) already exists"
                 push!(stim, new_key => v)
             else
-                extract_items(new_key, v, pop = pop, syn = syn, stim = stim)
+                extract_items(new_key, v; pop, syn, stim, time)
             end
         end
     end
