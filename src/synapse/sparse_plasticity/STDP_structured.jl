@@ -21,7 +21,7 @@ SymmetricSTDP
     A_y::FT = 3e-2    # LTD learning rate (inhibitory synapses)
     τ_x::FT = 50ms       # Time constant for pre-synaptic spike trace
     τ_y::FT = 500ms      # Time constant for post-synaptic spike trace
-    αpre::FT = -25.0pF
+    αpre::FT = 0.0pF
     αpost::FT = 0.0pF
     Wmax::FT = 30.0pF   # Max weight
     Wmin::FT = 0.0pF    # Min weight (negative for inhibition)
@@ -32,7 +32,7 @@ end
     A_x::FT = 3e-2    # LTP learning rate (inhibitory synapses)
     τ_x::FT = 50ms       # Time constant for pre-synaptic spike trace
     τ_y::FT = 50ms      # Time constant for post-synaptic spike trace
-    αpre::FT = -25.0pF
+    αpre::FT = 0.0pF
     αpost::FT = 0.0pF
     Wmax::FT = 30.0pF   # Max weight
     Wmin::FT = 0.0pF    # Min weight (negative for inhibition)
