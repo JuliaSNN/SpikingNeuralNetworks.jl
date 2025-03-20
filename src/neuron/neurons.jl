@@ -18,6 +18,7 @@ include("identity.jl")
 abstract type AbstractIFParameter <: AbstractGeneralizedIFParameter end
 include("if.jl")
 include("if_current.jl")
+include("extendedLIF.jl")
 
 abstract type AbstractAdExParameter <: AbstractGeneralizedIFParameter end
 include("adExParameter.jl")
