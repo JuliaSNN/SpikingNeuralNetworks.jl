@@ -211,6 +211,7 @@ function firing_rate(
     tt0 = -1,
     interpolate = true,
     pop_average =false,
+    neurons = :ALL,
 )
     # Check if the interval is empty and create an interval
     if isempty(interval)
@@ -221,12 +222,14 @@ function firing_rate(
         interval = tt0:sampling:ttf
     end
 
+    neurons = neurons == :ALL ? eachindex(spiketimes) : neurons
     rates = nothing
     if length(spiketimes) < 1 
         rates = zeros(Float32, 0, length(interval))
     elseif all(isempty.(spiketimes))
-        rates = zeros(Float32, length(spiketimes),length(interval))
+        rates = zeros(Float32, length(spiketimes[neurons]),length(interval))
     else
+        spiketimes = spiketimes[neurons]
         alpha_kernel = get_alpha_kernel(τ, interval)
         rates = tmap(eachindex(spiketimes)) do n
             spike_train, _ =
@@ -279,7 +282,6 @@ function average_firing_rate(
     ttf = -1,
     tt0 = -1,
     cache = true,
-    pop::Union{Symbol,Vector{Int}} = :ALL,
 )
     rates, interval = firing_rate(
         spiketimes;
