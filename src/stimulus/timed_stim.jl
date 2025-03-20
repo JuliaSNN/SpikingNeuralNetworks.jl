@@ -62,10 +62,12 @@ function SpikeTimeStimulus(
     σ = 0.0,
     w = nothing,
     dist = Normal,
+    N = nothing,
     param::SpikeTimeStimulusParameter,
+    kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
     # set the synaptic weight matrix
-    N =  max_neuron(param)
+    N =  isnothing(N) ? max_neuron(param) : N
     w = sparse_matrix(w, N, post.N, dist, μ, σ, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -90,6 +92,7 @@ function SpikeTimeStimulus(
         g = g,
         targets = targets,
         @symdict(rowptr, colptr, I, J, index, W)...,
+        kwargs...,
     )
 end
 
