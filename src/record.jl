@@ -1,23 +1,4 @@
 import Interpolations: scale, interpolate, BSpline, Linear, NoInterp
-
-"""
-    struct Time
-
-A mutable struct representing time. 
-
-# Fields
-- `t::Vector{Float32}`: A vector containing the current time.
-- `tt::Vector{Int}`: A vector containing the current time step.
-- `dt::Float32`: The time step size.
-
-"""
-Time
-@snn_kw mutable struct Time{VFT = Vector{Float32},VIT = Vector{Int32},FT = Float32}
-    t::VFT = [0.0f0]
-    tt::VIT = Int32[0]
-    dt::FT = 0.125f0
-end
-
 """
     get_time(T::Time)
 
@@ -87,6 +68,16 @@ Update the current time and time step.
 function update_time!(T::Time, dt::Float32)
     T.t[1] += dt
     T.tt[1] += 1
+end
+
+function update_time!(T::Time, myT::Time)
+    T.t[1] = myT.t[1]
+    T.tt[1] = myT.tt[1]
+end
+
+function reset_time!(T::Time)
+    T.t[1] = 0.0f0
+    T.tt[1] = 0
 end
 
 """
@@ -576,4 +567,5 @@ export Time,
     getrecord,
     clear_records,
     clear_monitor,
-    record
+    record,
+    reset_time!

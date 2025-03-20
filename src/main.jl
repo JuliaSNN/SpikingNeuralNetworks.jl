@@ -99,7 +99,9 @@ function train!(args...; model, kwargs...)
             error("Invalid argument type: $(typeof(arg))")
         end
     end
-    train!(pop, syn, stim; kwargs...)
+    mytime = train!(pop, syn, stim; time=model.time, kwargs...)
+    update_time!(model.time, mytime)
+    return get_time(model.time)
 end
 
 function sim!(args...; model, kwargs...)
@@ -117,7 +119,9 @@ function sim!(args...; model, kwargs...)
             error("Invalid argument type: $(typeof(arg))")
         end
     end
-    sim!(pop, syn, stim; kwargs...)
+    mytime = sim!(pop, syn, stim; time=model.time, kwargs...)
+    update_time!(model.time, mytime)
+    return get_time(model.time)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
