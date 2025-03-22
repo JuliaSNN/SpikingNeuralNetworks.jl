@@ -6,9 +6,9 @@ function load_data(path, name = nothing, info = nothing)
     end
     name = savename(name, info, "data.jld2", connector = "-")
     path = joinpath(path, name)
-    if !isfile(path) 
-        @warn  "Model $(path) not found"
-                return nothing
+    if !isfile(path)
+        @warn "Model $(path) not found"
+        return nothing
     end
     tic = time()
     # DATA = DrWatson.load(path)
@@ -17,7 +17,7 @@ function load_data(path, name = nothing, info = nothing)
     @info "Loading time:  $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
-load_data(;path, name, info) = load_data(path, name, info)
+load_data(; path, name, info) = load_data(path, name, info)
 
 
 function load_model(path, name = nothing, info = nothing)
@@ -28,24 +28,24 @@ function load_model(path, name = nothing, info = nothing)
     name = savename(name, info, "model.jld2", connector = "-")
     path = joinpath(path, name)
     tic = time()
-    if !isfile(path) 
-        @warn  "Model $(path) not found"
-                return nothing
+    if !isfile(path)
+        @warn "Model $(path) not found"
+        return nothing
     end
     DATA = JLD2.load(path)
     @info "Model $(name)"
     @info "Loading time:  $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
-load_model(;path, name, info) = load_model(path, name, info,)
+load_model(; path, name, info) = load_model(path, name, info)
 
-function load_or_run(f::Function, path, name, info; exp_config...) 
-    loaded = load_model(path, name, info) 
+function load_or_run(f::Function, path, name, info; exp_config...)
+    loaded = load_model(path, name, info)
     if isnothing(loaded)
         name = savename(name, info, connector = "-")
         @info "Running simulation for: $name"
         produced = f(info)
-        save_model(path=path, model=produced, name=name, info=info, exp_config...)
+        save_model(path = path, model = produced, name = name, info = info, exp_config...)
         return produced
     end
     return loaded
@@ -63,7 +63,7 @@ function save_model(; path, model, name, info, config, kwargs...)
 
     data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
     Logging.LogLevel(0) == Logging.Error
-    @time DrWatson.save(data_path, merge((@strdict model = model config=config), kwargs))
+    @time DrWatson.save(data_path, merge((@strdict model = model config = config), kwargs))
     Logging.LogLevel(0) == Logging.Info
     @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
 
@@ -72,7 +72,10 @@ function save_model(; path, model, name, info, config, kwargs...)
 
     model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     Logging.LogLevel(0) == Logging.Error
-    @time DrWatson.save(model_path, merge((@strdict model = _model config=config), kwargs))
+    @time DrWatson.save(
+        model_path,
+        merge((@strdict model = _model config = config), kwargs),
+    )
     Logging.LogLevel(0) == Logging.Info
     @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
     return data_path
@@ -80,7 +83,7 @@ end
 
 function data2model(; path, name = randstring(10), info = nothing, kwargs...)
     # Does data file exist? If no return false
-    data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-")) 
+    data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
     !isfile(data_path) && return false
     # Does model file exist? If yes return true
     data = load_data(path, name, info)
@@ -134,14 +137,14 @@ function get_git_commit_hash()
     return readchomp(`git rev-parse HEAD`)
 end
 
-function write_value(file, key, value, indent="", equal_sign="=")
+function write_value(file, key, value, indent = "", equal_sign = "=")
     if isa(value, Number)
         println(file, "$indent$key $(equal_sign) $value,")
     elseif isa(value, String)
         println(file, "$indent$key $(equal_sign) \"$value\",")
     elseif isa(value, Symbol)
         println(file, "$indent$key $(equal_sign) :$value,")
-    elseif typeof(value) <: AbstractRange || isa(value,StepRange{Int64, Int64})
+    elseif typeof(value) <: AbstractRange || isa(value, StepRange{Int64,Int64})
         _s = step(value)
         _end = last(value)
         _start = first(value)
@@ -166,7 +169,7 @@ function write_value(file, key, value, indent="", equal_sign="=")
         end
         println(file, "$indent),")
     else
-            name = isa(value,NamedTuple) ? "" : nameof(typeof(value)) 
+        name = isa(value, NamedTuple) ? "" : nameof(typeof(value))
         println(file, "$indent$key = $(name)(")
         for field in fieldnames(typeof(value))
             field_value = getfield(value, field)
@@ -176,16 +179,16 @@ function write_value(file, key, value, indent="", equal_sign="=")
     end
 end
 
-function write_config(path::String, config; name="", kwargs...)
+function write_config(path::String, config; name = "", kwargs...)
     timestamp = get_timestamp()
     commit_hash = get_git_commit_hash()
 
     if name !== ""
         config_path = joinpath(path, savename(name, info, "config", connector = "-"))
-    else    
+    else
         config_path = path
     end
-    
+
     file = open(config_path, "w")
 
     println(file, "# Configuration file generated on: $timestamp")
@@ -196,7 +199,7 @@ function write_config(path::String, config; name="", kwargs...)
         write_value(file, key, value, "    ")
     end
     println(file, ")")
-    for (info_name, info_value ) in pairs(kwargs)
+    for (info_name, info_value) in pairs(kwargs)
         if isa(info_value, NamedTuple)
             println(file, "$(info_name) = (")
             for (key, value) in pairs(info_value)
@@ -226,4 +229,12 @@ end
 
 
 
-export save_model, load_model, load_data, save_parameters, get_path, data2model, write_config, print_summary, load_or_run
+export save_model,
+    load_model,
+    load_data,
+    save_parameters,
+    get_path,
+    data2model,
+    write_config,
+    print_summary,
+    load_or_run

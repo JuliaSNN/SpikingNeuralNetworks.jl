@@ -154,6 +154,7 @@ end
     return x
 end
 
+name(pre, post) = Symbol("$(pre)_to_$(post)")
 
 
 """
@@ -190,12 +191,12 @@ function merge_models(args...; name = randstring(10), silent = false, kwargs...)
     for v in args
         v isa String && continue
         v isa Time && continue
-        extract_items(Symbol(""), v, pop = pop, syn = syn, stim = stim, time=time)
+        extract_items(Symbol(""), v, pop = pop, syn = syn, stim = stim, time = time)
     end
     for (k, v) in kwargs
         v isa String && continue
         v isa Time && continue
-        extract_items(k, v, pop = pop, syn = syn, stim = stim, time=time)
+        extract_items(k, v, pop = pop, syn = syn, stim = stim, time = time)
     end
     pop = DrWatson.dict2ntuple(sort(pop, by = x -> x))
     syn = DrWatson.dict2ntuple(sort(syn, by = x -> x))
@@ -323,7 +324,7 @@ function extract_items(
     pop::Dict{Symbol,Any},
     syn::Dict{Symbol,Any},
     stim::Dict{Symbol,Any},
-    time::Time 
+    time::Time,
 )
     v = container
     if typeof(v) <: AbstractPopulation
@@ -342,7 +343,7 @@ function extract_items(
             k == :name && continue
             v = getindex(container, k)
             (k == :pop || k == :syn || k == :stim) &&
-                (extract_items(root, v; pop,  syn, stim, time)) &&
+                (extract_items(root, v; pop, syn, stim, time)) &&
                 continue
             new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))
             if typeof(v) <: AbstractPopulation

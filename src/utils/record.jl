@@ -484,7 +484,7 @@ function clear_records(obj)
                 _clean(v.records)
             elseif v isa String
                 continue
-            else 
+            else
                 clear_records(v)
             end
         end

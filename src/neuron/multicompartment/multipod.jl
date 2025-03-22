@@ -33,9 +33,8 @@
     gax::MFT = zeros(Nd, N)
     cd::MFT = zeros(Nd, N)
     gm::MFT = zeros(Nd, N)
-    v_d::VST = Vector{Vector{Float32}}([
-        param.Vr .+ rand(N) .* (param.Vt - param.Vr) for n = 1:Nd
-    ])   #! target
+    v_d::VST =
+        Vector{Vector{Float32}}([param.Vr .+ rand(N) .* (param.Vt - param.Vr) for n = 1:Nd])   #! target
 
     # Synapses dendrites
     g_d::TFT = zeros(N, Nd, 4)

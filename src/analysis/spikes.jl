@@ -134,7 +134,7 @@ function get_alpha_kernel(τ, interval)
     kernel_time = Float32.(0.0:bin_width:kernel_length)
     τ = Float32(τ)
     alpha_kernel = [alpha_function(t, τ) for t in kernel_time]
-    alpha_kernel ./= sum(alpha_kernel)*bin_width
+    alpha_kernel ./= sum(alpha_kernel) * bin_width
     return alpha_kernel
 end
 
@@ -210,7 +210,7 @@ function firing_rate(
     ttf = -1,
     tt0 = -1,
     interpolate = true,
-    pop_average =false,
+    pop_average = false,
     neurons = :ALL,
 )
     # Check if the interval is empty and create an interval
@@ -224,10 +224,10 @@ function firing_rate(
 
     neurons = neurons == :ALL ? eachindex(spiketimes) : neurons
     rates = nothing
-    if length(spiketimes) < 1 
+    if length(spiketimes) < 1
         rates = zeros(Float32, 0, length(interval))
     elseif all(isempty.(spiketimes))
-        rates = zeros(Float32, length(spiketimes[neurons]),length(interval))
+        rates = zeros(Float32, length(spiketimes[neurons]), length(interval))
     else
         spiketimes = spiketimes[neurons]
         alpha_kernel = get_alpha_kernel(τ, interval)
@@ -268,7 +268,7 @@ function firing_rate(populations; mean_pop = false, kwargs...)
     fr_pop = []
     interval = nothing
     for n in eachindex(spiketimes_pop)
-        rates, interval = firing_rate( spiketimes_pop[n]; pop_average=mean_pop, kwargs...)
+        rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
         push!(fr_pop, rates)
     end
     return fr_pop, interval, names_pop
@@ -736,16 +736,16 @@ The function generates spike times for each neuron based on the rate vector and 
 An array of spike times for each neuron.
 
 """
-function sample_spikes(N, rate::Vector, interval::R; dt=0.125f0) where {R <: AbstractRange}
-    spiketimes = Vector{Float32}[[] for _ in 1:N]
+function sample_spikes(N, rate::Vector, interval::R; dt = 0.125f0) where {R<:AbstractRange}
+    spiketimes = Vector{Float32}[[] for _ = 1:N]
     @assert length(rate) == length(interval)
-    steps = step(interval)/dt
+    steps = step(interval) / dt
     t = dt
-    for i in 1:length(interval)
-        r = rate[i]*Hz
-        for _ in 1:steps
-            for n in 1:N
-                if rand() < r*dt
+    for i = 1:length(interval)
+        r = rate[i] * Hz
+        for _ = 1:steps
+            for n = 1:N
+                if rand() < r * dt
                     push!(spiketimes[n], t)
                 end
             end
@@ -755,10 +755,10 @@ function sample_spikes(N, rate::Vector, interval::R; dt=0.125f0) where {R <: Abs
     spiketimes
 end
 
-function sample_inputs(N, rate::Matrix, interval::R; dt=0.125f0) where {R <: AbstractRange}
+function sample_inputs(N, rate::Matrix, interval::R; dt = 0.125f0) where {R<:AbstractRange}
     inputs = Vector{Float32}[]
-    for i in 1:size(rate, 1)
-        for n in sample_spikes(N, rate[i,:], interval; dt=dt)
+    for i = 1:size(rate, 1)
+        for n in sample_spikes(N, rate[i, :], interval; dt = dt)
             push!(inputs, n)
         end
     end
@@ -792,6 +792,4 @@ export spiketimes,
     st_order,
     isi_cv,
     CV_isi2
-    sample_spikes,
-    sample_inputs
-
+sample_spikes, sample_inputs

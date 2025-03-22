@@ -82,7 +82,7 @@ macro load_units()
         :nsiemens,
         :Ω,
         :MΩ,
-        :GΩ
+        :GΩ,
     )) do s
         :($s = getfield($@__MODULE__, $(QuoteNode(s))))
     end

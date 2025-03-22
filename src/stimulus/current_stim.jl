@@ -1,11 +1,11 @@
 abstract type CurrentStimulusParameter end
 
-@snn_kw struct CurrentVariableParameter{VFT=Vector{Float32}} <: CurrentStimulusParameter 
-    variables::Dict{Symbol, VFT}= Dict{Symbol,VFT}()
+@snn_kw struct CurrentVariableParameter{VFT = Vector{Float32}} <: CurrentStimulusParameter
+    variables::Dict{Symbol,VFT} = Dict{Symbol,VFT}()
     func::Function
 end
 
-@snn_kw struct CurrentNoiseParameter{VFT=Vector{Float32}} <: CurrentStimulusParameter
+@snn_kw struct CurrentNoiseParameter{VFT = Vector{Float32}} <: CurrentStimulusParameter
     I_base::VFT = zeros(Float32, 0)
     I_dist::Distribution{Univariate,Continuous} = Normal(0.0, 0.0)
     α::VFT = ones(Float32, 0)
@@ -100,4 +100,9 @@ function ramping_current(variables::Dict, t::Float32, args...)
 end
 
 
-export CurrentStimulus, CurrentStimulusParameter, stimulate!, CurrentNoiseParameter, CurrentVariableParameter, ramping_current
+export CurrentStimulus,
+    CurrentStimulusParameter,
+    stimulate!,
+    CurrentNoiseParameter,
+    CurrentVariableParameter,
+    ramping_current

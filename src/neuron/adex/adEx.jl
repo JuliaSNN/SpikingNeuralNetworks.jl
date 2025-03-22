@@ -50,7 +50,7 @@ end
     # synaptic conductance
     syn_curr::VFT = zeros(N)
     g::MFT = zeros(N, 4)
-    h::MFT = zeros(N, 4) 
+    h::MFT = zeros(N, 4)
     he::VFT = zeros(N) #! target
     hi::VFT = zeros(N) #! target
     records::Dict = Dict()
@@ -63,9 +63,9 @@ function AdExNeuron(; param::T, kwargs...) where {T<:AbstractAdExParameter}
         for n in eachindex(param.syn)
             param.α[n] = param.syn[n].α
         end
-        return AdExSynapse(;param = param, kwargs...)
+        return AdExSynapse(; param = param, kwargs...)
     else
-        return AdExSimple(;param = param, kwargs...)
+        return AdExSimple(; param = param, kwargs...)
     end
 end
 
@@ -75,7 +75,11 @@ end
 	[Integrate-And-Fire Neuron](https://neuronaldynamics.epfl.ch/online/Ch1.S3.html)
 """
 
-function integrate!(p::P, param::T, dt::Float32) where {T<:AbstractAdExParameter, P<:AbstractAdEx}
+function integrate!(
+    p::P,
+    param::T,
+    dt::Float32,
+) where {T<:AbstractAdExParameter,P<:AbstractAdEx}
     update_synapses!(p, param, dt)
     synaptic_current!(p, param)
     update_soma!(p, param, dt)
@@ -102,13 +106,9 @@ function update_synapses!(p::AdExSimple, param::AdExParameterSingleExponential, 
     end
 end
 
-function update_synapses!(
-    p::AdExSynapse,
-    param::AdExSynapseParameter,
-    dt::Float32,
-)
-    @unpack N, g, h, hi, he= p
-    @unpack exc_receptors, inh_receptors, α, syn= param
+function update_synapses!(p::AdExSynapse, param::AdExSynapseParameter, dt::Float32)
+    @unpack N, g, h, hi, he = p
+    @unpack exc_receptors, inh_receptors, α, syn = param
 
     # Update the rise_conductance from the input spikes (he, hi)
     @inbounds for n in exc_receptors
@@ -133,17 +133,21 @@ function update_synapses!(
     end
 end
 
-function update_soma!(p::P, param::T, dt::Float32) where {P<:AbstractAdEx, T<:AbstractAdExParameter}
+function update_soma!(
+    p::P,
+    param::T,
+    dt::Float32,
+) where {P<:AbstractAdEx,T<:AbstractAdExParameter}
     @unpack N, v, w, fire, θ, I, ξ_het, tabs, syn_curr = p
     @unpack τm, Vt, Vr, El, R, ΔT, τw, a, b, At, τt, τabs = param
-    
+
     # syn_curr = hasfield(typeof(p), :syn_curr) ? p.syn_curr : zeros(N)
     # if hasfield(typeof(p), :syn_curr)
     #     synaptic_current!(p, param)
     # else
     #     synaptic_current!(p, param, syn_curr)
     # end
-            
+
 
     @inbounds for i ∈ 1:N
         # Reset membrane potential after spike
@@ -162,12 +166,10 @@ function update_soma!(p::P, param::T, dt::Float32) where {P<:AbstractAdEx, T<:Ab
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
-                +
-                ΔT * exp((v[i] - θ[i]) / ΔT) # exponential term
-                + R* syn_curr[i] # excitatory synapses
+                + ΔT * exp((v[i] - θ[i]) / ΔT) # exponential term
+                + R * syn_curr[i] # excitatory synapses
                 - R * w[i] # adaptation
-                +
-                R * I[i] # external current
+                + R * I[i] # external current
             ) / (τm * ξ_het[i])
         # Double exponential
         θ[i] += dt * (Vt - θ[i]) / τt
@@ -186,7 +188,7 @@ function update_soma!(p::P, param::T, dt::Float32) where {P<:AbstractAdEx, T<:Ab
 end
 
 @inline function synaptic_current!(p::AdExSynapse, param::AdExSynapseParameter)
-    @unpack N, g, h, g, v, syn_curr= p
+    @unpack N, g, h, g, v, syn_curr = p
     @unpack syn, NMDA = param
     @unpack mg, b, k = NMDA
     fill!(syn_curr, 0.0f0)
@@ -194,22 +196,24 @@ end
         @unpack gsyn, E_rev, nmda = syn[r]
         if nmda > 0.0f0
             @simd for i ∈ 1:N
-                    syn_curr[i] += - gsyn * g[i, r] * (v[i] - E_rev) /  (1.0f0 + (mg / b) * exp32(k * (v[i])))
+                syn_curr[i] +=
+                    -gsyn * g[i, r] * (v[i] - E_rev) /
+                    (1.0f0 + (mg / b) * exp32(k * (v[i])))
             end
         else
             @simd for i ∈ 1:N
-                syn_curr[i] += - gsyn * g[i, r] * (v[i] - E_rev)
+                syn_curr[i] += -gsyn * g[i, r] * (v[i] - E_rev)
             end
         end
-    return 
+        return
     end
 end
 
 @inline function synaptic_current!(p::AdExSimple, param::T) where {T<:AbstractAdExParameter}
-    @unpack gsyn_e, gsyn_i, E_e, E_i= param
-    @unpack N, v, ge, gi, syn_curr= p
+    @unpack gsyn_e, gsyn_i, E_e, E_i = param
+    @unpack N, v, ge, gi, syn_curr = p
     @inbounds @simd for i ∈ 1:N
-            syn_curr[i] = ge[i] * (E_e - v[i]) * gsyn_e + gi[i] * (E_i - v[i]) * gsyn_i
+        syn_curr[i] = ge[i] * (E_e - v[i]) * gsyn_e + gi[i] * (E_i - v[i]) * gsyn_i
     end
 end
 
@@ -222,4 +226,10 @@ end
 end
 
 
-export AdEx, AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn, AdExSynapse, AdExSynapseParameter, AdExNeuron
+export AdEx,
+    AdExParameter,
+    AdExParameterSingleExponential,
+    AdExParameterGsyn,
+    AdExSynapse,
+    AdExSynapseParameter,
+    AdExNeuron

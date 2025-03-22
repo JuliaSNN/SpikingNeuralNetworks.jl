@@ -1,7 +1,5 @@
-@snn_kw struct SpikeTimeStimulusParameter{
-    VFT = Vector{Float32},
-    VIT = Vector{Int},
-} <: AbstractStimulusParameter
+@snn_kw struct SpikeTimeStimulusParameter{VFT = Vector{Float32},VIT = Vector{Int}} <:
+               AbstractStimulusParameter
     spiketimes::VFT
     neurons::VIT
 end
@@ -67,7 +65,7 @@ function SpikeTimeStimulus(
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
     # set the synaptic weight matrix
-    N =  isnothing(N) ? max_neuron(param) : N
+    N = isnothing(N) ? max_neuron(param) : N
     w = sparse_matrix(w, N, post.N, dist, μ, σ, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -145,23 +143,23 @@ function next_neuron(p::SpikeTimeStimulus)
 end
 
 
-function shift_spikes!(spiketimes::Spiketimes, delay::Number ) 
-        for n in eachindex(spiketimes)
-            spiketimes[n] .+= delay
-        end
-        return spiketimes
+function shift_spikes!(spiketimes::Spiketimes, delay::Number)
+    for n in eachindex(spiketimes)
+        spiketimes[n] .+= delay
+    end
+    return spiketimes
 end
 
-function shift_spikes!(param::SpikeTimeStimulusParameter, delay::Number ) 
-        param.spiketimes .+= delay
-        return param
+function shift_spikes!(param::SpikeTimeStimulusParameter, delay::Number)
+    param.spiketimes .+= delay
+    return param
 end
 
-function shift_spikes!(stimulus::SpikeTimeStimulus, delay::Number ) 
-        stimulus.param.spiketimes .+= delay
-        stimulus.next_index[1] = 1
-        stimulus.next_spike[1] = stimulus.param.spiketimes[1]
-        return stimulus
+function shift_spikes!(stimulus::SpikeTimeStimulus, delay::Number)
+    stimulus.param.spiketimes .+= delay
+    stimulus.next_index[1] = 1
+    stimulus.next_spike[1] = stimulus.param.spiketimes[1]
+    return stimulus
 end
 
 

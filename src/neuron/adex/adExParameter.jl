@@ -67,24 +67,13 @@ end
     τt::FT = 30ms # Adaptive threshold time scale
 end
 
-
-SomaGlu = Glutamatergic(
-    Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.7),
-    ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 100.0, g0 = 0.3, nmda = 1.0f0),
-)
-SomaGABA = GABAergic(
-    Receptor(E_rev = -70.0, τr = 0.5, τd = 2.0, g0 = 1.),
-    Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.006), # τd = 100.0
-    # Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0), # τd = 100.0
-)
-SomaNMDA = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
-SomaSynapse = Synapse(SomaGlu, SomaGABA)
-
-@snn_kw struct AdExSynapseParameter{FT = Float32, VIT=Vector{Int},
+@snn_kw struct AdExSynapseParameter{
+    FT = Float32,
+    VIT = Vector{Int},
     ST = SynapseArray,
     NMDAT = NMDAVoltageDependency{Float32},
-    VFT = Vector{Float32}
-     } <: AbstractAdExParameter
+    VFT = Vector{Float32},
+} <: AbstractAdExParameter
     τm::FT = C / gL # Membrane time constant
     Vt::FT = -50mV # Membrane potential threshold
     Vr::FT = -70.6mV # Reset potential
@@ -105,7 +94,7 @@ SomaSynapse = Synapse(SomaGlu, SomaGABA)
     exc_receptors::VIT = [1, 2]
     inh_receptors::VIT = [3, 4]
     α::VFT = [syn.α for syn in synapsearray(SomaSynapse)]
-    syn::ST= synapsearray(SomaSynapse)
+    syn::ST = synapsearray(SomaSynapse)
 end
 
 function AdExSynapseParam(synapse::Synapse; kwargs...)
@@ -132,4 +121,5 @@ PostSpike
     τA::FT
 end
 
-export AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn, AdExSynapseParameter, PostSpike
+export AdExParameter,
+    AdExParameterSingleExponential, AdExParameterGsyn, AdExSynapseParameter, PostSpike

@@ -17,15 +17,15 @@ II = SNN.SpikingSynapse(I, I, :gi; μ = -10, p = 0.02)
 # P = [E, I]
 # C = [EE, EI, IE, II, EG]
 # C = [EE, EG, GG]
-model = merge_models(;E=E, I=I, EE=EE, EI=EI, IE=IE, II=II)
+model = merge_models(; E = E, I = I, EE = EE, EI = EI, IE = IE, II = II)
 
 SNN.monitor(E, [:he, :h, :g, :v])
 # SNN.monitor(G, [(:r)])
 SNN.monitor(model.pop, [:fire])
-SNN.sim!(model=model; duration = 4second)
+SNN.sim!(model = model; duration = 4second)
 SNN.raster(model.pop, [3.4s, 4s])
-SNN.vecplot(E, :g, sym_id=1, neurons=1, r=3:4s)
-SNN.vecplot(E, :v,  neurons=1, r=3:4s)
+SNN.vecplot(E, :g, sym_id = 1, neurons = 1, r = 3:4s)
+SNN.vecplot(E, :v, neurons = 1, r = 3:4s)
 
 # Random.seed!(101)
 # E = SNN.AdEx(;N = 100, param = AdExParameter(;El=-40mV))
@@ -36,6 +36,6 @@ SNN.vecplot(E, :v,  neurons=1, r=3:4s)
 # SNN.raster([E], [900, 1000])
 # plot!(xlims=(100,1000))
 
-path = datadir("test")  |> mkpath
-info = (u=4, v=3, w=2, x=1)
-save_model(;path, model, name="AdEx_network", info=info, config=info) 
+path = datadir("test") |> mkpath
+info = (u = 4, v = 3, w = 2, x = 1)
+save_model(; path, model, name = "AdEx_network", info = info, config = info)

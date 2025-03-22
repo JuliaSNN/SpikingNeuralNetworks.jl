@@ -85,9 +85,15 @@ end
 
 
 function train!(args...; model, kwargs...)
-    pop = haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop))  : Vector{AbstractPopulation}([])
-    syn = haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn))  : Vector{AbstractConnection}([])
-    stim = haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) : Vector{AbstractStimulus}([])
+    pop =
+        haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop)) :
+        Vector{AbstractPopulation}([])
+    syn =
+        haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn)) :
+        Vector{AbstractConnection}([])
+    stim =
+        haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) :
+        Vector{AbstractStimulus}([])
     for arg in args
         if isa(arg, AbstractPopulation)
             push!(pop, arg)
@@ -99,15 +105,21 @@ function train!(args...; model, kwargs...)
             error("Invalid argument type: $(typeof(arg))")
         end
     end
-    mytime = train!(pop, syn, stim; time=model.time, kwargs...)
+    mytime = train!(pop, syn, stim; time = model.time, kwargs...)
     update_time!(model.time, mytime)
     return get_time(model.time)
 end
 
 function sim!(args...; model, kwargs...)
-    pop = haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop))  : Vector{AbstractPopulation}([])
-    syn = haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn))  : Vector{AbstractConnection}([])
-    stim = haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) : Vector{AbstractStimulus}([])
+    pop =
+        haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop)) :
+        Vector{AbstractPopulation}([])
+    syn =
+        haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn)) :
+        Vector{AbstractConnection}([])
+    stim =
+        haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) :
+        Vector{AbstractStimulus}([])
     for arg in args
         if isa(arg, AbstractPopulation)
             push!(pop, arg)
@@ -119,7 +131,7 @@ function sim!(args...; model, kwargs...)
             error("Invalid argument type: $(typeof(arg))")
         end
     end
-    mytime = sim!(pop, syn, stim; time=model.time, kwargs...)
+    mytime = sim!(pop, syn, stim; time = model.time, kwargs...)
     update_time!(model.time, mytime)
     return get_time(model.time)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)

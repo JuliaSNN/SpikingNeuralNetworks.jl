@@ -1,17 +1,72 @@
 abstract type PoissonStimulusParameter end
+
+"""
+    PoissonStimulusVariable
+
+    Poisson stimulus with rate defined with a function.
+    
+    # Fields
+    - `variables::Dict{Symbol,Any}`: A dictionary containing the variables for the function.
+    - `rate::Function`: A function defining the rate of the Poisson stimulus.
+    - `active::Vector{Bool}`: A vector of booleans indicating if the stimulus is active.
+"""
+PoissonStimulusVariable
 @snn_kw struct PoissonStimulusVariable{VFT} <: PoissonStimulusParameter
     variables::Dict{Symbol,Any}
     rate::Function
     active::Vector{Bool} = [true]
 end
 
-@snn_kw struct PoissonStimulusFixed{R=Float32} <: PoissonStimulusParameter
+"""
+    PoissonStimulusFixed
+
+    Poisson stimulus with fixed rate. The rate arrives to all the cells targeted
+    by the stimulus.
+
+    # Fields
+    - `rate::Vector{R}`: A vector containing the rate of the Poisson stimulus.
+    - `active::Vector{Bool}`: A vector of booleans indicating if the stimulus is active.
+"""
+PoissonStimulusFixed
+
+@snn_kw struct PoissonStimulusFixed{R = Float32} <: PoissonStimulusParameter
     rate::Vector{R}
     active::Vector{Bool} = [true]
 end
 
+"""
+    PoissonStimulusLayer
+
+    Poisson stimulus with rate defined for each cell in the layer. Each neuron of the 'N' Poisson population fires with 'rate'.
+    The connectivity is defined by the parameter 'ϵ'. Thus, the number of presynaptic cells connected to the postsynaptic cells is 'N*ϵ'. Each post-synaptic cell receives rate: 'rate * N * ϵ'.
+
+    # Fields
+    - `rate::Vector{R}`: A vector containing the rate of the Poisson stimulus.
+    - `N::Int32`: The number of cells in the layer.
+    - `ϵ::Float32`: The fraction of presynaptic cells connected to the postsynaptic cells.
+    - `active::Vector{Bool}`: A vector of booleans indicating if the stimulus is active.
+"""
+PoissonStimulusLayer
+@snn_kw struct PoissonStimulusLayer{R = Float32} <: PoissonStimulusParameter
+    rate::Vector{R}
+    N::Int32
+    ϵ::Float32
+    active::Vector{Bool} = [true]
+end
+
+"""
+    PoissonStimulusInterval
+
+    Poisson stimulus with rate defined for each cell in the layer. Each neuron of the 'N' Poisson population fires with 'rate' in the intervals defined by 'intervals'.
+    
+    # Fields
+    - `rate::Vector{R}`: A vector containing the rate of the Poisson stimulus.
+    - `intervals::Vector{Vector{R}}`: A vector of vectors containing the intervals in which the Poisson stimulus is active.
+    - `active::Vector{Bool}`: A vector of booleans indicating if the stimulus is active.
+"""
+PoissonStimulusInterval
 @snn_kw struct PoissonStimulusInterval{R = Float32} <: PoissonStimulusParameter
-    rate::Vector{R} 
+    rate::Vector{R}
     intervals::Vector{Vector{R}}
     active::Vector{Bool} = [true]
 end
@@ -23,8 +78,7 @@ PSParam = PoissonStimulusVariable
     VBT = Vector{Bool},
     VIT = Vector{Int},
     IT = Int32,
-} <:
-               AbstractStimulus
+} <: AbstractStimulus
     id::String = randstring(12)
     name::String = "Poisson"
     param::PoissonStimulusParameter
@@ -47,63 +101,40 @@ PSParam = PoissonStimulusVariable
 end
 
 
-"""
-    PoissonStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cells=[]; N_pre::Int=50, p_post::R=0.05f0, μ::R=1.f0, param=PoissonParameter()) where {T <: AbstractPopulation, R <: Number}
-
-Constructs a PoissonStimulus object for a spiking neural network.
-
-# Arguments
-- `post::T`: The target population for the stimulus.
-- `sym::Symbol`: The symbol representing the synaptic conductance or current.
-- `r::Union{Function, Float32}`: The firing rate of the stimulus. Can be a constant value or a function of time.
-- `cells=[]`: The indices of the cells in the target population that receive the stimulus. If empty, cells are randomly selected based on the probability `p_post`.
-- `N::Int=200`: The number of Poisson neurons cells.
-- `N_pre::Int=5`: The number of presynaptic connected.
-- `p_post::R=0.05f0`: The probability of connection between presynaptic and postsynaptic cells.
-- `μ::R=1.f0`: The scaling factor for the synaptic weights.
-- `param=PoissonParameter()`: The parameters for the Poisson distribution.
-
-# Returns
-A `PoissonStimulus` object.
-"""
 function PoissonStimulus(
     post::T,
     sym::Symbol,
     target = nothing;
-    cells = [],
-    disjoint = nothing,
+    cells = :ALL,
     N::Int = 100,
-    N_pre::Int = 50,
-    p_post = 0.05f0,
+    p_post = 1.0,
+    N_pre = 50,
     μ = 1.0f0,
     param::Union{PoissonStimulusParameter,R},
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
 
-    ## select the cells that receive the stimulus
-    if cells == :ALL
-        cells = 1:post.N
+    if typeof(param) <: Real
+        param = PoissonStimulusFixed(fill(param, N), [true])
+        N_pre = round(Int, N * 0.05)
+    elseif typeof(param) == PoissonStimulusLayer
+        N = param.N
+        N_pre = round(Int, N * param.ϵ)
     end
-    if isempty(cells)
-        for i = 1:post.N
-            if !isnothing(disjoint) && (i in disjoint)
-                continue
-            elseif rand() < p_post
-                push!(cells, i)
-            end
-        end
+
+    ## select a subset of cells that receive the stimulus
+    cells = cell == :ALL ? eachindex(post.N) : cells
+    for i = 1:post.N
+        (rand() < p_post) && (push!(cells, i))
     end
 
     ## construct the connectivity matrix
     w = zeros(Float32, length(cells), N)
     for i = 1:length(cells)
-        pre = rand(1:N, N_pre)
+        pre = rand(1:N, round(Int, N_pre))
         w[i, pre] .= 1
     end
     w = μ * sparse(w)
-
-    # normalize the strength of the synapses to each postsynaptic cell
-    # w = SNN.dropzeros(w .* μ ./sum(w, dims=2))
 
     rowptr, colptr, I, J, index, W = dsparse(w)
     if isnothing(target)
@@ -119,9 +150,6 @@ function PoissonStimulus(
         targets = Dict(:pre => :Poisson, :g => post.id, :sym => Symbol(string(sym, target)))
     end
 
-    if typeof(param) <: Real
-        param = PoissonStimulusFixed(fill(param, N), [true])
-    end
 
     # Construct the SpikingSynapse instance
     return PoissonStimulus(;
@@ -137,11 +165,6 @@ function PoissonStimulus(
 end
 
 
-"""
-    stimulate!(p::PoissonStimulus, param::PoissonParameter, time::Time, dt::Float32)
-
-Generate a Poisson stimulus for a postsynaptic population.
-"""
 function stimulate!(
     p::PoissonStimulus,
     param::PoissonStimulusFixed,
@@ -153,6 +176,28 @@ function stimulate!(
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < rate[j] * dt / N_pre
+            fire[j] = true
+            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+                g[cells[I[s]]] += W[s]
+            end
+        else
+            fire[j] = false
+        end
+    end
+end
+
+
+function stimulate!(
+    p::PoissonStimulus,
+    param::PoissonStimulusLayer,
+    time::Time,
+    dt::Float32,
+)
+    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    @unpack rate = param
+    rand!(randcache)
+    @inbounds @simd for j = 1:N
+        if randcache[j] < rate[j] * dt
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
                 g[cells[I[s]]] += W[s]
@@ -268,4 +313,5 @@ export PoissonStimulus,
     PoissonStimulusParameter,
     PoissonStimulusVariable,
     PoissonStimulusFixed,
-    PoissonStimulusInterval
+    PoissonStimulusInterval,
+    PoissonStimulusLayer

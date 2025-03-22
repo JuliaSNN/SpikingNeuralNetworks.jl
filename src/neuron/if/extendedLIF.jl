@@ -61,16 +61,17 @@ function update_neuron!(p::ExtendedIF, param::T, dt::Float32) where {T<:Abstract
             continue
         end
         # Membrane potential
-        dv  = (
+        dv =
+            (
                 gl * (El - v[i]) +
                 g_Exc[i] * (E_e - v[i]) +
                 g_PV[i] * (E_i - v[i]) +
                 g_SST[i] * (E_i - v[i]) +
-                - α * g_Exc[i] * g_SST[i] * (E_e - v[i]) +
+                -α * g_Exc[i] * g_SST[i] * (E_e - v[i]) +
                 # + I[i] # synaptic term
                 0
             ) / param.Cm
-        v[i] += dt *dv
+        v[i] += dt * dv
     end
     # # Adaptation current
     # if hasfield(typeof(param), :τw) && param.τw > 0.0f0
@@ -85,9 +86,9 @@ function update_synapses!(p::ExtendedIF, param::ExtendedIFParameter, dt::Float32
     @unpack N, g_Exc, g_PV, g_SST = p
     @unpack τe, τi = param
     @inbounds for i = 1:N
-        g_Exc[i] += dt * (-g_Exc[i] / τe  )
-        g_PV[i] += dt * (-g_PV[i] / τi )
-        g_SST[i] += dt * (-g_SST[i] / τi )
+        g_Exc[i] += dt * (-g_Exc[i] / τe)
+        g_PV[i] += dt * (-g_PV[i] / τi)
+        g_SST[i] += dt * (-g_SST[i] / τi)
     end
 end
 
