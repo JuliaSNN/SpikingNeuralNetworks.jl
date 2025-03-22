@@ -22,7 +22,7 @@ model.time
 for n in 1:100
     model.syn.S.W .+= randn(size(model.syn.S.W)) 
     model.syn.S.W = clamp.(model.syn.S.W, 0.5, Inf)
-    train!(;model, duration=10ms)
+    train!(;model, duration=10ms, )
 end
 raster(model.pop.E, 0:1s)
 # vecplot(model.syn.S, :W, interval=0:1000ms)
