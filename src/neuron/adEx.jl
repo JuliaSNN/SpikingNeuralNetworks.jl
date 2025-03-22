@@ -201,8 +201,8 @@ end
                 syn_curr[i] += - gsyn * g[i, r] * (v[i] - E_rev)
             end
         end
-    return 
     end
+    return 
 end
 
 @inline function synaptic_current!(p::AdExSimple, param::T) where {T<:AbstractAdExParameter}

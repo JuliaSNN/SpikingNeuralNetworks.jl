@@ -56,7 +56,7 @@ function graph(model)
             post_id = syn.targets[:g]
             type = :fire_to_g
             add_connection!(graph, pre_id, post_id, k, syn, type)
-        elseif isa(syn, SNN.SynapseNormalization)
+        elseif typeof(syn) <: AbstractNormalization
             push!(norms, k => syn)
         else
             throw(ArgumentError("Only SpikingSynapse is supported"))

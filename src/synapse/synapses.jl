@@ -1,6 +1,7 @@
 
 include("empty.jl")
 include("normalization.jl")
+include("aggregate_scaling.jl")
 include("rate_synapse.jl")
 include("fl_synapse.jl")
 include("fl_sparse_synapse.jl")
