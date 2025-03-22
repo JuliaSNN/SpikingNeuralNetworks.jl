@@ -13,12 +13,12 @@ dendrites = [200um, 300um]
 E = SNN.Multipod(dendrites, N = N)# dend_syn=SNNUtils.quaresima2022_nar(1.0, 35ms).dend_syn)
 stimE = Dict(
     Symbol("stimE_$n") =>
-        SNN.PoissonStimulus(E, :he, n, cells = :ALL, param = 3.5kHz, name = "stimE_$n")
+        SNN.PoissonStimulus(E, :he, n, neurons=:ALL, param = 3.5kHz, name = "stimE_$n")
     for n = 1:length(dendrites)
 )
 stimI = Dict(
     Symbol("stimI_$n") =>
-        SNN.PoissonStimulus(E, :hi, n, cells = :ALL, param = 3kHz, name = "stimI_$n")
+        SNN.PoissonStimulus(E, :hi, n, neurons=:ALL, param = 3kHz, name = "stimI_$n")
     for n = 1:length(dendrites)
 )
 
@@ -50,7 +50,7 @@ stimE = Dict(
         E,
         :he,
         Symbol("d$n"),
-        cells = :ALL,
+        neurons=:ALL,
         param = 3.5kHz,
         name = "stimE_$n",
     ) for n = 1:length(dendrites)
@@ -60,7 +60,7 @@ stimI = Dict(
         E,
         :hi,
         Symbol("d$n"),
-        cells = :ALL,
+        neurons=:ALL,
         param = 3kHz,
         name = "stimI_$n",
     ) for n = 1:length(dendrites)

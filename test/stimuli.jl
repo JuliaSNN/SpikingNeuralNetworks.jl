@@ -21,8 +21,8 @@ E_Tripod = SNN.Tripod(
 ##        
 stim = Dict{Symbol,Any}()
 for (E, d) in zip([E_BallStick, E_Tripod], [:d, :d1])
-    SE = SNN.PoissonStimulus(E, :he, d, param = E_rate, μ = 30.0f0, cells = [1])
-    SI = SNN.PoissonStimulus(E, :hi, d, param = I_rate, μ = 15.0f0, cells = [1])
+    SE = SNN.PoissonStimulus(E, :he, d, param = E_rate, μ = 30.0f0, neurons= [1])
+    SI = SNN.PoissonStimulus(E, :hi, d, param = I_rate, μ = 15.0f0, neurons= [1])
     my_stim = (SE = SE, SI = SI)
     push!(stim, d => my_stim)
 end

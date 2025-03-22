@@ -346,7 +346,7 @@ function stp_plot(model, interval, assemblies, stimuli = []; every = 10)
     ρ, r_t = SNN.interpolated_record(syn.EE, :ρ)
     w, r_t = SNN.interpolated_record(syn.EE, :W)
     weff = ρ .* w ./ maximum(w)
-    in_assembly = 1:length(indices(syn.EE, assemblies[1].cells, assemblies[1].cells))
+    in_assembly = 1:length(indices(syn.EE, assemblies[1].neurons, assemblies[1].neurons))
     out_assembly = length(in_assembly)+1:size(weff, 1)
     p12 = SNN.raster(pop, interval, yrotation = 90, every = 10)
     p11 = plot(
@@ -388,12 +388,12 @@ function stp_plot(model, interval, assemblies, stimuli = []; every = 10)
     for a in assemblies
         plot!(
             interval ./ 1000,
-            mean(fr[1][a.cells, interval], dims = 1)',
+            mean(fr[1][a.neurons, interval], dims = 1)',
             label = "Assembly $(a.id)",
             lw = 3,
         )
     end
-    # plot!(interval./1000, mean(fr[1][assemblies[1].cells, interval], dims=1)', label="Assembly", lw=3)
+    # plot!(interval./1000, mean(fr[1][assemblies[1].neurons, interval], dims=1)', label="Assembly", lw=3)
     plot!(ylabel = "Firing rate (Hz)")
     p3 = plot(
         r_t ./ 1000,
@@ -443,7 +443,7 @@ function stp_plot(model, interval, assemblies, stimuli = []; every = 10)
         :u,
         r = interval,
         dt = 0.125,
-        neurons = assemblies[1].cells,
+        neurons = assemblies[1].neurons,
         pop_average = true,
         label = "u",
         c = :blue,
@@ -454,15 +454,15 @@ function stp_plot(model, interval, assemblies, stimuli = []; every = 10)
         :x,
         r = interval,
         dt = 0.125,
-        neurons = assemblies[1].cells,
+        neurons = assemblies[1].neurons,
         pop_average = true,
         label = "x",
         c = :red,
     )
     plot!(p3, ylims = (0, 1), legend = :topleft, ylabel = "STP")
     p23 = plot(p2, p3)
-    in_ass = [a.cells for a in assemblies]
-    push!(in_ass, (pop.E.N-length(assemblies[1].cells):pop.E.N))
+    in_ass = [a.neurons for a in assemblies]
+    push!(in_ass, (pop.E.N-length(assemblies[1].neurons):pop.E.N))
     p = plot()
     rectangle(_start, _end) = Shape(
         [_start, _start, _end, _end],
@@ -501,8 +501,8 @@ end
 """
     plot_average_word_activity(sym, word, model, seq; target=:d, before=100ms, after=300ms, zscore=true)
 
-    Plot the value of the `sym` variable for the cells associated to the `word` stimulus. 
-    `cells = getcells(model.stim, seq.symbols.words[w], target)`
+    Plot the value of the `sym` variable for the neurons associated to the `word` stimulus. 
+    `neurons = getneurons(model.stim, seq.symbols.words[w], target)`
 
     Arguments:
     - `sym`: The variable to plot.
@@ -529,14 +529,14 @@ function plot_average_word_activity(
     Trange = -before:1ms:diff(myintervals[1])[1]+after
     activity = zeros(length(seq.symbols.words), size(Trange, 1))
     for w in eachindex(seq.symbols.words)
-        cells = getcells(model.stim, seq.symbols.words[w], :d)
-        ave_fr = mean(membrane[cells, :])
-        std_fr = std(membrane[cells, :])
+        neurons = getneurons(model.stim, seq.symbols.words[w], :d)
+        ave_fr = mean(membrane[neurons, :])
+        std_fr = std(membrane[neurons, :])
         n = 0
         for myinterval in myintervals
             _range = myinterval[1]-before:1ms:myinterval[2]+after
             _range[end] > r_v[end] && continue
-            v = mean(membrane[cells, _range], dims = 1)[1, :]
+            v = mean(membrane[neurons, _range], dims = 1)[1, :]
             activity[w, :] += zscore ? (v .- ave_fr) ./ std_fr : v
             n += 1
         end

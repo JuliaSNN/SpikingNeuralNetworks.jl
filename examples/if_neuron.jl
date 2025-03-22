@@ -4,8 +4,8 @@ SNN.@load_units
 
 E = SNN.IF(; N = 1)
 r = 50Hz * 300
-stim1 = SNN.PoissonStimulus(E, :ge, param = r, μ = 1.0f0, cells = :ALL)
-stim2 = SNN.PoissonStimulus(E, :gi, param = r, μ = 0.1f0, cells = :ALL)
+stim1 = SNN.PoissonStimulus(E, :ge, param = r, μ = 1.0f0, neurons=:ALL)
+stim2 = SNN.PoissonStimulus(E, :gi, param = r, μ = 0.1f0, neurons=:ALL)
 # E.I = [11]
 SNN.monitor(E, [:v, :fire, :ge, :gi], sr = 1 / dt)
 

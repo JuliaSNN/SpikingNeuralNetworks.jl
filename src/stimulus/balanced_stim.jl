@@ -20,7 +20,7 @@ BSParam = BalancedStimulusParameter
     name::String = "Balanced"
     N::IT = 100
     N_pre::IT = 5
-    cells::VIT
+    neurons::VIT
     ##
     ge::VFT # target conductance for exc
     gi::VFT # target conductance for inh
@@ -42,7 +42,7 @@ end
 
 
 """
-    BalancedStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cells=[]; N_pre::Int=50, p_post::R=0.05f0, μ::R=1.f0, param=BalancedParameter()) where {T <: AbstractPopulation, R <: Number}
+    BalancedStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, neurons=[]; N_pre::Int=50, p_post::R=0.05f0, μ::R=1.f0, param=BalancedParameter()) where {T <: AbstractPopulation, R <: Number}
 
 Constructs a BalancedStimulus object for a spiking neural network.
 
@@ -50,10 +50,10 @@ Constructs a BalancedStimulus object for a spiking neural network.
 - `post::T`: The target population for the stimulus.
 - `sym::Symbol`: The symbol representing the synaptic conductance or current.
 - `r::Union{Function, Float32}`: The firing rate of the stimulus. Can be a constant value or a function of time.
-- `cells=[]`: The indices of the cells in the target population that receive the stimulus. If empty, cells are randomly selected based on the probability `p_post`.
-- `N::Int=200`: The number of Balanced neurons cells.
+- `neurons=[]`: The indices of the neuronsin the target population that receive the stimulus. If empty, neuronsare randomly selected based on the probability `p_post`.
+- `N::Int=200`: The number of Balanced neurons neurons.
 - `N_pre::Int=5`: The number of presynaptic connected.
-- `p_post::R=0.05f0`: The probability of connection between presynaptic and postsynaptic cells.
+- `p_post::R=0.05f0`: The probability of connection between presynaptic and postsynaptic neurons.
 - `μ::R=1.f0`: The scaling factor for the synaptic weights.
 - `param=BalancedParameter()`: The parameters for the Balanced distribution.
 
@@ -65,14 +65,14 @@ function BalancedStimulus(
     sym_e::Symbol,
     sym_i::Symbol,
     target = nothing;
-    cells = [],
+    neurons= [],
     μ = 1.0f0,
     param::Union{BalancedStimulusParameter,R},
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
 
-    cells = 1:post.N
-    w = zeros(Float32, length(cells), length(cells))
+    neurons= 1:post.N
+    w = zeros(Float32, length(neurons), length(neurons))
     w = μ * sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
@@ -115,9 +115,9 @@ function BalancedStimulus(
     # Construct the SpikingSynapse instance
     return BalancedStimulus(;
         param = param,
-        N = length(cells),
+        N = length(neurons),
         N_pre = N_pre,
-        cells = cells,
+        neurons= neurons,
         targets = targets,
         r = r,
         noise = noise,
@@ -140,7 +140,7 @@ function stimulate!(
     time::Time,
     dt::Float32,
 )
-    @unpack N, N_pre, randcache, randcache_β, fire, cells, colptr, W, I, ge, gi = p
+    @unpack N, N_pre, randcache, randcache_β, fire, neurons, colptr, W, I, ge, gi = p
 
     ## Inhomogeneous Poisson process
     @unpack r0, β, τ, kIE, wIE, same_input = param
@@ -151,7 +151,7 @@ function stimulate!(
     # Inhibitory spike
     rand!(randcache)
     for i = 1:N
-        @simd for j = 1:N_pre # loop on presynaptic cells
+        @simd for j = 1:N_pre # loop on presynaptic neurons
             if randcache[j] < r0 * kIE / N_pre * dt
                 gi[i] += 1 * wIE
             end
@@ -174,7 +174,7 @@ function stimulate!(
         @assert Erate >= 0
         @inbounds @fastmath for i = 1:N
             rand!(randcache)
-            @simd for j = 1:N_pre # loop on presynaptic cells
+            @simd for j = 1:N_pre # loop on presynaptic neurons
                 if randcache[j] < Erate / N_pre * dt
                     ge[i] += 1.0
                 end
@@ -189,7 +189,7 @@ function stimulate!(
             r[i] += (r0 - Erate) / 400ms * dt
             @assert Erate >= 0
             rand!(randcache)
-            @simd for j = 1:N_pre # loop on presynaptic cells
+            @simd for j = 1:N_pre # loop on presynaptic neurons
                 if randcache[j] < Erate / N_pre * dt
                     ge[i] += 1.0
                 end

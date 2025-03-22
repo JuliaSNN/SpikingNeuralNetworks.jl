@@ -21,10 +21,10 @@ end
     param::CurrentStimulusParameter = CurrentStimulusParameter()
     name::String = "Current"
     id::String = randstring(12)
-    cells::VIT
+    neurons::VIT
     ##
 
-    randcache::VFT = rand(length(cells)) # random cache
+    randcache::VFT = rand(length(neurons)) # random cache
     I::VFT # target input current
     records::Dict = Dict()
     targets::Dict = Dict()
@@ -34,27 +34,27 @@ end
 
 function CurrentStimulus(
     post::T;
-    cells = :ALL,
+    neurons=:ALL,
     # α::R = 1f0,
     # I_dist::Distribution = Normal(0.0, 0.0),
     # I_base = 10pA,
     param,
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
-    if cells == :ALL
-        cells = 1:post.N
+    if neurons== :ALL
+        neurons= 1:post.N
     end
 
     # if 
-    # I_base = isa(I_base, Number) ? fill(I_base, length(cells)) : I_base
-    # α = isa(α, Number) ? fill(α, length(cells)) : α
+    # I_base = isa(I_base, Number) ? fill(I_base, length(neurons)) : I_base
+    # α = isa(α, Number) ? fill(α, length(neurons)) : α
     # @show α
     # param = CurrentNoiseParameter(I_base, I_dist, α)
 
 
     targets = Dict(:pre => :Current, :g => post.id, :sym => :soma)
     return CurrentStimulus(
-        cells = cells,
+        neurons= neurons,
         I = post.I,
         targets = targets;
         param = param,
@@ -69,18 +69,18 @@ end
 # Generate a Poisson stimulus for a postsynaptic population.
 # """
 function stimulate!(p, param::CurrentNoiseParameter, time::Time, dt::Float32)
-    @unpack I, cells, randcache = p
+    @unpack I, neurons, randcache = p
     @unpack I_base, I_dist, α = param
     rand!(I_dist, randcache)
-    @inbounds @simd for i in p.cells
+    @inbounds @simd for i in p.neurons
         I[i] = (I_base[i] .+ randcache[i]) * α[i] + I[i] * (1 - α[i])
     end
 end
 
 function stimulate!(p, param::CurrentVariableParameter, time::Time, dt::Float32)
-    @unpack I, cells, randcache = p
+    @unpack I, neurons, randcache = p
     @unpack variables, func = param
-    @inbounds @simd for i in p.cells
+    @inbounds @simd for i in p.neurons
         I[i] = func(variables, get_time(time), i)
     end
 end

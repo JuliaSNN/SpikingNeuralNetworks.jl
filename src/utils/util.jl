@@ -402,7 +402,8 @@ export connect!,
     exp32,
     exp256,
     print_summary,
-    update_weights!,
     indices,
     set_plasticity!,
-    has_plasticity
+    has_plasticity,
+    name,
+    update_time!

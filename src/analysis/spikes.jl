@@ -87,16 +87,16 @@ end
 
 
 """
-    spikecount(model, Trange, cells)
+    spikecount(model, Trange, neurons)
 
-    Return the total number of spikes of the cells in the selected interval
+    Return the total number of spikes of the neurons in the selected interval
 """
 function spikecount(
     pop::T,
     Trange::Q,
-    cells::Vector{Int},
+    neurons::Vector{Int},
 ) where {T<:AbstractPopulation,Q<:AbstractVector}
-    return length.(spiketimes(pop, interval = Trange)[cells]) |> sum
+    return length.(spiketimes(pop, interval = Trange)[neurons]) |> sum
 end
 
 export spikecount

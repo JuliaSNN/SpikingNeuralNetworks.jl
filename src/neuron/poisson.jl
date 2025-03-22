@@ -76,7 +76,7 @@ function integrate!(p::VariablePoisson, param::VariablePoissonParameter, dt::Flo
     r[i] += (r0 - Erate) / 400ms * dt
     @assert Erate >= 0
     # @inbounds @fastmath 
-    for j = 1:N # loop on presynaptic cells
+    for j = 1:N # loop on presynaptic neurons
         if randcache[j] < Erate / N * dt
             fire[j] = true
         else

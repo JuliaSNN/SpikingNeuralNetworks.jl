@@ -36,8 +36,8 @@ end
 ## Stimulus
 # Background noise
 stimuli = Dict(
-    :noise_e => SNN.PoissonStimulus(E, :he_s, param = 4.0kHz, cells = :ALL, μ = 2.7f0),
-    :noise_i => SNN.PoissonStimulus(E, :hi_s, param = 1.0kHz, cells = :ALL, μ = 3.0f0),
+    :noise_e => SNN.PoissonStimulus(E, :he_s, param = 4.0kHz, neurons=:ALL, μ = 2.7f0),
+    :noise_i => SNN.PoissonStimulus(E, :hi_s, param = 1.0kHz, neurons=:ALL, μ = 3.0f0),
 )
 model = merge_models(stimuli, E = E)
 

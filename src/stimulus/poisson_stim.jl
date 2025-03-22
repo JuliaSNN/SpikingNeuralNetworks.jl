@@ -20,7 +20,7 @@ end
 """
     PoissonStimulusFixed
 
-    Poisson stimulus with fixed rate. The rate arrives to all the cells targeted
+    Poisson stimulus with fixed rate. The rate arrives to all the neuronstargeted
     by the stimulus.
 
     # Fields
@@ -38,12 +38,12 @@ end
     PoissonStimulusLayer
 
     Poisson stimulus with rate defined for each cell in the layer. Each neuron of the 'N' Poisson population fires with 'rate'.
-    The connectivity is defined by the parameter 'ϵ'. Thus, the number of presynaptic cells connected to the postsynaptic cells is 'N*ϵ'. Each post-synaptic cell receives rate: 'rate * N * ϵ'.
+    The connectivity is defined by the parameter 'ϵ'. Thus, the number of presynaptic neuronsconnected to the postsynaptic neuronsis 'N*ϵ'. Each post-synaptic cell receives rate: 'rate * N * ϵ'.
 
     # Fields
     - `rate::Vector{R}`: A vector containing the rate of the Poisson stimulus.
-    - `N::Int32`: The number of cells in the layer.
-    - `ϵ::Float32`: The fraction of presynaptic cells connected to the postsynaptic cells.
+    - `N::Int32`: The number of neuronsin the layer.
+    - `ϵ::Float32`: The fraction of presynaptic neuronsconnected to the postsynaptic neurons.
     - `active::Vector{Bool}`: A vector of booleans indicating if the stimulus is active.
 """
 PoissonStimulusLayer
@@ -84,7 +84,7 @@ PSParam = PoissonStimulusVariable
     param::PoissonStimulusParameter
     N::IT = 100
     N_pre::IT = 5
-    cells::VIT
+    neurons::VIT
     ##
     g::VFT # target conductance for soma
     colptr::VIT
@@ -105,7 +105,7 @@ function PoissonStimulus(
     post::T,
     sym::Symbol,
     target = nothing;
-    cells = :ALL,
+    neurons=:ALL,
     N::Int = 100,
     p_post = 1.0,
     N_pre = 50,
@@ -122,15 +122,16 @@ function PoissonStimulus(
         N_pre = round(Int, N * param.ϵ)
     end
 
-    ## select a subset of cells that receive the stimulus
-    cells = cell == :ALL ? eachindex(post.N) : cells
+    ## select a subset of neuronsthat receive the stimulus
+    neurons= neurons== :ALL ? eachindex(post.N) : neurons
+    neurons = []
     for i = 1:post.N
-        (rand() < p_post) && (push!(cells, i))
+        (rand() < p_post) && (push!(neurons, i))
     end
 
     ## construct the connectivity matrix
-    w = zeros(Float32, length(cells), N)
-    for i = 1:length(cells)
+    w = zeros(Float32, length(neurons), N)
+    for i = eachindex(neurons)
         pre = rand(1:N, round(Int, N_pre))
         w[i, pre] .= 1
     end
@@ -156,7 +157,7 @@ function PoissonStimulus(
         param = param,
         N = N,
         N_pre = N_pre,
-        cells = cells,
+        neurons= neurons,
         targets = targets,
         g = g,
         @symdict(rowptr, colptr, I, J, index, W)...,
@@ -171,14 +172,14 @@ function stimulate!(
     time::Time,
     dt::Float32,
 )
-    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    @unpack N, N_pre, randcache, fire, neurons, colptr, W, I, g = p
     @unpack rate = param
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < rate[j] * dt / N_pre
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[cells[I[s]]] += W[s]
+                g[neurons[I[s]]] += W[s]
             end
         else
             fire[j] = false
@@ -193,14 +194,14 @@ function stimulate!(
     time::Time,
     dt::Float32,
 )
-    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    @unpack N, N_pre, randcache, fire, neurons, colptr, W, I, g = p
     @unpack rate = param
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < rate[j] * dt
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[cells[I[s]]] += W[s]
+                g[neurons[I[s]]] += W[s]
             end
         else
             fire[j] = false
@@ -218,7 +219,7 @@ function stimulate!(
     if !active[1]
         return
     end
-    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    @unpack N, N_pre, randcache, fire, neurons, colptr, W, I, g = p
     @unpack rate, intervals = param
     for int in intervals
         if !(get_time(time) > int[1] && get_time(time) < int[end])
@@ -231,13 +232,13 @@ function stimulate!(
         if randcache[j] < rate[j] * dt / N_pre
             fire[j] = true
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[cells[I[s]]] += W[s]
+                g[neurons[I[s]]] += W[s]
             end
         else
             fire[j] = false
         end
     end
-    # for j = 1:N # loop on presynaptic cells
+    # for j = 1:N # loop on presynaptic neurons
     #     if fire[j] # presynaptic fire
     #     end
     # end
@@ -253,7 +254,7 @@ function stimulate!(
     if !active[1]
         return
     end
-    @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
+    @unpack N, N_pre, randcache, fire, neurons, colptr, W, I, g = p
     myrate::Float32 = param.rate(get_time(time), param)
     myrate *= dt / N_pre
     rand!(randcache)
@@ -264,10 +265,10 @@ function stimulate!(
             fire[j] = false
         end
     end
-    for j = 1:N # loop on presynaptic cells
+    for j = 1:N # loop on presynaptic neurons
         if fire[j] # presynaptic fire
             @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[cells[I[s]]] += W[s]
+                g[neurons[I[s]]] += W[s]
             end
         end
     end
