@@ -132,4 +132,4 @@ PostSpike
     τA::FT
 end
 
-export AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn, AdExSynapseParameter, PostSpike
+export AdExParameter, AdExParameterSingleExponential, AdExParameterGsyn, AdExSynapseParameter, PostSpike, SomaGlu, SomaGABA, SomaNMDA, SomaSynapse, AdExSynapseParam
