@@ -249,7 +249,7 @@ function print_model(model, get_keys = false)
     end
     synapses = Vector{String}()
     for k in keys(syn)
-        isa(syn[k], SNN.SynapseNormalization) && continue
+        typeof(syn[k]) <: AbstractNormalization && continue
         _edges, _ids = filter_edge_props(model_graph, :key, k)
         for (e, i) in zip(_edges, _ids)
             name = props(model_graph, e)[:name][i]

@@ -169,8 +169,8 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
         end
         println(file, "$indent),")
     else
-        name = isa(value, NamedTuple) ? "" : nameof(typeof(value))
-        println(file, "$indent$key = $(name)(")
+            name = isa(value,NamedTuple) ? "" : nameof(typeof(value)) 
+        println(file, "$indent$key $equal_sign $(name)(")
         for field in fieldnames(typeof(value))
             field_value = getfield(value, field)
             write_value(file, field, field_value, indent * "    ")

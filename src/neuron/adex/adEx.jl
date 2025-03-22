@@ -166,8 +166,9 @@ function update_soma!(
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
-                + ΔT * exp((v[i] - θ[i]) / ΔT) # exponential term
-                + R * syn_curr[i] # excitatory synapses
+                +
+                ΔT * exp((v[i] - θ[i]) / ΔT) # exponential term
+                - R* syn_curr[i] # excitatory synapses
                 - R * w[i] # adaptation
                 + R * I[i] # external current
             ) / (τm * ξ_het[i])
@@ -196,24 +197,22 @@ end
         @unpack gsyn, E_rev, nmda = syn[r]
         if nmda > 0.0f0
             @simd for i ∈ 1:N
-                syn_curr[i] +=
-                    -gsyn * g[i, r] * (v[i] - E_rev) /
-                    (1.0f0 + (mg / b) * exp32(k * (v[i])))
+                    syn_curr[i] +=  gsyn * g[i, r] * (v[i] - E_rev) /  (1.0f0 + (mg / b) * exp32(k * (v[i])))
             end
         else
             @simd for i ∈ 1:N
-                syn_curr[i] += -gsyn * g[i, r] * (v[i] - E_rev)
+                syn_curr[i] +=  gsyn * g[i, r] * (v[i] - E_rev)
             end
         end
-        return
     end
+    return 
 end
 
 @inline function synaptic_current!(p::AdExSimple, param::T) where {T<:AbstractAdExParameter}
     @unpack gsyn_e, gsyn_i, E_e, E_i = param
     @unpack N, v, ge, gi, syn_curr = p
     @inbounds @simd for i ∈ 1:N
-        syn_curr[i] = ge[i] * (E_e - v[i]) * gsyn_e + gi[i] * (E_i - v[i]) * gsyn_i
+            syn_curr[i] = ge[i] * (v[i] - E_e) * gsyn_e + gi[i] * ( v[i] -E_i) * gsyn_i
     end
 end
 
