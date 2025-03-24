@@ -3,7 +3,8 @@
     τa::FT
     τe::FT
     Y::Vector{FT}
-    Wmin::FT = 0.5
+    Wmin::FT = 0.5pF
+    Wmax::FT = 250pF
 end
 
 # AggregateScaling
@@ -72,15 +73,19 @@ end
 
 
 function forward!(c::AggregateScaling, param::AggregateScalingParameter) 
-    @unpack y, fire = c
-    @unpack Y, τa = param
+    @unpack y, fire, WT = c
+    @unpack Y, τa, τe, Wmax = param
 
     @inbounds @simd for i in eachindex(fire)
-        y[i] += y[i]/τa 
+        y[i]  -= y[i]/τa 
     end
     @inbounds @simd for i in eachindex(fire)
         fire[i] && (y[i] +=1)
     end
+    @inbounds @simd for i in eachindex(fire)
+        WT[i] += (1- WT[i]/Wmax)*(1 - y[i]/Y[i])/τe
+    end
+
 
 end
 
@@ -118,6 +123,7 @@ function plasticity!(c::AggregateScaling, param::AggregateScalingParameter)
         end
     end
     # normalize
+
     @turbo for i in eachindex(μ)
         μ[i] =  (WT[i] -Wmin)/ Wt[i] #operator defines additive or multiplicative norm
     end
