@@ -13,6 +13,8 @@ Get the current time.
 """
 get_time(T::Time)::Float32 = T.t[1]
 
+get_time(model::NamedTuple)::Float32 = model.time.t[1]
+
 """
     get_step(T::Time)
 
