@@ -126,7 +126,8 @@ end
 
 
 
-function _raster(p::T, interval = nothing) where {T<:AbstractPopulation}
+function _raster(p::T, interval = nothing) where {T<:Union{AbstractPopulation, AbstractStimulus}}
+    !haskey(p.records, :fire) && @error "No fire record found in population $(p.name)"
     fire = p.records[:fire]
     x, y = Float32[], Float32[]
     y0 = Int32[]
