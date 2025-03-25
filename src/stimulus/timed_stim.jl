@@ -1,7 +1,7 @@
 @snn_kw struct SpikeTimeStimulusParameter{VFT = Vector{Float32},VIT = Vector{Int}} <:
                AbstractStimulusParameter
-    spiketimes::VFT
-    neurons::VIT
+    spiketimes::VFT=[]
+    neurons::VIT=[]
 end
 
 SpikeTimeParameter(; neurons, spiketimes) = SpikeTimeStimulusParameter(spiketimes, neurons)
@@ -30,6 +30,7 @@ end
 @snn_kw struct SpikeTimeStimulus{
     FT = Float32,
     VFT = Vector{Float32},
+    VBT = Vector{Bool},
     DT = Distribution{Univariate,Continuous},
     VIT = Vector{Int},
 } <: AbstractStimulus
@@ -46,7 +47,7 @@ end
     g::VFT  # rise conductance
     next_spike::VFT = [0]
     next_index::VIT = [0]
-    fireJ::VIT = zeros(Int, N)
+    fire::VBT = falses(N)
     records::Dict = Dict()
     targets::Dict = Dict()
 end
@@ -79,7 +80,7 @@ function SpikeTimeStimulus(
 
     next_spike = zeros(Float32, 1)
     next_index = zeros(Int, 1)
-    next_spike[1] = param.spiketimes[1]
+    next_spike[1] = isempty(param.spiketimes) ? Inf : param.spiketimes[1]
     next_index[1] = 1
 
     return SpikeTimeStimulus(;
@@ -116,13 +117,14 @@ function stimulate!(
     time::Time,
     dt::Float32,
 )
-    @unpack colptr, I, W, fireJ, g, next_spike, next_index = s
+    @unpack colptr, I, W, fire, g, next_spike, next_index = s
     @unpack spiketimes, neurons = param
+    fill!(fire, false)
     while next_spike[1] <= get_time(time)
         j = neurons[next_index[1]] # loop on presynaptic neurons
+        fire[j] = true
         @inbounds @simd for s ∈ colptr[j]:(colptr[j+1]-1)
             g[I[s]] += W[s]
-
         end
         if next_index[1] < length(spiketimes)
             next_index[1] += 1
@@ -134,7 +136,7 @@ function stimulate!(
 end
 
 function next_neuron(p::SpikeTimeStimulus)
-    @unpack fire, next_spike, next_index, param = p
+    @unpack next_spike, next_index, param = p
     if next_index[1] < length(param.spiketimes)
         return param.neurons[next_index[1]]
     else
@@ -162,6 +164,16 @@ function shift_spikes!(stimulus::SpikeTimeStimulus, delay::Number)
     return stimulus
 end
 
+function update_spikes!(stim, spikes, start_time=0f0)
+    empty!(stim.param.spiketimes)
+    empty!(stim.param.neurons)
+    append!(stim.param.spiketimes, spikes.spiketimes .+ start_time)
+    append!(stim.param.neurons , spikes.neurons)
+    stim.next_index[1] = 1
+    stim.next_spike[1] = stim.param.spiketimes[1]
+    return stim
+end
+
 
 max_neuron(param::SpikeTimeStimulusParameter) = maximum(param.neurons)
 
@@ -176,4 +188,5 @@ export SpikeTimeStimulusParameter,
     next_neuron,
     max_neuron,
     shift_spikes!,
+    update_spikes!,
     SpikeTime
