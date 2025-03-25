@@ -54,6 +54,10 @@ PoissonStimulusLayer
     active::Vector{Bool} = [true]
 end
 
+function PoissonStimulusLayer(N::Int; rate::R, ϵ::Float32) where {R<:Real} 
+    return PoissonStimulusLayer(rate=fill(Float32.(rate), N), N=N, ϵ=ϵ, active=[true])
+end
+
 """
     PoissonStimulusInterval
 
