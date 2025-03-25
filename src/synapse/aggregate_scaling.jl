@@ -6,6 +6,10 @@
     Wmin::FT = 0.5
 end
 
+function AggregateScalingParameter(N, rate=10Hz; τ = 10ms, τa = 100ms, τe = 100ms, Wmin = 0.05)
+    AggregateScalingParameter(τ, τa, τe, fill(rate,N), Wmin)
+end
+
 # AggregateScaling
 
 @snn_kw struct AggregateScaling{
