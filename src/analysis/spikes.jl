@@ -736,16 +736,16 @@ The function generates spike times for each neuron based on the rate vector and 
 An array of spike times for each neuron.
 
 """
-function sample_spikes(N, rate::Vector, interval::R; dt = 0.125f0) where {R<:AbstractRange}
+function sample_spikes(N, rate::Vector, interval::R; rate_factor=1f0, dt = 0.125f0) where {R<:AbstractRange}
     spiketimes = Vector{Float32}[[] for _ = 1:N]
     @assert length(rate) == length(interval)
     steps = step(interval) / dt
     t = dt
-    for i = 1:length(interval)
+    for i = eachindex(interval)
         r = rate[i] * Hz
         for _ = 1:steps
             for n = 1:N
-                if rand() < r * dt
+                if rand() < r * dt * rate_factor
                     push!(spiketimes[n], t)
                 end
             end
@@ -755,10 +755,10 @@ function sample_spikes(N, rate::Vector, interval::R; dt = 0.125f0) where {R<:Abs
     spiketimes
 end
 
-function sample_inputs(N, rate::Matrix, interval::R; dt = 0.125f0) where {R<:AbstractRange}
+function sample_inputs(N, rate::Matrix, interval::R; dt = 0.125f0, rate_factor=1f0) where {R<:AbstractRange}
     inputs = Vector{Float32}[]
     for i = 1:size(rate, 1)
-        for n in sample_spikes(N, rate[i, :], interval; dt = dt)
+        for n in sample_spikes(N, rate[i, :], interval; dt = dt, rate_factor=rate_factor)
             push!(inputs, n)
         end
     end
