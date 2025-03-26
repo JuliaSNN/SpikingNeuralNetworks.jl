@@ -144,6 +144,12 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
         println(file, "$indent$key $(equal_sign) \"$value\",")
     elseif isa(value, Symbol)
         println(file, "$indent$key $(equal_sign) :$value,")
+    elseif isa(value, Tuple)
+        println(file, "$indent$key $(equal_sign) (")
+        for v in value
+            write_value(file, "", v, indent * "    ", "")
+        end
+        println(file, "$indent),")
     elseif typeof(value) <: AbstractRange || isa(value, StepRange{Int64,Int64})
         _s = step(value)
         _end = last(value)
@@ -169,7 +175,7 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
         end
         println(file, "$indent),")
     else
-            name = isa(value,NamedTuple) ? "" : nameof(typeof(value)) 
+        name = isa(value,NamedTuple) ? "" : nameof(typeof(value)) 
         println(file, "$indent$key $equal_sign $(name)(")
         for field in fieldnames(typeof(value))
             field_value = getfield(value, field)
