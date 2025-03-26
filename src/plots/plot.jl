@@ -151,6 +151,15 @@ function vecplot(p, sym; kwargs...)
     vecplot!(plot(), p, sym; kwargs...)
 end
 
+function vecplot(p, sym::Vector{Symbol}; kwargs...)
+    my_plot = plot()
+    @show "ti"
+    for s in sym
+        vecplot!(my_plot, p, s; label=string(s), kwargs...)
+    end
+    return my_plot
+end
+
 function vecplot(P::Array, sym; kwargs...)
     plts = [vecplot(p, sym; kwargs...) for p in P]
     N = length(plts)
@@ -225,8 +234,18 @@ export raster, raster!, vecplot, vecplot!
 
 ##
 
+function raster_firing(model; path=nothing, τ=20ms, every=1)
+    fr_average, r, labels = firing_rate(model.pop, interval=0s:get_time(model), τ=τ, pop_average=true)
+    pr = raster(model.pop, (get_time(model)-5s):get_time(model), every=every, size=(1200, 1000))
+    pf = plot(r, fr_average, labels=hcat(labels...), xlabel="Time (s)", ylabel="Firing rate (Hz)")
+    presults = plot(pr, pf, layout=(2,1))
+    if !isnothing(path)
+        savefig(presults, path)        
+    end
+end
 
-export raster, vecplot, vecplot!, vecplot, dendrite_gplot, soma_gplot
+
+export raster, vecplot, vecplot!, vecplot, dendrite_gplot, soma_gplot, raster_firing
 
 
 
