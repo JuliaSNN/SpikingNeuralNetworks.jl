@@ -326,6 +326,10 @@ function extract_items(
     stim::Dict{Symbol,Any},
     time::Time,
 )
+    function special_key(k)
+        k == :pop || k == :syn || k == :stim
+    end
+        
     v = container
     if typeof(v) <: AbstractPopulation
         @assert !haskey(pop, root) "Population $(root) already exists"
@@ -342,10 +346,15 @@ function extract_items(
         for k in keys(container)
             k == :name && continue
             v = getindex(container, k)
-            (k == :pop || k == :syn || k == :stim) &&
-                (extract_items(root, v; pop, syn, stim, time)) &&
+            if special_key(k)
+                extract_items(root, v; pop, syn, stim, time)
                 continue
-            new_key = isempty(string(root)) ? k : Symbol(string(root) * "_" * string(k))
+            end
+            new_key = k
+            special_key(root)
+            if root==Symbol("") && !special_key(root)
+                new_key = Symbol(string(root) * "_" * string(k))
+            end
             if typeof(v) <: AbstractPopulation
                 @assert !haskey(pop, new_key) "Population $(new_key) already exists"
                 push!(pop, new_key => v)
