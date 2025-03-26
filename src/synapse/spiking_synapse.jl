@@ -65,7 +65,7 @@ function SpikingSynapse(
     σ = 0.0,
     p = 0.0,
     w = nothing,
-    dist = Normal,
+    dist::Symbol = :Normal,
     kwargs...,
 )
 
