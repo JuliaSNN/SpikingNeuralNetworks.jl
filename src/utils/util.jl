@@ -89,7 +89,8 @@ end
 function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
     if isnothing(w)
         # if w is not defined, construct a random sparse matrix with `dist` with `μ` and `σ`. 
-        w = rand(dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
+        my_dist = getfield(Distributions, dist)
+        w = rand(my_dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
         w[[n for n in eachindex(w[:]) if rand() > ρ]] .= 0
         w[w.<=0] .= 0
         w = sparse(w)
