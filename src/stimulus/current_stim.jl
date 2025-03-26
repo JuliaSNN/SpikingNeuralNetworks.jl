@@ -40,7 +40,7 @@ function CurrentStimulus(
     # I_base = 10pA,
     param,
     kwargs...,
-) where {T<:AbstractPopulation,R<:Real}
+) where {T<:AbstractPopulation}
     if neurons== :ALL
         neurons= 1:post.N
     end
