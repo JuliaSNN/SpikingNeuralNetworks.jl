@@ -49,6 +49,10 @@ struct Synapse{T<:Receptor}
     GABAb::T
 end
 
+function Synapse(; AMPA, NMDA, GABAa, GABAb )
+    return Synapse(AMPA, NMDA, GABAa, GABAb)
+end
+
 """
 Glutamatergic struct represents a group of glutamatergic receptors.
 
