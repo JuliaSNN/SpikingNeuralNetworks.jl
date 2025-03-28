@@ -749,7 +749,7 @@ function sample_spikes(N, rate::Vector, interval::R; rate_factor=1f0, dt = 0.125
                     push!(spiketimes[n], t)
                 end
             end
-            t = Float32(interval[i] + dt)
+            t = Float32(t + dt)
         end
     end
     spiketimes
