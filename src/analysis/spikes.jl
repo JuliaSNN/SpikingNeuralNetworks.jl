@@ -167,6 +167,23 @@ function merge_spiketimes(spikes::Vector{Spiketimes};)
     return sort!.(neurons)
 end
 
+
+function k_fold(vector, k, do_shuffle=false)
+    if do_shuffle
+        ns = shuffle(1:length(vector))
+    else
+        ns = 1:length(vector)
+    end
+    b = length(ns) ÷ k
+    indices=Vector{Vector{Int}}()
+    for i in 1:k-1
+      push!(indices,ns[(i-1)*b+1:b*i])
+    end
+    push!(indices,ns[1+b*(k-1):end])
+    return indices
+end
+
+
 function merge_spiketimes(spikes::Spiketimes;)
     sort(vcat(spikes...))
 end
@@ -792,4 +809,5 @@ export spiketimes,
     st_order,
     isi_cv,
     CV_isi2
-sample_spikes, sample_inputs
+    sample_spikes, 
+    sample_inputs
