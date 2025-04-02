@@ -352,9 +352,10 @@ function extract_items(
                 continue
             end
             new_key = k
-            special_key(root)
-            if root==Symbol("") && !special_key(root)
+            if !isempty(String(root)) && !special_key(root)
+                @show new_key, k, root
                 new_key = Symbol(string(root) * "_" * string(k))
+                @show new_key
             end
             if typeof(v) <: AbstractPopulation
                 @assert !haskey(pop, new_key) "Population $(new_key) already exists"

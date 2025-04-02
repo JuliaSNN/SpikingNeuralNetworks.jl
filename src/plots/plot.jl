@@ -153,10 +153,10 @@ end
 
 function vecplot(p, sym::Vector{Symbol}; kwargs...)
     my_plot = plot()
-    @show "ti"
     for s in sym
         vecplot!(my_plot, p, s; label=string(s), kwargs...)
     end
+    plot!(my_plot, ylims=:auto)
     return my_plot
 end
 
