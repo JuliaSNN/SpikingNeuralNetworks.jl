@@ -772,7 +772,8 @@ function sample_spikes(N, rate::Vector, interval::R; rate_factor=1f0, dt = 0.125
     spiketimes
 end
 
-function sample_inputs(N, rate::Matrix, interval::R; dt = 0.125f0, rate_factor=1f0) where {R<:AbstractRange}
+function sample_inputs(N, rate::Matrix, interval::R; dt = 0.125f0, rate_factor=1f0, seed=nothing) where {R<:AbstractRange}
+    !isnothing(seed) && (Random.seed!(seed))
     inputs = Vector{Float32}[]
     for i = 1:size(rate, 1)
         for n in sample_spikes(N, rate[i, :], interval; dt = dt, rate_factor=rate_factor)
