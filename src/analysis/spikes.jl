@@ -239,6 +239,8 @@ function firing_rate(
         rates = hcat(rates...)'
     end
 
+    @show interval
+
     if interpolate
         interp = get_interpolator(rates)
         rates = Interpolations.scale(
@@ -413,17 +415,17 @@ containing the time points corresponding to the center of each bin.
 """
 function bin_spiketimes(
     spike_times::Vector{Float32};
-    time_range = nothing,
+    time_range::AbstractRange = 0:-1,
     max_lag = 500ms,
     bin_width = 1.0ms,
     do_sparse = true,
 )
-    time_range =
-        !isnothing(time_range) ? time_range : (0.0:bin_width:maximum(spike_times)+max_lag)
+    time_range = isempty(time_range) ? (0.0:bin_width:maximum(spike_times)+max_lag) : time_range
     bin_width = step(time_range)
     spike_train = zeros(length(time_range))
-    for t in spike_times
-        index = floor(Int, t / bin_width) + 1
+    st = sort(spike_times) .- first(time_range)
+    for i in findall(x -> x > 0 && x < length(time_range)*bin_width, st)
+        index = floor(Int, st[i] / bin_width) + 1
         if index <= length(spike_train)
             spike_train[index] += 1.0
         end
