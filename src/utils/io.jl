@@ -233,6 +233,27 @@ function print_summary(p)
 end
 
 
+## import all models/data from folder
+function read_folder(path, files=nothing; my_filter=(file,type)->endswith(file, "$(type).jld2"), type=:model, name=nothing)
+    if isnothing(files)
+        files = []
+    end
+    n = 0
+    for file in readdir(path)
+        if my_filter(file, type)
+            n+=1
+            @info n, file
+            push!(files,joinpath(path, file))
+        end
+    end
+    return files
+end
+
+function read_folder!(df, path; type=:model, name=nothing)
+    read_folder(path, df; type=type, name=name)
+end
+
+
 
 
 export save_model,
@@ -243,4 +264,7 @@ export save_model,
     data2model,
     write_config,
     print_summary,
-    load_or_run
+    load_or_run,
+    read_folder,
+    read_folder!
+

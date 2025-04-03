@@ -256,8 +256,6 @@ function firing_rate(
         rates = hcat(rates...)'
     end
 
-    @show interval
-
     if interpolate
         interp = get_interpolator(rates)
         rates = Interpolations.scale(
