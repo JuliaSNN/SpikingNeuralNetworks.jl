@@ -82,6 +82,11 @@ function reset_time!(T::Time)
     T.tt[1] = 0
 end
 
+function reset_time!(model::NamedTuple)
+    model.time.t[1] = 0.0f0
+    model.time.tt[1] = 0
+end
+
 """
     record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: Union{AbstractPopulation, AbstractStimulus}}
 
