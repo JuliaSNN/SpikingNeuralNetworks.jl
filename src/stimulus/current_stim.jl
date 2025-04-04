@@ -11,6 +11,14 @@ end
     α::VFT = ones(Float32, 0)
 end
 
+function CurrentNoiseParameter(N; I_base::Number, I_dist::Distribution = Normal(0.0, 0.0), α::Number = 1.0)
+    return CurrentNoiseParameter(
+        I_base = fill(Float32(I_base), N),
+        I_dist = I_dist,
+        α = fill(Float32(α), N),
+    )
+end
+
 
 @snn_kw struct CurrentStimulus{
     FT = Float32,

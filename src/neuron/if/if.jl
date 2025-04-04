@@ -1,8 +1,8 @@
 @snn_kw struct IFParameter{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
-    Vt::FT = -50mV
-    Vr::FT = -60mV
-    El::FT = Vr
+    Vt::FT = -50mV # Membrane threshold potential
+    Vr::FT = -60mV # Membrane reset potential
+    El::FT = -70mV    # Membrane leak potential
     R::FT = nS / gL # Resistance
     ΔT::FT = 2mV # Slope factor
     τre::FT = 1ms # Rise time for excitatory synapses
@@ -18,6 +18,8 @@
     b::FT = 0.0 #80.5pA # 'sra' current increment
     τw::FT = 0.0 #144ms # adaptation time constant (~Ca-activated K current inactivation)
 end
+
+
 
 function IFParameterGsyn(;
     gsyn_i = 1.0,
@@ -53,7 +55,7 @@ end
     τi::FT = 2ms # Rise time for inhibitory synapses
     E_i::FT = -75mV # Reversal potential
     E_e::FT = 0mV # Reversal potential
-    τabs::FT = 1ms # Absolute refractory period
+    τabs::FT = 2ms # Absolute refractory period
     gsyn_e::FT = 1.0 # Synaptic conductance for excitatory synapses
     gsyn_i::FT = 1.0 # Synaptic conductance for inhibitory synapses
 end
