@@ -251,7 +251,7 @@ function firing_rate(
         rates = tmap(eachindex(spiketimes)) do n
             spike_train, _ =
                 bin_spiketimes(spiketimes[n]; time_range = interval, do_sparse = false)
-            conv(spike_train, alpha_kernel)[1:length(interval)] .* s
+            conv(spike_train, alpha_kernel)[1:length(interval)] .* s # times
         end
         rates = hcat(rates...)'
     end
@@ -456,6 +456,14 @@ end
 
 function isi(spiketimes::Spiketimes)
     return diff.(spiketimes)
+end
+
+function isi(spiketimes::Vector{Float32})
+    return diff(spiketimes)
+end
+
+function isi(pop::T; interval=nothing) where {T<:AbstractPopulation, }
+    return spiketimes(pop; interval=interval) |> isi
 end
 
 # isi(spiketimes::NNSpikes, pop::Symbol) = read(spiketimes, pop) |> x -> diff.(x)
