@@ -1,6 +1,6 @@
 @snn_kw struct STPParameter{FT = Float32} <: SpikingSynapseParameter
-    τD::FT = 200ms
-    τF::FT = 1500ms
+    τD::FT = 200ms # τx
+    τF::FT = 1500ms # τu
     U::FT = 0.2
     Wmax::FT = 1.0pF
     Wmin::FT = 0.0pF
@@ -70,8 +70,8 @@ function plasticity!(
 
     # update pre-synaptic spike trace
     @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
-        @fastmath u[j] += dt * (U - u[j]) / τF
-        @fastmath x[j] += dt * (1 - x[j]) / τD
+        @fastmath u[j] += dt * (U - u[j]) / τF # facilitation
+        @fastmath x[j] += dt * (1 - x[j]) / τD # depression
         @fastmath _ρ[j] = u[j] * x[j]
     end
 
