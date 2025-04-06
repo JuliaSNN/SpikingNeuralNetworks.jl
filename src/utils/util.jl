@@ -25,7 +25,7 @@ function update_weights!(c::C, j, i, w) where {C<:AbstractConnection}
     end
 end
 
-function update_weights!(c::C, js::Vector, is::Vector, w) where {C<:AbstractConnection}
+function update_weights!(c::C, js::Vector, is::Vector, w::Real) where {C<:AbstractConnection}
     @unpack colptr, I, W = c
     for j in js
         for s = colptr[j]:(colptr[j+1]-1)
@@ -415,4 +415,5 @@ export connect!,
     set_plasticity!,
     has_plasticity,
     name,
-    update_time!
+    update_time!,
+    update_weights!
