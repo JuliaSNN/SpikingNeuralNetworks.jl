@@ -1,6 +1,8 @@
 abstract type SpikingSynapseParameter <: AbstractConnectionParameter end
 struct no_STDPParameter <: SpikingSynapseParameter end
 
+NoSTDP = no_STDPParameter()
+
 ## No plasticity
 struct no_PlasticityVariables <: PlasticityVariables end
 
@@ -33,7 +35,8 @@ end
 export SpikingSynapse,
     SpikingSynapseParameter,
     no_STDPParameter,
+    NoSTDP,
     no_PlasticityVariables,
     plasticityvariables,
-    plasticity!
-change_plasticity!
+        plasticity!
+    change_plasticity!
