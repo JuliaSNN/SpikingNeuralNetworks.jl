@@ -17,10 +17,12 @@ function asynchronous_state(model, interval)
     isis = isi(model.pop.E; interval)
     cv = std.(isis) ./ (mean.(isis) .+ 1e-6)  # Adding a small value to avoid division by zero
     cv[isnan.(cv)] .= 0.0  # Replace NaN values with 0.0
+    cv = mean(cv)
+
     # Calculate the Fano Factor (FF)
-    fr, _ = firing_rate(model.pop.E, interval=interval, τ=20ms)
-    ff = var(fr, dims=2)[:,1] ./ mean(fr, dims=2)[:,1]  # Fano Factor
-    ff[isnan.(ff)] .= 0.0  # Replace NaN values with 0.0
+    st = merge_spiketimes(spiketimes(model.pop.E))
+    bins,_ = SNN.bin_spiketimes(st; time_range = interval, do_sparse = false)
+    ff = var(bins)/ mean(bins)  # Fano Factor
 
     return cv, ff
 end

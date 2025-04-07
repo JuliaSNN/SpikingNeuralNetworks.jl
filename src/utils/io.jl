@@ -54,18 +54,20 @@ end
 
 export load_data, load_model, save_model, savemodel
 
-function save_model(; path, model, name, info, config, kwargs...)
+function save_model(; path, model, name, info, config, model_only=false, kwargs...)
     @info "Model: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
     isdir(path) || mkpath(path)
 
     config_path = joinpath(path, savename(name, info, "jl.config", connector = "-"))
     write_config(config_path, info; config, kwargs...)
 
-    data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
-    Logging.LogLevel(0) == Logging.Error
-    @time DrWatson.save(data_path, merge((@strdict model = model config = config), kwargs))
-    Logging.LogLevel(0) == Logging.Info
-    @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
+    if !model_only
+        data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
+        Logging.LogLevel(0) == Logging.Error
+        @time DrWatson.save(data_path, merge((@strdict model = model config = config), kwargs))
+        Logging.LogLevel(0) == Logging.Info
+        @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
+    end
 
     _model = deepcopy(model)
     clear_records(_model)
@@ -78,7 +80,7 @@ function save_model(; path, model, name, info, config, kwargs...)
     )
     Logging.LogLevel(0) == Logging.Info
     @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
-    return data_path
+    # return data_path
 end
 
 function data2model(; path, name = randstring(10), info = nothing, kwargs...)
