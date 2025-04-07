@@ -99,7 +99,7 @@ function data2model(; path, name = randstring(10), info = nothing, kwargs...)
     @error "Model file not saved"
 end
 
-function get_path(; path, name = randstring(10), info = nothing, kwargs...)
+function model_path_name(; path, name = randstring(10), info = nothing, kwargs...)
     model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     return model_path
 end
