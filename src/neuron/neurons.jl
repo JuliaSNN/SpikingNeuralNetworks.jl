@@ -10,6 +10,7 @@ plasticity!(
 ) = nothing
 
 include("synapse.jl")
+include("synapse_parameters.jl")
 
 ## Neurons
 include("poisson.jl")
@@ -24,6 +25,7 @@ include("if/noisy_if.jl")
 include("if/if.jl")
 include("if/if_current.jl")
 include("if/extendedLIF.jl")
+include("if/if_CANAHP.jl")
 
 ## AdEx
 abstract type AbstractAdExParameter <: AbstractGeneralizedIFParameter end
