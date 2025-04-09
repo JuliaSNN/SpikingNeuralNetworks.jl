@@ -119,8 +119,8 @@ function PoissonStimulus(
 ) where {T<:AbstractPopulation,R<:Real}
 
     if typeof(param) <: Real
+        N_pre = round(Int, param*10)
         param = PoissonStimulusFixed(fill(param, N), [true])
-        N_pre = round(Int, N * 0.05)
     elseif typeof(param) == PoissonStimulusLayer
         N = param.N
         N_pre = round(Int, N * param.ϵ)

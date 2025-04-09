@@ -350,7 +350,7 @@ function compute_cross_correlogram(
         if shift_predictor
             spike_times2 = spike_times2 .+ 1000.0
         end
-        spike_train2, _ = bin_spiketimes(spike_times2; time_range)
+        spike_train2, _ = bin_spiketimes(spike_times2; )
     else
         spike_train2 = spike_train1
     end
@@ -450,6 +450,18 @@ function bin_spiketimes(
     else
         return spike_train, time_range
     end
+end
+
+function bin_spiketimes(
+    spike_times::Vector{Vector{Float32}};
+    kwargs...
+)
+    sample, r = bin_spiketimes(spike_times[1]; kwargs..., do_sparse=false)
+    bin_array = zeros(length(spike_times), length(sample))
+    for n in eachindex(spike_times)
+        bin_array[n,:] = bin_spiketimes(spike_times[n]; kwargs...)[1]
+    end
+    return bin_array
 end
 
 
