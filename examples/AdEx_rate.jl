@@ -18,8 +18,8 @@ P = [E, G, I]
 C = [EE, EI, IE, II, EG]
 # C = [EE, EG, GG]
 
-SNN.monitor([E, I], [:fire])
-SNN.monitor(G, [(:r)])
+SNN.monitor!([E, I], [:fire])
+SNN.monitor!(G, [(:r)])
 SNN.sim!(P, C; duration = 4second)
 SNN.raster([E, I], [3.4, 4] .* 10e3)
 SNN.vecplot(G, :r, 10:20)
@@ -28,7 +28,7 @@ SNN.vecplot(G, :r, 10:20)
 # E = SNN.AdEx(;N = 100, param = AdExParameter(;El=-40mV))
 # EE = SNN.SpikingSynapse(E, E, :ge; μ=10, p = 0.02)
 # EG = SNN.SpikeRateSynapse(E, G; μ = 1., p = 1.0)
-# SNN.monitor(E, [:fire])
+# SNN.monitor!(E, [:fire])
 # SNN.sim!(P, C; duration = 4second)
 # SNN.raster([E], [900, 1000])
 # plot!(xlims=(100,1000))

@@ -17,9 +17,9 @@ param = AggregateScalingParameter(
 A = AggregateScaling(E, [S], param=param)
 ##
 model = merge_models(E=E, P=P,S=S, A=A)
-SNN.monitor(E, [:fire])
-SNN.monitor(A, [:Y], sr=100Hz)
-SNN.monitor(S, [:W], sr=100Hz)
+SNN.monitor!(E, [:fire])
+SNN.monitor!(A, [:Y], sr=100Hz)
+SNN.monitor!(S, [:W], sr=100Hz)
 model.time
 for n in ProgressBar(1:20_000)
     model.syn.S.W .+= randn(size(model.syn.S.W)) 

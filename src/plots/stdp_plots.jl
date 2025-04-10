@@ -12,7 +12,7 @@ function stdp_integral(stdp_param; ΔTs = -101ms:2:101ms, fill = true)
         stim = SpikeTimeStimulusIdentity(st, :g, param = inputs)
         syn = SpikingSynapse(st, st, :h, w = w, param = stdp_param)
         model = merge_models(pop = st, stim = stim, syn = syn, silent = true)
-        SNN.monitor(model.pop..., [:fire])
+        SNN.monitor!(model.pop..., [:fire])
         train!(model = model, duration = 3000ms, dt = 0.1ms)
         ΔWs[i] = model.syn[1].W[1] - 10.0f0
     end
@@ -46,7 +46,7 @@ function stdp_kernel(stdp_param; ΔTs = -200.5:5:200ms, fill = true, kwargs...)
         w[2, 1] = 1.0f0
         syn = SpikingSynapse(st, st, :h, w = w, param = stdp_param)
         model = merge_models(pop = st, stim = stim, syn = syn, silent = true)
-        SNN.monitor(model.pop..., [:fire])
+        SNN.monitor!(model.pop..., [:fire])
         train!(model = model, duration = 3000ms, dt = 0.1ms)
         ΔWs[i] = model.syn[1].W[1] - 1.0f0
     end
@@ -105,7 +105,7 @@ function stdp_weight_correlated(stdp_param, rate1, rate2, τ_cov = 10ms)
     w[2, 1] = 5.0f0
     syn = SpikingSynapse(st, st, :h, w = w, param = stdp_param)
     model = merge_models(st = st, stim = stim, syn = syn, silent = true)
-    SNN.monitor(model.pop..., [:fire])
+    SNN.monitor!(model.pop..., [:fire])
     train!(model = model, duration = T, dt = 0.1ms)
     return model
     ΔW = model.syn[1].W[1] - 5.0f0

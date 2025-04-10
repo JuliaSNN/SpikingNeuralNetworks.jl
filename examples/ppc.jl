@@ -9,7 +9,7 @@ ear_ppc = SNN.PINningSynapse(ear, ear; μ = 1.5, p = 1.0)
 ppc_ppc = SNN.PINningSynapse(ppc, ppc; μ = 1.5, p = 1.0)
 P, C = [ppc], [ear_ppc, ppc_ppc]
 
-SNN.monitor(ppc_ppc, [(:g, [1])])
+SNN.monitor!(ppc_ppc, [(:g, [1])])
 
 A = 1.3 / 1.5;
 fr = 1 / 60ms;

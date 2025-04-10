@@ -21,7 +21,7 @@ end
 
 P, C = initialize()
 E, I = P
-SNN.monitor([E, I], [:fire, :v, :ge])
+SNN.monitor!([E, I], [:fire, :v, :ge])
 SNN.sim!(P, C; duration = 3second)
 SNN.raster([E, I], [1 * 1000, 3.0 * 1000])
 SNN.vecplot(E, [:ge], r = 0.1s:1.2s, neurons = 1:4)
@@ -38,7 +38,7 @@ for x in Irange
     P, C = initialize()
     E, I = P
     SNN.sim!(P, C; duration = 1second)
-    SNN.monitor([E, I], [:fire, :v])
+    SNN.monitor!([E, I], [:fire, :v])
     I.I .= x
     SNN.sim!(P, C; duration = 1second)
     i = round(sum(mean(I.records[:fire])), digits = 2)

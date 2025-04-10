@@ -28,7 +28,7 @@ P = [inputs, neurons];
 C = [S];
 
 # histogram(S.W / S.param.Wmax; nbins = 20)
-# SNN.monitor(S, [(:W, [1, 2])])
+# SNN.monitor!(S, [(:W, [1, 2])])
 @time SNN.train!(P, C; duration = 100second)
 
 scatter(S.W / S.param.Wmax)

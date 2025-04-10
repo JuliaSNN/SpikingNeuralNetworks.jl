@@ -70,7 +70,7 @@ function save_model(; path, model, name, info, config, model_only=false, kwargs.
     end
 
     _model = deepcopy(model)
-    clear_records(_model)
+    clear_records!(_model)
 
     model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     Logging.LogLevel(0) == Logging.Error
@@ -80,7 +80,7 @@ function save_model(; path, model, name, info, config, model_only=false, kwargs.
     )
     Logging.LogLevel(0) == Logging.Info
     @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
-    # return data_path
+    return model_path
 end
 
 function data2model(; path, name = randstring(10), info = nothing, kwargs...)
@@ -89,7 +89,7 @@ function data2model(; path, name = randstring(10), info = nothing, kwargs...)
     !isfile(data_path) && return false
     # Does model file exist? If yes return true
     data = load_data(path, name, info)
-    clear_records(data.model)
+    clear_records!(data.model)
 
     model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
     isfile(model_path) && return true

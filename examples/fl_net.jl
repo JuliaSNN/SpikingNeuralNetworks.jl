@@ -6,7 +6,7 @@ S = SNN.Rate(; N = 200)
 SS = SNN.FLSynapse(S, S; μ = 1.5, p = 1.0)
 P, C = [S], [SS]
 
-SNN.monitor(SS, [:f, :z])
+SNN.monitor!(SS, [:f, :z])
 
 A = 1.3 / 1.5;
 fr = 1 / 60ms;

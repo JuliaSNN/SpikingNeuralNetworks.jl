@@ -24,7 +24,7 @@ projections = [projection_exc_soma, projection_inh_soma]
 
 SNN.sim!([E], projections, duration = 1000)
 #
-SNN.monitor(E, [:v_s, :v_d1, :g_d1, :fire, :ge_s, :gi_s, :w_s])
+SNN.monitor!(E, [:v_s, :v_d1, :g_d1, :fire, :ge_s, :gi_s, :w_s])
 SNN.sim!([E], projections, duration = 50)
 for p in projections
     p.fireJ[1] = true

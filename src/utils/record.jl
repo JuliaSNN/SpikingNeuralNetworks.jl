@@ -273,7 +273,7 @@ Initialize dictionary records for the given object, by assigning empty vectors t
 - `keys`: The variables to be monitored
 
 """
-function monitor(
+function monitor!(
     obj::Item,
     keys;
     sr = 1000Hz,
@@ -339,19 +339,19 @@ function monitor_plast(obj, plasticity, sym)
     obj.records[name][sym] = Vector{typ}()
 end
 """
-monitor(objs::Array, keys)
+monitor!(objs::Array, keys)
 
 Function called when more than one object is given, which then calls the above monitor function for each object
 """
-function monitor(objs::Array, keys; sr = 200Hz)
+function monitor!(objs::Array, keys; sr = 200Hz)
     for obj in objs
-        monitor(obj, keys, sr = sr)
+        monitor!(obj, keys, sr = sr)
     end
 end
 
-function monitor(objs::NamedTuple, keys; sr = 200Hz)
+function monitor!(objs::NamedTuple, keys; sr = 200Hz)
     for obj in values(objs)
-        monitor(obj, keys, sr = sr)
+        monitor!(obj, keys, sr = sr)
     end
 end
 
@@ -475,11 +475,11 @@ function getrecord(p, sym)
 end
 
 """
-clear_records(obj)
+clear_records!(obj)
 
 Clears all the records of a given object.
 """
-function clear_records(obj)
+function clear_records!(obj)
     if obj isa AbstractPopulation || obj isa AbstractStimulus || obj isa AbstractConnection
         _clean(obj.records)
     else
@@ -494,7 +494,7 @@ function clear_records(obj)
             elseif v isa Time
                 continue
             else
-                clear_records(v)
+                clear_records!(v)
             end
         end
     end
@@ -516,43 +516,43 @@ function _clean(z)
 end
 
 """
-clear_records(obj, sym::Symbol)
+clear_records!(obj, sym::Symbol)
 
 Clears the records of a given object for a specific symbol.
 """
-function clear_records(obj, sym::Symbol)
+function clear_records!(obj, sym::Symbol)
     for (key, val) in obj.records
         (key == sym) && (empty!(val))
     end
 end
 
 """
-clear_records(objs::AbstractArray)
+clear_records!(objs::AbstractArray)
 
 Clears the records of multiple objects.
 """
-function clear_records(objs::AbstractArray)
+function clear_records!(objs::AbstractArray)
     for obj in objs
-        clear_records(obj)
+        clear_records!(obj)
     end
 end
 
 
 """
-clear_monitor(obj)
+clear_monitor!(obj)
 
 Clears all the records of a given object.
 """
-function clear_monitor(obj)
+function clear_monitor!(obj)
     for (k, val) in obj.records
         delete!(obj.records, k)
     end
 end
 
-function clear_monitor(objs::NamedTuple)
+function clear_monitor!(objs::NamedTuple)
     for obj in values(objs)
         try
-            clear_monitor(obj)
+            clear_monitor!(obj)
         catch
             @warn "Could not clear monitor for $obj"
         end
@@ -574,7 +574,7 @@ export Time,
     monitor_plast,
     getvariable,
     getrecord,
-    clear_records,
-    clear_monitor,
+    clear_records!,
+    clear_monitor!,
     record,
     reset_time!

@@ -11,7 +11,7 @@ E = SNN.BallAndStick(
 
 
 model = merge_models(Dict(:E => E))
-SNN.monitor(model.pop.E, [:v_s, :v_d, :he_s, :h_d, :ge_s, :g_d])
+SNN.monitor!(model.pop.E, [:v_s, :v_d, :he_s, :h_d, :ge_s, :g_d])
 
 SNN.sim!(model = model, duration = 1000ms, dt = 0.125)
 model.pop.E.v_s[1] = -50mV

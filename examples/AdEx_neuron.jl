@@ -11,7 +11,7 @@ E.param.b
 #
 
 
-SNN.monitor(E, [:v, :fire, :w], sr = 8kHz)
+SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
 SNN.sim!([E]; duration = 700ms)
 p1 = plot(SNN.vecplot(E, :w), SNN.vecplot(E, :v))
 
@@ -25,7 +25,7 @@ E.param.b
 # TN.AdEx.Rm *TN.AdEx.b
 #
 
-SNN.monitor(E, [:v, :fire, :w], sr = 8kHz)
+SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
 SNN.sim!([E]; duration = 700ms)
 p2 = plot(SNN.vecplot(E, :w), SNN.vecplot(E, :v))
 

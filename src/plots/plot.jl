@@ -267,10 +267,10 @@ end
 
 function if_curve(model, current; neuron = 1, dt = 0.1ms, duration = 1second)
     E = model(neuron)
-    monitor(E, [:fire])
+    monitor!(E, [:fire])
     f = Float32[]
     for I in current
-        clear_records(E)
+        clear_records!(E)
         E.I = [I]
         SNN.sim!([E], []; dt = dt, duration = duration)
         push!(f, activity(E))

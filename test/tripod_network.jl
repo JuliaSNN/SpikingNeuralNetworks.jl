@@ -72,5 +72,5 @@ end
 # background
 
 #
-SNN.clear_records([network.pop...])
+SNN.clear_records!([network.pop...])
 SNN.train!([network.pop...], [network.syn...], duration = 5000ms)

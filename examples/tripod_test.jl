@@ -43,7 +43,7 @@ model = merge_models(stimuli, E = E)
 
 
 # %%
-SNN.monitor(
+SNN.monitor!(
     model.pop.E,
     [:fire, :v_d1, :v_s, :v_d1, :v_d2, :h_s, :h_d1, :h_d2, :g_d1, :g_d2],
 )

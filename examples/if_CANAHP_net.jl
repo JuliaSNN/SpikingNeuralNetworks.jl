@@ -6,7 +6,7 @@ SNN.@load_units
 IF_param = IF_CANAHPParameter()
 E = SNN.IF_CANAHP(N=450, param=IF_param)
 I = SNN.IF_CANAHP(N=150, param=IF_param)
-# SNN.monitor(E, [:v, :fire, :hi, :he, :g, :h, :I, :syn_curr], sr = 8000Hz)
+# SNN.monitor!(E, [:v, :fire, :hi, :he, :g, :h, :I, :syn_curr], sr = 8000Hz)
 
 I_param_E = SNN.CurrentNoiseParameter(E.N; I_base=100pA, I_dist=Normal(380pA, 100pA), α=1. )
 I_param_I = SNN.CurrentNoiseParameter(E.N; I_base=100pA, I_dist=Normal(450pA, 100pA), α=1. )
@@ -22,7 +22,7 @@ synapses = (
 )
 
 model = merge_models(;E, I_stimE, I_stimI, I, synapses, silent = true)
-SNN.monitor(model.pop, [:v, :fire, :v], sr = 200Hz)
+SNN.monitor!(model.pop, [:v, :fire, :v], sr = 200Hz)
 
 #
 SNN.sim!(;model, duration = 15s, pbar = true)
