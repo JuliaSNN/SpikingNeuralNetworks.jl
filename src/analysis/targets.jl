@@ -1,4 +1,7 @@
 using DSP
+using Statistics
+using Distributions
+
 """
     inter_spike_interval(spiketimes::Vector{Float32})
 
@@ -41,8 +44,6 @@ function evaluate_network(model, interval)
 end
 
 
-using Statistics
-using Distributions
 
 """
     is_attractor_state(spiketimes::Spiketimes, interval::AbstractVector, N::Int)
