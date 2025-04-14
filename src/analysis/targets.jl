@@ -22,7 +22,9 @@ function asynchronous_state(model, interval)
     # Calculate the Fano Factor (FF)
     st = merge_spiketimes(spiketimes(model.pop.E))
     bins,_ = SNN.bin_spiketimes(st; time_range = interval, do_sparse = false)
-    ff = var(bins)/ mean(bins)  # Fano Factor
+    ff = var(bins) / mean(bins)  # Fano Factor
+    # ff = var.(bins) ./ mean.(bins)  # Fano Factor
+    # ff[isnan.(ff)] .= 0.0  # Replace NaN values with 0.0
 
     return cv, ff
 end
@@ -57,7 +59,8 @@ Check if the network is in an attractor state by verifying that the average firi
 """
 function is_attractor_state(pop::T, interval::AbstractVector; 
                             ratio::Real = 0.3,
-                            σ::Real=  10.0f0) where {T <: SNN.AbstractPopulation}
+                            σ::Real=  10.0f0,
+                            false_value = 10) where {T <: SNN.AbstractPopulation}
     # Calculate the firing rate over the last N seconds
 
     rates, r = firing_rate(pop; interval, interpolate=true)
@@ -69,7 +72,7 @@ function is_attractor_state(pop::T, interval::AbstractVector;
         peak, center = findmax(kde)
         return length(findall(x -> x > peak/2, kde))/σ, kde
     else
-        return 20, kde
+        return false_value, kde
     end
     # return kde
 
