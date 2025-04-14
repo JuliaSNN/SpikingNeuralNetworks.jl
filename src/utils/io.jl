@@ -1,87 +1,123 @@
+import DrWatson: save, load
 
-function load_data(path, name = nothing, info = nothing)
-    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
-    if isnothing(name)
-        throw(ArgumentError("$path is not file, config is required"))
+function SNNfolder(path, name, info)
+    return joinpath(path, savename(name, info, connector = "-"))
+end
+
+function SNNfile(type, count)
+    count_string = count > 0 ? "-$(count)" : ""
+    return "$(type)$count_string.jld2"
+end
+
+function SNNpath(path, name, info, type, count)
+    return joinpath(SNNfolder(path, name, info), SNNfile(type, count))
+end
+
+function SNNload(;path::String, name::String = "", info = nothing, count::Int=1, type::Symbol=:model)
+    ## Check if path is a directory
+    if isfile(path)
+        @info "Loading $(path)"
+        return dict2ntuple(DrWatson.load(path))
+    else
+        if isempty(name) || isnothing(info)
+            throw(ArgumentError("If path is not file, `name::String`` and `info::NamedTuple` are required"))
+        end
+        root = path
     end
-    name = savename(name, info, "data.jld2", connector = "-")
-    path = joinpath(path, name)
+
+    path = SNNpath(root, name, info, type, count)
     if !isfile(path)
-        @warn "Model $(path) not found"
-        return nothing
+        legacy_name = joinpath(root, savename(name, info, "$(type).jld2", connector = "-"))
+        if isfile(legacy_name)
+            @warn "Loading legacy file $(legacy_name). Please consider using the new file format."
+        else
+            @warn "$(path) not found"
+        end
+
     end
+
     tic = time()
-    # DATA = DrWatson.load(path)
     DATA = JLD2.load(path)
-    @info "Data $(name)"
+    @info "$type $(name)"
     @info "Loading time:  $(time()-tic) seconds"
     return dict2ntuple(DATA)
 end
-load_data(; path, name, info) = load_data(path, name, info)
 
+SNNload(path::String, name::String="", info=nothing, kwargs...) = SNNload(;path=path, name=name, info=info, kwargs..., type=:model)
+load_model(path::String, name::String, info::NamedTuple; kwargs...) = SNNload(;path=path, name=name, info=info, kwargs..., type=:model)
+load_data(path::String, name::String, info::NamedTuple; kwargs...) = SNNload(;path=path, name=name, info=info, kwargs..., type=:data)
+load_data(path, name, info) = SNNload(;path, name, info, type=:data, kwargs...)
 
-function load_model(path, name = nothing, info = nothing)
-    isfile(path) && (return dict2ntuple(DrWatson.load(path)))
-    if isnothing(name)
-        throw(ArgumentError("If path is not file, config is required"))
-    end
-    name = savename(name, info, "model.jld2", connector = "-")
-    path = joinpath(path, name)
-    tic = time()
-    if !isfile(path)
-        @warn "Model $(path) not found"
-        return nothing
-    end
-    DATA = JLD2.load(path)
-    @info "Model $(name)"
-    @info "Loading time:  $(time()-tic) seconds"
-    return dict2ntuple(DATA)
-end
-load_model(; path, name, info) = load_model(path, name, info)
-
-function load_or_run(f::Function, path, name, info; exp_config...)
+function load_or_run(f::Function; path, name, info, exp_config...)
     loaded = load_model(path, name, info)
     if isnothing(loaded)
         name = savename(name, info, connector = "-")
         @info "Running simulation for: $name"
         produced = f(info)
-        save_model(path = path, model = produced, name = name, info = info, exp_config...)
+        save_model(model = produced, path = path, name = name, info = info, exp_config...)
         return produced
     end
     return loaded
 end
 
 
-export load_data, load_model, save_model, savemodel
 
-function save_model(; path, model, name, info, config, model_only=false, kwargs...)
-    @info "Model: `$(savename(name, info, connector="-"))` \nsaved at $(path)"
-    isdir(path) || mkpath(path)
 
-    config_path = joinpath(path, savename(name, info, "jl.config", connector = "-"))
-    write_config(config_path, info; config, kwargs...)
+function SNNsave(model; path, name, info, config=nothing, type=:all, count=1, kwargs...)
 
-    if !model_only
-        data_path = joinpath(path, savename(name, info, "data.jld2", connector = "-"))
+    function store_data(filename, data)
         Logging.LogLevel(0) == Logging.Error
-        @time DrWatson.save(data_path, merge((@strdict model = model config = config), kwargs))
+        @time DrWatson.save(filename, data)
         Logging.LogLevel(0) == Logging.Info
-        @info "-> Data ($(filesize(data_path) |> Base.format_bytes))"
+        @info "$type stored. It occupies $(filesize(filename) |> Base.format_bytes)"
     end
 
-    _model = deepcopy(model)
-    clear_records!(_model)
+    @info "Storing $(type)-$count of `$(savename(name, info, connector="-"))`
+    at $(path) \n"
 
-    model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
-    Logging.LogLevel(0) == Logging.Error
-    @time DrWatson.save(
-        model_path,
-        merge((@strdict model = _model config = config), kwargs),
-    )
-    Logging.LogLevel(0) == Logging.Info
-    @info "-> Model ($(filesize(model_path) |> Base.format_bytes))"
-    return model_path
+    ## Create directory if it does not exist
+    root = SNNfolder(path, name, info)
+    isdir(root) || mkpath(root)
+
+    ## Write config file
+    if count < 2
+        write_config(joinpath(root, "config.jl"), info; config, kwargs...)
+    end
+
+    if type == :all
+        type = :data
+        filename = joinpath(root, SNNfile(type, count))
+        data = merge((@strdict model = model config = config), kwargs)
+        store_data(filename, data)
+
+        type = :model
+        _model = deepcopy(model)
+        clear_records!(_model)
+        filename = joinpath(root, SNNfile(type, count))
+        data = merge((@strdict model = _model config = config), kwargs)
+        store_data(filename, data)
+        return filename 
+    elseif type == :model
+        _model = deepcopy(model)
+        clear_records!(_model)
+        filename = joinpath(root, SNNfile(type, count))
+        data = merge((@strdict model = _model config = config), kwargs)
+        store_data(filename, data)
+        return filename 
+    else 
+        filename = joinpath(root, SNNfile(type, count))
+        data = merge((@strdict model = model config = config), kwargs)
+        store_data(filename, data)
+        return filename 
+    end
+
 end
+
+export load, save, load_model, load_data, SNNload, SNNsave, SNNpath, SNNfolder, savename
+
+SNNsave(; model, path, name, info, config, model_only=false, kwargs...) = SNNsave(model; path=path, name=name, info=info, config=config, model_only=model_only, kwargs...)
+save_model(; model, path, name, info, config=nothing, kwargs...) = SNNsave(model; path=path, name=name, info=info, config=config, type=:all, kwargs...)
+save_model
 
 function data2model(; path, name = randstring(10), info = nothing, kwargs...)
     # Does data file exist? If no return false
@@ -102,8 +138,8 @@ function data2model(; path, name = randstring(10), info = nothing, kwargs...)
 end
 
 function model_path_name(; path, name = randstring(10), info = nothing, kwargs...)
-    model_path = joinpath(path, savename(name, info, "model.jld2", connector = "-"))
-    return model_path
+    @warn " `model_path_name` is deprecated, use `SNNpath` instead"
+    return SNNpath(path, name, info, :model, 0)
 end
 
 function save_parameters(;
@@ -217,7 +253,7 @@ function write_config(path::String, config; name = "", kwargs...)
         end
     end
     close(file)
-    @info "Config file saved at $(config_path)"
+    @info "Config file saved"
 end
 
 """
