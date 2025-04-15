@@ -205,14 +205,17 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
         println(file, "$indent$key = Dict(")
         for (k, v) in value
             if isa(v, Number)
-                println(file, "$indent    :$k => $v,")
-            else
-                # println(file, "$indent    $k => $v,")
-                write_value(file, k, v, indent * "    ")
+                println(file, "$indent    :$k => $v",)#$(write_value(file,"",v,"", ""))")
+            else isa(v, String)
+                println(file, "$indent    :$k => \"$v\",")
             end
+            # else
+            #     # println(file, "$indent    $k => $v,")
+            #     write_value(file, k, v, indent * "    ")
+            # end
         end
         println(file, "$indent),")
-    else
+    else isa(value,NamedTuple)
         name = isa(value,NamedTuple) ? "" : nameof(typeof(value)) 
         println(file, "$indent$key $equal_sign $(name)(")
         for field in fieldnames(typeof(value))
@@ -223,7 +226,7 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
     end
 end
 
-function write_config(path::String, config; name = "", kwargs...)
+function write_config(path::String, info; config, name = "", kwargs...)
     timestamp = get_timestamp()
     commit_hash = get_git_commit_hash()
 
@@ -239,19 +242,27 @@ function write_config(path::String, config; name = "", kwargs...)
     println(file, "# Corresponding Git commit hash: $commit_hash")
     println(file, "")
     println(file, "info = (")
-    for (key, value) in pairs(config)
+    for (key, value) in pairs(info)
+        String(key) == "study" || String(key)=="models" && continue
         write_value(file, key, value, "    ")
     end
     println(file, ")")
-    for (info_name, info_value) in pairs(kwargs)
-        if isa(info_value, NamedTuple)
-            println(file, "$(info_name) = (")
-            for (key, value) in pairs(info_value)
-                write_value(file, key, value, "        ")
-            end
-            println(file, "    )")
-        end
+    println(file, "config = (")
+    for (key, value) in pairs(config)
+        String(key) == "study" || String(key)=="models" && continue
+        write_value(file, key, value, "    ")
     end
+    println(file, ")")
+    # for (info_name, info_value) in pairs(kwargs)
+    #     String(info_name) == "sequence" && continue
+    #     if isa(info_value, NamedTuple)
+    #         println(file, "$(info_name) = (")
+    #         for (key, value) in pairs(info_value)
+    #             write_value(file, key, value, "        ")
+    #         end
+    #         println(file, "    )")
+    #     end
+    # end
     close(file)
     @info "Config file saved"
 end
