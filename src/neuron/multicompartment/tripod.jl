@@ -44,11 +44,11 @@ Tripod
     name::String = "Tripod"
     ## These are compulsory parameters
     N::IT = 100
-    soma_syn::ST
-    dend_syn::ST
-    d1::VDT
-    d2::VDT
-    NMDA::NMDAT
+    soma_syn::ST = TripodSomaSynapse |> synapsearray
+    dend_syn::ST = TripodDendSynapse |> synapsearray
+    d1::VDT = create_dendrite(N, 2um)
+    d2::VDT = create_dendrite(N, 3um )
+    NMDA::NMDAT = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
     t::VIT = [0]
     param::AdExType = AdExSoma()
     # Membrane potential and adaptation
@@ -88,6 +88,19 @@ Tripod
     cs::VFT = zeros(2)
     is::VFT = zeros(3)
 end
+
+function synaptic_target(targets::Dict, post::Tripod, sym::Symbol, target::Symbol) 
+    sym = Symbol("$(sym)_$target")
+    v = Symbol("v_$target")
+    g = getfield(post, _sym)
+    hasfield(typeof(post), v) && (v_post = getfield(post, v))
+
+    push!(targets, :sym => sym)
+    push!(targets, :g => post.id)
+
+    return g, v_post
+end
+
 
 function Tripod(
     d1::Union{Real,Tuple},

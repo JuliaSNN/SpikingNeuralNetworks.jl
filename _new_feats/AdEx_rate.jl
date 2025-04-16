@@ -12,7 +12,7 @@ EE = SNN.SpikingSynapse(E, E, :ge; μ = 10, p = 0.02)
 EI = SNN.SpikingSynapse(E, I, :ge; μ = 40, p = 0.02)
 IE = SNN.SpikingSynapse(I, E, :gi; μ = -50, p = 0.02)
 II = SNN.SpikingSynapse(I, I, :gi; μ = -10, p = 0.02)
-EG = SNN.SpikeRateSynapse(E, G; μ = 1.0, p = 0.02)
+# EG = SNN.SpikeRateSynapse(E, G; μ = 1.0, p = 0.02)
 # GG = SNN.RateSynapse(G, G; μ = 1.2, p = 1.0)
 P = [E, G, I]
 C = [EE, EI, IE, II, EG]
@@ -21,7 +21,7 @@ C = [EE, EI, IE, II, EG]
 SNN.monitor!([E, I], [:fire])
 SNN.monitor!(G, [(:r)])
 SNN.sim!(P, C; duration = 4second)
-SNN.raster([E, I], [3.4, 4] .* 10e3)
+SNN.raster(E, [3.4, 4] .* 10e3)
 SNN.vecplot(G, :r, 10:20)
 
 # Random.seed!(101)

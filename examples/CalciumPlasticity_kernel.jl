@@ -7,15 +7,13 @@ using Statistics, Random, StatsPlots
 
 ##
 stdp_param = STDPParameter(A_pre = -5e-1, A_post = 5e-1, τpre = 20ms, τpost = 15ms)
-# istdp_param = iSTDPParameterTime(η=0.2, τy=20ms)
-
 SNN.stdp_kernel(stdp_param)
-SNN.stdp_weight_decorrelated(stdp_param)
+SNN.stdp_weight_decorrelated(stdp_param) |> violin
 ##
 
 stdp_param = STDPParameter(A_pre = 5e-2, A_post = -5e-2, τpre = 15ms, τpost = 25ms)
 SNN.stdp_kernel(stdp_param)
-SNN.stdp_weight_decorrelated(stdp_param)
+SNN.stdp_weight_decorrelated(stdp_param) |> violin
 ##
 
 stdp_param = STDPMexicanHat(A = -2e-1, τ = 25ms)

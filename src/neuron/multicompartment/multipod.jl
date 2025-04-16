@@ -67,6 +67,15 @@
 end
 
 
+function synaptic_target(targets::Dict, post::Multipod, sym::Symbol, target::Number)
+    _sym = Symbol("$(sym)_d")
+    _v = Symbol("v_d")
+    g = getfield(post, _sym)[target]
+    v_post = getfield(post, _v)[target]
+    push!(targets, :sym => Symbol(string(_sym, target)))
+end
+
+
 function Multipod(ds::R; N, Nd, kwargs...) where {R<:Real}
     dendrites = [ds for _ = 1:Nd]
     return Multipod(dendrites, N = N, Nd = Nd; kwargs...)

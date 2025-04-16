@@ -142,19 +142,9 @@ function PoissonStimulus(
     w = μ * sparse(w)
 
     rowptr, colptr, I, J, index, W = dsparse(w)
-    if isnothing(target)
-        g = getfield(post, sym)
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym => :soma)
-    elseif typeof(target) == Symbol
-        sym = Symbol("$(sym)_$target")
-        g = getfield(post, sym)
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym => target)
-    elseif typeof(target) == Int
-        sym = Symbol("$(sym)_d")
-        g = getfield(post, sym)[target]
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym => Symbol(string(sym, target)))
-    end
 
+    targets = Dict(:pre => :PoissonStim, :post => post.id)
+    g, _ = synaptic_target(targets, post, sym, target)
 
     # Construct the SpikingSynapse instance
     return PoissonStimulus(;

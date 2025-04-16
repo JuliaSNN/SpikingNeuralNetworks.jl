@@ -50,6 +50,7 @@ const uM = M*1e-6
 const nM = M*1e-9
 
 second / Ω ≈ farad
+dt = 0.125ms
 
 @assert second / Ω ≈ farad
 @assert Ω * siemens ≈ 1

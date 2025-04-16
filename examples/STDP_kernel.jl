@@ -7,8 +7,6 @@ using Statistics, Random, StatsPlots
 
 ##
 stdp_param = STDPParameter(A_pre = -5e-1, A_post = 5e-1, τpre = 20ms, τpost = 15ms)
-# istdp_param = iSTDPParameterTime(η=0.2, τy=20ms)
-
 SNN.stdp_kernel(stdp_param)
 SNN.stdp_weight_decorrelated(stdp_param)
 ##
@@ -26,7 +24,7 @@ SNN.stdp_weight_decorrelated(stdp_param)
 
 stdp_param = iSTDPParameterTime()
 SNN.stdp_kernel(stdp_param, fill = false)
-
+SNN.stdp_weight_decorrelated(stdp_param)
 ##
 
 stdp_param = SymmetricSTDP(αpre = 0.0f0, A_x = 0.1, A_y = 0.1)

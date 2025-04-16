@@ -1,4 +1,3 @@
-abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
 
 @snn_kw mutable struct SpikingSynapse{
     VIT = Vector{Int32},
@@ -79,32 +78,8 @@ function SpikingSynapse(
     fireI, fireJ = post.fire, pre.fire
 
     # get the conductance and membrane potential of the target compartment if multicompartment model
-    targets = Dict{Symbol,Any}(:fire => pre.id, :g => post.id)
-    g = zeros(Float32, post.N)
-    v_post = zeros(Float32, post.N)
-
-    if isnothing(sym)
-        g = zeros(Float32, post.N)
-    else
-        if isnothing(target)
-            g = getfield(post, sym)
-            _v = :v
-            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-            push!(targets, :sym => sym)
-        elseif typeof(target) == Symbol
-            _sym = Symbol("$(sym)_$target")
-            _v = Symbol("v_$target")
-            g = getfield(post, _sym)
-            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-            push!(targets, :sym => _sym)
-        elseif typeof(target) == Int
-            _sym = Symbol("$(sym)_d")
-            _v = Symbol("v_d")
-            g = getfield(post, _sym)[target]
-            v_post = getfield(post, _v)[target]
-            push!(targets, :sym => Symbol(string(_sym, target)))
-        end
-    end
+    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:SpikingSynapse)
+    @views g, v_post =  synaptic_target(targets, post, sym, target)
 
     # set the paramter for the synaptic plasticity
     param = haskey(kwargs, :param) ? kwargs[:param] : no_STDPParameter()

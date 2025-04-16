@@ -28,6 +28,7 @@ abstract type AbstractAdEx <: AbstractGeneralizedIF end
     records::Dict = Dict()
 end
 
+
 @snn_kw struct AdExSynapse{
     VFT = Vector{Float32},
     MFT = Matrix{Float32},
@@ -56,18 +57,15 @@ end
     records::Dict = Dict()
 end
 
-AdExSimple = AdEx
 
-function AdExNeuron(; param::T, kwargs...) where {T<:AbstractAdExParameter}
-    if isa(param, AdExSynapseParameter)
-        for n in eachindex(param.syn)
-            param.α[n] = param.syn[n].α
-        end
-        return AdExSynapse(; param = param, kwargs...)
-    else
-        return AdExSimple(; param = param, kwargs...)
-    end
+function synaptic_target(targets::Dict, post::T, sym::Symbol, target::Nothing=nothing) where {T <: Union{AdEx, AdExSynapse}}
+    g = getfield(post, sym)
+    v_post = getfield(post, :v)
+    push!(targets, :sym => sym)
+    return g, v_post
 end
+
+AdExSimple = AdEx
 
 
 
@@ -166,8 +164,7 @@ function update_soma!(
         v[i] +=
             dt * (
                 -(v[i] - El)  # leakage
-                +
-                ΔT * exp((v[i] - θ[i]) / ΔT) # exponential term
+                + (ΔT < 0f0 ? 0f0 : ΔT * exp((v[i] - θ[i]) / ΔT)) # exponential term
                 - R* syn_curr[i] # excitatory synapses
                 - R * w[i] # adaptation
                 + R * I[i] # external current
@@ -176,8 +173,9 @@ function update_soma!(
         θ[i] += dt * (Vt - θ[i]) / τt
 
         # Spike
-        fire[i] = v[i] > θ[i] + 5.0f0
-        v[i] = ifelse(fire[i], 10.0f0, v[i]) # Set membrane potential to spike potential
+        fire[i] = v[i] >= param.Vspike
+        # fire[i] = v[i] > θ[i] + 5.0f0
+        v[i] = ifelse(fire[i], 20.0f0, v[i]) # Set membrane potential to spike potential
 
         # Spike-triggered adaptation
         w[i] = ifelse(fire[i], w[i] + b, w[i])

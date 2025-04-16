@@ -28,7 +28,6 @@ p3 = SNN.vecplot(E, :v, r = 0.8s:1ms:10s)
 plot(p1, p2, p3, layout=(3,1), size=(800, 600), title="Conductances", xlabel="Time [s]", ylabel="Conductance [nS]", legend=:topleft)
 plot!(ylims=:auto)
 
-##
 # SNN.vecplot(E, :I, r = 0.1s:1ms:1s)
 # SNN.vecplot(E, :ge, r = 0.9s:1ms:1s)
 # SNN.vecplot(E, :gi, r = 0.9s:1ms:1s)
@@ -36,5 +35,3 @@ plot!(ylims=:auto)
 
 # IF_param.syn[2]
 
-
-IF_param.syn[1].gsyn

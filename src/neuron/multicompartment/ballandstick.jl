@@ -80,6 +80,14 @@ BallAndStick
     is::VFT = zeros(3)
 end
 
+function synaptic_target(targets::Dict, post::BallAndStick, sym::Symbol, target)
+    _sym = Symbol("$(sym)_$target")
+    _v = Symbol("v_$target")
+    g = getfield(post, _sym)
+    hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
+    push!(targets, :sym => _sym)
+end
+
 function BallAndStick(
     d::Union{Real,Tuple};
     N::Int,

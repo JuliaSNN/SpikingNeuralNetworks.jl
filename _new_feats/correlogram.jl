@@ -16,10 +16,11 @@ t_pre = sort(rand(10000) .* T)  # Post-synaptic spikes (50 random times in [0, T
 # t_pre = sort(rand(30) .* T)  # Post-synaptic spikes (50 random times in [0, T])
 t_post = t_pre .+ rand(length(t_pre)) * 100 .- 50 #.-200   # Pre-synaptic spikes (75 random times in [0, T])
 
+t_post = sort(rand(99000) .* T)  # Post-synaptic spikes (50 random times in [0, T])
 
 
-r, cv =
-    compute_covariance_density(Float32.(t_pre), Float32.(t_post), T, sr = 40Hz, τ = 300ms)
+
+r, cv = compute_covariance_density(Float32.(t_pre), Float32.(t_post), max_lag=400)
 bar(
     r,
     cv,

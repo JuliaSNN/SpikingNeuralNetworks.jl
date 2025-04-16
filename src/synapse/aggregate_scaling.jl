@@ -45,7 +45,7 @@ Returns a SynapseNormalization object with the specified parameters.
 function AggregateScaling(N, synapses; param::AggregateScalingParameter, kwargs...)
     # Set the target and verify is the same population for all synapses
     targets = Dict()
-    posts = [syn.targets[:g] for syn in synapses]
+    posts = [syn.targets[:post] for syn in synapses]
     @assert length(unique(posts)) == 1
     targets[:post] = unique(posts)[1]
     targets[:synapses] = [syn.id for syn in synapses]

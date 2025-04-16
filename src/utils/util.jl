@@ -87,6 +87,11 @@ end
 # """function dsparse
 
 function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
+    syn_sign = sign(μ)
+    if syn_sign == -1 
+        @warn "You are using negative synaptic weights "
+        μ = abs(μ)
+    end
     if isnothing(w)
         # if w is not defined, construct a random sparse matrix with `dist` with `μ` and `σ`. 
         my_dist = getfield(Distributions, dist)
@@ -99,7 +104,7 @@ function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
         w = sparse(w)
     end
     @assert size(w) == (Npost, Npre) "The size of the synaptic weight is not correct: $(size(w)) != ($Npost, $Npre)"
-    return w
+    return w .* syn_sign
 end
 
 function dsparse(A)

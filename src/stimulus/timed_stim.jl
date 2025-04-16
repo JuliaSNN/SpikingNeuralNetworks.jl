@@ -70,13 +70,8 @@ function SpikeTimeStimulus(
     w = sparse_matrix(w, N, post.N, dist, μ, σ, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
-    if isnothing(target)
-        g = getfield(post, sym)
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym => :soma)
-    else
-        g = getfield(post, Symbol("$(sym)_$target"))
-        targets = Dict(:pre => :Poisson, :g => post.id, :sym => target)
-    end
+    targets = Dict(:pre => :SpikeTimeStim, :post => post.id)
+    g, _ = synaptic_target(targets, post, sym, target)
 
     next_spike = zeros(Float32, 1)
     next_index = zeros(Int, 1)

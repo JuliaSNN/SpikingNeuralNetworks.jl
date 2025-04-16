@@ -8,6 +8,7 @@ gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
     El::FT = -70.6mV # Resting membrane potential 
     R::FT = nS / gL # Resistance
     ΔT::FT = 2mV # Slope factor
+    Vspike::FT = 20mV # Spike potential
     τw::FT = 144ms # Adaptation time constant (Spike-triggered adaptation time scale)
     a::FT = 4nS # Subthreshold adaptation parameter
     b::FT = 80.5pA # Spike-triggered adaptation parameter (amount by which the voltage is increased at each threshold crossing)
@@ -49,6 +50,7 @@ end
     El::FT = -70.6mV # Resting membrane potential 
     R::FT = nS / gL # Resistance
     ΔT::FT = 2mV # Slope factor
+    Vspike::FT = 20mV # Spike potential
     τw::FT = 144ms # Adaptation time constant (Spike-triggered adaptation time scale)
     a::FT = 4nS # Subthreshold adaptation parameter
     b::FT = 80.5pA # Spike-triggered adaptation parameter (amount by which the voltage is increased at each threshold crossing)
@@ -80,6 +82,7 @@ end
     El::FT = -70.6mV # Resting membrane potential 
     R::FT = nS / gL # Resistance
     ΔT::FT = 2mV # Slope factor
+    Vspike::FT = 20mV # Spike potential
     τw::FT = 144ms # Adaptation time constant (Spike-triggered adaptation time scale)
     a::FT = 4nS # Subthreshold adaptation parameter
     b::FT = 80.5pA # Spike-triggered adaptation parameter (amount by which the voltage is increased at each threshold crossing)

@@ -4,9 +4,9 @@ SNN.@load_units
 
 S = SNN.Rate(; N = 200)
 SS = SNN.FLSynapse(S, S; μ = 1.5, p = 1.0)
-P, C = [S], [SS]
+model = SNN.merge_models(; S, SS)
 
-SNN.monitor!(SS, [:f, :z])
+SNN.monitor!(SS, [:f, :z], sr=1000Hz)
 
 A = 1.3 / 1.5;
 fr = 1 / 60ms;
@@ -16,15 +16,21 @@ f(t) =
     (A / 6.0) * sin(3π * fr * t) +
     (A / 3.0) * sin(4π * fr * t)
 
+
 for t = 0:0.1ms:2440ms
     SS.f = f(t)
-    SNN.train!(P, C, 0.1f0)
+    SNN.train!(;model, duration = SNN.dt)
 end
 
 for t = 2440ms:0.1ms:3700ms
     SS.f = f(t)
-    SNN.sim!(P, C, 0.1f0)
+    SNN.sim!(;model, duration = SNN.dt)
 end
 
 plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["f" "z"]);
-vline!([1440ms / 0.1ms], color = :cyan, label = "")
+
+SS.records
+
+SS.records[:f]
+
+vline!([2440ms], color = :cyan, label = "")

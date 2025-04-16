@@ -1,7 +1,6 @@
 struct IdentityParam <: AbstractPopulationParameter end
 
-@snn_kw mutable struct Identity{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:
-                       AbstractPopulation
+@snn_kw mutable struct Identity{VFT = Vector{Float32},VBT = Vector{Bool},IT = Int32} <:                       AbstractPopulation
     name::String = "identity"
     id::String = randstring(12)
     param::IdentityParam = IdentityParam()
@@ -27,5 +26,14 @@ function integrate!(p::Identity, param::IdentityParam, dt::Float32)
         g[i] = 0
     end
 end
+function synaptic_target(targets::Dict, post::Identity, sym::Symbol, target::Nothing)
+    v = :spikecount
+    g = getfield(post, :g)
+    v_post = getfield(post, v)
+    push!(targets, :sym => :g)
+    return g, v_post
+end
+
+
 
 export Identity, IdentityParam

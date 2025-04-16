@@ -2,6 +2,7 @@ struct FLSparseSynapseParameter end
 
 @snn_kw mutable struct FLSparseSynapse{VFT = Vector{Float32},FT = Float32} <:
                        AbstractConnection
+    name::String = "FLSparseSynapse"
     id::String = randstring(12)
     param::FLSparseSynapseParameter = FLSparseSynapseParameter()
     colptr::Vector{Int32} # column pointer of sparse W
@@ -33,7 +34,11 @@ function FLSparseSynapse(pre, post; μ = 1.5, p = 0.0, α = 1, kwargs...)
     q = zeros(post.N)
     u = 2rand(post.N) - 1
     w = 1 / √post.N * (2rand(post.N) - 1)
-    FLSparseSynapse(; @symdict(colptr, I, W, rI, rJ, g, P, q, u, w)..., kwargs...)
+
+    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:FLSynapseSparse)
+    @views g, v_post =  synaptic_target(targets, post, :g, nothing)
+
+    FLSparseSynapse(; @symdict(colptr, I, W, rI, rJ, g, P, q, u, w)..., kwargs..., targets=targets)
 end
 
 function forward!(c::FLSparseSynapse, param::FLSparseSynapseParameter)

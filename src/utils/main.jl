@@ -83,54 +83,43 @@ function train!(
     return time
 end
 
-
-function train!(args...; model, kwargs...)
-    pop =
-        haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop)) :
-        Vector{AbstractPopulation}([])
-    syn =
-        haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn)) :
-        Vector{AbstractConnection}([])
-    stim =
-        haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) :
-        Vector{AbstractStimulus}([])
+function _args_model(args, model)
+    pop = Vector{AbstractPopulation}([])
+    syn = Vector{AbstractConnection}([])
+    stim = Vector{AbstractStimulus}([])
+    haskey(model, :pop) && append!(pop,model.pop)
+    haskey(model, :syn) && append!(syn,model.syn)
+    haskey(model, :stim) && append!(stim,model.stim)
     for arg in args
-        if isa(arg, AbstractPopulation)
+        if typeof(arg) <: AbstractPopulation
             push!(pop, arg)
-        elseif isa(arg, AbstractConnection)
+        elseif typeof(arg) <: AbstractConnection
             push!(syn, arg)
-        elseif isa(arg, AbstractStimulus)
+        elseif typeof(arg) <: AbstractStimulus
             push!(stim, arg)
+
+        elseif typeof(arg) <: Vector{AbstractPopulation}
+            append!(pop, arg)
+        elseif typeof(arg) <: Vector{AbstractConnection}
+            append!(syn, arg)
+        elseif typeof(arg) <: Vector{AbstractStimulus}
+            append!(stim, arg)
         else
             error("Invalid argument type: $(typeof(arg))")
         end
     end
+    return pop, syn, stim
+end
+
+function train!(args...; model=(time=Time(), name="Model"),  kwargs...)
+    pop, syn, stim = _args_model(args, model)
     mytime = train!(pop, syn, stim; time = model.time, kwargs...)
     update_time!(model.time, mytime)
     return get_time(model.time)
 end
 
-function sim!(args...; model, kwargs...)
-    pop =
-        haskey(model, :pop) ? Vector{AbstractPopulation}(collect(model.pop)) :
-        Vector{AbstractPopulation}([])
-    syn =
-        haskey(model, :syn) ? Vector{AbstractConnection}(collect(model.syn)) :
-        Vector{AbstractConnection}([])
-    stim =
-        haskey(model, :stim) ? Vector{AbstractStimulus}(collect(model.stim)) :
-        Vector{AbstractStimulus}([])
-    for arg in args
-        if isa(arg, AbstractPopulation)
-            push!(pop, arg)
-        elseif isa(arg, AbstractConnection)
-            push!(syn, arg)
-        elseif isa(arg, AbstractStimulus)
-            push!(stim, arg)
-        else
-            error("Invalid argument type: $(typeof(arg))")
-        end
-    end
+function sim!(args...; model=(time=Time(), name="Model"), kwargs...)
+    pop, syn, stim = _args_model(args, model)
     mytime = sim!(pop, syn, stim; time = model.time, kwargs...)
     update_time!(model.time, mytime)
     return get_time(model.time)

@@ -172,6 +172,14 @@ end
 end
 
 @inline function _record_sym(
+    my_record::T,
+    records::Vector{T},
+    ind::Vector{Int},
+) where {T<:Real}
+    push!(records, my_record)
+end
+
+@inline function _record_sym(
     my_record::Array{T,3},
     records::Vector{Array{T,3}},
     ind::Vector{Int},

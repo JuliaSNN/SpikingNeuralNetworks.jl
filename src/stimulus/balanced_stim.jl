@@ -76,31 +76,9 @@ function BalancedStimulus(
     w = μ * sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
-    if isnothing(target)
-        ge = getfield(post, sym_e)
-        gi = getfield(post, sym_i)
-        targets = Dict(:pre => :Balanced, :g => post.id, :sym => :soma)
-    elseif typeof(target) == Symbol
-        ge = getfield(post, Symbol("$(sym_e)_$target"))
-        gi = getfield(post, Symbol("$(sym_i)_$target"))
-        targets = Dict(:pre => :Balanced, :g => post.id, :sym => target)
-    elseif typeof(target) == Int
-        sym_i = Symbol("$(sym_i)_d")
-        sym_e = Symbol("$(sym_e)_d")
-        ge = getfield(post, sym_e)[target]
-        gi = getfield(post, sym_i)[target]
-        targets =
-            Dict(:pre => :Balanced, :g => post.id, :sym => Symbol(string(sym_e, target)))
-    end
-
-    # if isnothing(target) 
-    #     ge = getfield(post, sym_e)
-    #     gi = getfield(post, sym_i)
-    # else
-    #     ge = getfield(post, Symbol("$(sym_e)_$target"))
-    #     gi = getfield(post, Symbol("$(sym_i)_$target"))
-    # end
-
+    targets = Dict(:pre => :BalancedStim, :post => post.id)
+    ge, _ = synaptic_target(targets, post, sym_e, target)
+    gi, _ = synaptic_target(targets, post, sym_i, target)
 
     if typeof(param) <: Real
         r = param

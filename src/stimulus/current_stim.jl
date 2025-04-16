@@ -60,7 +60,7 @@ function CurrentStimulus(
     # param = CurrentNoiseParameter(I_base, I_dist, α)
 
 
-    targets = Dict(:pre => :Current, :g => post.id, :sym => :soma)
+    targets = Dict(:pre => :Current, :post => post.id, :sym => :soma, :type=>:CurrentStimulus)
     return CurrentStimulus(
         neurons= neurons,
         I = post.I,
