@@ -1,5 +1,5 @@
 using SpikingNeuralNetworks
-using Plots
+using SNNPlots
 SNN.@load_units
 import SpikingNeuralNetworks: AdExParameter
 using Statistics, Random
@@ -24,10 +24,9 @@ SNN.monitor!(E, [:he, :h, :g, :v])
 SNN.monitor!(model.pop, [:fire])
 SNN.sim!(model = model; duration = 4second)
 
-# using Plots
-# SNN.raster(model.pop, [3.4s, 4s])
-# SNN.vecplot(E, :g, sym_id = 1, neurons = 1, r = 3:4s)
-# SNN.vecplot(E, :v, neurons = 1, r = 3:4s)
+raster(model.pop, [3.4s, 4s])
+vecplot(E, :g, sym_id = 1, neurons = 1, r = 3:4s)
+vecplot(E, :v, neurons = 1, r = 3:4s)
 
 # # Random.seed!(101)
 # # E = SNN.AdEx(;N = 100, param = AdExParameter(;El=-40mV))
