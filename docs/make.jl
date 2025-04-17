@@ -1,5 +1,3 @@
-using DrWatson 
-quickactivate("/home/user/mnt/zeus/User_folders/aquaresi/network_models")
 using SpikingNeuralNetworks, Documenter
 
 makedocs(sitename = "Julia SpikingNeuralNetworks",
