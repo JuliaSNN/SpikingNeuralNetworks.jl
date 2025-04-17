@@ -1,6 +1,4 @@
-using DrWatson 
-quickactivate("/home/user/mnt/zeus/User_folders/aquaresi/network_models")
-using SpikingNeuralNetworks, Documenter
+using Documenter, SpikingNeuralNetworks
 
 makedocs(sitename = "Julia SpikingNeuralNetworks",
         # # sitenameurl = "https://aquaresi.github.io/SpikingNeuralNetworks.jl",
