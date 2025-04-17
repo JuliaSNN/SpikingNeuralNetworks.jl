@@ -23,3 +23,6 @@ makedocs(sitename = "Julia SpikingNeuralNetworks",
         #     using SNNPlots
         #     SNN.@load_units
         # """)
+deploydocs(
+                repo = "github.com/JuliaSNN/SpikingNeuralNetworks.jl.git",
+        )
