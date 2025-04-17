@@ -54,8 +54,13 @@ PoissonStimulusLayer
     active::Vector{Bool} = [true]
 end
 
-function PoissonStimulusLayer(N::Int; rate::R, ϵ::Float32) where {R<:Real} 
-    return PoissonStimulusLayer(rate=fill(Float32.(rate), N), N=N, ϵ=ϵ, active=[true])
+function PoissonStimulusLayer(N::Int; rate::R, ϵ::Float32) where {R<:Real}
+    return PoissonStimulusLayer(
+        rate = fill(Float32.(rate), N),
+        N = N,
+        ϵ = ϵ,
+        active = [true],
+    )
 end
 
 """
@@ -109,7 +114,7 @@ function PoissonStimulus(
     post::T,
     sym::Symbol,
     target = nothing;
-    neurons=:ALL,
+    neurons = :ALL,
     N::Int = 100,
     p_post = 1.0,
     N_pre = 50,
@@ -127,7 +132,7 @@ function PoissonStimulus(
     end
 
     ## select a subset of neuronsthat receive the stimulus
-    neurons= neurons== :ALL ? eachindex(post.N) : neurons
+    neurons = neurons == :ALL ? eachindex(post.N) : neurons
     neurons = []
     for i = 1:post.N
         (rand() < p_post) && (push!(neurons, i))
@@ -135,7 +140,7 @@ function PoissonStimulus(
 
     ## construct the connectivity matrix
     w = zeros(Float32, length(neurons), N)
-    for i = eachindex(neurons)
+    for i in eachindex(neurons)
         pre = rand(1:N, round(Int, N_pre))
         w[i, pre] .= 1
     end
@@ -151,7 +156,7 @@ function PoissonStimulus(
         param = param,
         N = N,
         N_pre = N_pre,
-        neurons= neurons,
+        neurons = neurons,
         targets = targets,
         g = g,
         @symdict(rowptr, colptr, I, J, index, W)...,

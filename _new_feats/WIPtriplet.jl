@@ -66,7 +66,7 @@ end
 
 
 # using SNNUtils
-# using Plots
+# using SNNPlots
 
 # triplet = SNNUtils.pfister_visualcortex()
 # o1stdp = 0.0

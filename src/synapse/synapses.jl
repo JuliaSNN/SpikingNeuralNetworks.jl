@@ -1,7 +1,12 @@
 
 abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
 
-function synaptic_target(targets::Dict, post::T, sym::Symbol, target) where {T <: AbstractPopulation}
+function synaptic_target(
+    targets::Dict,
+    post::T,
+    sym::Symbol,
+    target,
+) where {T<:AbstractPopulation}
     g = zeros(Float32, post.N)
     v_post = zeros(Float32, post.N)
     if isnothing(target)
@@ -31,7 +36,12 @@ function synaptic_target(targets::Dict, post::T, sym::Symbol, target) where {T <
     return g, v_post
 end
 
-function synaptic_target(targets::Dict, post::T, sym::Nothing, target) where {T <: AbstractPopulation}
+function synaptic_target(
+    targets::Dict,
+    post::T,
+    sym::Nothing,
+    target,
+) where {T<:AbstractPopulation}
     @warn "Synaptic target not instatiated, returning non-pointing arrays"
     g = zeros(Float32, post.N)
     v = zeros(Float32, post.N)

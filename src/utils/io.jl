@@ -13,14 +13,24 @@ function SNNpath(path, name, info, type, count)
     return joinpath(SNNfolder(path, name, info), SNNfile(type, count))
 end
 
-function SNNload(;path::String, name::String = "", info = nothing, count::Int=1, type::Symbol=:model)
+function SNNload(;
+    path::String,
+    name::String = "",
+    info = nothing,
+    count::Int = 1,
+    type::Symbol = :model,
+)
     ## Check if path is a directory
     if isfile(path)
         @info "Loading $(path)"
         return dict2ntuple(DrWatson.load(path))
     else
         if isempty(name) || isnothing(info)
-            throw(ArgumentError("If path is not file, `name::String`` and `info::NamedTuple` are required"))
+            throw(
+                ArgumentError(
+                    "If path is not file, `name::String`` and `info::NamedTuple` are required",
+                ),
+            )
         end
         root = path
     end
@@ -43,10 +53,13 @@ function SNNload(;path::String, name::String = "", info = nothing, count::Int=1,
     return dict2ntuple(DATA)
 end
 
-SNNload(path::String, name::String="", info=nothing, kwargs...) = SNNload(;path=path, name=name, info=info, kwargs..., type=:model)
-load_model(path::String, name::String, info::NamedTuple; kwargs...) = SNNload(;path=path, name=name, info=info, kwargs..., type=:model)
-load_data(path::String, name::String, info::NamedTuple; kwargs...) = SNNload(;path=path, name=name, info=info, kwargs..., type=:data)
-load_data(path, name, info) = SNNload(;path, name, info, type=:data, kwargs...)
+SNNload(path::String, name::String = "", info = nothing, kwargs...) =
+    SNNload(; path = path, name = name, info = info, kwargs..., type = :model)
+load_model(path::String, name::String, info::NamedTuple; kwargs...) =
+    SNNload(; path = path, name = name, info = info, kwargs..., type = :model)
+load_data(path::String, name::String, info::NamedTuple; kwargs...) =
+    SNNload(; path = path, name = name, info = info, kwargs..., type = :data)
+load_data(path, name, info) = SNNload(; path, name, info, type = :data, kwargs...)
 
 function load_or_run(f::Function; path, name, info, exp_config...)
     loaded = load_model(path, name, info)
@@ -63,7 +76,16 @@ end
 
 
 
-function SNNsave(model; path, name, info, config=nothing, type=:all, count=1, kwargs...)
+function SNNsave(
+    model;
+    path,
+    name,
+    info,
+    config = nothing,
+    type = :all,
+    count = 1,
+    kwargs...,
+)
 
     function store_data(filename, data)
         Logging.LogLevel(0) == Logging.Error
@@ -96,27 +118,43 @@ function SNNsave(model; path, name, info, config=nothing, type=:all, count=1, kw
         filename = joinpath(root, SNNfile(type, count))
         data = merge((@strdict model = _model config = config), kwargs)
         store_data(filename, data)
-        return filename 
+        return filename
     elseif type == :model
         _model = deepcopy(model)
         clear_records!(_model)
         filename = joinpath(root, SNNfile(type, count))
         data = merge((@strdict model = _model config = config), kwargs)
         store_data(filename, data)
-        return filename 
-    else 
+        return filename
+    else
         filename = joinpath(root, SNNfile(type, count))
         data = merge((@strdict model = model config = config), kwargs)
         store_data(filename, data)
-        return filename 
+        return filename
     end
 
 end
 
 export load, save, load_model, load_data, SNNload, SNNsave, SNNpath, SNNfolder, savename
 
-SNNsave(; model, path, name, info, config, model_only=false, kwargs...) = SNNsave(model; path=path, name=name, info=info, config=config, model_only=model_only, kwargs...)
-save_model(; model, path, name, info, config=nothing, kwargs...) = SNNsave(model; path=path, name=name, info=info, config=config, type=:all, kwargs...)
+SNNsave(; model, path, name, info, config, model_only = false, kwargs...) = SNNsave(
+    model;
+    path = path,
+    name = name,
+    info = info,
+    config = config,
+    model_only = model_only,
+    kwargs...,
+)
+save_model(; model, path, name, info, config = nothing, kwargs...) = SNNsave(
+    model;
+    path = path,
+    name = name,
+    info = info,
+    config = config,
+    type = :all,
+    kwargs...,
+)
 save_model
 
 function data2model(; path, name = randstring(10), info = nothing, kwargs...)
@@ -205,8 +243,9 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
         println(file, "$indent$key = Dict(")
         for (k, v) in value
             if isa(v, Number)
-                println(file, "$indent    :$k => $v",)#$(write_value(file,"",v,"", ""))")
-            else isa(v, String)
+                println(file, "$indent    :$k => $v")#$(write_value(file,"",v,"", ""))")
+            else
+                isa(v, String)
                 println(file, "$indent    :$k => \"$v\",")
             end
             # else
@@ -215,8 +254,9 @@ function write_value(file, key, value, indent = "", equal_sign = "=")
             # end
         end
         println(file, "$indent),")
-    else isa(value,NamedTuple)
-        name = isa(value,NamedTuple) ? "" : nameof(typeof(value)) 
+    else
+        isa(value, NamedTuple)
+        name = isa(value, NamedTuple) ? "" : nameof(typeof(value))
         println(file, "$indent$key $equal_sign $(name)(")
         for field in fieldnames(typeof(value))
             field_value = getfield(value, field)
@@ -283,7 +323,13 @@ end
 
 
 ## import all models/data from folder
-function read_folder(path, files=nothing; my_filter=(file,type)->endswith(file, "$(type).jld2"), type=:model, name=nothing)
+function read_folder(
+    path,
+    files = nothing;
+    my_filter = (file, type)->endswith(file, "$(type).jld2"),
+    type = :model,
+    name = nothing,
+)
     if isnothing(files)
         files = []
     end
@@ -292,14 +338,14 @@ function read_folder(path, files=nothing; my_filter=(file,type)->endswith(file, 
         if my_filter(file, type)
             n+=1
             @info n, file
-            push!(files,joinpath(path, file))
+            push!(files, joinpath(path, file))
         end
     end
     return files
 end
 
-function read_folder!(df, path; type=:model, name=nothing)
-    read_folder(path, df; type=type, name=name)
+function read_folder!(df, path; type = :model, name = nothing)
+    read_folder(path, df; type = type, name = name)
 end
 
 
@@ -316,4 +362,3 @@ export save_model,
     load_or_run,
     read_folder,
     read_folder!
-

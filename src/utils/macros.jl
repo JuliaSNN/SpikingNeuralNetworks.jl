@@ -160,17 +160,17 @@ macro update(base, update_expr)
     if update_expr.head == :block
         # if a block, extract the expressions
         updates = update_expr.args
-        
+
         # Start with the base configuration
         # The :($(esc(base))) is used to ensure the base is evaluated in the correct context (the macro's context)
         current_config = :($(esc(base)))
-        
+
         # Process each update expression in the block
         for update_expr in updates
             isa(update_expr, LineNumberNode) && continue  # Ensure it's an expression
 
             # Extract the left-hand side and right-hand side, the left-hand side is the field to update, the right hand side is the new value
-            lhs, rhs = update_expr.args  
+            lhs, rhs = update_expr.args
 
             # Escape the value to ensure it's evaluated in the correct context
             value = :($(esc(rhs)))
@@ -223,11 +223,11 @@ function update_with_merge(base_config::NamedTuple, path::Vector{Symbol}, value)
         sub = getfield(base_config, key)
         # Recursively update the nested subfield
         updated_sub = update_with_merge(sub, path[2:end], value)
-        
+
         # Merge the updated subfield back into the base
         return merge(base_config, (key => updated_sub,))
     end
 end
 
 
-export @symdict, @snn_kw, @update, update_with_merge
+export @symdict, @snn_kw, @update#, update_with_merge

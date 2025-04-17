@@ -1,5 +1,5 @@
 using DrWatson
-using Plots
+using SNNPlots
 using Revise
 using SpikingNeuralNetworks
 using BenchmarkTools
@@ -12,13 +12,18 @@ N = 1
 dendrites = [200um, 300um]
 E = SNN.Multipod(dendrites, N = N)# dend_syn=SNNUtils.quaresima2022_nar(1.0, 35ms).dend_syn)
 stimE = Dict(
-    Symbol("stimE_$n") =>
-        SNN.PoissonStimulus(E, :he, n, neurons=:ALL, param = 3.5kHz, name = "stimE_$n")
-    for n = 1:length(dendrites)
+    Symbol("stimE_$n") => SNN.PoissonStimulus(
+        E,
+        :he,
+        n,
+        neurons = :ALL,
+        param = 3.5kHz,
+        name = "stimE_$n",
+    ) for n = 1:length(dendrites)
 )
 stimI = Dict(
     Symbol("stimI_$n") =>
-        SNN.PoissonStimulus(E, :hi, n, neurons=:ALL, param = 3kHz, name = "stimI_$n")
+        SNN.PoissonStimulus(E, :hi, n, neurons = :ALL, param = 3kHz, name = "stimI_$n")
     for n = 1:length(dendrites)
 )
 
@@ -50,7 +55,7 @@ stimE = Dict(
         E,
         :he,
         Symbol("d$n"),
-        neurons=:ALL,
+        neurons = :ALL,
         param = 3.5kHz,
         name = "stimE_$n",
     ) for n = 1:length(dendrites)
@@ -60,7 +65,7 @@ stimI = Dict(
         E,
         :hi,
         Symbol("d$n"),
-        neurons=:ALL,
+        neurons = :ALL,
         param = 3kHz,
         name = "stimI_$n",
     ) for n = 1:length(dendrites)
@@ -76,7 +81,7 @@ vecplot!(p2, model.pop.E, :v_s, neurons = 1, r = 1s:0.1:7s, sym_id = 3)
 plot!(ylims = :auto, title = "Tripod")
 
 ##
-plot(p1, p2, layout = (2, 1), size = (800, 800), margin = 5Plots.mm)
+plot(p1, p2, layout = (2, 1), size = (800, 800), margin = 5SNNPlots.mm)
 
 
 ##

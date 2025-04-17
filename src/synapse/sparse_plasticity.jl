@@ -39,4 +39,4 @@ export SpikingSynapse,
     no_PlasticityVariables,
     plasticityvariables,
     plasticity!
-    change_plasticity!
+change_plasticity!

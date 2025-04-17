@@ -1,4 +1,4 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -21,13 +21,13 @@ S = SNN.SpikingSynapse(
     :ge;
     μ = 0.01,
     p = 1.0,
-    param = SNN.vSTDPParameter(; Wmax = 1.),
+    param = SNN.vSTDPParameter(; Wmax = 1.0),
 )
 
 model = merge_models(; inputs, neurons, S)
 # histogram(S.W / S.param.Wmax; nbins = 20)
 # SNN.monitor!(S, [(:W, [1, 2])])
-@time SNN.train!(;model, duration = 100second)
+@time SNN.train!(; model, duration = 100second)
 
 scatter(S.W / S.param.Wmax)
 histogram(S.W / S.param.Wmax; nbins = 20)

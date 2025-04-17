@@ -24,7 +24,7 @@ function asynchronous_state(model, interval)
 
     # Calculate the Fano Factor (FF)
     st = merge_spiketimes(spiketimes(model.pop.E))
-    bins,_ = SNN.bin_spiketimes(st; time_range = interval, do_sparse = false)
+    bins, _ = SNN.bin_spiketimes(st; time_range = interval, do_sparse = false)
     ff = var(bins) / mean(bins)  # Fano Factor
     # ff = var.(bins) ./ mean.(bins)  # Fano Factor
     # ff[isnan.(ff)] .= 0.0  # Replace NaN values with 0.0
@@ -33,7 +33,7 @@ function asynchronous_state(model, interval)
 end
 
 function target_firing_rate(model, interval)
-    fr, _ = firing_rate(model.pop.E, interval=interval, τ=20ms)
+    fr, _ = firing_rate(model.pop.E, interval = interval, τ = 20ms)
     return mean(fr)
 end
 
@@ -58,17 +58,20 @@ Check if the network is in an attractor state by verifying that the average firi
 # Returns
 - `is_attractor`: A boolean indicating whether the network is in an attractor state.
 """
-function is_attractor_state(pop::T, interval::AbstractVector; 
-                            ratio::Real = 0.3,
-                            σ::Real=  10.0f0,
-                            false_value = 10) where {T <: SNN.AbstractPopulation}
+function is_attractor_state(
+    pop::T,
+    interval::AbstractVector;
+    ratio::Real = 0.3,
+    σ::Real = 10.0f0,
+    false_value = 10,
+) where {T<:SNN.AbstractPopulation}
     # Calculate the firing rate over the last N seconds
 
-    rates, r = firing_rate(pop; interval, interpolate=true)
-    ave_rate = mean(rates, dims=2)[:,1]
-    kde = gaussian_kernel_estimate(ave_rate, σ, boundary=:continuous)
+    rates, r = firing_rate(pop; interval, interpolate = true)
+    ave_rate = mean(rates, dims = 2)[:, 1]
+    kde = gaussian_kernel_estimate(ave_rate, σ, boundary = :continuous)
     # Check if the firing rate distribution is unimodal
-    if  (is_unimodal(kde, ratio) || is_unimodal(circshift(kde, length(kde) ÷ 2), ratio))
+    if (is_unimodal(kde, ratio) || is_unimodal(circshift(kde, length(kde) ÷ 2), ratio))
         # get the half width in σ
         peak, center = findmax(kde)
         return length(findall(x -> x > peak/2, kde))/σ, kde
@@ -106,7 +109,7 @@ end
 #Get its maxima
 function get_maxima(data)
     arg_maxima = []
-    for x = 2:length(data)-1
+    for x = 2:(length(data)-1)
         (data[x] > data[x-1]) && (data[x] > data[x+1]) && (push!(arg_maxima, x))
     end
     return arg_maxima
@@ -131,7 +134,13 @@ function is_unimodal(kernel, ratio)
 end
 
 
-export is_unimodal, get_maxima, gaussian_kernel_estimate, gaussian_kernel, evaluate_network, asynchronous_state, target_firing_rate
+export is_unimodal,
+    get_maxima,
+    gaussian_kernel_estimate,
+    gaussian_kernel,
+    evaluate_network,
+    asynchronous_state,
+    target_firing_rate
 
 # #Trash spurious values (below 30% of the true maximum)
 # function count_maxima(kernel, ratio)
@@ -188,7 +197,7 @@ Create a Gaussian kernel with standard deviation `σ` and specified `length`.
 - `kernel`: A vector representing the Gaussian kernel.
 """
 function gaussian_kernel(σ::Real, ll::Int)
-    t = range(-(ll ÷ 2), stop=ll ÷ 2, length=ll)
+    t = range(-(ll ÷ 2), stop = ll ÷ 2, length = ll)
     kernel = exp.(-(t .^ 2) / (2 * σ^2))
     return kernel ./ sum(kernel)  # Normalize the kernel
 end
@@ -206,7 +215,7 @@ Apply a Gaussian kernel estimate to a support vector with closed boundary condit
 # Returns
 - `estimated_vector`: The estimated vector after applying the Gaussian kernel.
 """
-function gaussian_kernel_estimate(support_vector::Vector, σ::Real; boundary=:continuous)
+function gaussian_kernel_estimate(support_vector::Vector, σ::Real; boundary = :continuous)
 
     # Apply the kernel using convolution
     # estimated_vector = conv(support_vector, kernel)
@@ -215,11 +224,11 @@ function gaussian_kernel_estimate(support_vector::Vector, σ::Real; boundary=:co
     # Handle closed boundary conditions
     # Extend the support vector to handle boundaries
     ll = length(support_vector) ÷ 2
-    if boundary == :continuous 
-        extension_left = support_vector[end-ll:end]
+    if boundary == :continuous
+        extension_left = support_vector[(end-ll):end]
         extension_right = support_vector[1:ll]
     elseif boundary == :closed
-        extension_left = zeros(size(support_vector[end-ll:end]))
+        extension_left = zeros(size(support_vector[(end-ll):end]))
         extension_right = zeros(size(support_vector[1:ll]))
     else
         error("Invalid boundary condition. Use :continuous or :closed.")
@@ -229,12 +238,18 @@ function gaussian_kernel_estimate(support_vector::Vector, σ::Real; boundary=:co
     # Apply the kernel to the extended vector
     extended_estimated_vector = conv(extended_vector, kernel)
 
-    return extended_estimated_vector[2(1+ll):end-2ll]
+    return extended_estimated_vector[2(1+ll):(end-2ll)]
 end
 
 
 
-export gaussian_kernel_estimate, gaussian_kernel, estimate_model, is_attractor_state, asynchronous_state, target_firing_rate, estimate_model
+export gaussian_kernel_estimate,
+    gaussian_kernel,
+    estimate_model,
+    is_attractor_state,
+    asynchronous_state,
+    target_firing_rate,
+    estimate_model
 
 
 

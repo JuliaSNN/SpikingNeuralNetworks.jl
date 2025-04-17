@@ -2,7 +2,7 @@ struct PINningSynapseParameter end
 
 @snn_kw mutable struct PINningSynapse{MFT = Matrix{Float32},VFT = Vector{Float32}} <:
                        AbstractConnection
-    name ::String = "PINningSynapse"
+    name::String = "PINningSynapse"
     id::String = randstring(12)
     param::PINningSynapseParameter = PINningSynapseParameter()
     W::MFT  # synaptic weight
@@ -26,12 +26,15 @@ function PINningSynapse(pre, post; μ = 1.5, p = 0.0, α = 1, kwargs...)
     W = μ * 1 / √pre.N * randn(post.N, pre.N) # normalized recurrent weight
     P = α * I(post.N) # initial inverse of C = <rr'>
     f, q = zeros(post.N), zeros(post.N)
-    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:PinningSynapse)
-    @views g, v_post =  synaptic_target(targets, post, :g, nothing)
-
-    PINningSynapse(; @symdict(W, rI, rJ, g, P, q, f)..., kwargs..., 
-        targets = targets,
+    targets = Dict{Symbol,Any}(
+        :fire => pre.id,
+        :post => post.id,
+        :pre => pre.id,
+        :type=>:PinningSynapse,
     )
+    @views g, v_post = synaptic_target(targets, post, :g, nothing)
+
+    PINningSynapse(; @symdict(W, rI, rJ, g, P, q, f)..., kwargs..., targets = targets)
 end
 
 function forward!(c::PINningSynapse, param::PINningSynapseParameter)

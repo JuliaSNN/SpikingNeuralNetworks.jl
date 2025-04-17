@@ -1,4 +1,4 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 import SpikingNeuralNetworks: AdExParameter
@@ -20,7 +20,7 @@ t_post = sort(rand(99000) .* T)  # Post-synaptic spikes (50 random times in [0, 
 
 
 
-r, cv = compute_covariance_density(Float32.(t_pre), Float32.(t_post), max_lag=400)
+r, cv = compute_covariance_density(Float32.(t_pre), Float32.(t_post), max_lag = 400)
 bar(
     r,
     cv,
@@ -31,7 +31,7 @@ bar(
     size = (500, 300),
     alpha = 0.5,
     color = :black,
-    margin = 5Plots.mm,
+    margin = 5SNNPlots.mm,
 )
 plot!(frame = :origin, yticks = :none)
 ##
@@ -63,7 +63,7 @@ histogram(
     size = (500, 300),
     alpha = 0.5,
     color = :black,
-    margin = 5Plots.mm,
+    margin = 5SNNPlots.mm,
     frame = :origin,
     yticks = :none,
 )

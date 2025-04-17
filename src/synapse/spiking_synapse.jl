@@ -78,8 +78,13 @@ function SpikingSynapse(
     fireI, fireJ = post.fire, pre.fire
 
     # get the conductance and membrane potential of the target compartment if multicompartment model
-    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:SpikingSynapse)
-    @views g, v_post =  synaptic_target(targets, post, sym, target)
+    targets = Dict{Symbol,Any}(
+        :fire => pre.id,
+        :post => post.id,
+        :pre => pre.id,
+        :type=>:SpikingSynapse,
+    )
+    @views g, v_post = synaptic_target(targets, post, sym, target)
 
     # set the paramter for the synaptic plasticity
     param = haskey(kwargs, :param) ? kwargs[:param] : no_STDPParameter()

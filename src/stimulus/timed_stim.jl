@@ -159,11 +159,11 @@ function shift_spikes!(stimulus::SpikeTimeStimulus, delay::Number)
     return stimulus
 end
 
-function update_spikes!(stim, spikes, start_time=0f0)
+function update_spikes!(stim, spikes, start_time = 0.0f0)
     empty!(stim.param.spiketimes)
     empty!(stim.param.neurons)
     append!(stim.param.spiketimes, spikes.spiketimes .+ start_time)
-    append!(stim.param.neurons , spikes.neurons)
+    append!(stim.param.neurons, spikes.neurons)
     stim.next_index[1] = 1
     stim.next_spike[1] = stim.param.spiketimes[1]
     return stim

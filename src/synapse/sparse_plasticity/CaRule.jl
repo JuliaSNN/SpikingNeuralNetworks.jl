@@ -53,7 +53,7 @@ function plasticity!(
 
     # Update weights based on pre-post spike timing
     @inbounds @fastmath begin
-        for i = 1:length(rowptr)-1 # loop over post-synaptic neurons
+        for i = 1:(length(rowptr)-1) # loop over post-synaptic neurons
             @simd for st = rowptr[i]:(rowptr[i+1]-1)
                 s = index[st]
                 if fireJ[J[s]]
@@ -63,7 +63,7 @@ function plasticity!(
         end
 
         # Update weights based on pre-post spike timing
-        for j = 1:length(colptr)-1 # loop over pre-synaptic neurons
+        for j = 1:(length(colptr)-1) # loop over pre-synaptic neurons
             @simd for s = colptr[j]:(colptr[j+1]-1)
                 if fireI[I[s]]
                     W[s] += tpre[j]  # pre-post
@@ -123,7 +123,7 @@ function plasticity!(
         end
 
 
-        for i = 1:length(rowptr)-1
+        for i = 1:(length(rowptr)-1)
             @simd for st = rowptr[i]:(rowptr[i+1]-1)
                 s = index[st]
                 if fireJ[J[s]] && abs(tpost[i] * tpre[J[s]]) > 0.0f0
@@ -133,7 +133,7 @@ function plasticity!(
         end
 
         # Update weights based on pre-post spike timing
-        for j = 1:length(colptr)-1
+        for j = 1:(length(colptr)-1)
             @simd for s = colptr[j]:(colptr[j+1]-1)
                 if fireI[I[s]] && abs(tpost[I[s]] * tpre[j]) > 0.0f0
                     W[s] += A * MexicanHat(log(tpre[j] / tpost[I[s]])^2)

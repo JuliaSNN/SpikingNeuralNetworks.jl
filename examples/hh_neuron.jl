@@ -1,4 +1,4 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 using Statistics
@@ -20,4 +20,3 @@ for n in eachindex(xs)
     ys[n] = r
 end
 plot(xs, ys)
-

@@ -1,4 +1,4 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -10,9 +10,9 @@ IE = SNN.SpikingSynapse(I, E, :gi; μ = 20 * 4.5 / 10, p = 0.02)
 II = SNN.SpikingSynapse(I, I, :gi; μ = 20 * 4.5 / 10, p = 0.02)
 P = (; E, I)
 C = (; EE, EI, IE, II)
-model = merge_models(;P..., C..., name = "IF_network")
+model = merge_models(; P..., C..., name = "IF_network")
 
 SNN.monitor!([E, I], [:fire])
-SNN.sim!(;model, duration = 1second)
-SNN.train!(;model, duration = 1second)
+SNN.sim!(; model, duration = 1second)
+SNN.train!(; model, duration = 1second)
 raster(model.pop, [0.5s, 1s])

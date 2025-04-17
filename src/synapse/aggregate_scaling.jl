@@ -7,8 +7,15 @@
     Wmax::FT = 250pF
 end
 
-function AggregateScalingParameter(N, rate=10Hz; τ = 10ms, τa = 100ms, τe = 100ms, Wmin = 0.05)
-    AggregateScalingParameter(τ, τa, τe, fill(rate,N), Wmin)
+function AggregateScalingParameter(
+    N,
+    rate = 10Hz;
+    τ = 10ms,
+    τa = 100ms,
+    τe = 100ms,
+    Wmin = 0.05,
+)
+    AggregateScalingParameter(τ, τa, τe, fill(rate, N), Wmin)
 end
 
 # AggregateScaling
@@ -76,18 +83,18 @@ end
 
 
 
-function forward!(c::AggregateScaling, param::AggregateScalingParameter) 
+function forward!(c::AggregateScaling, param::AggregateScalingParameter)
     @unpack y, fire, WT = c
     @unpack Y, τa, τe, Wmax = param
 
     @inbounds @simd for i in eachindex(fire)
-        y[i]  -= y[i]/τa 
+        y[i] -= y[i]/τa
     end
     @inbounds @simd for i in eachindex(fire)
-        fire[i] && (y[i] +=1)
+        fire[i] && (y[i] += 1)
     end
     @inbounds @simd for i in eachindex(fire)
-        WT[i] += (1- WT[i]/Wmax)*(1 - y[i]/Y[i])/τe
+        WT[i] += (1-WT[i]/Wmax)*(1 - y[i]/Y[i])/τe
     end
 
 
@@ -105,7 +112,12 @@ normalized by `W1`. The weights are updated at intervals specified by time const
 - `param`: An instance of AdditiveNorm.
 - `dt`: Simulation time step.
 """
-function plasticity!(c::AggregateScaling, param::AggregateScalingParameter, dt::Float32, T::Time)
+function plasticity!(
+    c::AggregateScaling,
+    param::AggregateScalingParameter,
+    dt::Float32,
+    T::Time,
+)
     tt = get_step(T)
     @unpack τ = param
     if ((tt) % round(Int, τ / dt)) < dt
@@ -129,14 +141,14 @@ function plasticity!(c::AggregateScaling, param::AggregateScalingParameter)
     # normalize
 
     @turbo for i in eachindex(μ)
-        μ[i] =  (WT[i] -Wmin)/ Wt[i] #operator defines additive or multiplicative norm
+        μ[i] = (WT[i] - Wmin) / Wt[i] #operator defines additive or multiplicative norm
     end
     # apply
     for syn in synapses
         @unpack rowptr, W, index = syn
         Threads.@threads for i = 1:(length(rowptr)-1) # Iterate over all postsynaptic neuron
             @inbounds @fastmath @simd for j = rowptr[i]:(rowptr[i+1]-1) # all presynaptic neurons connected to neuron i
-                W[index[j]] = W[index[j]] * μ[i] +Wmin
+                W[index[j]] = W[index[j]] * μ[i] + Wmin
             end
         end
     end
