@@ -22,8 +22,6 @@ using ThreadTools
 using Distributions
 using Graphs, MetaGraphs
 
-
-
 include("utils/macros.jl")
 include("utils/structs.jl")
 include("utils/unit.jl")
