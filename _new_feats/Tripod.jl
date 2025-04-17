@@ -63,5 +63,5 @@ populations = [Tripod_pop, I, E]
 
 SNN.train!(populations, synapses, duration = 5000ms)
 ##
-SNN.monitor(Tripod_pop, [:fire, :v_d1, :v_s, :v_d2])
+SNN.monitor!(Tripod_pop, [:fire, :v_d1, :v_s, :v_d2])
 SNN.sim!(populations, synapses, duration = 2000ms)

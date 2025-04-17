@@ -34,7 +34,7 @@ For each connection it checks the type of the synapse and adds an edge between t
     - `SNN.SynapseNormalization`: the edge represents a normalization of synapses between populations.
     - `SNN.PoissonStimulus`: the edge represents a stimulus from the pre-synaptic population to the post-synaptic population.
 
-For each stimulus, it adds a vertex to the graph representing an implicit pre-synaptic population [:fire] an edge between it and the post-synaptic population [:g].
+For each stimulus, it adds a vertex to the graph representing an implicit pre-synaptic population [:fire] an edge between it and the post-synaptic population [:post].
 
 Returns a MetaGraphs.MetaDiGraph where:
 
@@ -51,13 +51,13 @@ function graph(model)
         add_vertex!(graph, Dict(:name => name, :id => id, :key => k))
     end
     for (k, syn) in pairs(syn)
-        if isa(syn, SNN.SpikingSynapse) || isa(syn, SNN.SpikingSynapseDelay)
+        if typeof(syn) <: AbstractNormalization
+            push!(norms, k => syn)
+        elseif haskey(syn.targets, :type)
             pre_id = syn.targets[:fire]
-            post_id = syn.targets[:g]
-            type = :fire_to_g
+            post_id = syn.targets[:post]
+            type = syn.targets[:type]
             add_connection!(graph, pre_id, post_id, k, syn, type)
-        elseif isa(syn, SNN.SynapseNormalization)
-            push!(norms, k=>syn)
         else
             throw(ArgumentError("Only SpikingSynapse is supported"))
         end
@@ -65,16 +65,16 @@ function graph(model)
     for (k, stim) in pairs(stim)
         # verterx and edge for the stimulus have the same id
         pre_id = stim.id
-        post_id = stim.targets[:g]
+        post_id = stim.targets[:post]
         add_vertex!(graph, Dict(:name => stim.name, :id => pre_id, :key => k))
         type = :fire_to_g
         add_connection!(graph, pre_id, post_id, k, stim, type)
     end
-    for (k,v) in norms
+    for (k, v) in norms
         for id in v.targets[:synapses]
             _edges, _ids = filter_edge_props(graph, :id, id)
             for (e, i) in zip(_edges, _ids)
-                props(graph, e.src, e.dst )[:norm][i] = k
+                props(graph, e.src, e.dst)[:norm][i] = k
             end
         end
     end
@@ -90,17 +90,21 @@ function add_connection!(graph, pre_id, post_id, k, syn, type)
     syn_name = "$(syn.name): $(pre_name) -> $(post_name).$sym"
     id = syn.id
     if !has_edge(graph, pre_node, post_node)
-        add_edge!(graph, pre_node, post_node, 
+        add_edge!(
+            graph,
+            pre_node,
+            post_node,
             Dict(
-                :type => [type], 
-                :name => [syn_name], 
-                :key => [k], 
-                :id => [id], 
-                :norm => [:none], 
-                :target => [sym], 
+                :type => [type],
+                :name => [syn_name],
+                :key => [k],
+                :id => [id],
+                :norm => [:none],
+                :target => [sym],
                 :count => [1],
-                :multi => 1)
-                )
+                :multi => 1,
+            ),
+        )
     else
         multi_dict = props(graph, pre_node, post_node)
         _multi = multi_dict[:multi] + 1

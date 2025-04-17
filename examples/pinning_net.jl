@@ -5,8 +5,9 @@ SNN.@load_units
 S = SNN.Rate(; N = 200)
 SS = SNN.PINningSynapse(S, S; μ = 1.5, p = 1.0)
 P, C = [S], [SS]
+model = merge_models(;P = P, C = SS)
 
-SNN.monitor(SS, [(:g, [1])])
+SNN.monitor!(SS, [(:g, [1])])
 
 A = 1.3 / 1.5;
 fr = 1 / 60ms;
@@ -19,8 +20,8 @@ f(t) =
 ts = 0:0.1ms:1440ms
 for (i, t) in enumerate(ts)
     SS.f .= [f(t); SS.g[2:end]]
-    SNN.train!(P, C, 0.1ms, t)
+    SNN.train!(;model, duration=SNN.dt)
 end
 
-SNN.vecplot(SS, :g);
-plot!(f.(ts));
+SNN.vecplot(SS, :g)
+plot!(f.(ts))

@@ -24,7 +24,7 @@ projections = [projection_exc_soma, projection_inh_soma]
 
 SNN.sim!([E], projections, duration = 1000)
 #
-SNN.monitor(E, [:v_s, :v_d1, :g_d1, :fire, :ge_s, :gi_s, :w_s])
+SNN.monitor!(E, [:v_s, :v_d1, :g_d1, :fire, :ge_s, :gi_s, :w_s])
 SNN.sim!([E], projections, duration = 50)
 for p in projections
     p.fireJ[1] = true
@@ -42,11 +42,11 @@ vcat(SNN.getrecord(E, :ge_s)...)
 vcat(SNN.getrecord(E, :gi_s)...)
 
 plot(
-    SNN.vecplot(E, :ge_s, r=1:0.01:250),
-    SNN.vecplot(E, :gi_s, r=1:0.01:250),
-    SNN.vecplot(E, :v_s, r=1:0.01:250),
-    SNN.vecplot(E, :v_d1, r=1:0.01:250),
-    SNN.vecplot(E, :w_s, r=1:0.01:250),
+    SNN.vecplot(E, :ge_s, r = 1:0.01:250),
+    SNN.vecplot(E, :gi_s, r = 1:0.01:250),
+    SNN.vecplot(E, :v_s, r = 1:0.01:250),
+    SNN.vecplot(E, :v_d1, r = 1:0.01:250),
+    SNN.vecplot(E, :w_s, r = 1:0.01:250),
     layout = (5, 1),
     size = (500, 900),
     linky = true,

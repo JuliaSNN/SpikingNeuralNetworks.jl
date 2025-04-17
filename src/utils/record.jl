@@ -1,23 +1,4 @@
 import Interpolations: scale, interpolate, BSpline, Linear, NoInterp
-
-"""
-    struct Time
-
-A mutable struct representing time. 
-
-# Fields
-- `t::Vector{Float32}`: A vector containing the current time.
-- `tt::Vector{Int}`: A vector containing the current time step.
-- `dt::Float32`: The time step size.
-
-"""
-Time
-@snn_kw mutable struct Time{VFT = Vector{Float32}, VIT = Vector{Int32}, FT = Float32}
-    t::VFT = [0.0f0]
-    tt::VIT = Int32[0]
-    dt::FT = 0.125f0
-end
-
 """
     get_time(T::Time)
 
@@ -31,6 +12,8 @@ Get the current time.
 
 """
 get_time(T::Time)::Float32 = T.t[1]
+
+get_time(model::NamedTuple)::Float32 = model.time.t[1]
 
 """
     get_step(T::Time)
@@ -89,6 +72,21 @@ function update_time!(T::Time, dt::Float32)
     T.tt[1] += 1
 end
 
+function update_time!(T::Time, myT::Time)
+    T.t[1] = myT.t[1]
+    T.tt[1] = myT.tt[1]
+end
+
+function reset_time!(T::Time)
+    T.t[1] = 0.0f0
+    T.tt[1] = 0
+end
+
+function reset_time!(model::NamedTuple)
+    model.time.t[1] = 0.0f0
+    model.time.tt[1] = 0
+end
+
 """
     record_fire!(obj::PT, T::Time, indices::Dict{Symbol,Vector{Int}}) where {PT <: Union{AbstractPopulation, AbstractStimulus}}
 
@@ -100,7 +98,12 @@ Record the firing activity of the `obj` object into the `obj.records[:fire]` arr
 - `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
 
 """
-function record_fire!(fire::Vector{Bool}, record::Dict{Symbol,AbstractVector}, T::Time, indices::Dict{Symbol,Vector{Int}})
+function record_fire!(
+    fire::Vector{Bool},
+    record::Dict{Symbol,AbstractVector},
+    T::Time,
+    indices::Dict{Symbol,Vector{Int}},
+)
     # @unpack fire = obj
     # @unpack records = obj
     sum(fire) == 0 && return
@@ -117,9 +120,10 @@ Store values into the dictionary named `records` in the object given
 - `obj`: An object whose values are to be recorded
 
 """
-function record!(obj::P, T::Time) where {P<:Union{AbstractPopulation, AbstractStimulus}}
+function record!(obj::P, T::Time) where {P<:Union{AbstractPopulation,AbstractStimulus}}
     @unpack records = obj
-    haskey(records, :fire) && record_fire!(obj.fire, obj.records[:fire], T, records[:indices])
+    haskey(records, :fire) &&
+        record_fire!(obj.fire, obj.records[:fire], T, records[:indices])
     # timestamp::Vector{Float32} = records[:timestamp]
     # if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
     #     push!(timestamp, get_time(T))
@@ -145,32 +149,62 @@ Record the variable `key` of the `obj` object into the `obj.records[key]` array.
 - `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
 
 """
-function record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, sr::Float32) 
+function record_sym!(
+    obj,
+    key::Symbol,
+    T::Time,
+    indices::Dict{Symbol,Vector{Int}},
+    sr::Float32,
+)
     my_record = getfield(obj, key)
     @unpack records = obj
-    !record_step(T,sr) && return
-    ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(my_record,1)
+    !record_step(T, sr) && return
+    ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(my_record, 1)
     @inbounds _record_sym(my_record, records[key], ind)
 end
 
-@inline function _record_sym(my_record::Vector{T}, records::Vector{Vector{T}}, ind::Vector{Int}) where {T<:Real}
+@inline function _record_sym(
+    my_record::Vector{T},
+    records::Vector{Vector{T}},
+    ind::Vector{Int},
+) where {T<:Real}
     push!(records, my_record[ind])
 end
 
-@inline function _record_sym(my_record::Array{T,3}, records::Vector{Array{T,3}}, ind::Vector{Int}) where {T<:Real}
+@inline function _record_sym(
+    my_record::T,
+    records::Vector{T},
+    ind::Vector{Int},
+) where {T<:Real}
+    push!(records, my_record)
+end
+
+@inline function _record_sym(
+    my_record::Array{T,3},
+    records::Vector{Array{T,3}},
+    ind::Vector{Int},
+) where {T<:Real}
     push!(records, my_record[ind, :, :])
 end
 
-@inline function _record_sym(my_record::Vector{Vector{T}}, records::Vector{Vector{Vector{T}}}, ind::Vector{Int}) where {T<:Real}
+@inline function _record_sym(
+    my_record::Vector{Vector{T}},
+    records::Vector{Vector{Vector{T}}},
+    ind::Vector{Int},
+) where {T<:Real}
     push!(records, deepcopy(my_record[ind]))
 end
 
-@inline function _record_sym(my_record::Matrix{T}, records::Vector{Matrix{T}}, ind::Vector{Int}) where {T<:Real}
-    push!(records, my_record[ind,:])
+@inline function _record_sym(
+    my_record::Matrix{T},
+    records::Vector{Matrix{T}},
+    ind::Vector{Int},
+) where {T<:Real}
+    push!(records, my_record[ind, :])
 end
 
-@inline function record_step(T, sr) 
-    (get_step(T) % floor(Int, 1.f0/sr/get_dt(T))) == 0
+@inline function record_step(T, sr)
+    (get_step(T) % floor(Int, 1.0f0 / sr / get_dt(T))) == 0
 end
 
 
@@ -183,7 +217,15 @@ function record!(obj::C, T::Time) where {C<:AbstractConnection}
     @inbounds if haskey(records, :plasticity)
         for name_plasticity::Symbol in keys(records[:plasticity])
             for key::Symbol in records[:plasticity][name_plasticity]
-                record_plast!(obj, obj.plasticity, key, T, records[:indices], records[:sr][key], name_plasticity)
+                record_plast!(
+                    obj,
+                    obj.plasticity,
+                    key,
+                    T,
+                    records[:indices],
+                    records[:sr][key],
+                    name_plasticity,
+                )
             end
         end
     end
@@ -213,11 +255,20 @@ Record the plasticity variable `key` of the `plasticity` object into the `obj.re
 - `name_plasticity::Symbol`: The name of the plasticity object.
 
 """
-function record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, sr::Float32, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
+function record_plast!(
+    obj::ST,
+    plasticity::PT,
+    key::Symbol,
+    T::Time,
+    indices::Dict{Symbol,Vector{Int}},
+    sr::Float32,
+    name_plasticity::Symbol,
+) where {ST<:AbstractConnection,PT<:PlasticityVariables}
     # my_record = getfield(obj, key)
     # @unpack records = obj
-    !record_step(T,sr) && return
-    ind::Vector{Int} = haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
+    !record_step(T, sr) && return
+    ind::Vector{Int} =
+        haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
     push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
 
@@ -230,7 +281,12 @@ Initialize dictionary records for the given object, by assigning empty vectors t
 - `keys`: The variables to be monitored
 
 """
-function monitor(obj::Item, keys; sr=1000Hz, T::Time=Time()) where {Item<:Union{AbstractPopulation, AbstractStimulus, AbstractConnection}}
+function monitor!(
+    obj::Item,
+    keys;
+    sr = 1000Hz,
+    T::Time = Time(),
+) where {Item<:Union{AbstractPopulation,AbstractStimulus,AbstractConnection}}
     if !haskey(obj.records, :indices)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
     end
@@ -255,12 +311,13 @@ function monitor(obj::Item, keys; sr=1000Hz, T::Time=Time()) where {Item<:Union{
                 :time => Vector{Float32}(),
                 :neurons => Vector{Vector{Int}}(),
             )
-        ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
+            ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
         elseif hasfield(typeof(obj), sym)
             typ = typeof(getfield(obj, sym))
             obj.records[sym] = Vector{typ}()
-        ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
-        elseif hasfield(typeof(obj), :plasticity) && has_plasticity_field(obj.plasticity, sym)
+            ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
+        elseif hasfield(typeof(obj), :plasticity) &&
+               has_plasticity_field(obj.plasticity, sym)
             monitor_plast(obj, obj.plasticity, sym)
         else
             @warn "Field $sym not found in $(nameof(typeof(obj)))"
@@ -272,37 +329,37 @@ function has_plasticity_field(plasticity::T, key) where {T<:PlasticityVariables}
     return hasfield(typeof(plasticity), key)
 end
 
-function monitor_plast(obj, plasticity, sym) 
-    name =nameof(typeof(plasticity))
+function monitor_plast(obj, plasticity, sym)
+    name = nameof(typeof(plasticity))
     if !haskey(obj.records, :plasticity)
-       obj.records[:plasticity] = Dict{Symbol,Vector{Symbol}}()
+        obj.records[:plasticity] = Dict{Symbol,Vector{Symbol}}()
     end
     if !haskey(obj.records[:plasticity], name)
-       obj.records[:plasticity][name] = Vector{Symbol}()
+        obj.records[:plasticity][name] = Vector{Symbol}()
     end
     if !(sym ∈ obj.records[:plasticity][name])
         push!(obj.records[:plasticity][name], sym)
     end
     typ = typeof(getfield(plasticity, sym))
     if !haskey(obj.records, name)
-       obj.records[name] = Dict{Symbol,AbstractVector}()
+        obj.records[name] = Dict{Symbol,AbstractVector}()
     end
     obj.records[name][sym] = Vector{typ}()
 end
 """
-monitor(objs::Array, keys)
+monitor!(objs::Array, keys)
 
 Function called when more than one object is given, which then calls the above monitor function for each object
 """
-function monitor(objs::Array, keys; sr=200Hz)
+function monitor!(objs::Array, keys; sr = 200Hz)
     for obj in objs
-        monitor(obj, keys, sr=sr)
+        monitor!(obj, keys, sr = sr)
     end
 end
 
-function monitor(objs::NamedTuple, keys; sr=200Hz)
+function monitor!(objs::NamedTuple, keys; sr = 200Hz)
     for obj in values(objs)
-        monitor(obj, keys, sr=sr)
+        monitor!(obj, keys, sr = sr)
     end
 end
 
@@ -317,16 +374,16 @@ end
     The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
 """
 function interpolated_record(p, sym)
-    if sym==:fire
-        return firing_rate(p, τ=20ms)
+    if sym == :fire
+        return firing_rate(p, τ = 20ms)
     end
     sr = p.records[:sr][sym]
     v_dt = SNN.getvariable(p, sym)
 
     # ! adjust the end time to account for the added first element 
-    _end = (size(v_dt,)[end]-1)/sr  
+    _end = (size(v_dt)[end] - 1) / sr
     # ! this is the recorded time (in ms), it assumes all recordings are contained in v_dt
-    r_v = 0:1/sr:_end 
+    r_v = 0:1/sr:_end
 
     # Set NoInterp in the singleton dimensions:
     interp = get_interpolator(v_dt)
@@ -340,12 +397,12 @@ function interpolated_record(p, sym)
 end
 
 function squeeze(A::AbstractArray)
-    singleton_dims = tuple((d for d in 1:ndims(A) if size(A, d) == 1)...)
-    return dropdims(A, dims=singleton_dims)
+    singleton_dims = tuple((d for d = 1:ndims(A) if size(A, d) == 1)...)
+    return dropdims(A, dims = singleton_dims)
 end
 
 function get_interpolator(A::AbstractArray)
-    singleton_dims = tuple((d for d in 1:ndims(A) if size(A, d) == 1)...)
+    singleton_dims = tuple((d for d = 1:ndims(A) if size(A, d) == 1)...)
     interp = repeat(Vector{Any}([BSpline(Linear())]), ndims(A))
     for d in singleton_dims
         interp[d] = NoInterp()
@@ -353,7 +410,7 @@ function get_interpolator(A::AbstractArray)
     return Tuple(interp)
 end
 
-function record(p, sym; interpolate=true)
+function record(p, sym; interpolate = true)
     if interpolate
         return interpolated_record(p, sym)
     else
@@ -369,31 +426,31 @@ getvariable(obj, key, id=nothing)
 
 Returns the recorded values for a given object and key. If an id is provided, returns the recorded values for that specific id.
 """
-function getvariable(obj, key, id=nothing)
+function getvariable(obj, key, id = nothing)
     rec = getrecord(obj, key)
     if isa(rec[1], Matrix)
         @debug "Matrix recording"
         array = zeros(size(rec[1])..., length(rec))
         for i in eachindex(rec)
-            array[:,:,i] = rec[i]
+            array[:, :, i] = rec[i]
         end
         return array
     elseif typeof(rec[1]) <: Vector{Vector{typeof(rec[1][1][1])}} # it is a multipod
-        @debug "Multipod recording"        
-        i = length(rec) 
+        @debug "Multipod recording"
+        i = length(rec)
         n = length(rec[1])
         d = length(rec[1][1])
         array = zeros(d, n, i)
         for i in eachindex(rec)
             for n in eachindex(rec[i])
-                array[:,n,i] = rec[i][n]
+                array[:, n, i] = rec[i][n]
             end
         end
         return array
     else
         @debug "Vector recording"
         isnothing(id) && return hcat(rec...)
-        return hcat(rec...)[id,:]
+        return hcat(rec...)[id, :]
     end
 end
 
@@ -404,7 +461,7 @@ Returns the recorded values for a given object and symbol. If the symbol is not 
 """
 function getrecord(p, sym)
     key = sym
-    if haskey(p.records, key) 
+    if haskey(p.records, key)
         return p.records[key]
     elseif haskey(p.records, :plasticity)
         values = []
@@ -426,18 +483,26 @@ function getrecord(p, sym)
 end
 
 """
-clear_records(obj)
+clear_records!(obj)
 
 Clears all the records of a given object.
 """
-function clear_records(obj)
+function clear_records!(obj)
     if obj isa AbstractPopulation || obj isa AbstractStimulus || obj isa AbstractConnection
         _clean(obj.records)
     else
         for v in obj
-        @debug "Removing records from $(v.name)"
-            if v isa AbstractPopulation || v isa AbstractStimulus || v isa AbstractConnection
+            if v isa AbstractPopulation ||
+               v isa AbstractStimulus ||
+               v isa AbstractConnection
+                @debug "Removing records from $(v.name)"
                 _clean(v.records)
+            elseif v isa String
+                continue
+            elseif v isa Time
+                continue
+            else
+                clear_records!(v)
             end
         end
     end
@@ -450,7 +515,7 @@ function _clean(z)
         (key == :sr) && (continue)
         (key == :timestamp) && (continue)
         (key == :plasticity) && (continue)
-        if isa(val, Dict) 
+        if isa(val, Dict)
             _clean(val)
         else
             empty!(val)
@@ -459,48 +524,65 @@ function _clean(z)
 end
 
 """
-clear_records(obj, sym::Symbol)
+clear_records!(obj, sym::Symbol)
 
 Clears the records of a given object for a specific symbol.
 """
-function clear_records(obj, sym::Symbol)
+function clear_records!(obj, sym::Symbol)
     for (key, val) in obj.records
         (key == sym) && (empty!(val))
     end
 end
 
 """
-clear_records(objs::AbstractArray)
+clear_records!(objs::AbstractArray)
 
 Clears the records of multiple objects.
 """
-function clear_records(objs::AbstractArray)
+function clear_records!(objs::AbstractArray)
     for obj in objs
-        clear_records(obj)
+        clear_records!(obj)
     end
 end
 
 
 """
-clear_monitor(obj)
+clear_monitor!(obj)
 
 Clears all the records of a given object.
 """
-function clear_monitor(obj)
+function clear_monitor!(obj)
     for (k, val) in obj.records
         delete!(obj.records, k)
     end
 end
 
-function clear_monitor(objs::NamedTuple)
+function clear_monitor!(objs::NamedTuple)
     for obj in values(objs)
-        try 
-            clear_monitor(obj)
-        catch 
+        try
+            clear_monitor!(obj)
+        catch
             @warn "Could not clear monitor for $obj"
         end
     end
 end
 
 
-export Time, get_time, get_step, get_dt, get_interval, update_time!, record_plast!, record_fire!, record_sym!, record!, monitor, monitor_plast, getvariable, getrecord, clear_records, clear_monitor, record
+export Time,
+    get_time,
+    get_step,
+    get_dt,
+    get_interval,
+    update_time!,
+    record_plast!,
+    record_fire!,
+    record_sym!,
+    record!,
+    monitor,
+    monitor_plast,
+    getvariable,
+    getrecord,
+    clear_records!,
+    clear_monitor!,
+    record,
+    reset_time!

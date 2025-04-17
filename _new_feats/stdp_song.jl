@@ -21,15 +21,13 @@ S = SNN.SpikingSynapse(
     :ge;
     μ = 0.01,
     p = 1.0,
-    param = SNN.vSTDPParameter(; Wmax = 0.01),
+    param = SNN.vSTDPParameter(; Wmax = 1.),
 )
 
-P = [inputs, neurons];
-C = [S];
-
+model = merge_models(; inputs, neurons, S)
 # histogram(S.W / S.param.Wmax; nbins = 20)
-# SNN.monitor(S, [(:W, [1, 2])])
-@time SNN.train!(P, C; duration = 100second)
+# SNN.monitor!(S, [(:W, [1, 2])])
+@time SNN.train!(;model, duration = 100second)
 
 scatter(S.W / S.param.Wmax)
 histogram(S.W / S.param.Wmax; nbins = 20)

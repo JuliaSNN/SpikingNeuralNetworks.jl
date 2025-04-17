@@ -138,7 +138,7 @@ function plasticity!(
             if fireJ[j] # presynaptic neuron
                 tpre[j] += 1
                 @turbo for st = colptr[j]:(colptr[j+1]-1)
-                    W[st] = clamp(W[st] + η * (tpost[I[st]] - 1/τy), Wmin, Wmax)
+                    W[st] = clamp(W[st] + η * (tpost[I[st]] - 1 / τy), Wmin, Wmax)
                 end
             end
         end
@@ -219,5 +219,9 @@ function plasticity!(
     end
 end
 
-export iSTDPParameterRate, iSTDPParameterTime, 
-    iSTDPParameterPotential, iSTDPVariables, plasticityvariables, plasticity!
+export iSTDPParameterRate,
+    iSTDPParameterTime,
+    iSTDPParameterPotential,
+    iSTDPVariables,
+    plasticityvariables,
+    plasticity!

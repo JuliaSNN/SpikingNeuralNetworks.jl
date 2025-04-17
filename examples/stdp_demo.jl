@@ -9,8 +9,8 @@ EE = SNN.SpikingSynapse(E1, E2, :ge)
 for n = 1:E1.N
     SNN.connect!(EE, n, n)
 end
-SNN.monitor([E1, E2], [:fire])
-SNN.monitor(EE, [:W])
+SNN.monitor!([E1, E2], [:fire])
+SNN.monitor!(EE, [:W])
 
 for t = 1:N
     E1.v[t] = 100

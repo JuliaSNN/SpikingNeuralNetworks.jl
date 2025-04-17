@@ -83,19 +83,46 @@ function train!(
     return time
 end
 
+function _args_model(args, model)
+    pop = Vector{AbstractPopulation}([])
+    syn = Vector{AbstractConnection}([])
+    stim = Vector{AbstractStimulus}([])
+    haskey(model, :pop) && append!(pop,model.pop)
+    haskey(model, :syn) && append!(syn,model.syn)
+    haskey(model, :stim) && append!(stim,model.stim)
+    for arg in args
+        if typeof(arg) <: AbstractPopulation
+            push!(pop, arg)
+        elseif typeof(arg) <: AbstractConnection
+            push!(syn, arg)
+        elseif typeof(arg) <: AbstractStimulus
+            push!(stim, arg)
 
-function train!(; model, kwargs...)
-    pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
-    syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
-    stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
-    train!(pop,syn,stim; kwargs...,)
+        elseif typeof(arg) <: Vector{AbstractPopulation}
+            append!(pop, arg)
+        elseif typeof(arg) <: Vector{AbstractConnection}
+            append!(syn, arg)
+        elseif typeof(arg) <: Vector{AbstractStimulus}
+            append!(stim, arg)
+        else
+            error("Invalid argument type: $(typeof(arg))")
+        end
+    end
+    return pop, syn, stim
 end
 
-function sim!(; model, kwargs...)
-    pop = haskey(model, :pop) ? collect(model.pop) : Vecto{ArbstractPopulation}([])
-    syn = haskey(model, :syn) ? collect(model.syn) : Vecto{ArbstractConnection}([])
-    stim = haskey(model, :stim) ? collect(model.stim) : Vector{AbstractStimulus}([])
-    sim!(pop,syn,stim; kwargs...)
+function train!(args...; model=(time=Time(), name="Model"),  kwargs...)
+    pop, syn, stim = _args_model(args, model)
+    mytime = train!(pop, syn, stim; time = model.time, kwargs...)
+    update_time!(model.time, mytime)
+    return get_time(model.time)
+end
+
+function sim!(args...; model=(time=Time(), name="Model"), kwargs...)
+    pop, syn, stim = _args_model(args, model)
+    mytime = sim!(pop, syn, stim; time = model.time, kwargs...)
+    update_time!(model.time, mytime)
+    return get_time(model.time)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
 
@@ -112,7 +139,7 @@ function sim!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
-    record_zero!(P,C,S,T)
+    record_zero!(P, C, S, T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
@@ -135,7 +162,7 @@ function train!(
     dt::Float32,
     T::Time,
 ) where {TP<:AbstractPopulation,TC<:AbstractConnection,TS<:AbstractStimulus}
-    record_zero!(P,C,S,T)
+    record_zero!(P, C, S, T)
     update_time!(T, dt)
     for s in S
         stimulate!(s, getfield(s, :param), T, dt)
@@ -154,16 +181,16 @@ function train!(
     end
 end
 
-function record_zero!(P,C,S,T)
+function record_zero!(P, C, S, T)
     get_time(T) > 0.0f0 && return
     for p in P
-        record!(p,T)
+        record!(p, T)
     end
     for c in C
-        record!(c,T)
+        record!(c, T)
     end
     for s in S
-        record!(s,T)
+        record!(s, T)
     end
 end
 

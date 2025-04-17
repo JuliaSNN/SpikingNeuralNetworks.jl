@@ -5,9 +5,9 @@ EE = SNN.SpikingSynapse(E1, E2, :ge, param = SNN.vSTDPParameter())
 for n = 1:E1.N
     SNN.connect!(EE, n, n)
 end
-SNN.monitor([E1, E2], [:fire])
-SNN.monitor(EE, [:W])
-SNN.monitor(EE, [:x])
+SNN.monitor!([E1, E2], [:fire])
+SNN.monitor!(EE, [:W])
+SNN.monitor!(EE, [:x])
 
 for t = 1:N
     E1.v[t] = -40

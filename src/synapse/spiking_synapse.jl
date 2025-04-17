@@ -1,6 +1,5 @@
-abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
 
-@snn_kw struct SpikingSynapse{
+@snn_kw mutable struct SpikingSynapse{
     VIT = Vector{Int32},
     VFT = Vector{Float32},
     VBT = Vector{Bool},
@@ -51,48 +50,36 @@ end
 end
 
 
-function CompartmentSynapse(    pre,    post,    target::Symbol,    sym::Symbol;     kwargs...)
+function CompartmentSynapse(pre, post, target::Symbol, sym::Symbol; kwargs...)
     SpikingSynapse(pre, post, sym, target; kwargs...)
 end
 
-function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1.0, σ = 0.0, p = 0.0, w = nothing, dist=Normal, kwargs...)
+function SpikingSynapse(
+    pre,
+    post,
+    sym,
+    target = nothing;
+    delay_dist = nothing,
+    μ = 1.0,
+    σ = 0.0,
+    p = 0.0,
+    w = nothing,
+    dist::Symbol = :Normal,
+    kwargs...,
+)
 
     # set the synaptic weight matrix
-    w =  sparse_matrix(w, pre.N, post.N, dist, μ, σ, p)
+    w = sparse_matrix(w, pre.N, post.N, dist, μ, σ, p)
     # remove autapses if pre == post
-    (pre == post) && (w[diagind(w)] .= 0) 
+    (pre == post) && (w[diagind(w)] .= 0)
     # get the sparse representation of the synaptic weight matrix
     rowptr, colptr, I, J, index, W = dsparse(w)
     # get the presynaptic and postsynaptic firing
     fireI, fireJ = post.fire, pre.fire
 
     # get the conductance and membrane potential of the target compartment if multicompartment model
-    targets = Dict{Symbol,Any}(:fire => pre.id, :g => post.id)
-    g = zeros(Float32, post.N)
-    v_post = zeros(Float32, post.N)
-
-    if isnothing(sym)
-        g = zeros(Float32, post.N)
-    else
-        if isnothing(target) 
-            g = getfield(post, sym)
-            _v = :v
-            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-            push!(targets, :sym => sym)
-        elseif typeof(target) == Symbol
-            _sym= Symbol("$(sym)_$target")
-            _v = Symbol("v_$target")
-            g = getfield(post, _sym)
-            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-            push!(targets, :sym => _sym)
-        elseif typeof(target) == Int
-            _sym= Symbol("$(sym)_d")
-            _v   = Symbol("v_d")
-            g = getfield(post, _sym)[target]
-            v_post = getfield(post, _v)[target]
-            push!(targets, :sym => Symbol(string(_sym, target)))
-        end
-    end
+    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:SpikingSynapse)
+    @views g, v_post =  synaptic_target(targets, post, sym, target)
 
     # set the paramter for the synaptic plasticity
     param = haskey(kwargs, :param) ? kwargs[:param] : no_STDPParameter()
@@ -118,7 +105,7 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
 
     else
         delayspikes = fill(-1, length(W))
-        delaytime = round.(Int,rand(delay_dist, length(W))/0.1)
+        delaytime = round.(Int, rand(delay_dist, length(W)) / 0.1)
         return SpikingSynapseDelay(;
             param = param,
             ρ = ρ,

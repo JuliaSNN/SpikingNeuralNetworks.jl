@@ -2,7 +2,9 @@
     lr::FT = 1e-3
 end
 
-@snn_kw mutable struct RateSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:AbstractConnection
+@snn_kw mutable struct RateSynapse{VIT = Vector{Int32},VFT = Vector{Float32}} <:
+                       AbstractConnection
+    name::String="RateSynapse"
     id::String = randstring(12)
     param::RateSynapseParameter = RateSynapseParameter()
     colptr::VIT # column pointer of sparse W
@@ -23,8 +25,13 @@ RateSynapse
 function RateSynapse(pre, post; μ = 0.0, p = 0.0, kwargs...)
     w = μ / √(p * pre.N) * sprandn(post.N, pre.N, p)
     rowptr, colptr, I, J, index, W = dsparse(w)
-    rI, rJ, g = post.r, pre.r, post.g
-    RateSynapse(; @symdict(colptr, I, W, rI, rJ, g)..., kwargs...)
+    rI, rJ = post.r, pre.r
+    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:RateSynapse)
+    @views g, v_post =  synaptic_target(targets, post, :g, nothing)
+
+    RateSynapse(; @symdict(colptr, I, W, rI, rJ, g)..., kwargs..., 
+        targets = targets,
+    )
 end
 
 function forward!(c::RateSynapse, param::RateSynapseParameter)

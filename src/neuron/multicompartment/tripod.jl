@@ -44,11 +44,11 @@ Tripod
     name::String = "Tripod"
     ## These are compulsory parameters
     N::IT = 100
-    soma_syn::ST 
-    dend_syn::ST
-    d1::VDT
-    d2::VDT
-    NMDA::NMDAT
+    soma_syn::ST = TripodSomaSynapse |> synapsearray
+    dend_syn::ST = TripodDendSynapse |> synapsearray
+    d1::VDT = create_dendrite(N, 2um)
+    d2::VDT = create_dendrite(N, 3um )
+    NMDA::NMDAT = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
     t::VIT = [0]
     param::AdExType = AdExSoma()
     # Membrane potential and adaptation
@@ -73,7 +73,7 @@ Tripod
 
     # Synapses soma
     ge_s::VFT = zeros(N)
-    gi_s::VFT = zeros(N) 
+    gi_s::VFT = zeros(N)
     he_s::VFT = zeros(N) #! target
     hi_s::VFT = zeros(N) #! target
 
@@ -89,14 +89,27 @@ Tripod
     is::VFT = zeros(3)
 end
 
+function synaptic_target(targets::Dict, post::Tripod, sym::Symbol, target::Symbol) 
+    sym = Symbol("$(sym)_$target")
+    v = Symbol("v_$target")
+    g = getfield(post, _sym)
+    hasfield(typeof(post), v) && (v_post = getfield(post, v))
+
+    push!(targets, :sym => sym)
+    push!(targets, :g => post.id)
+
+    return g, v_post
+end
+
+
 function Tripod(
     d1::Union{Real,Tuple},
     d2::Union{Real,Tuple};
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
-    kwargs...
+    NMDA::NMDAVoltageDependency = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    kwargs...,
 )
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
@@ -109,18 +122,17 @@ function Tripod(
         soma_syn = soma_syn,
         dend_syn = dend_syn,
         NMDA = NMDA,
-        α= [syn.α for syn in dend_syn],
-        kwargs...
+        α = [syn.α for syn in dend_syn],
+        kwargs...,
     )
 end
 
 function TripodHet(
     d1::Union{Real,Tuple} = (150um, 400um),
     d2::Union{Real,Tuple} = (150um, 400um);
-    kwargs...
+    kwargs...,
 )
-    Tripod(d1, d2; kwargs...
-    )
+    Tripod(d1, d2; kwargs...)
 end
 
 
@@ -144,7 +156,7 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
     # update the neurons
     @inbounds for i ∈ 1:N
         # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
-        if after_spike[i] > (τabs + up - up)/dt # backpropagation
+        if after_spike[i] > (τabs + up - up) / dt # backpropagation
             v_s[i] = BAP
             ## backpropagation effect
             c1 = (BAP - v_d1[i]) * d1.gax[i]
@@ -196,7 +208,12 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
     return
 end
 
-function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
+function update_synapses!(
+    p::Tripod,
+    dend_syn::SynapseArray,
+    soma_syn::SynapseArray,
+    dt::Float32,
+)
     @unpack N, ge_s, g_d1, g_d2, he_s, h_d1, h_d2, hi_s, gi_s = p
     @unpack he_d1, he_d2, hi_d1, hi_d2, exc_receptors, inh_receptors, α = p
 

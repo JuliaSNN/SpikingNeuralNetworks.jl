@@ -9,13 +9,18 @@ end
 
 BSParam = BalancedStimulusParameter
 
-@snn_kw struct BalancedStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <: AbstractStimulus
+@snn_kw struct BalancedStimulus{
+    VFT = Vector{Float32},
+    VBT = Vector{Bool},
+    VIT = Vector{Int},
+    IT = Int32,
+} <: AbstractStimulus
     id::String = randstring(12)
     param::BalancedStimulusParameter
     name::String = "Balanced"
     N::IT = 100
     N_pre::IT = 5
-    cells::VIT
+    neurons::VIT
     ##
     ge::VFT # target conductance for exc
     gi::VFT # target conductance for inh
@@ -37,7 +42,7 @@ end
 
 
 """
-    BalancedStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, cells=[]; N_pre::Int=50, p_post::R=0.05f0, μ::R=1.f0, param=BalancedParameter()) where {T <: AbstractPopulation, R <: Number}
+    BalancedStimulus(post::T, sym::Symbol, r::Union{Function, Float32}, neurons=[]; N_pre::Int=50, p_post::R=0.05f0, μ::R=1.f0, param=BalancedParameter()) where {T <: AbstractPopulation, R <: Number}
 
 Constructs a BalancedStimulus object for a spiking neural network.
 
@@ -45,64 +50,52 @@ Constructs a BalancedStimulus object for a spiking neural network.
 - `post::T`: The target population for the stimulus.
 - `sym::Symbol`: The symbol representing the synaptic conductance or current.
 - `r::Union{Function, Float32}`: The firing rate of the stimulus. Can be a constant value or a function of time.
-- `cells=[]`: The indices of the cells in the target population that receive the stimulus. If empty, cells are randomly selected based on the probability `p_post`.
-- `N::Int=200`: The number of Balanced neurons cells.
+- `neurons=[]`: The indices of the neuronsin the target population that receive the stimulus. If empty, neuronsare randomly selected based on the probability `p_post`.
+- `N::Int=200`: The number of Balanced neurons neurons.
 - `N_pre::Int=5`: The number of presynaptic connected.
-- `p_post::R=0.05f0`: The probability of connection between presynaptic and postsynaptic cells.
+- `p_post::R=0.05f0`: The probability of connection between presynaptic and postsynaptic neurons.
 - `μ::R=1.f0`: The scaling factor for the synaptic weights.
 - `param=BalancedParameter()`: The parameters for the Balanced distribution.
 
 # Returns
 A `BalancedStimulus` object.
 """
-function BalancedStimulus(post::T, sym_e::Symbol, sym_i::Symbol, target = nothing; cells=[], μ=1.f0, param::Union{BalancedStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
+function BalancedStimulus(
+    post::T,
+    sym_e::Symbol,
+    sym_i::Symbol,
+    target = nothing;
+    neurons= [],
+    μ = 1.0f0,
+    param::Union{BalancedStimulusParameter,R},
+    kwargs...,
+) where {T<:AbstractPopulation,R<:Real}
 
-    cells = 1:post.N
-    w = zeros(Float32, length(cells), length(cells))
-    w = μ* sparse(w)
+    neurons= 1:post.N
+    w = zeros(Float32, length(neurons), length(neurons))
+    w = μ * sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
 
-    if isnothing(target) 
-        ge = getfield(post, sym_e)
-        gi = getfield(post, sym_i)
-        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>:soma)
-    elseif typeof(target) == Symbol
-        ge = getfield(post, Symbol("$(sym_e)_$target"))
-        gi = getfield(post, Symbol("$(sym_i)_$target"))
-        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>target)
-    elseif typeof(target) == Int
-        sym_i= Symbol("$(sym_i)_d")
-        sym_e= Symbol("$(sym_e)_d")
-        ge = getfield(post, sym_e)[target]
-        gi = getfield(post, sym_i)[target]
-        targets = Dict(:pre => :Balanced, :g => post.id, :sym=>Symbol(string(sym_e, target)))
-    end
-
-    # if isnothing(target) 
-    #     ge = getfield(post, sym_e)
-    #     gi = getfield(post, sym_i)
-    # else
-    #     ge = getfield(post, Symbol("$(sym_e)_$target"))
-    #     gi = getfield(post, Symbol("$(sym_i)_$target"))
-    # end
-
+    targets = Dict(:pre => :BalancedStim, :post => post.id)
+    ge, _ = synaptic_target(targets, post, sym_e, target)
+    gi, _ = synaptic_target(targets, post, sym_i, target)
 
     if typeof(param) <: Real
         r = param
-        param = BSParam(rate = (x,y)->r, r* param.kIE)
+        param = BSParam(rate = (x, y) -> r, r * param.kIE)
     end
 
-    r= ones(Float32, post.N)*param.r0
+    r = ones(Float32, post.N) * param.r0
     noise = zeros(Float32, post.N)
 
-    N_pre = ceil(Int, param.r0 * maximum([1, param.β/100]) )
+    N_pre = ceil(Int, param.r0 * maximum([1, param.β / 100]))
 
     # Construct the SpikingSynapse instance
     return BalancedStimulus(;
         param = param,
-        N = length(cells),
+        N = length(neurons),
         N_pre = N_pre,
-        cells = cells,
+        neurons= neurons,
         targets = targets,
         r = r,
         noise = noise,
@@ -119,57 +112,64 @@ end
 
 Generate a Balanced stimulus for a postsynaptic population.
 """
-function stimulate!(p::BalancedStimulus, param::BalancedStimulusParameter, time::Time, dt::Float32)
-    @unpack N, N_pre, randcache, randcache_β, fire, cells, colptr, W, I, ge, gi = p
+function stimulate!(
+    p::BalancedStimulus,
+    param::BalancedStimulusParameter,
+    time::Time,
+    dt::Float32,
+)
+    @unpack N, N_pre, randcache, randcache_β, fire, neurons, colptr, W, I, ge, gi = p
 
     ## Inhomogeneous Poisson process
     @unpack r0, β, τ, kIE, wIE, same_input = param
     @unpack noise, r = p
     # Irate::Float32 = r0 * kIE
-    R(x::Float32, v0::Float32=0.f0) = x > 0.f0 ? x : v0
+    R(x::Float32, v0::Float32 = 0.0f0) = x > 0.0f0 ? x : v0
 
     # Inhibitory spike
     rand!(randcache)
-    for i in 1:N
-        @simd for j = 1:N_pre # loop on presynaptic cells
-            if randcache[j] < r0*kIE/N_pre * dt 
+    for i = 1:N
+        @simd for j = 1:N_pre # loop on presynaptic neurons
+            if randcache[j] < r0 * kIE / N_pre * dt
                 gi[i] += 1 * wIE
             end
         end
     end
 
     # Excitatory spike
-    re::Float32 = 0.f0
-    cc::Float32 = 0.f0
-    Erate::Float32 = 0.f0
+    re::Float32 = 0.0f0
+    cc::Float32 = 0.0f0
+    Erate::Float32 = 0.0f0
     rand!(randcache_β)
     rand!(randcache)
     if same_input
         i = 1
-        re= randcache_β[i] - 0.5f0
+        re = randcache_β[i] - 0.5f0
         cc = 1.0f0 - dt / τ
-        noise[i] = ( noise[i] - re) * cc + re
-        Erate = R(r0./2 *  R(noise[i] * β, 1.f0) + r[i], 0.f0) 
-        r[i] += (r0 - Erate)/400ms * dt
+        noise[i] = (noise[i] - re) * cc + re
+        Erate = R(r0 ./ 2 * R(noise[i] * β, 1.0f0) + r[i], 0.0f0)
+        r[i] += (r0 - Erate) / 400ms * dt
         @assert Erate >= 0
         @inbounds @fastmath for i = 1:N
-            @simd for j in 1:N_pre # loop on presynaptic cells
-                if randcache[j] < Erate/N_pre * dt 
-                    ge[i] += 1.
+            rand!(randcache)
+            @simd for j = 1:N_pre # loop on presynaptic neurons
+                if randcache[j] < Erate / N_pre * dt
+                    ge[i] += 1.0
                 end
             end
         end
     else
         @inbounds @fastmath for i = 1:N
-            re= randcache_β[i] - 0.5f0
+            re = randcache_β[i] - 0.5f0
             cc = 1.0f0 - dt / τ
-            noise[i] = ( noise[i] - re) * cc + re
-            Erate = R(r0./2 *  R(noise[i] * β, 1.f0) + r[i], 0.f0) 
-            r[i] += (r0 - Erate)/400ms * dt
+            noise[i] = (noise[i] - re) * cc + re
+            Erate = R(r0 ./ 2 * R(noise[i] * β, 1.0f0) + r[i], 0.0f0)
+            r[i] += (r0 - Erate) / 400ms * dt
             @assert Erate >= 0
-            @simd for j in 1:N_pre # loop on presynaptic cells
-                if randcache[j] < Erate/N_pre * dt 
-                    ge[i] += 1.
+            rand!(randcache)
+            @simd for j = 1:N_pre # loop on presynaptic neurons
+                if randcache[j] < Erate / N_pre * dt
+                    ge[i] += 1.0
                 end
             end
         end
