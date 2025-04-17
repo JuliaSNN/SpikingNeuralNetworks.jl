@@ -1,4 +1,4 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 

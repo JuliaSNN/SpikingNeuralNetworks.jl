@@ -11,7 +11,12 @@ end
     α::VFT = ones(Float32, 0)
 end
 
-function CurrentNoiseParameter(N; I_base::Number, I_dist::Distribution = Normal(0.0, 0.0), α::Number = 1.0)
+function CurrentNoiseParameter(
+    N;
+    I_base::Number,
+    I_dist::Distribution = Normal(0.0, 0.0),
+    α::Number = 1.0,
+)
     return CurrentNoiseParameter(
         I_base = fill(Float32(I_base), N),
         I_dist = I_dist,
@@ -42,15 +47,15 @@ end
 
 function CurrentStimulus(
     post::T;
-    neurons=:ALL,
+    neurons = :ALL,
     # α::R = 1f0,
     # I_dist::Distribution = Normal(0.0, 0.0),
     # I_base = 10pA,
     param,
     kwargs...,
 ) where {T<:AbstractPopulation}
-    if neurons== :ALL
-        neurons= 1:post.N
+    if neurons == :ALL
+        neurons = 1:post.N
     end
 
     # if 
@@ -60,9 +65,10 @@ function CurrentStimulus(
     # param = CurrentNoiseParameter(I_base, I_dist, α)
 
 
-    targets = Dict(:pre => :Current, :post => post.id, :sym => :soma, :type=>:CurrentStimulus)
+    targets =
+        Dict(:pre => :Current, :post => post.id, :sym => :soma, :type=>:CurrentStimulus)
     return CurrentStimulus(
-        neurons= neurons,
+        neurons = neurons,
         I = post.I,
         targets = targets;
         param = param,

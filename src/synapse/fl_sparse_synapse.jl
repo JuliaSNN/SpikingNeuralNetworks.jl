@@ -35,10 +35,19 @@ function FLSparseSynapse(pre, post; μ = 1.5, p = 0.0, α = 1, kwargs...)
     u = 2rand(post.N) - 1
     w = 1 / √post.N * (2rand(post.N) - 1)
 
-    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:FLSynapseSparse)
-    @views g, v_post =  synaptic_target(targets, post, :g, nothing)
+    targets = Dict{Symbol,Any}(
+        :fire => pre.id,
+        :post => post.id,
+        :pre => pre.id,
+        :type=>:FLSynapseSparse,
+    )
+    @views g, v_post = synaptic_target(targets, post, :g, nothing)
 
-    FLSparseSynapse(; @symdict(colptr, I, W, rI, rJ, g, P, q, u, w)..., kwargs..., targets=targets)
+    FLSparseSynapse(;
+        @symdict(colptr, I, W, rI, rJ, g, P, q, u, w)...,
+        kwargs...,
+        targets = targets,
+    )
 end
 
 function forward!(c::FLSparseSynapse, param::FLSparseSynapseParameter)

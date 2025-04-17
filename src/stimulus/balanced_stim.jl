@@ -65,13 +65,13 @@ function BalancedStimulus(
     sym_e::Symbol,
     sym_i::Symbol,
     target = nothing;
-    neurons= [],
+    neurons = [],
     μ = 1.0f0,
     param::Union{BalancedStimulusParameter,R},
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
 
-    neurons= 1:post.N
+    neurons = 1:post.N
     w = zeros(Float32, length(neurons), length(neurons))
     w = μ * sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
@@ -95,7 +95,7 @@ function BalancedStimulus(
         param = param,
         N = length(neurons),
         N_pre = N_pre,
-        neurons= neurons,
+        neurons = neurons,
         targets = targets,
         r = r,
         noise = noise,

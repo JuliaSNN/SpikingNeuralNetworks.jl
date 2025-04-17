@@ -49,7 +49,7 @@ struct Synapse{T<:Receptor}
     GABAb::T
 end
 
-function Synapse(; AMPA, NMDA, GABAa, GABAb )
+function Synapse(; AMPA, NMDA, GABAa, GABAb)
     return Synapse(AMPA, NMDA, GABAa, GABAb)
 end
 
@@ -195,6 +195,12 @@ NMDAVoltageDependency
     mg::T = Mg_mM
 end
 
-export norm_synapse, EyalNMDA, Receptor,Synapse, ReceptorVoltage, GABAergic, Glutamatergic, SynapseArray, NMDAVoltageDependency
-
-
+export norm_synapse,
+    EyalNMDA,
+    Receptor,
+    Synapse,
+    ReceptorVoltage,
+    GABAergic,
+    Glutamatergic,
+    SynapseArray,
+    NMDAVoltageDependency

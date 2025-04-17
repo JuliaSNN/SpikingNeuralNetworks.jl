@@ -168,7 +168,7 @@ function merge_spiketimes(spikes::Vector{Spiketimes};)
 end
 
 
-function k_fold(vector, k, do_shuffle=false)
+function k_fold(vector, k, do_shuffle = false)
     if do_shuffle
         ns = shuffle(1:length(vector))
     else
@@ -176,10 +176,10 @@ function k_fold(vector, k, do_shuffle=false)
     end
     b = length(ns) ÷ k
     indices=Vector{Vector{Int}}()
-    for i in 1:k-1
-      push!(indices,ns[(i-1)*b+1:b*i])
+    for i = 1:(k-1)
+        push!(indices, ns[((i-1)*b+1):(b*i)])
     end
-    push!(indices,ns[1+b*(k-1):end])
+    push!(indices, ns[(1+b*(k-1)):end])
     return indices
 end
 
@@ -317,7 +317,7 @@ end
 function average_firing_rate(populations; interval)
     spiketimes = SNN.spiketimes(populations)
     return sort(vcat(spiketimes...)) |> x -> fit(Histogram, x, interval).weights,
-    interval[1:end-1]
+    interval[1:(end-1)]
 end
 
 """
@@ -350,7 +350,7 @@ function compute_cross_correlogram(
         if shift_predictor
             spike_times2 = spike_times2 .+ 1000.0
         end
-        spike_train2, _ = bin_spiketimes(spike_times2; )
+        spike_train2, _ = bin_spiketimes(spike_times2;)
     else
         spike_train2 = spike_train1
     end
@@ -360,7 +360,7 @@ function compute_cross_correlogram(
 
     # Compute time lags
     bins = length(_corr) ÷ 2
-    lags = (-bins:bins) .* bin_width
+    lags = ((-bins):bins) .* bin_width
 
     # Trim the lags and auto-correlation to the specified max_lag
     lag_mask = abs.(lags) .<= max_lag
@@ -435,7 +435,8 @@ function bin_spiketimes(
     bin_width = 1.0ms,
     do_sparse = true,
 )
-    time_range = isempty(time_range) ? (0.0:bin_width:maximum(spike_times)+max_lag) : time_range
+    time_range =
+        isempty(time_range) ? (0.0:bin_width:(maximum(spike_times)+max_lag)) : time_range
     bin_width = step(time_range)
     spike_train = zeros(length(time_range))
     st = sort(spike_times) .- first(time_range)
@@ -452,14 +453,11 @@ function bin_spiketimes(
     end
 end
 
-function bin_spiketimes(
-    spike_times::Vector{Vector{Float32}};
-    kwargs...
-)
-    sample, r = bin_spiketimes(spike_times[1]; kwargs..., do_sparse=false)
+function bin_spiketimes(spike_times::Vector{Vector{Float32}}; kwargs...)
+    sample, r = bin_spiketimes(spike_times[1]; kwargs..., do_sparse = false)
     bin_array = zeros(length(spike_times), length(sample))
     for n in eachindex(spike_times)
-        bin_array[n,:] = bin_spiketimes(spike_times[n]; kwargs...)[1]
+        bin_array[n, :] = bin_spiketimes(spike_times[n]; kwargs...)[1]
     end
     return bin_array
 end
@@ -474,8 +472,8 @@ function isi(spiketimes::Vector{Float32})
     return diff(spiketimes)
 end
 
-function isi(pop::T; interval=nothing) where {T<:AbstractPopulation, }
-    return spiketimes(pop; interval=interval) |> isi
+function isi(pop::T; interval = nothing) where {T<:AbstractPopulation}
+    return spiketimes(pop; interval = interval) |> isi
 end
 
 # isi(spiketimes::NNSpikes, pop::Symbol) = read(spiketimes, pop) |> x -> diff.(x)
@@ -773,12 +771,18 @@ The function generates spike times for each neuron based on the rate vector and 
 An array of spike times for each neuron.
 
 """
-function sample_spikes(N, rate::Vector, interval::R; rate_factor=1f0, dt = 0.125f0) where {R<:AbstractRange}
+function sample_spikes(
+    N,
+    rate::Vector,
+    interval::R;
+    rate_factor = 1.0f0,
+    dt = 0.125f0,
+) where {R<:AbstractRange}
     spiketimes = Vector{Float32}[[] for _ = 1:N]
     @assert length(rate) == length(interval)
     steps = step(interval) / dt
     t = dt
-    for i = eachindex(interval)
+    for i in eachindex(interval)
         r = rate[i] * Hz
         for _ = 1:steps
             for n = 1:N
@@ -792,11 +796,18 @@ function sample_spikes(N, rate::Vector, interval::R; rate_factor=1f0, dt = 0.125
     spiketimes
 end
 
-function sample_inputs(N, rate::Matrix, interval::R; dt = 0.125f0, rate_factor=1f0, seed=nothing) where {R<:AbstractRange}
+function sample_inputs(
+    N,
+    rate::Matrix,
+    interval::R;
+    dt = 0.125f0,
+    rate_factor = 1.0f0,
+    seed = nothing,
+) where {R<:AbstractRange}
     !isnothing(seed) && (Random.seed!(seed))
     inputs = Vector{Float32}[]
     for i = 1:size(rate, 1)
-        for n in sample_spikes(N, rate[i, :], interval; dt = dt, rate_factor=rate_factor)
+        for n in sample_spikes(N, rate[i, :], interval; dt = dt, rate_factor = rate_factor)
             push!(inputs, n)
         end
     end
@@ -830,5 +841,4 @@ export spiketimes,
     st_order,
     isi_cv,
     CV_isi2
-    sample_spikes, 
-    sample_inputs
+sample_spikes, sample_inputs

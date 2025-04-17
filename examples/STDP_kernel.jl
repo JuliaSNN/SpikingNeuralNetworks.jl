@@ -1,8 +1,8 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 import SpikingNeuralNetworks: AdExParameter
-using Statistics, Random, StatsPlots
+using Statistics, Random, StatsSNNPlots
 
 
 ##

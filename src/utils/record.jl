@@ -383,13 +383,13 @@ function interpolated_record(p, sym)
     # ! adjust the end time to account for the added first element 
     _end = (size(v_dt)[end] - 1) / sr
     # ! this is the recorded time (in ms), it assumes all recordings are contained in v_dt
-    r_v = 0:1/sr:_end
+    r_v = 0:(1/sr):_end
 
     # Set NoInterp in the singleton dimensions:
     interp = get_interpolator(v_dt)
     v = interpolate(v_dt, interp)
 
-    ax = map(1:length(size(v_dt))-1) do i
+    ax = map(1:(length(size(v_dt))-1)) do i
         axes(v_dt, i)
     end
     y = scale(v, ax..., r_v)

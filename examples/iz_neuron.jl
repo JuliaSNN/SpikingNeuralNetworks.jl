@@ -1,4 +1,4 @@
-using Plots
+using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -10,7 +10,7 @@ TC1 = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.02, b = 0.25, c = -65, d =
 TC2 = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.02, b = 0.25, c = -65, d = 0.05))
 RZ = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.1, b = 0.26, c = -65, d = 2))
 LTS = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.1, b = 0.25, c = -65, d = 2))
-P = (;RS, IB, CH, FS, TC1, TC2, RZ, LTS)
+P = (; RS, IB, CH, FS, TC1, TC2, RZ, LTS)
 model = merge_models(; P..., name = "IZ_neurons")
 
 SNN.monitor!(model.pop, [:v])
@@ -22,12 +22,12 @@ for t = 0:(T/SNN.dt)
     TC1.I = [(t < 0.2T) ? 0mV : 2mV]
     TC2.I = [(t < 0.2T) ? -30mV : 0mV]
     RZ.I = [(0.5T < t < 0.6T) ? 10mV : 0mV]
-    SNN.sim!(;model, duration = SNN.dt)
+    SNN.sim!(; model, duration = SNN.dt)
 end
 
-plots =map(P) do p
-    SNN.vecplot(p, :v, interval=0:2s)
+SNNPlots = map(P) do p
+    SNN.vecplot(p, :v, interval = 0:2s)
 end
 
 
-plot(plots..., layout = (4, 2), size = (800, 600), title = "IZ Neurons")
+plot(SNNPlots..., layout = (4, 2), size = (800, 600), title = "IZ Neurons")

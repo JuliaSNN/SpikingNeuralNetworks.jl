@@ -25,7 +25,12 @@ function update_weights!(c::C, j, i, w) where {C<:AbstractConnection}
     end
 end
 
-function update_weights!(c::C, js::Vector, is::Vector, w::Real) where {C<:AbstractConnection}
+function update_weights!(
+    c::C,
+    js::Vector,
+    is::Vector,
+    w::Real,
+) where {C<:AbstractConnection}
     @unpack colptr, I, W = c
     for j in js
         for s = colptr[j]:(colptr[j+1]-1)
@@ -88,7 +93,7 @@ end
 
 function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
     syn_sign = sign(μ)
-    if syn_sign == -1 
+    if syn_sign == -1
         @warn "You are using negative synaptic weights "
         μ = abs(μ)
     end
@@ -97,7 +102,7 @@ function sparse_matrix(w, Npre, Npost, dist, μ, σ, ρ)
         my_dist = getfield(Distributions, dist)
         w = rand(my_dist(μ, σ), Npost, Npre) # Construct a random dense matrix with dimensions post.N x pre.N
         w[[n for n in eachindex(w[:]) if rand() > ρ]] .= 0
-        w[w.<=0] .= 0
+        w[w .<= 0] .= 0
         w = sparse(w)
     else
         # if w is defined, convert it to a sparse matrix
@@ -335,7 +340,7 @@ function extract_items(
     function special_key(k)
         k == :pop || k == :syn || k == :stim
     end
-        
+
     v = container
     if typeof(v) <: AbstractPopulation
         @assert !haskey(pop, root) "Population $(root) already exists"

@@ -87,9 +87,9 @@ function _args_model(args, model)
     pop = Vector{AbstractPopulation}([])
     syn = Vector{AbstractConnection}([])
     stim = Vector{AbstractStimulus}([])
-    haskey(model, :pop) && append!(pop,model.pop)
-    haskey(model, :syn) && append!(syn,model.syn)
-    haskey(model, :stim) && append!(stim,model.stim)
+    haskey(model, :pop) && append!(pop, model.pop)
+    haskey(model, :syn) && append!(syn, model.syn)
+    haskey(model, :stim) && append!(stim, model.stim)
     for arg in args
         if typeof(arg) <: AbstractPopulation
             push!(pop, arg)
@@ -111,14 +111,14 @@ function _args_model(args, model)
     return pop, syn, stim
 end
 
-function train!(args...; model=(time=Time(), name="Model"),  kwargs...)
+function train!(args...; model = (time = Time(), name = "Model"), kwargs...)
     pop, syn, stim = _args_model(args, model)
     mytime = train!(pop, syn, stim; time = model.time, kwargs...)
     update_time!(model.time, mytime)
     return get_time(model.time)
 end
 
-function sim!(args...; model=(time=Time(), name="Model"), kwargs...)
+function sim!(args...; model = (time = Time(), name = "Model"), kwargs...)
     pop, syn, stim = _args_model(args, model)
     mytime = sim!(pop, syn, stim; time = model.time, kwargs...)
     update_time!(model.time, mytime)

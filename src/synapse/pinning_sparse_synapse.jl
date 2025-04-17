@@ -30,10 +30,17 @@ function PINningSparseSynapse(pre, post; μ = 1.5, p = 0.0, α = 1, kwargs...)
     P = α .* (I .== J)
     f, q = zeros(post.N), zeros(post.N)
 
-    targets = Dict{Symbol,Any}(:fire => pre.id, :post => post.id, :pre=> pre.id, :type=>:PinningSparseSynapse)
-    @views g, v_post =  synaptic_target(targets, post, :g, nothing)
+    targets = Dict{Symbol,Any}(
+        :fire => pre.id,
+        :post => post.id,
+        :pre => pre.id,
+        :type=>:PinningSparseSynapse,
+    )
+    @views g, v_post = synaptic_target(targets, post, :g, nothing)
 
-    PINningSparseSynapse(; @symdict(colptr, I, W, rI, rJ, g, P, q, f)..., kwargs...,
+    PINningSparseSynapse(;
+        @symdict(colptr, I, W, rI, rJ, g, P, q, f)...,
+        kwargs...,
         targets = targets,
     )
 end

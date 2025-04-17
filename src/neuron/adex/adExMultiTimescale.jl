@@ -1,5 +1,9 @@
 
-@snn_kw mutable struct AdExMultiTimescaleParameter{FT = Float32, VFT = Vector{Float32}, VIT=Vector{Int}} <: AbstractAdExParameter
+@snn_kw mutable struct AdExMultiTimescaleParameter{
+    FT = Float32,
+    VFT = Vector{Float32},
+    VIT=Vector{Int},
+} <: AbstractAdExParameter
     τm::FT = C / gL # Membrane time constant
     Vt::FT = -50mV # Membrane potential threshold
     Vr::FT = -70.6mV # Reset potential
@@ -60,27 +64,23 @@ end
     records::Dict = Dict()
 end
 
-function synaptic_target(targets::Dict, post::AdExMultiTimescale, sym::Symbol, target::Int) 
+function synaptic_target(targets::Dict, post::AdExMultiTimescale, sym::Symbol, target::Int)
     g = getfield(post, sym)[target]
     v_post = getfield(post, :v)
     push!(targets, :sym => Symbol(string(sym, target)))
     return g, v_post
 end
 
-function AdExMultiTimescale(
-    N::Int;
-    param ::AdExMultiTimescaleParameter,
-    kwargs...
-) 
+function AdExMultiTimescale(N::Int; param::AdExMultiTimescaleParameter, kwargs...)
     @assert length(param.τr) == length(param.τd) "Excitatory synapse parameters must have the same length"
     @assert length(param.τr) == length(param.exc_receptors) + length(param.inh_receptors) "There must be the same number of timescale parameters as receptors"
     # Create a new AdExMultiTimescale neuron model with the given parameters.
     return AdExMultiTimescale(
         N = N,
         param = param,
-        h = [zeros(N) for n in 1:length(param.τr)],
+        h = [zeros(N) for n = 1:length(param.τr)],
         g = zeros(Float32, N, length(param.τr));
-        kwargs...
+        kwargs...,
     )
 end
 
@@ -98,7 +98,11 @@ end
 # end
 
 
-function update_synapses!(p::AdExMultiTimescale, param::AdExMultiTimescaleParameter, dt::Float32)
+function update_synapses!(
+    p::AdExMultiTimescale,
+    param::AdExMultiTimescaleParameter,
+    dt::Float32,
+)
     @unpack N, g, h = p
     @unpack τr, τd = param
 
@@ -114,7 +118,10 @@ function update_synapses!(p::AdExMultiTimescale, param::AdExMultiTimescaleParame
 
 end
 
-@inline function synaptic_current!(p::AdExMultiTimescale, param::AdExMultiTimescaleParameter)
+@inline function synaptic_current!(
+    p::AdExMultiTimescale,
+    param::AdExMultiTimescaleParameter,
+)
     @unpack N, g, h, g, v, syn_curr = p
     @unpack τr, τd = param
 
@@ -128,10 +135,10 @@ end
             gsyn = param.gsyn_i
         end
         @simd for i ∈ 1:N
-            syn_curr[i] +=  gsyn * g[i, n] * (v[i] - E_rev)
+            syn_curr[i] += gsyn * g[i, n] * (v[i] - E_rev)
         end
     end
-    return 
+    return
 end
 
 export AdExMultiTimescale, AdExMultiTimescaleParameter, AdExParameterMultiTimescale

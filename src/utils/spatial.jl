@@ -158,28 +158,35 @@ Create a linear network with Gaussian-shaped connections.
 # Returns
 - `W::Matrix{Float32}`: A matrix containing the weights of the connections.
 """
-function linear_network(N; σ_w=0.38, w_max=2.0)
+function linear_network(N; σ_w = 0.38, w_max = 2.0)
     # Function to calculate wθ^sE
     function wθ_sE(θ_j, θ_i, w_0, w_, σ_w)
-        return w_0 + (w_ - w_0) * exp(-(min(abs(θ_j - θ_i), 2π - abs(θ_j - θ_i)))^2 / (2 * σ_w^2))
+        return w_0 +
+               (w_ - w_0) * exp(-(min(abs(θ_j - θ_i), 2π - abs(θ_j - θ_i)))^2 / (2 * σ_w^2))
     end
 
     # Function to calculate w_0
     function w_0(w, σ_w)
-        return w * σ_w * (erf(π / (sqrt(2) * σ_w)) - sqrt(2π)) / (σ_w * erf(π / (sqrt(2) * σ_w)) - sqrt(2π))
+        return w * σ_w * (erf(π / (sqrt(2) * σ_w)) - sqrt(2π)) /
+               (σ_w * erf(π / (sqrt(2) * σ_w)) - sqrt(2π))
     end
 
     w_norm = w_0(w_max, σ_w)
 
-    neuron_position = [i * 2π / N for i in 1:N]
+    neuron_position = [i * 2π / N for i = 1:N]
     W = zeros(N, N)
-    for i in 1:N
-        for j in 1:N
+    for i = 1:N
+        for j = 1:N
             W[i, j] = wθ_sE(neuron_position[i], neuron_position[j], w_norm, w_max, σ_w)
-            W[j, j] = 0f0
+            W[j, j] = 0.0f0
         end
     end
     return W
 end
 
-export create_spatial_structure, periodic_distance, compute_connections, neurons_within_area, neurons_outside_area, linear_network
+export create_spatial_structure,
+    periodic_distance,
+    compute_connections,
+    neurons_within_area,
+    neurons_outside_area,
+    linear_network

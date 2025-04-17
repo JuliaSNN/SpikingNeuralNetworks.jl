@@ -34,7 +34,7 @@ for p in projections
     p.fireJ[1] = false
 end
 SNN.sim!([E], projections, duration = 200)
-using Plots
+using SNNPlots
 
 E.records
 

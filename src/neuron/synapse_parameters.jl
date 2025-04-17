@@ -36,7 +36,7 @@ SomaGlu = Glutamatergic(
     ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 100.0, g0 = 0.15, nmda = 1.0f0),
 )
 SomaGABA = GABAergic(
-    Receptor(E_rev = -70.0, τr = 0.5, τd = 10.0, g0 = 2.),
+    Receptor(E_rev = -70.0, τr = 0.5, τd = 10.0, g0 = 2.0),
     Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.006), # τd = 100.0
 )
 SomaNMDA = NMDAVoltageDependency()
@@ -53,11 +53,12 @@ Gaba_CANAHP = GABAergic(
     Receptor(E_rev = -90.0, τr = 90ms, τd = 160ms, g0 = 5e-4mS/cm^2), # τd = 100.0
 )
 Synapse_CANAHP = Synapse(Glu_CANAHP, Gaba_CANAHP)
-αs_CANAHP = [1.,0.275/ms, 1., 0.015/ms]
+αs_CANAHP = [1.0, 0.275/ms, 1.0, 0.015/ms]
 Mg_mM = 1.5mM
-nmda_b = 3.57   
-nmda_k = -0.063 
+nmda_b = 3.57
+nmda_k = -0.063
 NMDA_CANAHP = NMDAVoltageDependency(mg = Mg_mM/mM, b = nmda_b, k = nmda_k)
 
 
-export SomaNMDA, SomaSynapse, TripodSomaSynapse, TripodDendSynapse, EyalNMDA, NMDA_CANAHP, Synapse_CANAHP
+export SomaNMDA,
+    SomaSynapse, TripodSomaSynapse, TripodDendSynapse, EyalNMDA, NMDA_CANAHP, Synapse_CANAHP

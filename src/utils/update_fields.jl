@@ -5,17 +5,17 @@ macro update(base, update_expr)
     if update_expr.head == :block
         # if a block, extract the expressions
         updates = update_expr.args
-        
+
         # Start with the base configuration
         # The :($(esc(base))) is used to ensure the base is evaluated in the correct context (the macro's context)
         current_config = :($(esc(base)))
-        
+
         # Process each update expression in the block
         for update_expr in updates
             isa(update_expr, LineNumberNode) && continue  # Ensure it's an expression
 
             # Extract the left-hand side and right-hand side, the left-hand side is the field to update, the right hand side is the new value
-            lhs, rhs = update_expr.args  
+            lhs, rhs = update_expr.args
 
             # Escape the value to ensure it's evaluated in the correct context
             value = :($(esc(rhs)))
@@ -68,7 +68,7 @@ function update_with_merge(base_config::NamedTuple, path::Vector{Symbol}, value)
         sub = getfield(base_config, key)
         # Recursively update the nested subfield
         updated_sub = update_with_merge(sub, path[2:end], value)
-        
+
         # Merge the updated subfield back into the base
         return merge(base_config, (key => updated_sub,))
     end
@@ -77,17 +77,15 @@ end
 # Example base configuration
 base_config = (
     network = (
-        connections = (
-            Th_to_E = (p=1, μ=0.5),
-        ),
+        connections = (Th_to_E = (p = 1, μ = 0.5),),
         plasticity = (
             iSTDP_potential = (η = 0.01, v0 = 2, τy = 50, Wmax = 100.0, Wmin = 1.0),
         ),
     ),
     noise = (
-        exc_soma = (param=1.0, μ=1.0, neurons="ALL", name="noise_exc_soma"),
-        exc_dend = (param=1.0, μ=1.0, neurons="ALL", name="noise_exc_dend"),
-    )
+        exc_soma = (param = 1.0, μ = 1.0, neurons = "ALL", name = "noise_exc_soma"),
+        exc_dend = (param = 1.0, μ = 1.0, neurons = "ALL", name = "noise_exc_dend"),
+    ),
 )
 
 
@@ -101,5 +99,5 @@ function update_func(new_value, config)
     return new_config
 end
 
-new_config  = update_func(10, base_config)
+new_config = update_func(10, base_config)
 @show new_config.network.connections.Th_to_E.p  ## should be 10

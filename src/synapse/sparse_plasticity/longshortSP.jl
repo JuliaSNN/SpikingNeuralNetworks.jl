@@ -36,9 +36,9 @@ end
 function plasticity!(c::AbstractSparseSynapse, param::LSSPParameter, dt::Float32, T::Time)
     plasticity!(c, param.long, c.plasticity.long, dt, T)
     plasticity!(c, param.short, c.plasticity.short, dt, T)
-end
+end#======================================================================================#
 
-#======================================================================================#
+
 ## Overwrite the record and monitor functions for LSSP, this is necessary because the LSSPVariables contains two different plasticity variables in a single object.
 
 function record_plast!(

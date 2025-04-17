@@ -39,12 +39,4 @@ include("analysis/targets.jl")
 include("neuron/neurons.jl")
 include("synapse/synapses.jl")
 include("stimulus/stimuli.jl")
-
-export symdict
-function __init__()
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("plots/plot.jl")
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("plots/extra_plots.jl")
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("plots/stdp_plots.jl")
-end
-
 end

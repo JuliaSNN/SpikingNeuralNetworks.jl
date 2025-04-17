@@ -9,7 +9,7 @@
 } <: AbstractIFParameter
     ## Neuron parameters
     area::FT = 5e-4cm^2
-    C::FT = 1.0uF /cm^2 # Membrane capacitance
+    C::FT = 1.0uF / cm^2 # Membrane capacitance
     Vt::FT = -50mV # Membrane potential threshold
     Vr::FT = -65mV # Resting membrane potential 
     # Vmean::FT = -57.5mV
@@ -26,11 +26,11 @@
     VAHP::FT = -90mV
     gAHP::FT = 0mS/cm^2
     αAHP::FT = 0.125uM / ms
-    βAHP::FT = 0.025uM / ms 
+    βAHP::FT = 0.025uM / ms
     γAHP::FT = 1
 
     VCAN::FT = 30mV
-    gCAN::FT = 0mS /cm^2
+    gCAN::FT = 0mS / cm^2
     βCAN::FT = 0.025/ms
     αCAN::FT = 0.03125uM / ms
     γCAN::FT = 1
@@ -60,7 +60,7 @@ end
 
     # Neuron parameters
     param::IF_CANAHPParameter = IF_CANAHPParameter()
-    N::Int32 = 100 
+    N::Int32 = 100
     v::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
     fire::VBT = zeros(Bool, N) # Store spikes
     tabs::VIT = ones(N) # Membrane time constant
@@ -100,7 +100,7 @@ function update_spike!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32)
     for i = 1:N
         fire[i] = v[i] > Vt
         v[i] = ifelse(fire[i], Vr, v[i])
-        Ca[i] = Ca[i]+ ΔCa # Increase in Calcium concentration
+        Ca[i] = Ca[i] + ΔCa # Increase in Calcium concentration
         tabs[i] = ifelse(fire[i], round(Int, τabs / dt), tabs[i]) # Absolute refractory period
     end
     # # Adaptation current
@@ -112,9 +112,23 @@ function update_spike!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32)
     # end
 end
 
-function update_neuron!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32) 
+function update_neuron!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32)
     @unpack N, v, I, tabs, fire, Ca, pCAN, pAHP, syn_curr = p
-    @unpack gCAN, area, gAHP, αAHP, βAHP, γAHP, VAHP, αCAN, βCAN, VCAN, gL, VL, Ca0, τCa, C = param
+    @unpack gCAN,
+    area,
+    gAHP,
+    αAHP,
+    βAHP,
+    γAHP,
+    VAHP,
+    αCAN,
+    βCAN,
+    VCAN,
+    gL,
+    VL,
+    Ca0,
+    τCa,
+    C = param
     # @inbounds 
 
     for i = 1:N
@@ -125,12 +139,12 @@ function update_neuron!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32)
         end
 
         Ca[i] = (Ca0 - Ca[i])/τCa
-        pCAN[i] = (1- pCAN[i])*(αCAN*Ca[i] + βCAN) - βCAN
-        pAHP[i] = (1- pAHP[i])*(αAHP*Ca[i] + βAHP) - βAHP
-        I_ionic = let 
-            I_L =   gL *area* (v[i] - VL)  # leakage
-            I_CAN = gCAN * area* pCAN[i] * (v[i] - VCAN) # calcium current
-            I_AHP = gAHP * area* pAHP[i] * (v[i] - VAHP) # calcium current
+        pCAN[i] = (1 - pCAN[i])*(αCAN*Ca[i] + βCAN) - βCAN
+        pAHP[i] = (1 - pAHP[i])*(αAHP*Ca[i] + βAHP) - βAHP
+        I_ionic = let
+            I_L = gL * area * (v[i] - VL)  # leakage
+            I_CAN = gCAN * area * pCAN[i] * (v[i] - VCAN) # calcium current
+            I_AHP = gAHP * area * pAHP[i] * (v[i] - VAHP) # calcium current
             I_L + I_CAN + I_AHP
         end
 
@@ -181,7 +195,9 @@ end
         @unpack gsyn, E_rev, nmda = syn[r]
         if nmda > 0.0f0
             @simd for i ∈ 1:N
-                    syn_curr[i] += area * gsyn * g[i, r] * (v[i] - E_rev) /  (1.0f0 + (mg / b) * exp32(k * (v[i])))
+                syn_curr[i] +=
+                    area * gsyn * g[i, r] * (v[i] - E_rev) /
+                    (1.0f0 + (mg / b) * exp32(k * (v[i])))
             end
         else
             @simd for i ∈ 1:N
@@ -189,7 +205,7 @@ end
             end
         end
     end
-    return 
+    return
 end
 
 export IF_CANAHP, IF_CANAHPParameter
