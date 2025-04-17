@@ -69,3 +69,5 @@ plot!(
     legend = :topright,
 )
 ##
+inputs = SNN.Poisson(; N = 350, param = SNN.PoissonParameter(rate = 10.5Hz))
+@show(inputs)
