@@ -57,6 +57,26 @@ dt = 0.125ms
 @assert Ω * ampere ≈ voltage
 @assert ampere * second / voltage == farad
 
+"""
+    @load_units
+    Load all the units defined in the module into the current scope.
+    This macro generates a block of expressions that assign the unit constants
+        
+    The base units in the module are:
+    - cm : centimeters
+    - ms : milliseconds
+    - kHz : kilohertz
+    - mV : millivolts
+    - pA : picoamperes
+    - pF : picofarads
+    - nS : nanosiemens
+    - GΩ : gigaohms
+    - uM : micromolar
+
+    The derived units in the module are obtained as multiple or division of the base units. 
+
+    The standard integration time step is 0.125ms, which is used in the simulation.
+"""
 macro load_units()
     exs = map((
         :metre,
