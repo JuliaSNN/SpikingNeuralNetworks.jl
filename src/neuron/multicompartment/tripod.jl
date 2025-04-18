@@ -92,7 +92,7 @@ end
 function synaptic_target(targets::Dict, post::Tripod, sym::Symbol, target::Symbol)
     sym = Symbol("$(sym)_$target")
     v = Symbol("v_$target")
-    g = getfield(post, _sym)
+    g = getfield(post, sym)
     hasfield(typeof(post), v) && (v_post = getfield(post, v))
 
     push!(targets, :sym => sym)
