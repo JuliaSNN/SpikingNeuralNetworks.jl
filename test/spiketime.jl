@@ -8,7 +8,7 @@ inputs.neurons
 
 st = Identity(N = max_neuron(inputs))
 stim = SpikeTimeStimulusIdentity(st, :g, param = inputs)
-syn = SpikingSynapse(st, st, :g, w = w, LTP = STDPGerstner())
+syn = SpikingSynapse(st, st, :g, w = w, LTPParam = STDPGerstner())
 model = merge_models(pop = st, stim = stim, syn = syn, silent = true)
 SNN.monitor!(model.pop..., [:fire])
 SNN.monitor!(model.syn..., [:tpre, :tpost, :W])
