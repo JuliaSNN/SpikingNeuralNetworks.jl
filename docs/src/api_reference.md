@@ -4,34 +4,38 @@
 CurrentModule = SpikingNeuralNetworks
 ```
 
-## Types
+```@contents
+Pages = ["api_reference.md"]
+```
 
-### Populations
+
+## Populations
 ```@autodocs
 Modules = [SpikingNeuralNetworks]
 Order   = [:type]
 Filter = t -> typeof(t) !== SNN.AbstractPopulation && t <: SNN.AbstractPopulation
 ```
 
-### Synapses
+## Synapses
 ```@autodocs
 Modules = [SpikingNeuralNetworks]
 Order   = [:type]
 Filter = t -> typeof(t) !== SNN.AbstractConnection && t <: SNN.AbstractConnection
 ```
 
-### Stimuli
+
+## Stimuli
 ```@autodocs
 Modules = [SpikingNeuralNetworks]
 Order   = [:type]
 Filter = t -> typeof(t) !== SNN.AbstractStimulus && t <: SNN.AbstractStimulus
 ```
 
-## Other types
+## Plasticity
 ```@autodocs
 Modules = [SpikingNeuralNetworks]
 Order   = [:type]
-Filter = t -> !(t <: SNN.AbstractConnection || t <: SNN.AbstractPopulation || t <: SNN.AbstractStimulus)
+Filter = t -> t <: SNN.SpikingSynapseParameter
 ```
 
 ## Functions
@@ -40,6 +44,14 @@ Filter = t -> !(t <: SNN.AbstractConnection || t <: SNN.AbstractPopulation || t 
 Modules = [SpikingNeuralNetworks]
 Order   = [:function]
 ```
+
+## Other types
+```@autodocs
+Modules = [SpikingNeuralNetworks]
+Order   = [:type]
+Filter = t -> !(t <: SNN.AbstractConnection || t <: SNN.AbstractPopulation || t <: SNN.AbstractStimulus || t <: SNN.SpikingSynapseParameter)
+```
+
 
 ## Helper macros
 
