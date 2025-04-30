@@ -35,7 +35,7 @@ Filter = t -> typeof(t) !== SNN.AbstractStimulus && t <: SNN.AbstractStimulus
 ```@autodocs
 Modules = [SpikingNeuralNetworks]
 Order   = [:type]
-Filter = t -> t <: SNN.SpikingSynapseParameter
+Filter = t -> t <: SNN.PlasticityParameter
 ```
 
 ## Functions
@@ -49,7 +49,7 @@ Order   = [:function]
 ```@autodocs
 Modules = [SpikingNeuralNetworks]
 Order   = [:type]
-Filter = t -> !(t <: SNN.AbstractConnection || t <: SNN.AbstractPopulation || t <: SNN.AbstractStimulus || t <: SNN.SpikingSynapseParameter)
+Filter = t -> !(t <: SNN.AbstractConnection || t <: SNN.AbstractPopulation || t <: SNN.AbstractStimulus || t <: SNN.PlasticityParameter)
 ```
 
 

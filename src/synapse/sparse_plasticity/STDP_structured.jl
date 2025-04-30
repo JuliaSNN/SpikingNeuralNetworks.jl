@@ -3,7 +3,7 @@
 abstract type STDPStructuredParameter <: STDPParameter end
 
 @doc """
-    SymmetricSTDP{FT = Float32}
+    STDPSymmetric{FT = Float32}
 
     Symmetric STDP rules described in:
     `Structured stabilization in recurrent neural circuits through inhibitory synaptic plasticity` 
@@ -15,7 +15,7 @@ abstract type STDPStructuredParameter <: STDPParameter end
 
     where ``A_{post}`` and ``A_{pre}`` are the learning rates for post and pre-synaptic spikes, respectively, and ``\tau_{post}`` and ``\tau_{pre}`` are the time constants for post and pre-synaptic traces, respectively.
 """
-SymmetricSTDP
+STDPSymmetric
 @snn_kw struct STDPSymmetric{FT = Float32} <: STDPStructuredParameter
     A_x::FT = 3e-2    # LTP learning rate (inhibitory synapses)
     A_y::FT = 3e-2    # LTD learning rate (inhibitory synapses)
