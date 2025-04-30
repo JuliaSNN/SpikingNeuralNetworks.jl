@@ -17,7 +17,7 @@ Contains parameters for the voltage-dependent Spike-Timing Dependent Plasticity 
 """
 vSTDPParameter
 
-@snn_kw struct vSTDPParameter{FT = Float32} <: SpikingSynapseParameter
+@snn_kw struct vSTDPParameter{FT = Float32} <: LTPParameter
     A_LTD::FT = 8 * 10e-5pA / mV
     A_LTP::FT = 14 * 10e-5pA / (mV * mV)
     θ_LTD::FT = -70mV
@@ -30,13 +30,14 @@ vSTDPParameter
     active::Vector{Bool} = [true]
 end
 
-@snn_kw struct vSTDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
+@snn_kw struct vSTDPVariables{VFT = Vector{Float32},IT = Int} <: LTPVariables
     ## Plasticity variables
     Npost::IT
     Npre::IT
     u::VFT = zeros(Npost) # presynaptic spiking time
     v::VFT = zeros(Npost) # postsynaptic spiking time
     x::VFT = zeros(Npost) # postsynaptic spiking time
+    active::Vector{Bool} = [true]
 end
 
 function plasticityvariables(param::T, Npre, Npost) where {T<:vSTDPParameter}
@@ -67,16 +68,6 @@ where if `τ > 0.0f0` then normalization will occur at intervals approximately e
 After all updates, the synaptic weights are clamped between `Wmin` and `Wmax`.
 
 """
-function plasticity!(
-    c::PT,
-    param::vSTDPParameter,
-    dt::Float32,
-    T::Time,
-) where {PT<:AbstractSparseSynapse}
-    @unpack active = param
-    !active[1] && return
-    plasticity!(c, param, c.plasticity, dt, T)
-end
 
 function plasticity!(
     c::PT,

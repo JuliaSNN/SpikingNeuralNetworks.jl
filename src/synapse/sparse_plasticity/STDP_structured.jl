@@ -1,6 +1,6 @@
 # Define the struct to hold synapse parameters for both Exponential and Mexican Hat STDP
 # STDP Parameters Structure
-abstract type STDPStructuredAbstractParameter <: STDPAbstractParameter end
+abstract type STDPStructuredParameter <: STDPParameter end
 
 @doc """
     SymmetricSTDP{FT = Float32}
@@ -16,7 +16,7 @@ abstract type STDPStructuredAbstractParameter <: STDPAbstractParameter end
     where ``A_{post}`` and ``A_{pre}`` are the learning rates for post and pre-synaptic spikes, respectively, and ``\tau_{post}`` and ``\tau_{pre}`` are the time constants for post and pre-synaptic traces, respectively.
 """
 SymmetricSTDP
-@snn_kw struct SymmetricSTDP{FT = Float32} <: STDPStructuredAbstractParameter
+@snn_kw struct STDPSymmetric{FT = Float32} <: STDPStructuredParameter
     A_x::FT = 3e-2    # LTP learning rate (inhibitory synapses)
     A_y::FT = 3e-2    # LTD learning rate (inhibitory synapses)
     τ_x::FT = 50ms       # Time constant for pre-synaptic spike trace
@@ -27,7 +27,7 @@ SymmetricSTDP
     Wmin::FT = 0.0pF    # Min weight (negative for inhibition)
 end
 
-@snn_kw struct AntiSymmetricSTDP{FT = Float32} <: STDPStructuredAbstractParameter
+@snn_kw struct STDPAntiSymmetric{FT = Float32} <: STDPStructuredParameter
     A_y::FT = 3e-2     # LTD learning rate (inhibitory synapses)
     A_x::FT = 3e-2    # LTP learning rate (inhibitory synapses)
     τ_x::FT = 50ms       # Time constant for pre-synaptic spike trace
@@ -53,23 +53,15 @@ function plasticityvariables(
     param::T,
     Npre,
     Npost,
-) where {T<:STDPStructuredAbstractParameter}
+) where {T<:STDPStructuredParameter}
     return STDPStructuredVariables(Npre = Npre, Npost = Npost)
 end
 
-function plasticity!(
-    c::PT,
-    param::mySTDP,
-    dt::Float32,
-    T::Time,
-) where {PT<:AbstractSparseSynapse,mySTDP<:STDPStructuredAbstractParameter}
-    plasticity!(c, param, c.plasticity, dt, T)
-end
 
 # SymmetricSTDP and AntiSymmetricSTDP
 function plasticity!(
     c::PT,
-    param::AntiSymmetricSTDP,
+    param::STDPAntiSymmetric,
     plasticity::STDPStructuredVariables,
     dt::Float32,
     T::Time,
@@ -126,7 +118,7 @@ end
 
 function plasticity!(
     c::PT,
-    param::SymmetricSTDP,
+    param::STDPSymmetric,
     plasticity::STDPStructuredVariables,
     dt::Float32,
     T::Time,
@@ -186,4 +178,4 @@ function plasticity!(
 end
 # Function to implement STDP update rule
 
-export SymmetricSTDP, AntiSymmetricSTDP
+export STDPSymmetric, STDPAntiSymmetric

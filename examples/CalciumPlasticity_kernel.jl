@@ -22,7 +22,7 @@ SNN.stdp_weight_decorrelated(stdp_param)
 
 ##
 
-stdp_param = iSTDPParameterTime()
+stdp_param = iSTDPTime()
 SNN.stdp_kernel(stdp_param, fill = false)
 
 ##
