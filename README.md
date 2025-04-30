@@ -1,6 +1,5 @@
 # SpikingNeuralNetworks
-![Build_state](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/workflows/CI/badge.svg) [![documentation][docs-img]](https://juliasnn.github.io/SpikingNeuralNetworks.jl/)
-
+![Build_state](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/workflows/CI/badge.svg) [![documentation][docs-img]][docs-url]
 ## Installation
 
 ```julia
