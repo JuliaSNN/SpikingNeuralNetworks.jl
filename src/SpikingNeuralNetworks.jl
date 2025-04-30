@@ -11,6 +11,7 @@ using LinearAlgebra
 using SparseArrays
 using Requires
 using Documenter
+using IterTools
 using UnPack
 using Random
 using Logging

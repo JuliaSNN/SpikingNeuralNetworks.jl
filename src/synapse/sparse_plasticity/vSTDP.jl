@@ -1,3 +1,22 @@
+"""
+    vSTDPParameter{FT = Float32} <: SpikingSynapseParameter
+
+Contains parameters for the voltage-dependent Spike-Timing Dependent Plasticity (vSTDP) model.
+
+# Fields
+- `A_LTD::FT`: Long Term Depression learning rate.
+- `A_LTP::FT`: Long Term Potentiation learning rate.
+- `θ_LTD::FT`: LTD threshold.
+- `θ_LTP::FT`: LTP threshold.
+- `τu::FT`: Time constant for the pre-synaptic spike trace.
+- `τv::FT`: Time constant for the post-synaptic membrane trace.
+- `τx::FT`: Time constant for the variable `x`.
+- `Wmax::FT`: Maximum synaptic weight.
+- `Wmin::FT`: Minimum synaptic weight.
+- `active::Vector{Bool}`: Flag to activate or deactivate the plasticity rule.
+"""
+vSTDPParameter
+
 @snn_kw struct vSTDPParameter{FT = Float32} <: SpikingSynapseParameter
     A_LTD::FT = 8 * 10e-5pA / mV
     A_LTP::FT = 14 * 10e-5pA / (mV * mV)
@@ -72,33 +91,35 @@ function plasticity!(
     # R(x::Float32) = x < 0.0f0 ? 0.0f0 : x
 
     # update pre-synaptic spike trace
-    @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
-        @inbounds @fastmath x[j] += dt * (-x[j] + fireJ[j]) / τx
-    end
+   @fastmath @inbounds begin 
+        @turbo for j in eachindex(fireJ) # Iterate over all columns, j: presynaptic neuron
+            x[j] += dt * (-x[j] + fireJ[j]) / τx
+        end
 
-    Is = 1:(length(rowptr)-1)
-    @turbo for i in eachindex(Is) # Iterate over postsynaptic neurons
-        @inbounds u[i] += dt * (-u[i] + v_post[i]) / τu # postsynaptic neuron
-        @inbounds v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron
-    end
-    # @simd for s = colptr[j]:(colptr[j+1]-1) 
-    @inbounds for j in eachindex(fireJ) # Iterate over presynaptic neurons
-        if fireJ[j]
+        Is = 1:(length(rowptr)-1)
+        @turbo for i in eachindex(Is) # Iterate over postsynaptic neurons
+            u[i] += dt * (-u[i] + v_post[i]) / τu # postsynaptic neuron
+            v[i] += dt * (-v[i] + v_post[i]) / τv # postsynaptic neuron
+        end
+        # @simd for s = colptr[j]:(colptr[j+1]-1) 
+        Threads.@threads :static for j in eachindex(fireJ) # Iterate over presynaptic neurons
+            if fireJ[j]
+                @turbo for s = colptr[j]:(colptr[j+1]-1)
+                    W[s] += -A_LTD * clamp(u[I[s]] - θ_LTD, 0.0f0, Inf)
+                end
+            end
             @turbo for s = colptr[j]:(colptr[j+1]-1)
-                @fastmath W[s] += -A_LTD * clamp(u[I[s]] - θ_LTD, 0.0f0, Inf)
+                W[s] +=
+                    A_LTP *
+                    x[j] *
+                    clamp(v[I[s]] - θ_LTD, 0.0f0, Inf) *
+                    clamp(v_post[I[s]] - θ_LTP, 0.0f0, Inf)
             end
         end
-        @turbo for s = colptr[j]:(colptr[j+1]-1)
-            @fastmath W[s] +=
-                A_LTP *
-                x[j] *
-                clamp(v[I[s]] - θ_LTD, 0.0f0, Inf) *
-                clamp(v_post[I[s]] - θ_LTP, 0.0f0, Inf)
-        end
-    end
 
-    @turbo for i in eachindex(W)
-        @inbounds W[i] = clamp(W[i], Wmin, Wmax)
+        @turbo for i in eachindex(W)
+            W[i] = clamp(W[i], Wmin, Wmax)
+        end
     end
 end
 
