@@ -114,30 +114,6 @@ function record_fire!(
 end
 
 """
-Store values into the dictionary named `records` in the object given 
-
-# Arguments
-- `obj`: An object whose values are to be recorded
-
-"""
-function record!(obj::P, T::Time) where {P<:Union{AbstractPopulation,AbstractStimulus}}
-    @unpack records = obj
-    haskey(records, :fire) &&
-        record_fire!(obj.fire, obj.records[:fire], T, records[:indices])
-    # timestamp::Vector{Float32} = records[:timestamp]
-    # if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
-    #     push!(timestamp, get_time(T))
-    # end
-    @inbounds for key::Symbol in keys(records)
-        (key == :indices) && (continue)
-        (key == :sr) && (continue)
-        (key == :timestamp) && (continue)
-        (key == :fire) && (continue)
-        record_sym!(obj, key, T, records[:indices], records[:sr][key])
-    end
-end
-
-"""
     record_sym!(obj, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}})
 
 Record the variable `key` of the `obj` object into the `obj.records[key]` array.
@@ -150,17 +126,16 @@ Record the variable `key` of the `obj` object into the `obj.records[key]` array.
 
 """
 function record_sym!(
+    my_record,
     obj,
     key::Symbol,
     T::Time,
     indices::Dict{Symbol,Vector{Int}},
     sr::Float32,
 )
-    my_record = getfield(obj, key)
-    @unpack records = obj
     !record_step(T, sr) && return
     ind::Vector{Int} = haskey(indices, key) ? indices[key] : axes(my_record, 1)
-    @inbounds _record_sym(my_record, records[key], ind)
+    @inbounds _record_sym(my_record, obj.records[key], ind)
 end
 
 @inline function _record_sym(
@@ -208,68 +183,18 @@ end
 end
 
 
-function record!(obj::C, T::Time) where {C<:AbstractConnection}
+function record!(obj, T::Time) 
     @unpack records = obj
-    # timestamp::Vector{Float32} = records[:timestamp]
-    # if (get_step(T) % round(Int, 1/get_dt(T)) == 0)
-    #     push!(timestamp, get_time(T))
-    # end
-    @inbounds if haskey(records, :plasticity)
-        for name_plasticity::Symbol in keys(records[:plasticity])
-            for key::Symbol in records[:plasticity][name_plasticity]
-                record_plast!(
-                    obj,
-                    obj.plasticity,
-                    key,
-                    T,
-                    records[:indices],
-                    records[:sr][key],
-                    name_plasticity,
-                )
+    for key::Symbol in keys(records)
+        (key == :fire) && (continue)
+        for v in records[:variables]
+            if startswith(string(key), string(v))
+                sym = string(key)[length(string(v))+2:end] |> Symbol
+                record_sym!(getfield(getfield(obj,v), sym), obj, key, T, records[:indices], records[:sr][key])
             end
         end
+        hasfield(typeof(obj), key) && record_sym!(getfield(obj, key), obj, key, T, records[:indices], records[:sr][key])
     end
-    for key::Symbol in keys(records)
-        (key == :indices) && (continue)
-        (key == :sr) && (continue)
-        (key == :timestamp) && (continue)
-        (key == :fire) && (continue)
-        (key == :plasticity) && (continue)
-        (haskey(records, :plasticity)) && (key ∈ keys(records[:plasticity])) && (continue)
-        record_sym!(obj, key, T, records[:indices], records[:sr][key])
-    end
-end
-
-
-"""
-    record_plast!(obj::ST, plasticity::PT, key::Symbol, T::Time, indices::Dict{Symbol,Vector{Int}}, name_plasticity::Symbol) where {ST <: AbstractConnection, PT <: PlasticityVariables}
-
-Record the plasticity variable `key` of the `plasticity` object into the `obj.records[name_plasticity][key]` array.
-
-# Arguments
-- `obj::ST`: The object to record the plasticity variable into.
-- `plasticity::PT`: The plasticity object containing the variable to record.
-- `key::Symbol`: The key of the variable to record.
-- `T::Time`: The time at which the recording is happening.
-- `indices::Dict{Symbol,Vector{Int}}`: A dictionary containing indices for each variable to record.
-- `name_plasticity::Symbol`: The name of the plasticity object.
-
-"""
-function record_plast!(
-    obj::ST,
-    plasticity::PT,
-    key::Symbol,
-    T::Time,
-    indices::Dict{Symbol,Vector{Int}},
-    sr::Float32,
-    name_plasticity::Symbol,
-) where {ST<:AbstractConnection,PT<:PlasticityVariables}
-    # my_record = getfield(obj, key)
-    # @unpack records = obj
-    !record_step(T, sr) && return
-    ind::Vector{Int} =
-        haskey(indices, key) ? indices[key] : collect(eachindex(getfield(plasticity, key)))
-    push!(obj.records[name_plasticity][key], getfield(plasticity, key)[ind])
 end
 
 
@@ -286,6 +211,7 @@ function monitor!(
     keys;
     sr = 1000Hz,
     T::Time = Time(),
+    variables::Symbol = :none,
 ) where {Item<:Union{AbstractPopulation,AbstractStimulus,AbstractConnection}}
     if !haskey(obj.records, :indices)
         obj.records[:indices] = Dict{Symbol,Vector{Int}}()
@@ -293,73 +219,64 @@ function monitor!(
     if !haskey(obj.records, :sr)
         obj.records[:sr] = Dict{Symbol,Float32}()
     end
+    if !haskey(obj.records, :variables)
+        obj.records[:variables] = Vector{Symbol}()
+    end
     if !haskey(obj.records, :timestamp)
         obj.records[:timestamp] = Vector{Float32}()
     end
+    ## If the key is a tuple, then the first element is the symbol and the second element is the list of neurons to record.
     for key in keys
-        ## If the key is a tuple, then the first element is the symbol and the second element is the list of neurons to record.
-        if isa(key, Tuple)
-            sym, ind = key
-            push!(obj.records[:indices], sym => ind)
-        else
-            sym = key
-        end
-        push!(obj.records[:sr], sym => sr)
-        ## If the then assign a Spiketimes object to the dictionary `records[:fire]`, add as many empty vectors as the number of neurons in the object as in [:indices][:fire]
+        sym, ind = isa(key, Tuple) ? key : (key, [])
         if sym == :fire
+            ## If the then assign a Spiketimes object to the dictionary `records[:fire]`, add as many empty vectors as the number of neurons in the object as in [:indices][:fire]
             obj.records[:fire] = Dict{Symbol,AbstractVector}(
                 :time => Vector{Float32}(),
                 :neurons => Vector{Vector{Int}}(),
             )
-            ## If the object has the field `sym`, then assign an empty vector of the same type to the dictionary `records`
-        elseif hasfield(typeof(obj), sym)
-            typ = typeof(getfield(obj, sym))
-            obj.records[sym] = Vector{typ}()
-            ## If the object `sym` is in :plasticity, then assign an empty vector of the same type to the dictionary `records[:plasticity]
-        elseif hasfield(typeof(obj), :plasticity) &&
-               has_plasticity_field(obj.plasticity, sym)
-            monitor_plast(obj, obj.plasticity, sym)
-        else
-            @warn "Field $sym not found in $(nameof(typeof(obj)))"
+            continue
         end
+        if variables == :none
+            if hasfield(typeof(obj), sym)
+                typ = typeof(getfield(obj, sym))
+                key = sym
+                !isempty(ind) && (obj.records[:indices][key] = ind)
+                obj.records[:sr][key] = sr
+                obj.records[key] = Vector{typ}()
+            else
+                @warn "Field $sym not found in $(nameof(typeof(obj)))"
+                continue
+            end
+        else
+            if hasfield(typeof(obj), variables) && hasfield(typeof(getfield(obj,variables)), sym)
+                typ = typeof(getfield(getfield(obj,variables), sym))
+                key = Symbol(variables,"_", sym)
+                variables ∈ obj.records[:variables] && continue
+                push!(obj.records[:variables], variables)
+            else
+                @warn "Field $variables not found in $(nameof(typeof(obj)))"
+            end
+        end
+        !isempty(ind) && (obj.records[:indices][key] = ind)
+        obj.records[:sr][key] = sr
+        obj.records[key] = Vector{typ}()
     end
 end
 
-function has_plasticity_field(plasticity::T, key) where {T<:PlasticityVariables}
-    return hasfield(typeof(plasticity), key)
-end
-
-function monitor_plast(obj, plasticity, sym)
-    name = nameof(typeof(plasticity))
-    if !haskey(obj.records, :plasticity)
-        obj.records[:plasticity] = Dict{Symbol,Vector{Symbol}}()
-    end
-    if !haskey(obj.records[:plasticity], name)
-        obj.records[:plasticity][name] = Vector{Symbol}()
-    end
-    if !(sym ∈ obj.records[:plasticity][name])
-        push!(obj.records[:plasticity][name], sym)
-    end
-    typ = typeof(getfield(plasticity, sym))
-    if !haskey(obj.records, name)
-        obj.records[name] = Dict{Symbol,AbstractVector}()
-    end
-    obj.records[name][sym] = Vector{typ}()
-end
 """
 monitor!(objs::Array, keys)
 
 Function called when more than one object is given, which then calls the above monitor function for each object
 """
-function monitor!(objs::Array, keys; sr = 200Hz)
+function monitor!(objs::Array, keys; sr = 200Hz, kwargs...)
     for obj in objs
-        monitor!(obj, keys, sr = sr)
+        monitor!(obj, keys, sr = sr; kwargs...)
     end
 end
 
-function monitor!(objs::NamedTuple, keys; sr = 200Hz)
+function monitor!(objs::NamedTuple, keys; sr = 200Hz, kwargs...)
     for obj in values(objs)
-        monitor!(obj, keys, sr = sr)
+        monitor!(obj, keys, sr = sr; kwargs...)
     end
 end
 
@@ -579,7 +496,6 @@ export Time,
     record_sym!,
     record!,
     monitor,
-    monitor_plast,
     getvariable,
     getrecord,
     clear_records!,

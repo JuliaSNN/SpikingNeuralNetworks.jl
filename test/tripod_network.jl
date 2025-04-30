@@ -13,7 +13,7 @@ network = let
         :hi,
         p = 0.2,
         μ = 5.0,
-        param = SNN.iSTDPParameterPotential(v0 = -50mV),
+        param = SNN.iSTDPPotential(v0 = -50mV),
     )
     I1_to_E = SNN.CompartmentSynapse(
         I1,
@@ -22,7 +22,7 @@ network = let
         :hi,
         p = 0.2,
         μ = 5.0,
-        param = SNN.iSTDPParameterRate(r = 10Hz),
+        param = SNN.iSTDPRate(r = 10Hz),
     )
     E_to_E_d1 = SNN.CompartmentSynapse(
         E,

@@ -1,11 +1,9 @@
-# Define the struct to hold synapse parameters for both Exponential and Mexican Hat STDP
-# STDP Parameters Structure
-using Documenter
-abstract type STDPAbstractParameter <: SpikingSynapseParameter end
+@doc """
+Gerstner, W., Kempter, R., van Hemmen, J. L., & Wagner, H. (1996). A neuronal learning rule for sub-millisecond temporal coding. Nature, 383(6595), 76–78. https://doi.org/10.1038/383076a0
+"""
+STDPGerstner
 
-##################################################################################################
-# STDP Parameters Structure
-@snn_kw struct STDPParameter{FT = Float32} <: STDPAbstractParameter
+@snn_kw struct STDPGerstner{FT = Float32} <: STDPParameter
     A_post::FT = 10e-2pA / mV         # LTD learning rate (inhibitory synapses)
     A_pre::FT = 10e-2pA / (mV * mV)  # LTP learning rate (inhibitory synapses)
     τpre::FT = 20ms                   # Time constant for pre-synaptic spike trace
@@ -25,7 +23,7 @@ end
 """
 STDPMexicanHat
 
-@snn_kw struct STDPMexicanHat{FT = Float32} <: STDPAbstractParameter
+@snn_kw struct STDPMexicanHat{FT = Float32} <: STDPParameter
     A::FT = 10e-2pA / mV    # LTD learning rate (inhibitory synapses)
     τ::FT = 20ms                    # Time constant for pre-synaptic spike trace
     Wmax::FT = 30.0pF                # Max weight
@@ -33,31 +31,24 @@ STDPMexicanHat
 end
 
 # STDP Variables Structure
-@snn_kw struct STDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
+@snn_kw struct STDPVariables{VFT = Vector{Float32},IT = Int} <: LTPVariables
     Npost::IT                      # Number of post-synaptic neurons
     Npre::IT                       # Number of pre-synaptic neurons
     tpre::VFT = zeros(Npre)           # Pre-synaptic spike trace
     tpost::VFT = zeros(Npost)          # Post-synaptic spike trace
+    active::Vector{Bool} = [true]
 end
 
 # Function to initialize plasticity variables
-function plasticityvariables(param::T, Npre, Npost) where {T<:STDPAbstractParameter}
+function plasticityvariables(param::T, Npre, Npost) where {T<:STDPParameter}
     return STDPVariables(Npre = Npre, Npost = Npost)
 end
 
-function plasticity!(
-    c::PT,
-    param::mySTDP,
-    dt::Float32,
-    T::Time,
-) where {PT<:AbstractSparseSynapse,mySTDP<:STDPAbstractParameter}
-    plasticity!(c, param, c.plasticity, dt, T)
-end
 
 # Function to implement STDP update rule
 function plasticity!(
     c::PT,
-    param::STDPParameter,
+    param::STDPGerstner,
     plasticity::STDPVariables,
     dt::Float32,
     T::Time,
@@ -164,4 +155,4 @@ function plasticity!(
 end
 
 # Export the relevant functions and structs
-export STDPParameter, STDPVariables, plasticityvariables, plasticity!, STDPMexicanHat
+export STDPVariables, plasticityvariables, plasticity!, STDPMexicanHat, STDPGerstner

@@ -7,4 +7,4 @@ end
 E.I[1] = 30
 
 SNN.monitor!(E, [(:v, [1, N])])
-SNN.sim!([E], [EE]; duration = 100ms)
+SNN.train!([E], [EE]; duration = 100ms)

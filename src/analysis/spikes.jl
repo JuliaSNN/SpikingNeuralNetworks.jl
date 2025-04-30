@@ -694,6 +694,18 @@ The result is normalized by `(dt/1000)` to account for the fact that `dt` is typ
 #     return rates
 # end
 
+function resample_spikes(X, Y)
+    if length(X) > 200_000
+        s = ceil(Int, length(X) / 200_000)
+        points = Vector{Int}(eachindex(X))
+        points = sample(points, 200_000, replace = false)
+        X = X[points]
+        Y = Y[points]
+        @warn "Subsampling raster plot, 1 out of $s spikes"
+    end
+    return X, Y
+end
+
 function rolling_mean(a, n::Int)
     @assert 1 <= n <= length(a)
     out = similar(a, length(a) - n + 1)

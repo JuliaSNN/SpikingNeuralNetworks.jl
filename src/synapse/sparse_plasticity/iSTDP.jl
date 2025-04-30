@@ -1,29 +1,26 @@
-abstract type iSTDPParameter <: SpikingSynapseParameter end
+abstract type iSTDPParameter <: STDPParameter end
 
-@snn_kw struct iSTDPParameterRate{FT = Float32} <: iSTDPParameter
+@snn_kw struct iSTDPRate{FT = Float32} <: iSTDPParameter
     η::FT = 0.01pA
     r::FT = 3Hz
     τy::FT = 50ms
     Wmax::FT = 243pF
     Wmin::FT = 0.01pF
-    active::Vector{Bool} = [true]
 end
 
-@snn_kw struct iSTDPParameterTime{FT = Float32} <: iSTDPParameter
+@snn_kw struct iSTDPTime{FT = Float32} <: iSTDPParameter
     η::FT = 0.01pA
     τy::FT = 50ms
     Wmax::FT = 243pF
     Wmin::FT = 0.01pF
-    active::Vector{Bool} = [true]
 end
 
-@snn_kw mutable struct iSTDPParameterPotential{FT = Float32} <: iSTDPParameter
+@snn_kw mutable struct iSTDPPotential{FT = Float32} <: iSTDPParameter
     η::FT = 0.001pA
     v0::FT = -50mV
     τy::FT = 200ms
     Wmax::FT = 243pF
     Wmin::FT = 0.01pF
-    active::Vector{Bool} = [true]
 end
 
 
@@ -33,6 +30,7 @@ end
     Npre::IT
     tpost::VFT = zeros(Npost) # postsynaptic spiking time 
     tpre::VFT = zeros(Npre) # presynaptic spiking time
+    active::Vector{Bool} = [true]
 end
 
 function plasticityvariables(param::T, Npre, Npost) where {T<:iSTDPParameter}
@@ -40,7 +38,7 @@ function plasticityvariables(param::T, Npre, Npost) where {T<:iSTDPParameter}
 end
 
 """
-    plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, dt::Float32)
+    plasticity!(c::AbstractSparseSynapse, param::iSTDPRate, dt::Float32)
 
 Performs the synaptic plasticity calculation based on the inihibitory spike-timing dependent plasticity (iSTDP) model from Vogels (2011). 
 The function updates synaptic weights `W` of each synapse in the network according to the firing status of pre and post-synaptic neurons.
@@ -48,7 +46,7 @@ This is an in-place operation that modifies the input `AbstractSparseSynapse` ob
 
 # Arguments
 - `c::AbstractSparseSynapse`: The current spiking synapse object which contains data structures to represent the synapse network.
-- `param::iSTDPParameterRate`: Parameters needed for the iSTDP model, including learning rate `η`, target rate `r`, STDP time constant `τy`, maximal and minimal synaptic weight (`Wmax` and `Wmin`).
+- `param::iSTDPRate`: Parameters needed for the iSTDP model, including learning rate `η`, target rate `r`, STDP time constant `τy`, maximal and minimal synaptic weight (`Wmax` and `Wmin`).
 - `dt::Float32`: The time step for the numerical integration.
 
 # Algorithm
@@ -60,19 +58,7 @@ This is an in-place operation that modifies the input `AbstractSparseSynapse` ob
 """
 function plasticity!(
     c::AbstractSparseSynapse,
-    param::iSTDPParameterRate,
-    dt::Float32,
-    T::Time,
-)
-    @unpack active = param
-    !active[1] && return
-    plasticity!(c, param, c.plasticity, dt, T)
-end
-
-##
-function plasticity!(
-    c::AbstractSparseSynapse,
-    param::iSTDPParameterRate,
+    param::iSTDPRate,
     plasticity::iSTDPVariables,
     dt::Float32,
     T::Time,
@@ -110,19 +96,7 @@ end
 ##
 function plasticity!(
     c::AbstractSparseSynapse,
-    param::iSTDPParameterTime,
-    dt::Float32,
-    T::Time,
-)
-    @unpack active = param
-    !active[1] && return
-    plasticity!(c, param, c.plasticity, dt, T)
-end
-
-##
-function plasticity!(
-    c::AbstractSparseSynapse,
-    param::iSTDPParameterTime,
+    param::iSTDPTime,
     plasticity::iSTDPVariables,
     dt::Float32,
     T::Time,
@@ -158,7 +132,7 @@ end
 
 
 """
-    plasticity!(c::AbstractSparseSynapse, param::iSTDPParameterRate, dt::Float32)
+    plasticity!(c::AbstractSparseSynapse, param::iSTDPRate, dt::Float32)
 
 Performs the synaptic plasticity calculation based on the inihibitory spike-timing dependent plasticity (iSTDP) model from Vogels (2011) adapted to control the membrane potential. 
 The function updates synaptic weights `W` of each synapse in the network according to the firing status of pre and post-synaptic neurons.
@@ -177,16 +151,7 @@ This is an in-place operation that modifies the input `AbstractSparseSynapse` ob
 """
 function plasticity!(
     c::AbstractSparseSynapse,
-    param::iSTDPParameterPotential,
-    dt::Float32,
-    T::Time,
-)
-    plasticity!(c, param, c.plasticity, dt, T)
-end
-
-function plasticity!(
-    c::AbstractSparseSynapse,
-    param::iSTDPParameterPotential,
+    param::iSTDPPotential,
     plasticity::iSTDPVariables,
     dt::Float32,
     T::Time,
@@ -219,9 +184,9 @@ function plasticity!(
     end
 end
 
-export iSTDPParameterRate,
-    iSTDPParameterTime,
-    iSTDPParameterPotential,
+export iSTDPRate,
+    iSTDPTime,
+    iSTDPPotential,
     iSTDPVariables,
     plasticityvariables,
     plasticity!

@@ -34,7 +34,7 @@ inh_d1 = SNN.CompartmentSynapse(
     :hi,
     p = 0.2,
     μ = 1,
-    param = SNN.iSTDPParameterPotential(v0 = v0_d1),
+    param = SNN.iSTDPPotential(v0 = v0_d1),
 )
 inh_d2 = SNN.CompartmentSynapse(
     I,
@@ -43,7 +43,7 @@ inh_d2 = SNN.CompartmentSynapse(
     :hi,
     p = 0.2,
     μ = 1,
-    param = SNN.iSTDPParameterPotential(v0 = v0_d2),
+    param = SNN.iSTDPPotential(v0 = v0_d2),
 )
 inh_s = SNN.CompartmentSynapse(
     I,
@@ -52,7 +52,7 @@ inh_s = SNN.CompartmentSynapse(
     :hi,
     p = 0.1,
     μ = 1,
-    param = SNN.iSTDPParameterRate(r = r0),
+    param = SNN.iSTDPRate(r = r0),
 )
 exc_d1 = SNN.CompartmentSynapse(E, Tripod_pop, :d1, :he, p = 0.2, μ = 15.0)
 exc_d2 = SNN.CompartmentSynapse(E, Tripod_pop, :d2, :he, p = 0.2, μ = 15.0)
