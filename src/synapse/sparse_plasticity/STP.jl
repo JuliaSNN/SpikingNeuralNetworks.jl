@@ -16,7 +16,7 @@ end
     active::Vector{Bool} = [true]
 end
 
-plasticityvariables(param::MarkramSTPParameter, Npre, Npost) = STPVariables(Npre = Npre, Npost = Npost)
+plasticityvariables(param::MarkramSTPParameter, Npre, Npost) = MarkramSTPVariables(Npre = Npre, Npost = Npost)
 
 
 function plasticity!(
