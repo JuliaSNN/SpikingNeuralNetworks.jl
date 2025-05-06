@@ -186,7 +186,10 @@ end
 function record!(obj, T::Time) 
     @unpack records = obj
     for key::Symbol in keys(records)
-        (key == :fire) && (continue)
+        if key == :fire
+            record_fire!(obj.fire, obj.records[:fire], T, records[:indices])
+            continue
+        end
         for v in records[:variables]
             if startswith(string(key), string(v))
                 sym = string(key)[length(string(v))+2:end] |> Symbol
@@ -495,7 +498,7 @@ export Time,
     record_fire!,
     record_sym!,
     record!,
-    monitor,
+    monitor!,
     getvariable,
     getrecord,
     clear_records!,
