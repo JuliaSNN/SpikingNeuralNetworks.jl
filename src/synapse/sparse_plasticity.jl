@@ -15,6 +15,10 @@ end
     active::VB = [false]
 end
 
+struct LTP <:LTPParameter end
+struct STP <:STPParameter end
+
+
 plasticityvariables(param::NoLTP, Npre, Npost) =  NoVariables()
 plasticityvariables(param::NoSTP, Npre, Npost) =  NoVariables()
 
@@ -28,6 +32,13 @@ function plasticity!(
     any(c.LTPVars.active) && plasticity!(c, c.LTPParam, c.LTPVars, dt, T)
 end
 
+function set_plasticity!(c::AbstractSparseSynapse, param::LTPParameter, state::Bool)
+    c.LTPVars.active .= state
+end
+
+function set_plasticity!(c::AbstractSparseSynapse, param::STPParameter, state::Bool)
+    c.STPVars.active .= state
+end
 
 
 function plasticity!(
@@ -73,3 +84,5 @@ export SpikingSynapse,
     plasticityvariables,
     plasticity!
     change_plasticity!
+
+export LTP, STP, NoLTP, NoSTP

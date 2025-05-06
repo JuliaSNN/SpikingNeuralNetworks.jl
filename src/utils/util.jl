@@ -54,12 +54,12 @@ function indices(c::C, js::AbstractVector, is::AbstractVector) where {C<:Abstrac
     return indices
 end
 
-function set_plasticity!(synapse::AbstractConnection, bool::Bool)
-    synapse.param.active[1] = bool
-end
-function has_plasticity(synapse::AbstractConnection)
-    synapse.param.active[1] |> Bool
-end
+# function set_plasticity!(synapse::AbstractConnection, bool::Bool)
+#     synapse.param.active[1] = bool
+# end
+# function has_plasticity(synapse::AbstractConnection)
+#     synapse.param.active[1] |> Bool
+# end
 
 function replace_sparse_matrix!(c::S, W::SparseMatrixCSC) where {S<:AbstractConnection}
     rowptr, colptr, I, J, index, W = dsparse(W)
