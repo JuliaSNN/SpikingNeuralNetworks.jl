@@ -459,7 +459,7 @@ function bin_spiketimes(spike_times::Vector{Vector{Float32}}; kwargs...)
     for n in eachindex(spike_times)
         bin_array[n, :] = bin_spiketimes(spike_times[n]; kwargs...)[1]
     end
-    return bin_array
+    return bin_array, r
 end
 
 
