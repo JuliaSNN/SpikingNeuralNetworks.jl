@@ -60,6 +60,7 @@ end
     gsyn_i::FT = 1.0 # Synaptic conductance for inhibitory synapses
 end
 
+
 @snn_kw mutable struct IF{
     VFT = Vector{Float32},
     VBT = Vector{Bool},
@@ -125,16 +126,14 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
         end
         # Membrane potential
         v[i] +=
-            dt *
-            (
-                -(v[i] - El) / R +# leakage
+            dt/τm *
+            ( -(v[i] - El) # leakage
+                +R *(
                 -ge[i] * (v[i] - E_e) * gsyn_e +
                 -gi[i] * (v[i] - E_i) * gsyn_i +
                 -w[i] # adaptation
-                +
-                I[i] #synaptic term
-            ) *
-            R / τm
+                +I[i] #synaptic term
+            ))
     end
     # Adaptation current
     # if the adaptation timescale is zero, return
