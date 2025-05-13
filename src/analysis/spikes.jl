@@ -228,6 +228,7 @@ function firing_rate(
     tt0 = -1,
     interpolate = true,
     pop_average = false,
+    time_average = false,
     neurons = :ALL,
 )
     # Check if the interval is empty and create an interval
@@ -241,6 +242,11 @@ function firing_rate(
 
     neurons = neurons == :ALL ? eachindex(spiketimes) : neurons
     rates = nothing
+
+    if time_average
+        @show "Time average firing rate, interval: $(interval)"
+        return sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
+    end
     if length(spiketimes) < 1
         rates = zeros(Float32, 0, length(interval))
     elseif all(isempty.(spiketimes))
