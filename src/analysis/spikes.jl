@@ -244,7 +244,6 @@ function firing_rate(
     rates = nothing
 
     if time_average
-        @show "Time average firing rate, interval: $(interval)"
         return sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
     end
     if length(spiketimes) < 1
