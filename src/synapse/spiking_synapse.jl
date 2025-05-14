@@ -1,14 +1,15 @@
-abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
-
-@snn_kw struct SpikingSynapse{
+@snn_kw mutable struct SpikingSynapse{
     VIT = Vector{Int32},
     VFT = Vector{Float32},
     VBT = Vector{Bool},
 } <: AbstractSpikingSynapse
     id::String = randstring(12)
     name::String = "SpikingSynapse"
-    param::SpikingSynapseParameter = no_STDPParameter()
-    plasticity::PlasticityVariables = no_PlasticityVariables()
+    param::SpikingSynapseParameter = SpikingSynapseParameter()
+    LTPParam::LTPParameter = NoLTP()
+    STPParam::STPParameter = NoSTP()
+    LTPVars::PlasticityVariables = NoPlasticityVariables()
+    STPVars::PlasticityVariables = NoPlasticityVariables()
     rowptr::VIT # row pointer of sparse W
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W
@@ -33,8 +34,11 @@ end
 } <: AbstractSpikingSynapse
     id::String = randstring(12)
     name::String = "SpikingSynapseDelay"
-    param::SpikingSynapseParameter = no_STDPParameter()
-    plasticity::PlasticityVariables = no_PlasticityVariables()
+    param::SpikingSynapseParameter = SpikingSynapseParameter()
+    LTPParam::SpikingSynapseParameter = NoLTP()
+    STPParam::SpikingSynapseParameter = noSTP()
+    LTPVars::PlasticityVariables = NoPlasticityVariables()
+    STPVars::PlasticityVariables = NoPlasticityVariables()
     rowptr::VIT # row pointer of sparse W
     colptr::VIT # column pointer of sparse W
     I::VIT      # postsynaptic index of W
@@ -53,16 +57,29 @@ end
 end
 
 
-function CompartmentSynapse(    pre,    post,    target::Symbol,    sym::Symbol;     kwargs...)
+function CompartmentSynapse(pre, post, target::Symbol, sym::Symbol; kwargs...)
     SpikingSynapse(pre, post, sym, target; kwargs...)
 end
 
-function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1.0, σ = 0.0, p = 0.0, w = nothing, dist=Normal, kwargs...)
+function SpikingSynapse(
+    pre,
+    post,
+    sym,
+    target = nothing;
+    delay_dist = nothing,
+    μ = 1.0,
+    σ = 0.0,
+    p = 0.0,
+    w = nothing,
+    dist::Symbol = :Normal,
+    dt = 0.125f0,
+    kwargs...,
+)
 
     # set the synaptic weight matrix
     w = sparse_matrix(w, pre.N, post.N, dist, μ, σ, p)
     # remove autapses if pre == post
-    (pre == post) && (w[diagind(w)] .= 0) 
+    (pre == post) && (w[diagind(w)] .= 0)
     # get the sparse representation of the synaptic weight matrix
     rowptr, colptr, I, J, index, W = dsparse(w)
     # get the presynaptic and postsynaptic firing
@@ -72,36 +89,19 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
     cells_pre = unique(J)
 
     # get the conductance and membrane potential of the target compartment if multicompartment model
-    targets = Dict{Symbol,Any}(:fire => pre.id, :g => post.id)
-    g = zeros(Float32, post.N)
-    v_post = zeros(Float32, post.N)
-
-    if isnothing(sym)
-        g = zeros(Float32, post.N)
-    else
-        if isnothing(target) 
-            g = getfield(post, sym)
-            _v = :v
-            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-            push!(targets, :sym => sym)
-        elseif typeof(target) == Symbol
-            _sym= Symbol("$(sym)_$target")
-            _v = Symbol("v_$target")
-            g = getfield(post, _sym)
-            hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
-            push!(targets, :sym => _sym)
-        elseif typeof(target) == Int
-            _sym= Symbol("$(sym)_d")
-            _v   = Symbol("v_d")
-            g = getfield(post, _sym)[target]
-            v_post = getfield(post, _v)[target]
-            push!(targets, :sym => Symbol(string(_sym, target)))
-        end
-    end
+    targets = Dict{Symbol,Any}(
+        :fire => pre.id,
+        :post => post.id,
+        :pre => pre.id,
+        :type=>:SpikingSynapse,
+    )
+    @views g, v_post = synaptic_target(targets, post, sym, target)
 
     # set the paramter for the synaptic plasticity
-    param = haskey(kwargs, :param) ? kwargs[:param] : no_STDPParameter()
-    plasticity = plasticityvariables(param, pre.N, post.N)
+    LTPParam = haskey(kwargs, :LTPParam) ? kwargs[:LTPParam] : NoLTP()
+    LTPVars = plasticityvariables(LTPParam, pre.N, post.N)
+    STPParam = haskey(kwargs, :STPParam) ? kwargs[:STPParam] : NoSTP()
+    STPVars = plasticityvariables(STPParam, pre.N, post.N)
 
     # short term plasticity
     ρ = copy(W)
@@ -113,27 +113,32 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
         # Construct the SpikingSynapse instance
         return SpikingSynapse(;
             ρ = ρ,
-            param = param,
-            plasticity = plasticity,
             g = g,
             targets = targets,
             cells_pre = cells_pre,
             @symdict(rowptr, colptr, I, J, index, W, fireI, fireJ, v_post)...,
+            LTPVars, 
+            STPVars, 
+            LTPParam,
+            STPParam,
             kwargs...,
         )
 
     else
         delayspikes = fill(-1, length(W))
-        delaytime = round.(Int,rand(delay_dist, length(W))/0.1)
+        delaytime = round.(Int, rand(delay_dist, length(W))/dt )
+
         return SpikingSynapseDelay(;
-            param = param,
             ρ = ρ,
-            plasticity = plasticity,
             delayspikes = delayspikes,
             delaytime = delaytime,
             g = g,
             targets = targets,
             @symdict(rowptr, colptr, I, J, index, W, fireI, fireJ, v_post)...,
+            LTPVars, 
+            STPVars, 
+            LTPParam,
+            STPParam,
             kwargs...,
         )
     end
@@ -160,13 +165,14 @@ function forward!(c::SpikingSynapseDelay, param::SpikingSynapseParameter)
         if fireJ[j] # presynaptic fire
             @inbounds @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
                 delayspikes[s] = delaytime[s]
-                delayspikes[s] -= 1
             end
         end
     end
+    delayspikes .-= 1 # decrement the delay on 1 timestep
     @inbounds for j ∈ eachindex(fireJ) # loop on presynaptic neurons
-        if fireJ[j] # presynaptic fire
-            @inbounds @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+        @inbounds @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
+            if delayspikes[s] == 0
+                delayspikes[s] = -1
                 g[I[s]] += W[s] * ρ[s]
             end
         end

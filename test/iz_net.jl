@@ -10,7 +10,7 @@ II = SNN.SpikingSynapse(I, I, :v; μ = -1.0, p = 0.8)
 P = [E, I]
 C = [EE, EI, IE, II]
 
-SNN.monitor([E, I], [:fire])
+SNN.monitor!([E, I], [:fire])
 for t = 1:1000
     E.I .= 5randn(Ne)
     I.I .= 2randn(Ni)

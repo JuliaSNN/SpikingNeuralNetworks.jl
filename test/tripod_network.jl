@@ -1,15 +1,7 @@
 network = let
     NE = 400
     NI = 100
-    E = SNN.Tripod(
-        (150um, 250um),
-        (150um, 250um),
-        N = NE,
-        soma_syn = Synapse(DuarteGluSoma, MilesGabaSoma),
-        dend_syn = Synapse(EyalGluDend, MilesGabaDend),
-        NMDA = SNN.EyalNMDA,
-        param = SNN.AdExSoma(Vr = -50),
-    )
+    E = SNN.Tripod()
     I1 = SNN.IF(; N = NI ÷ 2, param = SNN.IFParameter(τm = 7ms, El = -55mV))
     I2 = SNN.IF(; N = NI ÷ 2, param = SNN.IFParameter(τm = 20ms, El = -55mV))
     E_to_I1 = SNN.SpikingSynapse(E, I1, :ge, p = 0.2, μ = 15.0)
@@ -21,7 +13,7 @@ network = let
         :hi,
         p = 0.2,
         μ = 5.0,
-        param = SNN.iSTDPParameterPotential(v0 = -50mV),
+        param = SNN.iSTDPPotential(v0 = -50mV),
     )
     I1_to_E = SNN.CompartmentSynapse(
         I1,
@@ -30,7 +22,7 @@ network = let
         :hi,
         p = 0.2,
         μ = 5.0,
-        param = SNN.iSTDPParameterRate(r = 10Hz),
+        param = SNN.iSTDPRate(r = 10Hz),
     )
     E_to_E_d1 = SNN.CompartmentSynapse(
         E,
@@ -72,5 +64,5 @@ end
 # background
 
 #
-SNN.clear_records([network.pop...])
+SNN.clear_records!([network.pop...])
 SNN.train!([network.pop...], [network.syn...], duration = 5000ms)

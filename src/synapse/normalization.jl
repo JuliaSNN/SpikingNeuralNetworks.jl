@@ -76,7 +76,7 @@ function SynapseNormalization(N, synapses; param::NormParam, kwargs...)
     W1 = zeros(Float32, N)
     μ = zeros(Float32, N)
     targets = Dict()
-    posts =  [syn.targets[:g] for syn in synapses] 
+    posts = [syn.targets[:post] for syn in synapses]
     @assert length(unique(posts)) == 1
     targets[:post] = unique(posts)[1]
     targets[:synapses] = [syn.id for syn in synapses]
@@ -145,4 +145,3 @@ function plasticity!(c::SynapseNormalization, param::NormParam)
         end
     end
 end
-

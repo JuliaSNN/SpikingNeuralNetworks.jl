@@ -8,7 +8,7 @@ RZ = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.1, b = 0.26, c = -65, d = 2
 LTS = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.1, b = 0.25, c = -65, d = 2))
 P = [RS, IB, CH, FS, TC1, TC2, RZ, LTS]
 
-SNN.monitor(P, [:v])
+SNN.monitor!(P, [:v])
 T = 2second
 for t = 0:T
     for p in [RS, IB, CH, FS, LTS]

@@ -1,5 +1,6 @@
 # SpikingNeuralNetworks
 
+
 ## Installation
 
 ```julia

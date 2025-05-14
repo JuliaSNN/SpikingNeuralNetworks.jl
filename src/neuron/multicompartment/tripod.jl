@@ -44,11 +44,11 @@ Tripod
     name::String = "Tripod"
     ## These are compulsory parameters
     N::IT = 100
-    soma_syn::ST 
-    dend_syn::ST
-    d1::VDT
-    d2::VDT
-    NMDA::NMDAT
+    soma_syn::ST = TripodSomaSynapse |> synapsearray
+    dend_syn::ST = TripodDendSynapse |> synapsearray
+    d1::VDT = create_dendrite(N, 2um)
+    d2::VDT = create_dendrite(N, 3um)
+    NMDA::NMDAT = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
     t::VIT = [0]
     param::AdExType = AdExSoma()
     # Membrane potential and adaptation
@@ -73,7 +73,7 @@ Tripod
 
     # Synapses soma
     ge_s::VFT = zeros(N)
-    gi_s::VFT = zeros(N) 
+    gi_s::VFT = zeros(N)
     he_s::VFT = zeros(N) #! target
     hi_s::VFT = zeros(N) #! target
 
@@ -89,14 +89,27 @@ Tripod
     is::VFT = zeros(3)
 end
 
+function synaptic_target(targets::Dict, post::Tripod, sym::Symbol, target::Symbol)
+    sym = Symbol("$(sym)_$target")
+    v = Symbol("v_$target")
+    g = getfield(post, sym)
+    hasfield(typeof(post), v) && (v_post = getfield(post, v))
+
+    push!(targets, :sym => sym)
+    push!(targets, :g => post.id)
+
+    return g, v_post
+end
+
+
 function Tripod(
     d1::Union{Real,Tuple},
     d2::Union{Real,Tuple};
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
-    kwargs...
+    NMDA::NMDAVoltageDependency = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    kwargs...,
 )
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
@@ -109,18 +122,17 @@ function Tripod(
         soma_syn = soma_syn,
         dend_syn = dend_syn,
         NMDA = NMDA,
-        α= [syn.α for syn in dend_syn],
-        kwargs...
+        α = [syn.α for syn in dend_syn],
+        kwargs...,
     )
 end
 
 function TripodHet(
     d1::Union{Real,Tuple} = (150um, 400um),
     d2::Union{Real,Tuple} = (150um, 400um);
-    kwargs...
+    kwargs...,
 )
-    Tripod(d1, d2; kwargs...
-    )
+    Tripod(d1, d2; kwargs...)
 end
 
 
@@ -138,103 +150,112 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
     @unpack dend_syn, soma_syn = p
     @unpack d1, d2 = p
 
-    # Update all synaptic conductance
-    update_synapses!(p, dend_syn, soma_syn, dt)
-
     # update the neurons
-    @inbounds for i ∈ 1:N
-        # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
-        if after_spike[i] > (τabs + up - up)/dt # backpropagation
-            v_s[i] = BAP
-            ## backpropagation effect
-            c1 = (BAP - v_d1[i]) * d1.gax[i]
-            c2 = (BAP - v_d2[i]) * d2.gax[i]
-            ## apply currents
-            v_d1[i] += dt * c1 / d1.C[i]
-            v_d2[i] += dt * c2 / d2.C[i]
-        elseif after_spike[i] > 0 # absolute refractory period
-            v_s[i] = Vr
-            c1 = (Vr - v_d1[i]) * d1.gax[i]
-            c2 = (Vr - v_d2[i]) * d2.gax[i]
-            # ## apply currents
-            v_d1[i] += dt * c1 / d1.C[i]
-            v_d2[i] += dt * c2 / d2.C[i]
-        else
-            ## Heun integration
-            for _i ∈ 1:3
-                Δv_temp[_i] = 0.0f0
-                Δv[_i] = 0.0f0
+    @fastmath @inbounds begin
+    # Update all synaptic conductance
+        update_synapses!(p, dend_syn, soma_syn, dt)
+        # parts = collect(Iterators.partition(1:N, Threads.nthreads()))
+        # Threads.@threads :static for part in eachindex(parts)
+        for i ∈ 1:N
+            # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
+            if after_spike[i] > (τabs + up - up) / dt # backpropagation
+                v_s[i] = BAP
+                ## backpropagation effect
+                c1 = (BAP - v_d1[i]) * d1.gax[i]
+                c2 = (BAP - v_d2[i]) * d2.gax[i]
+                ## apply currents
+                v_d1[i] += dt * c1 / d1.C[i]
+                v_d2[i] += dt * c2 / d2.C[i]
+            elseif after_spike[i] > 0 # absolute refractory period
+                v_s[i] = Vr
+                c1 = (Vr - v_d1[i]) * d1.gax[i]
+                c2 = (Vr - v_d2[i]) * d2.gax[i]
+                # ## apply currents
+                v_d1[i] += dt * c1 / d1.C[i]
+                v_d2[i] += dt * c2 / d2.C[i]
+            else
+                ## Heun integration
+                for _i ∈ 1:3
+                    Δv_temp[_i] = 0.0f0
+                    Δv[_i] = 0.0f0
+                end
+                update_tripod!(p, Δv, i, param, 0.0f0)
+                for _i ∈ 1:3
+                    Δv_temp[_i] = Δv[_i]
+                end
+                update_tripod!(p, Δv, i, param, dt)
+                v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
+                v_d1[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
+                v_d2[i] += 0.5 * dt * (Δv_temp[3] + Δv[3])
+                w_s[i] += dt * (param.a * (v_s[i] - param.Er) - w_s[i]) / param.τw
             end
-            update_tripod!(p, Δv, i, param, 0.0f0)
-            for _i ∈ 1:3
-                Δv_temp[_i] = Δv[_i]
-            end
-            update_tripod!(p, Δv, i, param, dt)
-            @fastmath v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
-            @fastmath v_d1[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
-            @fastmath v_d2[i] += 0.5 * dt * (Δv_temp[3] + Δv[3])
-            @fastmath w_s[i] += dt * (param.a * (v_s[i] - param.Er) - w_s[i]) / param.τw
         end
-    end
-
-    # reset firing
-    fire .= false
-    @inbounds for i ∈ 1:N
-        θ[i] -= dt * (θ[i] - Vt) / postspike.τA
-        after_spike[i] -= 1
-        if after_spike[i] < 0
-            ## spike ?
-            if v_s[i] > θ[i] + 10.0f0
-                fire[i] = true
-                θ[i] += postspike.A
-                v_s[i] = AP_membrane
-                w_s[i] += b ##  *τw
-                after_spike[i] = (up + τabs) / dt
+        # reset firing
+        fire .= false
+        @inbounds for i ∈ 1:N
+            θ[i] -= dt * (θ[i] - Vt) / postspike.τA
+            after_spike[i] -= 1
+            if after_spike[i] < 0
+                ## spike ?
+                if v_s[i] > θ[i] + 10.0f0
+                    fire[i] = true
+                    θ[i] += postspike.A
+                    v_s[i] = AP_membrane
+                    w_s[i] += b ##  *τw
+                    after_spike[i] = (up + τabs) / dt
+                end
             end
         end
     end
     return
 end
 
-function update_synapses!(p::Tripod, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
+function update_synapses!(
+    p::Tripod,
+    dend_syn::SynapseArray,
+    soma_syn::SynapseArray,
+    dt::Float32,
+)
     @unpack N, ge_s, g_d1, g_d2, he_s, h_d1, h_d2, hi_s, gi_s = p
     @unpack he_d1, he_d2, hi_d1, hi_d2, exc_receptors, inh_receptors, α = p
 
-    @inbounds for n in exc_receptors
-        @simd for i ∈ 1:N
-            h_d1[i, n] += he_d1[i] * α[n]
-            h_d2[i, n] += he_d2[i] * α[n]
+    @inbounds @fastmath begin
+        for n in exc_receptors
+            @turbo for i ∈ 1:N
+                h_d1[i, n] += he_d1[i] * α[n]
+                h_d2[i, n] += he_d2[i] * α[n]
+            end
         end
-    end
-    @inbounds for n in inh_receptors
-        @simd for i ∈ 1:N
-            h_d1[i, n] += hi_d1[i] * α[n]
-            h_d2[i, n] += hi_d2[i] * α[n]
+        for n in inh_receptors
+            @turbo for i ∈ 1:N
+                h_d1[i, n] += hi_d1[i] * α[n]
+                h_d2[i, n] += hi_d2[i] * α[n]
+            end
         end
-    end
-    fill!(he_d1, 0.0f0)
-    fill!(he_d2, 0.0f0)
-    fill!(hi_d1, 0.0f0)
-    fill!(hi_d2, 0.0f0)
-    for n in eachindex(dend_syn)
-        @unpack τr⁻, τd⁻ = dend_syn[n]
-        @fastmath @simd for i ∈ 1:N
-            g_d1[i, n] = exp32(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
-            h_d1[i, n] = exp32(-dt * τr⁻) * (h_d1[i, n])
-            g_d2[i, n] = exp32(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
-            h_d2[i, n] = exp32(-dt * τr⁻) * (h_d2[i, n])
+        fill!(he_d1, 0.0f0)
+        fill!(he_d2, 0.0f0)
+        fill!(hi_d1, 0.0f0)
+        fill!(hi_d2, 0.0f0)
+        for n in eachindex(dend_syn)
+            @unpack τr⁻, τd⁻ = dend_syn[n]
+            @turbo for i ∈ 1:N
+                g_d1[i, n] = exp32(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
+                h_d1[i, n] = exp32(-dt * τr⁻) * (h_d1[i, n])
+                g_d2[i, n] = exp32(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
+                h_d2[i, n] = exp32(-dt * τr⁻) * (h_d2[i, n])
+            end
         end
-    end
 
-    @unpack τr⁻, τd⁻ = soma_syn[1]
-    @fastmath @simd for i ∈ 1:N
-        ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
-        he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
-    end
-    @unpack τr⁻, τd⁻ = soma_syn[2]
-    @fastmath @simd for i ∈ 1:N
-        gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
-        hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
+        @unpack τr⁻, τd⁻ = soma_syn[1]
+        @turbo for i ∈ 1:N
+            ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
+            he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
+        end
+        @unpack τr⁻, τd⁻ = soma_syn[2]
+        @turbo for i ∈ 1:N
+            gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
+            hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
+        end
     end
 
 end

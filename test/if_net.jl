@@ -7,6 +7,6 @@ II = SNN.SpikingSynapse(I, I, :gi; μ = -20 * 4.5 / 10, p = 0.02)
 P = [E, I]
 C = [EE, EI, IE, II]
 
-SNN.monitor([E, I], [:fire])
+SNN.monitor!([E, I], [:fire])
 SNN.sim!(P, C; duration = 1second)
 SNN.train!(P, C; duration = 1second)

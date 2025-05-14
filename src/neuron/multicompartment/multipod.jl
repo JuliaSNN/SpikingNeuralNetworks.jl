@@ -33,13 +33,14 @@
     gax::MFT = zeros(Nd, N)
     cd::MFT = zeros(Nd, N)
     gm::MFT = zeros(Nd, N)
-    v_d::VST = Vector{Vector{Float32}}([param.Vr .+ rand(N) .* (param.Vt - param.Vr) for n in 1:Nd])   #! target
+    v_d::VST =
+        Vector{Vector{Float32}}([param.Vr .+ rand(N) .* (param.Vt - param.Vr) for n = 1:Nd])   #! target
 
     # Synapses dendrites
     g_d::TFT = zeros(N, Nd, 4)
     h_d::TFT = zeros(N, Nd, 4)
-    hi_d::VST = Vector{Vector{Float32}}([zeros(N) for n in 1:Nd])   #! target
-    he_d::VST = Vector{Vector{Float32}}([zeros(N) for n in 1:Nd])   #! target
+    hi_d::VST = Vector{Vector{Float32}}([zeros(N) for n = 1:Nd])   #! target
+    he_d::VST = Vector{Vector{Float32}}([zeros(N) for n = 1:Nd])   #! target
 
     # Receptors properties
     exc_receptors::VIT = [1, 2]
@@ -48,7 +49,7 @@
 
     # Synapses soma
     ge_s::VFT = zeros(N)
-    gi_s::VFT = zeros(N) 
+    gi_s::VFT = zeros(N)
     he_s::VFT = zeros(N) #! target
     hi_s::VFT = zeros(N) #! target
 
@@ -66,9 +67,18 @@
 end
 
 
-function Multipod(ds::R; N, Nd, kwargs...) where {R <: Real}
-    dendrites = [ds for d in 1:Nd]
-    return Multipod(dendrites, N=N, Nd=Nd; kwargs...)
+function synaptic_target(targets::Dict, post::Multipod, sym::Symbol, target::Number)
+    _sym = Symbol("$(sym)_d")
+    _v = Symbol("v_d")
+    g = getfield(post, _sym)[target]
+    v_post = getfield(post, _v)[target]
+    push!(targets, :sym => Symbol(string(_sym, target)))
+end
+
+
+function Multipod(ds::R; N, Nd, kwargs...) where {R<:Real}
+    dendrites = [ds for _ = 1:Nd]
+    return Multipod(dendrites, N = N, Nd = Nd; kwargs...)
 end
 
 function Multipod(
@@ -76,12 +86,26 @@ function Multipod(
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency= NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k), kwargs...)
+    NMDA::NMDAVoltageDependency = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    kwargs...,
+)
 
     soma_syn = synapsearray(soma_syn)
     dend_syn = synapsearray(dend_syn)
 
     Nd = length(ds)
+
+    # if Nd == 2
+    #     return Tripod(
+    #         ds[1],
+    #         ds[2];
+    #         N=N,
+    #         soma_syn = soma_syn,
+    #         dend_syn = dend_syn,
+    #         NMDA=NMDA,
+    #         kwargs...
+    #     )
+    # else
     dendrites = [create_dendrite(N, d) for d in ds]
     gax, cd, gm = zeros(Nd, N), zeros(Nd, N), zeros(Nd, N)
     for i in eachindex(dendrites)
@@ -93,16 +117,17 @@ function Multipod(
     return Multipod(
         Nd = Nd,
         N = N,
-        dendrites= dendrites,
+        dendrites = dendrites,
         soma_syn = synapsearray(soma_syn),
         dend_syn = synapsearray(dend_syn),
         NMDA = NMDA,
-        α= [syn.α for syn in dend_syn],
+        α = [syn.α for syn in dend_syn],
         gax = gax,
         cd = cd,
         gm = gm;
-        kwargs...
+        kwargs...,
     )
+    # end
 end
 
 function integrate!(p::Multipod, param::AdExSoma, dt::Float32)
@@ -118,10 +143,10 @@ function integrate!(p::Multipod, param::AdExSoma, dt::Float32)
     # update the neurons
     @inbounds for i ∈ 1:N
         # implementation of the absolute refractory period with backpropagation (up) and after spike (τabs)
-        if after_spike[i] > (τabs + up - up)/dt # backpropagation
+        if after_spike[i] > (τabs + up - up) / dt # backpropagation
             v_s[i] = BAP
             for d in eachindex(v_d)
-                v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d,i] / cd[d,i]
+                v_d[d][i] += dt * (BAP - v_d[d][i]) * gax[d, i] / cd[d, i]
             end
         elseif after_spike[i] > 0 # absolute refractory period
             v_s[i] = Vr
@@ -168,7 +193,12 @@ end
 #const dend_receptors::SVector{Symbol,3} = [:AMPA, :NMDA, :GABAa, :GABAb]
 # const soma_receptors::Vector{Symbol} = [:AMPA, :GABAa]
 
-function update_synapses!(p::Multipod, dend_syn::SynapseArray, soma_syn::SynapseArray, dt::Float32)
+function update_synapses!(
+    p::Multipod,
+    dend_syn::SynapseArray,
+    soma_syn::SynapseArray,
+    dt::Float32,
+)
     @unpack N, Nd, ge_s, g_d, he_s, v_d, h_d, hi_s, gi_s = p
     @unpack he_d, hi_d, exc_receptors, inh_receptors, α = p
 
@@ -181,13 +211,13 @@ function update_synapses!(p::Multipod, dend_syn::SynapseArray, soma_syn::Synapse
     end
     @inbounds for n in inh_receptors
         for d in eachindex(v_d)
-            @turbo  for i ∈ 1:N
+            @turbo for i ∈ 1:N
                 h_d[i, d, n] += hi_d[d][i] * α[n]
             end
         end
     end
 
-    for d in 1:Nd
+    for d = 1:Nd
         fill!(he_d[d], 0.0f0)
         fill!(hi_d[d], 0.0f0)
     end
@@ -232,7 +262,7 @@ function update_multipod!(
 
         #compute axial currents
         for d in eachindex(v_d)
-            cs[d] = -((v_d[d][i] + Δv[d+1] * dt) - (v_s[i] + Δv[1] * dt)) * gax[d,i]
+            cs[d] = -((v_d[d][i] + Δv[d+1] * dt) - (v_s[i] + Δv[1] * dt)) * gax[d, i]
         end
 
         for _i ∈ eachindex(is)
@@ -272,7 +302,8 @@ function update_multipod!(
             ) / C
 
         for d in eachindex(v_d)
-            Δv[d+1] = ((-(v_d[d][i] + Δv[d+1] * dt) + Er) * gm[d, i] - is[d+1] + cs[d]) / cd[d,i]
+            Δv[d+1] =
+                ((-(v_d[d][i] + Δv[d+1] * dt) + Er) * gm[d, i] - is[d+1] + cs[d]) / cd[d, i]
         end
     end
 end
