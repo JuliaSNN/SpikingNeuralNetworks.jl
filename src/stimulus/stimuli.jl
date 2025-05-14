@@ -1,5 +1,6 @@
 include("empty.jl")
 include("poisson_stim.jl")
+include("poisson_layer.jl")
 include("current_stim.jl")
 include("timed_stim.jl")
 include("balanced_stim.jl")

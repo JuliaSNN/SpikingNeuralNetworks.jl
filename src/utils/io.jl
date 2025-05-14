@@ -137,15 +137,6 @@ end
 
 export load, save, load_model, load_data, SNNload, SNNsave, SNNpath, SNNfolder, savename
 
-SNNsave(; model, path, name, info, config, model_only = false, kwargs...) = SNNsave(
-    model;
-    path = path,
-    name = name,
-    info = info,
-    config = config,
-    model_only = model_only,
-    kwargs...,
-)
 save_model(; model, path, name, info, config = nothing, kwargs...) = SNNsave(
     model;
     path = path,

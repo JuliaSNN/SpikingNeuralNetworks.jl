@@ -34,34 +34,6 @@ PoissonStimulusFixed
     active::Vector{Bool} = [true]
 end
 
-"""
-    PoissonStimulusLayer
-
-    Poisson stimulus with rate defined for each cell in the layer. Each neuron of the 'N' Poisson population fires with 'rate'.
-    The connectivity is defined by the parameter 'ϵ'. Thus, the number of presynaptic neuronsconnected to the postsynaptic neuronsis 'N*ϵ'. Each post-synaptic cell receives rate: 'rate * N * ϵ'.
-
-    # Fields
-    - `rate::Vector{R}`: A vector containing the rate of the Poisson stimulus.
-    - `N::Int32`: The number of neuronsin the layer.
-    - `ϵ::Float32`: The fraction of presynaptic neuronsconnected to the postsynaptic neurons.
-    - `active::Vector{Bool}`: A vector of booleans indicating if the stimulus is active.
-"""
-PoissonStimulusLayer
-@snn_kw struct PoissonStimulusLayer{R = Float32} <: PoissonStimulusParameter
-    rate::Vector{R}
-    N::Int32
-    ϵ::Float32
-    active::Vector{Bool} = [true]
-end
-
-function PoissonStimulusLayer(N::Int; rate::R, ϵ::Float32) where {R<:Real}
-    return PoissonStimulusLayer(
-        rate = fill(Float32.(rate), N),
-        N = N,
-        ϵ = ϵ,
-        active = [true],
-    )
-end
 
 """
     PoissonStimulusInterval
@@ -187,26 +159,6 @@ function stimulate!(
 end
 
 
-function stimulate!(
-    p::PoissonStimulus,
-    param::PoissonStimulusLayer,
-    time::Time,
-    dt::Float32,
-)
-    @unpack N, N_pre, randcache, fire, neurons, colptr, W, I, g = p
-    @unpack rate = param
-    rand!(randcache)
-    @inbounds @simd for j = 1:N
-        if randcache[j] < rate[j] * dt
-            fire[j] = true
-            @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                g[neurons[I[s]]] += W[s]
-            end
-        else
-            fire[j] = false
-        end
-    end
-end
 
 function stimulate!(
     p::PoissonStimulus,
