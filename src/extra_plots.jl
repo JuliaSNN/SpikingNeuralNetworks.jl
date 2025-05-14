@@ -1,4 +1,5 @@
 # using StatsBase
+
 ## Dendrite and soma plot
 """
     dendrite_gplot(population, target; sym_id=1, r, dt, param=:dend_syn, nmda=true, kwargs...)
@@ -355,29 +356,56 @@ end
 
 """
 function stdp_kernel(stdp_param; ΔTs= -97.5:2.5:100ms, fill=true)
+    # Initialize an array to store the changes in synaptic weights for each time difference (ΔT)
     ΔWs = zeros(Float32, length(ΔTs))
+    
+    # Parallel loop over each time difference (ΔT) using threads
     Threads.@threads for i in eachindex(ΔTs)
         ΔT = ΔTs[i]
-        spiketime = [2000ms, 2000ms+ΔT]
+        
+        # Define spike times and corresponding neurons
+        spiketime = [2000ms, 2000ms + ΔT]
         neurons = [[1], [2]]
+        
+        # Create a SpikeTime object with the spike times and neurons
         inputs = SpikeTime(spiketime, neurons)
-        w = zeros(Float32, 2,2)
+        
+        # Initialize a weight matrix with a connection from neuron 1 to neuron 2
+        w = zeros(Float32, 2, 2)
         w[1, 2] = 1f0
-        st = Identity(N=max_neurons(inputs))
-        stim = SpikeTimeStimulusIdentity(st, :g, param=inputs)
-        syn = SpikingSynapse(st, st, :h, w = w,  param = stdp_param)
-        model = merge_models(pop=st, stim=stim, syn=syn, silent=true)
+        
+        # Create an identity population with the maximum number of neurons
+        st = Identity(N = max_neurons(inputs))
+        
+        # Create a spike time stimulus
+        stim = SpikeTimeStimulusIdentity(st, :g, param = inputs)
+        
+        # Create a spiking synapse with the given STDP parameters
+        syn = SpikingSynapse(st, st, :h, w = w, param = stdp_param)
+        
+        # Merge the population, stimulus, and synapse into a model
+        model = merge_models(pop = st, stim = stim, syn = syn, silent = true)
+        
+        # Monitor the firing of the population and train the model for 3000ms
         SNN.monitor(model.pop..., [:fire])
-        train!(model=model, duration=3000ms, dt=0.1ms)
+        train!(model = model, duration = 3000ms, dt = 0.1ms)
+        
+        # Calculate the change in synaptic weight (ΔW) and store it in the array
         ΔWs[i] = model.syn[1].W[1] - 1
     end
 
+    # Find the indices of positive and negative time differences
     n_plus = findall(ΔTs .>= 0)
     n_minus = findall(ΔTs .< 0)
-    # R(X; f=maximum) = [f([x,0]) for x in X]
-    plot(ΔTs[n_minus],ΔWs[n_minus] , legend=false, fill=fill, xlabel="ΔT", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
-    plot!(ΔTs[n_plus],ΔWs[n_plus] , legend=false, fill=fill,xlabel="T_post - T_pre ", ylabel="ΔW", title="STDP", size=(500, 300), alphafill=0.5, lw=4)
-    plot!(ylims=:auto)
+    
+    # Plot the STDP kernel for negative time differences
+    plot(ΔTs[n_minus], ΔWs[n_minus], legend = false, fill = fill, xlabel = "ΔT", ylabel = "ΔW", title = "STDP", size = (500, 300), alphafill = 0.5, lw = 4)
+    
+    # Plot the STDP kernel for positive time differences
+    plot!(ΔTs[n_plus], ΔWs[n_plus], legend = false, fill = fill, xlabel = "T_post - T_pre", ylabel = "ΔW", title = "STDP", size = (500, 300), alphafill = 0.5, lw = 4)
+    
+    # Adjust the y-axis limits automatically
+    plot!(ylims = :auto)
 end
 
 ## Measure the weight change for decorrelated spike trains

@@ -4,8 +4,8 @@ gL = 40nS         #(nS) leak conductance #BretteGerstner2005 says 30 nS
 @snn_kw struct AdExParameter{FT = Float32} <: AbstractAdExParameter
     τm::FT = C / gL # Membrane time constant
     Vt::FT = -50mV # Membrane potential threshold
-    Vr::FT = -70.6mV # Reset potential
-    El::FT = -70.6mV # Resting membrane potential 
+    Vr::FT = -70.6mV 
+    El::FT = -70.6mV 
     R::FT = nS / gL # Resistance
     ΔT::FT = 2mV # Slope factor
     τw::FT = 144ms # Adaptation time constant (Spike-triggered adaptation time scale)
@@ -51,7 +51,7 @@ end
 
     ## Synapses
     τe::FT = 6ms # Decay time for excitatory synapses
-    τi::FT = 0.5ms # Rise time for inhibitory synapses
+    τi::FT = 1ms # Rise time for inhibitory synapses
     E_i::FT = -75mV # Reversal potential excitatory synapses 
     E_e::FT = 0mV #Reversal potential excitatory synapses
     gsyn_e::FT = 1.f0 #norm_synapse(τre, τde) # Synaptic conductance for excitatory synapses

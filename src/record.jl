@@ -317,9 +317,9 @@ end
     ----
     The element can be accessed at whichever time point by using the index of the array. The time point must be within the range of the recorded time points, in r_v.
 """
-function interpolated_record(p, sym)
+function interpolated_record(p, sym; τ=nothing, sampling_rate=nothing)
     if sym==:fire
-        return firing_rate(p, τ=20ms)
+        return firing_rate(p, τ=τ, sampling=sampling_rate)
     end
 
     sr = p.records[:sr][sym]

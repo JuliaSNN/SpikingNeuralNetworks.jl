@@ -1,7 +1,142 @@
 using .Plots, Statistics
 
 ## Raster plot
+function combined_raster_plot(model, Trange, intervals)
+    # Generate raster data for each population
+    raster_E_V = SNN.raster(model.pop.E_V, Trange)
+    raster_E_B = SNN.raster(model.pop.E_B, Trange)
+    raster_E_GAP = SNN.raster(model.pop.E_GAP, Trange)
+    raster_E_COINC = SNN.raster(model.pop.E_COINC, Trange)
+    raster_I_INHIB = SNN.raster(model.pop.I_INHIB, Trange)
+    raster_I1 = SNN.raster(model.pop.I1, Trange)
+    raster_I2 = SNN.raster(model.pop.I2, Trange)
 
+    # Extract data from the raster plots
+    X_V, Y_V = raster_E_V.series_list[1][:x], raster_E_V.series_list[1][:y]
+    X_B, Y_B = raster_E_B.series_list[1][:x], raster_E_B.series_list[1][:y]
+    X_GAP, Y_GAP = raster_E_GAP.series_list[1][:x], raster_E_GAP.series_list[1][:y]
+    X_COINC, Y_COINC = raster_E_COINC.series_list[1][:x], raster_E_COINC.series_list[1][:y]
+    X_INHIB, Y_INHIB = raster_I_INHIB.series_list[1][:x], raster_I_INHIB.series_list[1][:y]
+    X_I1, Y_I1 = raster_I1.series_list[1][:x], raster_I1.series_list[1][:y]
+    X_I2, Y_I2 = raster_I2.series_list[1][:x], raster_I2.series_list[1][:y]
+
+    # Adjust Y values for the second population to separate them
+    Y_B_shifted = Y_B .+ maximum(Y_V) .+ 1
+    Y_GAP_shifted = Y_GAP .+ maximum(Y_B_shifted) .+ 1
+    Y_COINC_shifted = Y_COINC .+ maximum(Y_GAP_shifted) .+ 1
+    Y_INHIB_shifted = Y_INHIB .+ maximum(Y_COINC_shifted) .+ 1
+    Y_I1_shifted = Y_I1 .+ maximum(Y_INHIB_shifted) .+ 1
+    Y_I2_shifted = Y_I2 .+ maximum(Y_I1_shifted) .+ 1
+
+    # Combine X and Y values
+    X_combined = vcat(X_V, X_B, X_GAP, X_COINC, X_INHIB, X_I1, X_I2)
+    Y_combined = vcat(Y_V, Y_B_shifted, Y_GAP_shifted, Y_COINC_shifted, Y_INHIB_shifted, Y_I1_shifted, Y_I2_shifted)
+
+    # Create the combined raster plot
+    plt = scatter(
+        X_combined,
+        Y_combined,
+        m = (1, :black),
+        leg = :none,
+        xaxis = ("Time (s)", (minimum(X_combined), maximum(X_combined))),
+        yaxis = ("Neuron",),
+        label=""
+    )
+
+    # Add a red line to separate the populations
+    hline!(plt, [maximum(Y_V) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_B_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_GAP_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_COINC_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_INHIB_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_I1_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_I2_shifted) + 0.5], linecolor = :grey, label="")
+
+    if !isempty(intervals)
+        vline!(plt, intervals[1], linecolor = :red, linestyle=:dash, label="GAP")
+        vline!(plt, intervals[2], linecolor = :blue, linestyle=:dash, label="COINC")
+    end
+
+    yticks_positions = [maximum(Y_V) / 2, 
+                    maximum(Y_V) + maximum(Y_B) / 2, 
+                    maximum(Y_B_shifted) + maximum(Y_GAP) / 2, 
+                    maximum(Y_GAP_shifted) + maximum(Y_COINC) / 2,
+                    maximum(Y_COINC_shifted) + maximum(Y_INHIB) / 2,
+                    maximum(Y_INHIB_shifted) + maximum(Y_I1) / 2,
+                    maximum(Y_I1_shifted) + maximum(Y_I2) / 2]
+
+    yticks_labels = ["V", "B", "GAP", "COINC", "INHIB", "I1", "I2"]
+
+    plot!(plt, yticks = (yticks_positions, yticks_labels))
+
+    return plt
+end
+
+function combined_raster_plot_baseline(model, Trange, intervals)
+    # Generate raster data for each population
+    raster_E_V = SNN.raster(model.pop.E_V, Trange)
+    raster_E_B = SNN.raster(model.pop.E_B, Trange)
+    raster_E_GAP = SNN.raster(model.pop.E_GAP, Trange)
+    raster_E_COINC = SNN.raster(model.pop.E_COINC, Trange)
+    raster_I_INHIB = SNN.raster(model.pop.I_INHIB, Trange)
+    raster_I1 = SNN.raster(model.pop.I1, Trange)
+
+    # Extract data from the raster plots
+    X_V, Y_V = raster_E_V.series_list[1][:x], raster_E_V.series_list[1][:y]
+    X_B, Y_B = raster_E_B.series_list[1][:x], raster_E_B.series_list[1][:y]
+    X_GAP, Y_GAP = raster_E_GAP.series_list[1][:x], raster_E_GAP.series_list[1][:y]
+    X_COINC, Y_COINC = raster_E_COINC.series_list[1][:x], raster_E_COINC.series_list[1][:y]
+    X_INHIB, Y_INHIB = raster_I_INHIB.series_list[1][:x], raster_I_INHIB.series_list[1][:y]
+    X_I1, Y_I1 = raster_I1.series_list[1][:x], raster_I1.series_list[1][:y]
+
+    # Adjust Y values for the second population to separate them
+    Y_B_shifted = Y_B .+ maximum(Y_V) .+ 1
+    Y_GAP_shifted = Y_GAP .+ maximum(Y_B_shifted) .+ 1
+    Y_COINC_shifted = Y_COINC .+ maximum(Y_GAP_shifted) .+ 1
+    Y_INHIB_shifted = Y_INHIB .+ maximum(Y_COINC_shifted) .+ 1
+    Y_I1_shifted = Y_I1 .+ maximum(Y_INHIB_shifted) .+ 1
+
+    # Combine X and Y values
+    X_combined = vcat(X_V, X_B, X_GAP, X_COINC, X_INHIB, X_I1)
+    Y_combined = vcat(Y_V, Y_B_shifted, Y_GAP_shifted, Y_COINC_shifted, Y_INHIB_shifted, Y_I1_shifted)
+
+    # Create the combined raster plot
+    plt = scatter(
+        X_combined,
+        Y_combined,
+        m = (1, :black),
+        leg = :none,
+        xaxis = ("Time (s)", (minimum(X_combined), maximum(X_combined))),
+        yaxis = ("Neuron",),
+        label=""
+    )
+
+    # Add a red line to separate the populations
+    hline!(plt, [maximum(Y_V) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_B_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_GAP_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_COINC_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_INHIB_shifted) + 0.5], linecolor = :grey, label="")
+    hline!(plt, [maximum(Y_I1_shifted) + 0.5], linecolor = :grey, label="")
+
+    if !isempty(intervals)
+        vline!(plt, intervals[1], linecolor = :red, linestyle=:dash, label="GAP")
+        vline!(plt, intervals[2], linecolor = :blue, linestyle=:dash, label="COINC")
+    end
+
+    yticks_positions = [maximum(Y_V) / 2, 
+                    maximum(Y_V) + maximum(Y_B) / 2, 
+                    maximum(Y_B_shifted) + maximum(Y_GAP) / 2, 
+                    maximum(Y_GAP_shifted) + maximum(Y_COINC) / 2,
+                    maximum(Y_COINC_shifted) + maximum(Y_INHIB) / 2,
+                    maximum(Y_INHIB_shifted) + maximum(Y_I1) / 2]
+
+    yticks_labels = ["V", "B", "GAP", "COINC", "INHIB", "I1"]
+
+    plot!(plt, yticks = (yticks_positions, yticks_labels))
+
+    return plt
+end
 
 function raster(spiketimes::Spiketimes, t = nothing, kwargs...)
     t=  isnothing(t) ? [0, maximum(vcat(spiketimes...))] : t
@@ -41,7 +176,7 @@ function raster!(p, P, t = nothing; dt = 0.125ms, populations=nothing, names=not
             isempty(_y0) ? push!(y0, p.N) : (y0 = vcat(y0, _y0))
         end
     else
-        @assert typeof(P)<: AbstractPopulation 
+        @assert typeof(P)<: AbstractPopulation
         X, Y, y0 = _raster_populations(P, t; populations = populations)
     end
     names = isnothing(names) ? ["pop_$i" for i in 1:length(P)] : names

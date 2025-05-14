@@ -26,6 +26,15 @@ end
     active::Vector{Bool} = [true]
 end
 
+@snn_kw mutable struct iSTDPParameterPotentialAntiHebbian{FT = Float32} <: iSTDPParameter
+    η::FT = 0.001pA
+    v0::FT = -50mV
+    τy::FT = 200ms
+    Wmax::FT = 243pF
+    Wmin::FT = 0.01pF
+    active::Vector{Bool} = [true]
+end
+
 
 @snn_kw struct iSTDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
     ## Plasticity variables
@@ -219,5 +228,50 @@ function plasticity!(
     end
 end
 
-export iSTDPParameterRate, iSTDPParameterTime, 
-    iSTDPParameterPotential, iSTDPVariables, plasticityvariables, plasticity!
+function plasticity!(
+    c::AbstractSparseSynapse,
+    param::iSTDPParameterPotentialAntiHebbian,
+    dt::Float32,
+    T::Time,
+)
+    plasticity!(c, param, c.plasticity, dt, T)
+end
+
+function plasticity!(
+    c::AbstractSparseSynapse,
+    param::iSTDPParameterPotentialAntiHebbian,
+    plasticity::iSTDPVariables,
+    dt::Float32,
+    T::Time,
+)
+    @unpack rowptr, colptr, index, I, J, W, v_post, fireI, fireJ, g = c
+    @unpack η, v0, τy, Wmax, Wmin = param
+    @unpack tpre, tpost = plasticity
+
+    # @inbounds 
+    # if pre-synaptic inhibitory neuron fires
+    @fastmath @inbounds for j in eachindex(fireJ) # presynaptic indices j
+        tpre[j] += dt * (-tpre[j]) / τy
+        if fireJ[j] # presynaptic neuron
+            tpre[j] += 1
+            for st = colptr[j]:(colptr[j+1]-1)
+                # println("filtered ", tpost[I[st]] - v0, " ", tpost[I[st]], " ", v0)
+                # println(v_post[I[st]] - v0," ", v_post[I[st]], " ", v0)
+                W[st] = clamp(W[st] + η * (tpost[I[st]] - v0), Wmin, Wmax)
+            end
+        end
+    end
+    # if post-synaptic excitatory neuron fires
+    @fastmath @inbounds for i in eachindex(fireI) # postsynaptic indices i
+        # trace of the membrane potential
+        tpost[i] += dt * -(tpost[i] - v_post[i]) / τy
+        if fireI[i] # postsynaptic neuron
+            for st = rowptr[i]:(rowptr[i+1]-1) 
+                st = index[st]
+                W[st] = clamp(W[st] - η * tpre[J[st]], Wmin, Wmax)
+            end
+        end
+    end
+end
+
+export iSTDPParameterRate, iSTDPParameterTime, iSTDPParameterPotential, iSTDPParameterPotentialAntiHebbian, iSTDPVariables, plasticityvariables, plasticity! 

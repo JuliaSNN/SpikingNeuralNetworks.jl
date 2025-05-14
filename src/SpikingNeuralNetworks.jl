@@ -19,6 +19,7 @@ using LoopVectorization
 using ThreadTools
 using Distributions
 using Graphs, MetaGraphs
+using Plots
 
 
 
@@ -36,10 +37,13 @@ include("neuron/neurons.jl")
 include("synapse/synapses.jl")
 include("stimulus/stimuli.jl")
 
+include("plot.jl")
+include("extra_plots.jl")
 
-function __init__()
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("plot.jl")
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("extra_plots.jl")
-end
+
+# function __init__()
+#     @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("plot.jl")
+#     @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" include("extra_plots.jl")
+# end
 
 end

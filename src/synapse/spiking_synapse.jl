@@ -22,6 +22,8 @@ abstract type AbstractSpikingSynapse <: AbstractSparseSynapse end
     g::VFT  # rise conductance
     targets::Dict = Dict()
     records::Dict = Dict()
+    cells_pre::Vector{Int32} = []
+    cells_post::Vector{Int32} = []
 end
 
 @snn_kw mutable struct SpikingSynapseDelay{
@@ -58,13 +60,16 @@ end
 function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1.0, σ = 0.0, p = 0.0, w = nothing, dist=Normal, kwargs...)
 
     # set the synaptic weight matrix
-    w =  sparse_matrix(w, pre.N, post.N, dist, μ, σ, p)
+    w = sparse_matrix(w, pre.N, post.N, dist, μ, σ, p)
     # remove autapses if pre == post
     (pre == post) && (w[diagind(w)] .= 0) 
     # get the sparse representation of the synaptic weight matrix
     rowptr, colptr, I, J, index, W = dsparse(w)
     # get the presynaptic and postsynaptic firing
     fireI, fireJ = post.fire, pre.fire
+
+    # Find presynaptic cells connected to any postsynaptic cell
+    cells_pre = unique(J)
 
     # get the conductance and membrane potential of the target compartment if multicompartment model
     targets = Dict{Symbol,Any}(:fire => pre.id, :g => post.id)
@@ -112,6 +117,7 @@ function SpikingSynapse(pre, post, sym, target=nothing; delay_dist=nothing, μ=1
             plasticity = plasticity,
             g = g,
             targets = targets,
+            cells_pre = cells_pre,
             @symdict(rowptr, colptr, I, J, index, W, fireI, fireJ, v_post)...,
             kwargs...,
         )

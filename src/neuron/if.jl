@@ -1,4 +1,4 @@
-@snn_kw struct IFParameter{FT = Float32} <: AbstractIFParameter
+@snn_kw mutable struct IFParameter{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
     Vt::FT = -50mV
     Vr::FT = -60mV
@@ -75,36 +75,30 @@ IF
 function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     update_synapses!(p, param, dt)
     update_neuron!(p, param, dt)
-    update_spike!(p, param, dt)
+    # update_spike!(p, param, dt)
 end
 
-function update_spike!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
-    @unpack N, v, w, tabs, fire = p
-    @unpack Vt, Vr, τabs = param
-    @inbounds for i = 1:N
-        fire[i] = v[i] > Vt
-        v[i] = ifelse(fire[i], Vr, v[i])
-        # Absolute refractory period
-        tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
-    end
-    # Adaptation current
-    # if the adaptation timescale is zero, return
-    !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
-    @unpack b = param
-    @inbounds for i = 1:N
-        w[i] = ifelse(fire[i], w[i] + b, w[i])
-    end
-end
+# function update_spike!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
+# end
 
 function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     @unpack N, v, ge, gi, w, I, tabs, fire = p
-    @unpack τm, El, R,  E_i, E_e, τabs, gsyn_e, gsyn_i = param
+    @unpack τm, El, R, Vt, Vr, E_i, E_e, τabs, gsyn_e, gsyn_i , b = param
     @inbounds for i = 1:N
+        v[i] = ifelse(fire[i], Vr, v[i])
+
         if tabs[i] > 0
             fire[i] = false
             tabs[i] -= 1
             continue
         end
+
+        @unpack a, b, τw = param
+
+        if hasfield(typeof(param),:τw) && param.τw > 0.0f0
+            w[i] += dt * (a * (v[i] - El) - w[i]) / τw
+        end
+
         # Membrane potential
         v[i] +=
             dt * (
@@ -114,13 +108,12 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
                 - w[i] # adaptation
                 + I[i] #synaptic term
             ) * R / τm
-    end
-    # Adaptation current
-    # if the adaptation timescale is zero, return
-    !(hasfield(typeof(param),:τw) && param.τw > 0.0f0) && (return)
-    @unpack a, b, τw = param
-    @inbounds for i = 1:N
-        (w[i] += dt * (a * (v[i] - El) - w[i]) / τw)
+
+        fire[i] = v[i] > Vt
+        v[i] = ifelse(fire[i], 10.0f0, v[i]) # Set membrane potential to spike potential
+
+        w[i] = ifelse(fire[i], w[i] + b, w[i])
+        tabs[i] = ifelse(fire[i], round(Int, τabs/dt), tabs[i])
     end
 
 end

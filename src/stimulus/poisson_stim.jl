@@ -16,9 +16,7 @@ end
 
 PSParam = PoissonStimulusVariable
 
-@snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <:
-
-                       AbstractStimulus
+@snn_kw struct PoissonStimulus{VFT = Vector{Float32},VBT = Vector{Bool},VIT = Vector{Int}, IT = Int32} <: AbstractStimulus
     id::String = randstring(12)
     name::String = "Poisson"
     param::PoissonStimulusParameter
@@ -60,7 +58,7 @@ Constructs a PoissonStimulus object for a spiking neural network.
 # Returns
 A `PoissonStimulus` object.
 """
-function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjoint=nothing, N::Int=200,N_pre::Int=5, p_post=0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
+function PoissonStimulus(post::T, sym::Symbol, target = nothing; cells=[], disjoint=nothing, N::Int=200, N_pre::Int=5, p_post=0.05f0, μ=1.f0, param::Union{PoissonStimulusParameter,R}, kwargs...) where {T <: AbstractPopulation, R <: Real}
     if cells == :ALL
         cells = 1:post.N
     end 
@@ -174,6 +172,7 @@ function stimulate!(p::PoissonStimulus, param::PoissonStimulusVariable, time::Ti
     @unpack N, N_pre, randcache, fire, cells, colptr, W, I, g = p
     myrate::Float32 = param.rate(get_time(time), param)
     myrate*=dt/N_pre
+
     rand!(randcache)
     @inbounds @simd for j = 1:N
         if randcache[j] < myrate

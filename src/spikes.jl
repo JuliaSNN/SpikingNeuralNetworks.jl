@@ -104,6 +104,17 @@ export spikecount
 function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
     return @fastmath SNN.exp32(- (t - t0) / τ) * Θ((t - t0))
 end
+
+# t0 = 0.0f0  # Time of spike
+# τ = 2.5ms  # Time constant
+
+# t_values = -100.0f0:0.1f0:100.0f0  # Time range from -10 to 50 ms
+# alpha_values = [alpha_function(t; t0=t0, τ=Float32(τ)) for t in t_values]  # Compute function values
+
+# plot(t_values, alpha_values, label="Alpha Function", xlabel="Time (ms)", ylabel="Response", title="Decay $τ ms", lw=2)
+
+
+
 """
     Θ(x::Float64)
 
@@ -221,24 +232,21 @@ function firing_rate(
     tt0 = -1,
     cache = true,
     pop::Union{Symbol,Vector{Int}} = :ALL,
-    interpolate = true,
 )
+    all(isempty.(spiketimes)) && return [0], [0]
     if isempty(interval)
         tt0 = tt0 > 0 ? tt0 : 0.0f0
         ttf = ttf > 0 ? ttf : maximum(Iterators.flatten(spiketimes))
         interval = tt0:sampling:ttf
     end
-    all(isempty.(spiketimes)) && return Spiketimes([zeros(Float32, length(interval)) for n in eachindex(spiketimes)]), interval
     spiketimes = pop == :ALL ? spiketimes : spiketimes[pop]
     rates = tmap(
-        n -> convolve(spiketimes[n], interval = interval, τ = τ),
+        n -> convolve(spiketimes[n], interval = interval, τ = τ, f = alpha_function),
         eachindex(spiketimes),
     )
     # rates = vcat(rates'...)
 
-    if interpolate
-        rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
-    end
+    rates = scale(interpolate(copy(hcat(rates...)'), BSpline(Linear)), 1:length(spiketimes), interval)
     return rates, interval
 end
 
@@ -249,11 +257,13 @@ end
 
 function firing_rate(populations; kwargs...)
     spiketimes_pop, names_pop  = SNN.spiketimes_split(populations)
-    fr_pop = Spiketimes[]
+    fr_pop = []
+    interval_pop = Vector{StepRangeLen}()
     interval = nothing
     for spiketimes in spiketimes_pop
         rates, interval = firing_rate(spiketimes; kwargs...)
         push!(fr_pop, rates)
+        # push!(interval_pop, interval)
     end
     return fr_pop, interval, names_pop
 end
