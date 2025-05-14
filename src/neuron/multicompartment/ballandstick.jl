@@ -143,14 +143,20 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
             v_d[i] += dt * c1 / d.C[i]
         else
             ## Heun integration
-            for _i ∈ 1:2
+
+            # Initialize temporary variables
+            for _i ∈ 1:2 
                 Δv_temp[_i] = 0.0f0
                 Δv[_i] = 0.0f0
             end
+
+            # Compute the first slope estimate
             update_ballandstick!(p, Δv, i, param, 0.0f0)
             for _i ∈ 1:2
                 Δv_temp[_i] = Δv[_i]
             end
+
+            # Compute the second slope estimate
             update_ballandstick!(p, Δv, i, param, dt)
             @fastmath v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
             @fastmath v_d[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
@@ -169,7 +175,7 @@ function integrate!(p::BallAndStick, param::AdExSoma, dt::Float32)
                 fire[i] = true
                 θ[i] += postspike.A
                 v_s[i] = AP_membrane
-                w_s[i] += b ##  *τw
+                w_s[i] += b  #/ param.τw # CHANGED added τw
                 after_spike[i] = (up + τabs) / dt
             end
         end
@@ -187,12 +193,12 @@ function update_synapses!(
     @unpack he_d, hi_d, exc_receptors, inh_receptors, α = p
 
     @inbounds for n in exc_receptors
-        @turbo for i ∈ 1:N
+        @simd for i ∈ 1:N
             h_d[i, n] += he_d[i] * α[n]
         end
     end
     @inbounds for n in inh_receptors
-        @turbo for i ∈ 1:N
+        @simd for i ∈ 1:N
             h_d[i, n] += hi_d[i] * α[n]
         end
     end
@@ -201,19 +207,19 @@ function update_synapses!(
     fill!(hi_d, 0.0f0)
     for n in eachindex(dend_syn)
         @unpack τr⁻, τd⁻ = dend_syn[n]
-        @fastmath @turbo for i ∈ 1:N
+        @fastmath @simd for i ∈ 1:N
             g_d[i, n] = exp32(-dt * τd⁻) * (g_d[i, n] + dt * h_d[i, n])
             h_d[i, n] = exp32(-dt * τr⁻) * (h_d[i, n])
         end
     end
 
     @unpack τr⁻, τd⁻ = soma_syn[1]
-    @fastmath @turbo for i ∈ 1:N
+    @fastmath @simd for i ∈ 1:N
         ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
         he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
     end
     @unpack τr⁻, τd⁻ = soma_syn[2]
-    @fastmath @turbo for i ∈ 1:N
+    @fastmath @simd for i ∈ 1:N
         gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
         hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
     end
@@ -257,7 +263,7 @@ function update_ballandstick!(
                 is[2] += gsyn * g_d[i, r] * (v_d[i] + Δv[2] * dt - E_rev)
             end
         end
-        @turbo for _i ∈ 1:2
+        @simd for _i ∈ 1:2
             is[_i] = clamp(is[_i], -1500, 1500)
         end
 

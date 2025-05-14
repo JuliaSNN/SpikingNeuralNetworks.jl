@@ -1,4 +1,4 @@
-@snn_kw struct IFParameter{FT = Float32} <: AbstractIFParameter
+@snn_kw mutable struct IFParameter{FT = Float32} <: AbstractIFParameter
     τm::FT = 20ms
     Vt::FT = -50mV # Membrane threshold potential
     Vr::FT = -60mV # Membrane reset potential
@@ -94,7 +94,7 @@ function integrate!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
     update_synapses!(p, param, dt)
     # Heun_update_neuron!(p, param, dt)
     update_neuron!(p, param, dt)
-    update_spike!(p, param, dt)
+    # update_spike!(p, param, dt)
 end
 
 function update_spike!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParameter}
@@ -119,11 +119,20 @@ function update_neuron!(p::IF, param::T, dt::Float32) where {T<:AbstractIFParame
     @unpack N, v, ge, gi, w, I, tabs, fire = p
     @unpack τm, El, R, E_i, E_e, τabs, gsyn_e, gsyn_i = param
     @inbounds for i = 1:N
+        v[i] = ifelse(fire[i], Vr, v[i])
+
         if tabs[i] > 0
             fire[i] = false
             tabs[i] -= 1
             continue
         end
+
+        @unpack a, b, τw = param
+
+        if hasfield(typeof(param),:τw) && param.τw > 0.0f0
+            w[i] += dt * (a * (v[i] - El) - w[i]) / τw
+        end
+
         # Membrane potential
         v[i] +=
             dt/τm *

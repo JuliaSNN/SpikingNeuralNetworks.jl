@@ -293,6 +293,7 @@ function firing_rate(populations; mean_pop = false, kwargs...)
     for n in eachindex(spiketimes_pop)
         rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
         push!(fr_pop, rates)
+        # push!(interval_pop, interval)
     end
     return fr_pop, interval, names_pop
 end
