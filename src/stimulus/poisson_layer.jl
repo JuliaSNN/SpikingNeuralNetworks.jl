@@ -14,16 +14,18 @@ PoissonStimulusLayer
 @snn_kw struct PoissonStimulusLayer{R = Float32} <: PoissonStimulusParameter
     rate::Vector{R}
     N::Int32
-    ϵ::Float32
+    p::Float32
+    μ::Float32
+    σ::Float32 = 0
     active::Vector{Bool} = [true]
 end
 
-function PoissonStimulusLayer(N::Int; rate::R, ϵ::Float32) where {R<:Real}
-    return PoissonStimulusLayer(
-        rate = fill(Float32.(rate), N),
-        N = N,
-        ϵ = ϵ,
-        active = [true],
+function PoissonStimulusLayer(rate::R; kwargs...) where {R<:Real}
+    N = kwargs[:N]
+    rate = fill(Float32.(rate), N)
+    return PoissonStimulusLayer(;
+        kwargs...,
+        rate = rate,
     )
 end
 
@@ -34,14 +36,12 @@ function PoissonLayer(
     sym::Symbol,
     target = nothing;
     w = nothing,
-    μ = 1.0f0,
-    σ = 0.0,
     param::PoissonStimulusLayer,
     dist::Symbol = :Normal,
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
 
-    w = sparse_matrix(w, param.N, post.N, dist, μ, σ, param.ϵ)
+    w = sparse_matrix(w, param.N, post.N, dist, param.μ, param.σ, param.p)
 
     ## select a subset of neuronsthat receive the stimulus
     rowptr, colptr, I, J, index, W = dsparse(w)
