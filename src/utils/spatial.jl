@@ -158,7 +158,7 @@ Create a linear network with Gaussian-shaped connections.
 # Returns
 - `W::Matrix{Float32}`: A matrix containing the weights of the connections.
 """
-function linear_network(N; σ_w = 0.38, w_max = 2.0)
+function linear_network(N; σ_w = 0.38, w_max = 2.0, kwargs...)
     # Function to calculate wθ^sE
     function wθ_sE(θ_j, θ_i, w_0, w_, σ_w)
         return w_0 +
