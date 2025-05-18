@@ -138,6 +138,18 @@ function SpikingSynapse(
     end
 end
 
+function update_plasticity!(c::SpikingSynapse; LTP=nothing, STP=nothing)
+    if !isnothing(LTP)
+        c.LTPParam = LTP
+        c.LTPVars = plasticityvariables(c.LTPParam, length(c.fireJ), length(c.fireI))
+    end
+    if !isnothing(STP)
+        c.STPParam = STP
+        c.STPVars = plasticityvariables(c.STPParam, length(c.fireJ), length(c.fireI))
+    end
+end
+
+
 function forward!(c::SpikingSynapse, param::SpikingSynapseParameter)
     @unpack colptr, I, W, fireJ, g, ρ = c
     @inbounds for j ∈ eachindex(fireJ) # loop on presynaptic neurons
@@ -172,3 +184,5 @@ function forward!(c::SpikingSynapseDelay, param::SpikingSynapseParameter)
         end
     end
 end
+
+export SpikingSynapse, SpikingSynapseDelay,  update_plasticity!
