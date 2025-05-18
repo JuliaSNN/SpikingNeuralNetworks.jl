@@ -104,10 +104,11 @@ function PoissonStimulus(
     end
 
     ## select a subset of neuronsthat receive the stimulus
-    neurons = neurons == :ALL ? eachindex(post.N) : neurons
-    neurons = []
-    for i = 1:post.N
-        (rand() < p_post) && (push!(neurons, i))
+    if neurons == :ALL
+        neurons = []
+        for i = 1:post.N
+            (rand() < p_post) && (push!(neurons, i))
+        end
     end
 
     ## construct the connectivity matrix
@@ -143,6 +144,10 @@ function stimulate!(
     time::Time,
     dt::Float32,
 )
+    @unpack active = param
+    if !active[1]
+        return
+    end
     @unpack N, N_pre, randcache, fire, neurons, colptr, W, I, g = p
     @unpack rate = param
     rand!(randcache)
