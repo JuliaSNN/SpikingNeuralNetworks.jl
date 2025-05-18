@@ -24,7 +24,7 @@ function asynchronous_state(model, interval)
 
     # Calculate the Fano Factor (FF)
     st = merge_spiketimes(spiketimes(model.pop.E))
-    bins, _ = SNN.bin_spiketimes(st; time_range = interval, do_sparse = false)
+    bins, _ = SNN.bin_spiketimes(st; interval = interval, do_sparse = false)
     ff = var(bins) / mean(bins)  # Fano Factor
     # ff = var.(bins) ./ mean.(bins)  # Fano Factor
     # ff[isnan.(ff)] .= 0.0  # Replace NaN values with 0.0
