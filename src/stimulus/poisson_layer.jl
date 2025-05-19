@@ -39,7 +39,7 @@ function PoissonLayer(
     param::PoissonStimulusLayer,
     dist::Symbol = :Normal,
     kwargs...,
-) where {T<:AbstractPopulation,R<:Real}
+) where {T<:AbstractPopulation}
 
     w = sparse_matrix(w, param.N, post.N, dist, param.μ, param.σ, param.p)
 
