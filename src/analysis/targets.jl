@@ -15,7 +15,10 @@ Calculate the inter-spike intervals (ISIs) for a given set of spike times.
 """
 
 
-function asynchronous_state(model, interval)
+function asynchronous_state(model, interval=nothing)
+
+    interval = interval === nothing ? (0s:0.5s:get_time(model)) : interval
+    bins, _ = SNN.bin_spiketimes(model.pop.E; interval, do_sparse = false)
     # Calculate the Coefficient of Variation (CV) of ISIs
     isis = isi(model.pop.E; interval)
     cv = std.(isis) ./ (mean.(isis) .+ 1e-6)  # Adding a small value to avoid division by zero
@@ -23,13 +26,12 @@ function asynchronous_state(model, interval)
     cv = mean(cv)
 
     # Calculate the Fano Factor (FF)
-    st = merge_spiketimes(spiketimes(model.pop.E))
-    bins, _ = SNN.bin_spiketimes(st; interval = interval, do_sparse = false)
     ff = var(bins) / mean(bins)  # Fano Factor
-    # ff = var.(bins) ./ mean.(bins)  # Fano Factor
-    # ff[isnan.(ff)] .= 0.0  # Replace NaN values with 0.0
 
-    return cv, ff
+    ## Calculate the Synchrony Index (SI)
+    si = mean(cov(bins, dims=2))
+
+    return cv, ff, si
 end
 
 function target_firing_rate(model, interval)
