@@ -253,7 +253,7 @@ function firing_rate(
     else
         spiketimes = spiketimes[neurons]
         alpha_kernel = get_alpha_kernel(τ, interval)
-        rates = tmap(eachindex(spiketimes)) do n
+        rates = map(eachindex(spiketimes)) do n
             spike_train, _ =
                 bin_spiketimes(spiketimes[n]; interval = interval, do_sparse = false)
             conv(spike_train, alpha_kernel)[1:length(interval)] .* s # times
@@ -277,6 +277,9 @@ function firing_rate(
     end
     return rates, interval
 end
+
+firing_rate(P, interval::T; kwargs...) where {T<:AbstractRange} =
+    firing_rate(P; interval, kwargs...)
 
 function firing_rate(
     population::T;
@@ -435,13 +438,13 @@ containing the time points corresponding to the center of each bin.
 """
 function bin_spiketimes(
     spike_times::Vector{Float32};
-    interval::AbstractRange = 0:-1,
+    interval::AbstractRange,
     max_lag = 500ms,
     bin_width = 1.0ms,
     do_sparse = true,
 )
-    interval =
-        isempty(interval) ? (0.0:bin_width:(maximum(spike_times)+max_lag)) : interval
+    # interval =
+    #     isempty(interval) ? (0.0:bin_width:(maximum(spike_times)+max_lag)) : interval
     bin_width = step(interval)
     spike_train = zeros(length(interval))
     st = sort(spike_times) .- first(interval)
@@ -452,13 +455,13 @@ function bin_spiketimes(
         end
     end
     if do_sparse
-        return sparse(spike_train), interval
+        return SNN.sparse(spike_train), interval
     else
         return spike_train, interval
     end
 end
 
-function bin_spiketimes(spike_times::Vector{Vector{Float32}}; kwargs...)
+function bin_spiketimes(spike_times::Spiketimes; kwargs...)
     sample, r = bin_spiketimes(spike_times[1]; kwargs..., do_sparse = false)
     bin_array = zeros(length(spike_times), length(sample))
     for n in eachindex(spike_times)
@@ -468,7 +471,15 @@ function bin_spiketimes(spike_times::Vector{Vector{Float32}}; kwargs...)
 end
 
 bin_spiketimes(P::AbstractPopulation; kwargs...) = bin_spiketimes(spiketimes(P); kwargs...)
-bin_spiketimes(P, interval::T; kwargs...) where {T<:AbstractRange} = bin_spiketimes(spiketimes(P); interval, kwargs...)
+bin_spiketimes(P::AbstractStimulus; kwargs...) = bin_spiketimes(spiketimes(P); kwargs...)
+bin_spiketimes(P, interval::T; kwargs...) where {T<:AbstractRange} = bin_spiketimes(P; interval, kwargs...)
+
+function bin_spiketimes(populations; interval, kwargs...)
+    st_pops, names_pop = spiketimes_split(populations)
+    ss = map(st->bin_spiketimes(st; interval, kwargs...)[1],eachindex(st_pops)) 
+    return ss, interval, names_pop
+end
+
 
 
 
