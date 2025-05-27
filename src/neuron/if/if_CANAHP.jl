@@ -84,7 +84,7 @@ end
 """
     [Integrate-And-Fire Neuron](https://neuronaldynamics.epfl.ch/online/Ch1.S3.html)
 """
-IF
+IF_CANAHP
 
 function integrate!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32)
     update_synapses!(p, param, dt)

@@ -23,8 +23,6 @@
     g::VFT  # rise conductance
     targets::Dict = Dict()
     records::Dict = Dict()
-    cells_pre::Vector{Int32} = []
-    cells_post::Vector{Int32} = []
 end
 
 @snn_kw mutable struct SpikingSynapseDelay{
@@ -85,9 +83,6 @@ function SpikingSynapse(
     # get the presynaptic and postsynaptic firing
     fireI, fireJ = post.fire, pre.fire
 
-    # Find presynaptic cells connected to any postsynaptic cell
-    cells_pre = unique(J)
-
     # get the conductance and membrane potential of the target compartment if multicompartment model
     targets = Dict{Symbol,Any}(
         :fire => pre.id,
@@ -115,7 +110,6 @@ function SpikingSynapse(
             ρ = ρ,
             g = g,
             targets = targets,
-            cells_pre = cells_pre,
             @symdict(rowptr, colptr, I, J, index, W, fireI, fireJ, v_post)...,
             LTPVars, 
             STPVars, 

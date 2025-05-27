@@ -23,15 +23,6 @@ end
     Wmin::FT = 0.01pF
 end
 
-@snn_kw mutable struct iSTDPParameterPotentialAntiHebbian{FT = Float32} <: iSTDPParameter
-    η::FT = 0.001pA
-    v0::FT = -50mV
-    τy::FT = 200ms
-    Wmax::FT = 243pF
-    Wmin::FT = 0.01pF
-    active::Vector{Bool} = [true]
-end
-
 
 @snn_kw struct iSTDPVariables{VFT = Vector{Float32},IT = Int} <: PlasticityVariables
     ## Plasticity variables

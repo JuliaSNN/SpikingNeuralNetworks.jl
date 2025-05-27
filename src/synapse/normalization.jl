@@ -129,18 +129,18 @@ function plasticity!(c::SynapseNormalization, param::NormParam)
                 W1[i] += W[index[j]]
             end
         end
-        # normalize
-        # @fastmath @inbounds @simd 
-        @simd for i in eachindex(μ)
-            μ[i] = (W0[i] - operator(W1[i], 0.0f0)) / W1[i] #operator defines additive or multiplicative norm
-        end
-        # apply
-        for syn in synapses
-            @unpack rowptr, W, index = syn
-            Threads.@threads for i = 1:(length(rowptr)-1) # Iterate over all postsynaptic neuron
-                @inbounds @fastmath @simd for j = rowptr[i]:(rowptr[i+1]-1) # all presynaptic neurons connected to neuron i
-                    W[index[j]] = operator(W[index[j]], μ[i])
-                end
+    end
+    # normalize
+    # @fastmath @inbounds @simd 
+    @turbo for i in eachindex(μ)
+        μ[i] = (W0[i] - operator(W1[i], 0.0f0)) / W1[i] #operator defines additive or multiplicative norm
+    end
+    # apply
+    for syn in synapses
+        @unpack rowptr, W, index = syn
+        Threads.@threads for i = 1:(length(rowptr)-1) # Iterate over all postsynaptic neuron
+            @inbounds @fastmath @simd for j = rowptr[i]:(rowptr[i+1]-1) # all presynaptic neurons connected to neuron i
+                W[index[j]] = operator(W[index[j]], μ[i])
             end
         end
     end

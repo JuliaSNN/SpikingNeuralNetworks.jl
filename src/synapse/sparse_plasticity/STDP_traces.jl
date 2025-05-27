@@ -12,25 +12,6 @@ STDPGerstner
     Wmin::FT = 0.0pF                  # Min weight (negative for inhibition)
 end
 
-@snn_kw struct STDPAntiHebbianAsymmetric{FT = Float32} <: STDPAbstractParameter
-    A_post::FT = 10e-2pA / mV         # LTD learning rate (inhibitory synapses)
-    A_pre::FT =  10e-2pA / (mV * mV)  # LTP learning rate (inhibitory synapses)
-    τpre::FT = 20ms                   # Time constant for pre-synaptic spike trace
-    τpost::FT = 20ms                  # Time constant for post-synaptic spike trace
-    Wmax::FT = 30.0pF                 # Max weight
-    Wmin::FT = 0.0pF                  # Min weight (negative for inhibition)
-    active::Vector{Bool} = [true]
-end
-
-@snn_kw struct STDPHebbianAsymmetric{FT = Float32} <: STDPAbstractParameter
-    A_post::FT = 10e-2pA / mV         # LTD learning rate (inhibitory synapses)
-    A_pre::FT =  10e-2pA / (mV * mV)  # LTP learning rate (inhibitory synapses)
-    τpre::FT = 20ms                   # Time constant for pre-synaptic spike trace
-    τpost::FT = 20ms                  # Time constant for post-synaptic spike trace
-    Wmax::FT = 30.0pF                 # Max weight
-    Wmin::FT = 0.0pF                  # Min weight (negative for inhibition)
-end
-
 @doc """
     STDPMexicanHat{FT = Float32}
     
@@ -43,13 +24,6 @@ end
 STDPMexicanHat
 
 @snn_kw struct STDPMexicanHat{FT = Float32} <: STDPParameter
-    A::FT = 10e-2pA / mV    # LTD learning rate (inhibitory synapses)
-    τ::FT = 20ms                    # Time constant for pre-synaptic spike trace
-    Wmax::FT = 30.0pF                # Max weight
-    Wmin::FT = 0.0pF               # Min weight (negative for inhibition)
-end
-
-@snn_kw struct STDPReverseMexicanHat{FT = Float32} <: STDPAbstractParameter
     A::FT = 10e-2pA / mV    # LTD learning rate (inhibitory synapses)
     τ::FT = 20ms                    # Time constant for pre-synaptic spike trace
     Wmax::FT = 30.0pF                # Max weight
@@ -179,163 +153,6 @@ function plasticity!(
         @inbounds W[i] = clamp(W[i], Wmin, Wmax)
     end
 end
-
-function plasticity!(
-    c::PT,
-    param::STDPReverseMexicanHat,
-    plasticity::STDPVariables,
-    dt::Float32,
-    T::Time
-) where PT <: AbstractSparseSynapse
-    @unpack rowptr, colptr, I, J, index, W, fireJ, fireI, g, index = c
-    @unpack tpre, tpost = plasticity
-    @unpack A, τ, Wmax, Wmin = param
-
-
-    # Update weights based on pre-post spike timing
-    @inbounds @fastmath begin 
-
-        @turbo for i in eachindex(fireI)
-            tpost[i] += dt * (-tpost[i]) / τ
-        end
-        @simd for i in findall(fireI)
-                tpost[i] += 1
-        end
-
-        @turbo for j in eachindex(fireJ)
-            tpre[j] += dt * (-tpre[j]) / τ
-        end
-        @simd for j in findall(fireJ)
-                tpre[j] += 1
-        end
-
-
-        for i in 1:length(rowptr)-1
-            @simd for st = rowptr[i]:(rowptr[i+1]-1)
-                s = index[st]
-                if fireJ[J[s]] && abs(tpost[i]*tpre[J[s]])> 0.f0
-                    W[s] -= A *MexicanHat((log(tpre[J[s]]/tpost[i]))^2)
-                end
-            end
-        end
-
-        # Update weights based on pre-post spike timing
-        for j in 1:length(colptr)-1
-            @simd for s = colptr[j]:(colptr[j+1]-1)
-                if fireI[I[s]] && abs(tpost[I[s]]*tpre[j]) > 0.f0
-                    W[s] -= A * MexicanHat(log(tpre[j]/tpost[I[s]])^2)
-                end
-            end
-        end
-    end
-    # Clamp weights to the specified bounds
-    @turbo for i in eachindex(W)
-        @inbounds W[i] = clamp(W[i], Wmin, Wmax)
-    end
-end
-
-function plasticity!(
-    c::PT,
-    param::STDPHebbianAsymmetric,
-    plasticity::STDPVariables,
-    dt::Float32,
-    T::Time
-) where PT <: AbstractSparseSynapse
-    @unpack rowptr, colptr, I, J, index, W, fireJ, fireI, g, index = c
-    @unpack tpre, tpost = plasticity
-    @unpack A_pre, A_post, τpre, τpost, Wmax, Wmin = param
-
-    # Update weights based on pre-post and post-pre spike timing (asymmetric anti-Hebbian rule)
-    @inbounds @fastmath begin 
-        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
-            @simd for st = rowptr[i]:(rowptr[i+1]-1)
-                s = index[st]
-                if fireJ[J[s]]
-                    W[s] += tpost[i]  # pre-post
-                end
-            end
-        end
-
-        for j in 1:length(colptr)-1 # loop over pre-synaptic neurons
-            @simd for s = colptr[j]:(colptr[j+1]-1)
-                if fireI[I[s]]
-                    W[s] -= tpre[j]  # post-pre
-                end
-            end
-        end
-
-        @turbo for i in eachindex(fireI)
-            tpost[i] += dt * (-tpost[i]) / τpost
-        end
-        @simd for i in findall(fireI)
-            tpost[i] += A_post / τpost
-        end
-
-        @turbo for j in eachindex(fireJ)
-            tpre[j] += dt * (-tpre[j]) / τpre
-        end
-        @simd for j in findall(fireJ)
-            tpre[j] += A_pre / τpre
-        end
-    end
-
-    # Clamp weights to the specified bounds
-    @turbo for i in eachindex(W)
-        @inbounds W[i] = clamp(W[i], Wmin, Wmax)
-    end
-end
-
-function plasticity!(
-    c::PT,
-    param::STDPAntiHebbianAsymmetric,
-    plasticity::STDPVariables,
-    dt::Float32,
-    T::Time
-) where PT <: AbstractSparseSynapse
-    @unpack rowptr, colptr, I, J, index, W, fireJ, fireI, g, index = c
-    @unpack tpre, tpost = plasticity
-    @unpack A_pre, A_post, τpre, τpost, Wmax, Wmin = param
-
-    # Update weights based on pre-post and post-pre spike timing (asymmetric anti-Hebbian rule)
-    @inbounds @fastmath begin 
-        for i in 1:length(rowptr)-1 # loop over post-synaptic neurons
-            @simd for st = rowptr[i]:(rowptr[i+1]-1)
-                s = index[st]
-                if fireJ[J[s]]
-                    W[s] -= tpost[i]  # pre-post
-                end
-            end
-        end
-
-        for j in 1:length(colptr)-1 # loop over pre-synaptic neurons
-            @simd for s = colptr[j]:(colptr[j+1]-1)
-                if fireI[I[s]]
-                    W[s] += tpre[j]  # post-pre
-                end
-            end
-        end
-
-        @turbo for i in eachindex(fireI)
-            tpost[i] += dt * (-tpost[i]) / τpost
-        end
-        @simd for i in findall(fireI)
-            tpost[i] += A_post / τpost
-        end
-
-        @turbo for j in eachindex(fireJ)
-            tpre[j] += dt * (-tpre[j]) / τpre
-        end
-        @simd for j in findall(fireJ)
-            tpre[j] += A_pre / τpre
-        end
-    end
-
-    # Clamp weights to the specified bounds
-    @turbo for i in eachindex(W)
-        @inbounds W[i] = clamp(W[i], Wmin, Wmax)
-    end
-end
-
 
 # Export the relevant functions and structs
 export STDPVariables, plasticityvariables, plasticity!, STDPMexicanHat, STDPGerstner

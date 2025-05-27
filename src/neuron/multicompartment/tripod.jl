@@ -302,7 +302,7 @@ function update_tripod!(
                 is[3] += gsyn * g_d2[i, r] * (v_d2[i] + Δv[3] * dt - E_rev)
             end
         end
-        @simd for _i ∈ 1:3
+        @turbo for _i ∈ 1:3
             is[_i] = clamp(is[_i], -1500, 1500)
         end
         # @info Δv

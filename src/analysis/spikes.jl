@@ -244,7 +244,6 @@ function firing_rate(
     rates = nothing
 
     if time_average
-        @show "Time average firing rate, interval: $(interval)"
         return sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
     end
     if length(spiketimes) < 1
@@ -293,7 +292,6 @@ function firing_rate(populations; mean_pop = false, kwargs...)
     for n in eachindex(spiketimes_pop)
         rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
         push!(fr_pop, rates)
-        # push!(interval_pop, interval)
     end
     return fr_pop, interval, names_pop
 end

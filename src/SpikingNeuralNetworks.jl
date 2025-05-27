@@ -22,7 +22,6 @@ using LoopVectorization
 using ThreadTools
 using Distributions
 using Graphs, MetaGraphs
-using Plots
 
 include("utils/macros.jl")
 include("utils/structs.jl")
