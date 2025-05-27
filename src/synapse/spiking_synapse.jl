@@ -90,6 +90,7 @@ function SpikingSynapse(
         :pre => pre.id,
         :type=>:SpikingSynapse,
     )
+
     @views g, v_post = synaptic_target(targets, post, sym, target)
 
     # set the paramter for the synaptic plasticity
