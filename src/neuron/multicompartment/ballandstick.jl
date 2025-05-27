@@ -275,4 +275,4 @@ function update_ballandstick!(
 
 end
 
-export BallAndStick
+export BallAndStick, BallAndStickHet

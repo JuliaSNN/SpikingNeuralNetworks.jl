@@ -48,7 +48,7 @@ end
 """
     [Integrate-And-Fire Neuron](https://neuronaldynamics.epfl.ch/online/Ch1.S3.html)
 """
-IF
+IFCurrent
 
 function integrate!(p::IFCurrent, param::T, dt::Float32) where {T<:AbstractIFParameter}
     @unpack N, v, ge, gi, fire, I, records, tabs = p

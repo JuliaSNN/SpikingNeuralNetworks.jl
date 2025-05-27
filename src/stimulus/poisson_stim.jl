@@ -86,7 +86,7 @@ function PoissonStimulus(
     post::T,
     sym::Symbol,
     target = nothing;
-    neurons = :ALL,
+    neurons = nothing,
     N::Int = 100,
     p_post = 1.0,
     N_pre = 50,
@@ -104,10 +104,12 @@ function PoissonStimulus(
     end
 
     ## select a subset of neuronsthat receive the stimulus
-    neurons = neurons == :ALL ? eachindex(post.N) : neurons
-    neurons = []
-    for i = 1:post.N
-        (rand() < p_post) && (push!(neurons, i))
+    neurons = neurons == :ALL ? eachindex(1:post.N) : neurons
+    if isnothing(neurons)
+        neurons = []
+        for i = 1:post.N
+            (rand() < p_post) && (push!(neurons, i))
+        end
     end
 
     ## construct the connectivity matrix
