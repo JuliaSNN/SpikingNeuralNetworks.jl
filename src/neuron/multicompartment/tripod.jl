@@ -108,7 +108,7 @@ function Tripod(
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    NMDA::NMDAVoltageDependency,
     kwargs...,
 )
     soma_syn = synapsearray(soma_syn)
