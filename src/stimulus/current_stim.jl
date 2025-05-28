@@ -46,11 +46,13 @@ end
 
 
 function CurrentStimulus(
-    post::T;
+    post::T, 
+    sym::Symbol=:I;
     neurons = :ALL,
     # α::R = 1f0,
     # I_dist::Distribution = Normal(0.0, 0.0),
     # I_base = 10pA,
+
     param,
     kwargs...,
 ) where {T<:AbstractPopulation}
@@ -69,7 +71,7 @@ function CurrentStimulus(
         Dict(:pre => :Current, :post => post.id, :sym => :soma, :type=>:CurrentStimulus)
     return CurrentStimulus(
         neurons = neurons,
-        I = post.I,
+        I = getfield(post, sym),
         targets = targets;
         param = param,
         kwargs...,
