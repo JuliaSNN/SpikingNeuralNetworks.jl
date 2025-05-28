@@ -19,7 +19,7 @@ function create_spatial_structure(config)
     @unpack grid_size = projections
     Pops = Dict{Symbol,Vector}()
     for k in keys(Npop)
-        points = [rand(2) .* grid_size for _ = 1:Npop[k]]
+        points = [rand(length(grid_size)) .* grid_size for _ = 1:Npop[k]]
         Pops[k] = points
     end
     return Pops |> dict2ntuple
@@ -39,17 +39,28 @@ Calculate the periodic distance between two points in a 2D grid.
 - `distance::Float64`: The periodic distance between the two points.
 """
 function periodic_distance(point1, point2, grid_size)
-    dx = abs(point1[1] - point2[1])
-    dy = abs(point1[2] - point2[2])
+    isa(grid_size, Vector) && @assert length(grid_size) == length(point1) "grid_size must match the dimension of points"
+    typeof(grid_size) <: Real && (grid_size = repeat([grid_size], length(point1)))
+    @assert length(point1) == length(point2) "point1 and point2 must have the same dimension" 
+    xs = zeros(Float64, length(point1))
+    for n in eachindex(point1)
+        xs[n] = min(abs(point1[n] - point2[n]), grid_size[n] - abs(point1[n] - point2[n]))
+    end
+    return sqrt(sum(xs.^2))
 
-    dx = min(dx, grid_size - dx)
-    dy = min(dy, grid_size - dy)
 
-    return sqrt(dx^2 + dy^2)
+    # dx = abs(point1[1] - point2[1])
+    # dy = abs(point1[2] - point2[2])
+
+
+    # dx = min(dx, grid_size - dx)
+    # dy = min(dy, grid_size - dy)
+
+    # return sqrt(dx^2 + dy^2)
 end
 
 """
-    neurons_within_area(points, center, distance, grid_size)
+    neurons_within_circle(points, center, distance, grid_size)
 
 Find the indices of neurons within a specified area around a center point.
 
@@ -62,11 +73,11 @@ Find the indices of neurons within a specified area around a center point.
 # Returns
 - `indices::Vector{Int}`: The indices of neurons within the specified area.
 """
-function neurons_within_area(points, center, distance, grid_size)
-    return [
-        i for
-        i = 1:length(points) if periodic_distance(points[i], center, grid_size) <= distance
-    ]
+function neurons_within_circle(points, center, distance, grid_size)
+    map(x->periodic_distance(x, center, grid_size) <= distance, points)
+end
+
+function neurons_within(func::Function, kwargs...)
 end
 
 """
@@ -187,6 +198,6 @@ end
 export create_spatial_structure,
     periodic_distance,
     compute_connections,
-    neurons_within_area,
+    neurons_within_circle,
     neurons_outside_area,
     linear_network
