@@ -68,8 +68,8 @@ function update_neuron!(p::ExtendedIF, param::T, dt::Float32) where {T<:Abstract
                 g_PV[i] * (E_i - v[i]) +
                 g_SST[i] * (E_i - v[i]) +
                 -α * g_Exc[i] * g_SST[i] * (E_e - v[i]) +
-                # + I[i] # synaptic term
-                0
+                + I[i] # synaptic term
+                # 0
             ) / param.Cm
         v[i] += dt * dv
     end
