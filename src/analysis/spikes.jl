@@ -32,6 +32,7 @@ function spiketimes(
 
     firing_time = p.records[:fire][:time]
     neurons = p.records[:fire][:neurons]
+    
 
     if length(firing_time) < 2
         # @warn "No spikes in population"
@@ -244,8 +245,13 @@ function firing_rate(
     rates = nothing
 
     if time_average
-        return sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
+        if pop_average
+            return sum([count(x -> interval[1] <= x <= interval[end], spiketimes[n]) for n in neurons]) / (interval[end] - interval[1]) / Hz
+        else
+            return [count(x -> interval[1] <= x <= interval[end], spiketimes[n]) for n in neurons] ./ (interval[end] - interval[1]) ./ Hz
+        end
     end
+    
     if length(spiketimes) < 1
         rates = zeros(Float32, 0, length(interval))
     elseif all(isempty.(spiketimes))
