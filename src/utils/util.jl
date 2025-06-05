@@ -140,7 +140,7 @@ function dsparse(A)
 end
 
 
-@inline function exp32(x::Float32)
+@inline function exp32(x::R) where {R<:Real}
     x = ifelse(x < -10.0f0, -32.0f0, x)
     x = 1.0f0 + x / 32.0f0
     x *= x
@@ -165,7 +165,10 @@ end
     return x
 end
 
-name(pre, post) = Symbol("$(pre)_to_$(post)")
+name(pre, post, k=nothing) = isnothing(k) ? Symbol("$(pre)_to_$(post)") : Symbol("$(pre)_to_$(post)_$(k)")
+str_name(pre, post, k=nothing) = isnothing(k) ? "$(pre)_to_$(post)" : "$(pre)_to_$(post)_$(k)"
+str_name(pre::String, k=nothing) = isnothing(k) ? "$pre" : "$(pre)_$(k)"
+
 
 
 """
@@ -221,8 +224,14 @@ function merge_models(args...; name = randstring(10), silent = false, kwargs...)
 end
 
 
-
-
+function f2l(s, l = 10)
+    s = string(s)
+    if length(s) < l
+        return s * repeat(" ", l - length(s))
+    else
+        return s[1:l]
+    end
+end
 
 
 """
@@ -254,7 +263,7 @@ function print_model(model, get_keys = false)
         @assert typeof(getfield(pop, k)) <: SNN.AbstractPopulation "Expected neuron, got $(typeof(getfield(network.pop,k)))"
         push!(
             populations,
-            "$name $(_k): $(nameof(typeof(getfield(pop,k)))): $(nameof(typeof(getfield(pop,k).param)))",
+            "$(f2l(name)): $(f2l(nameof(typeof(getfield(pop,k))))):  $(f2l(getfield(pop,k).N)) $(f2l((nameof(typeof(getfield(pop,k).param)))))",
         )
 
     end
@@ -264,13 +273,14 @@ function print_model(model, get_keys = false)
         _edges, _ids = filter_edge_props(model_graph, :key, k)
         for (e, i) in zip(_edges, _ids)
             name = props(model_graph, e)[:name][i]
+            syn_pop = props(model_graph, e)[:pop][i]
             _k = get_keys ? "($k)" : ""
             norm =
                 props(model_graph, e)[:norm][i] !== :none ?
-                "<-> norm: $(props(model_graph, e)[:norm][i])" : ""
+                "($(props(model_graph, e)[:norm][i]))" : ""
             # @info "$name $(_k) $norm: \n $(nameof(typeof(getfield(syn,k)))): $(nameof(typeof(getfield(syn,k).param)))"
             @assert typeof(getfield(syn, k)) <: SNN.AbstractConnection "Expected synapse, got $(typeof(getfield(network.syn,k)))"
-            push!(synapses, "$name $(_k) $norm: $(nameof(typeof(getfield(syn,k).param)))")
+            push!(synapses, "$(f2l(name, 18)) : $(f2l(syn_pop, 30)):$(f2l(norm)): $(f2l(nameof(typeof(getfield(syn,k).LTPParam)))) : $(f2l(nameof(typeof(getfield(syn,k).STPParam))))")
         end
     end
     stimuli = Vector{String}()
@@ -278,10 +288,11 @@ function print_model(model, get_keys = false)
         _edges, _ids = filter_edge_props(model_graph, :key, k)
         for (e, i) in zip(_edges, _ids)
             name = props(model_graph, e)[:name][i]
+            syn_pop = props(model_graph, e)[:pop][i]
             _k = get_keys ? "($k)" : ""
             # @info "$name $(_k): $(nameof(typeof(getfield(stim,k)))): $(nameof(typeof(getfield(stim,k).param)))"
             @assert typeof(getfield(stim, k)) <: SNN.AbstractStimulus "Expected stimulus, got $(typeof(getfield(network.stim,k)))"
-            push!(stimuli, "$name $(_k): $(nameof(typeof(getfield(stim,k))))")
+            push!(stimuli, "$(f2l(name)) $(_k): $(f2l(syn_pop, 30)) $(nameof(typeof(getfield(stim,k))))")
         end
     end
     sort!(stimuli)
@@ -425,5 +436,6 @@ export connect!,
     set_plasticity!,
     has_plasticity,
     name,
+    str_name,
     update_time!,
     update_weights!
