@@ -13,14 +13,12 @@ Calculate the inter-spike intervals (ISIs) for a given set of spike times.
 # Returns
 - `isis`: A vector of inter-spike intervals.
 """
-
-
-function asynchronous_state(model, interval=nothing)
-
+function asynchronous_state(model, interval=nothing, pop=:Exc)
+    population = getfield(model.pop, pop)
     interval = interval === nothing ? (0s:0.5s:get_time(model)) : interval
-    bins, _ = SNN.bin_spiketimes(model.pop.E; interval, do_sparse = false)
+    bins, _ = SNN.bin_spiketimes(population; interval, do_sparse = false)
     # Calculate the Coefficient of Variation (CV) of ISIs
-    isis = isi(model.pop.E; interval)
+    isis = isi(population; interval)
     cv = std.(isis) ./ (mean.(isis) .+ 1e-6)  # Adding a small value to avoid division by zero
     cv[isnan.(cv)] .= 0.0  # Replace NaN values with 0.0
     cv = mean(cv)
@@ -33,19 +31,6 @@ function asynchronous_state(model, interval=nothing)
 
     return cv, ff, si
 end
-
-function target_firing_rate(model, interval)
-    fr, _ = firing_rate(model.pop.E, interval = interval, τ = 20ms)
-    return mean(fr)
-end
-
-function evaluate_network(model, interval)
-    cv, ff = asynchronous_state(model, interval)
-    fr = target_firing_rate(model, interval)
-    return cv, ff, fr
-end
-
-
 
 """
     is_attractor_state(spiketimes::Spiketimes, interval::AbstractVector, N::Int)
@@ -80,8 +65,6 @@ function is_attractor_state(
     else
         return false_value, kde
     end
-    # return kde
-
 end
 
 
@@ -140,9 +123,7 @@ export is_unimodal,
     get_maxima,
     gaussian_kernel_estimate,
     gaussian_kernel,
-    evaluate_network,
-    asynchronous_state,
-    target_firing_rate
+    asynchronous_state
 
 # #Trash spurious values (below 30% of the true maximum)
 # function count_maxima(kernel, ratio)
@@ -190,11 +171,9 @@ export is_unimodal,
     gaussian_kernel(σ::Float64, length::Int)
 
 Create a Gaussian kernel with standard deviation `σ` and specified `length`.
-
 # Arguments
 - `σ`: Standard deviation of the Gaussian kernel.
 - `length`: Length of the kernel.
-
 # Returns
 - `kernel`: A vector representing the Gaussian kernel.
 """
@@ -246,12 +225,7 @@ end
 
 
 export gaussian_kernel_estimate,
-    gaussian_kernel,
-    estimate_model,
-    is_attractor_state,
-    asynchronous_state,
-    target_firing_rate,
-    estimate_model
+    gaussian_kernel
 
 
 
