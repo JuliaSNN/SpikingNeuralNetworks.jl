@@ -288,12 +288,16 @@ function firing_rate(
     return firing_rate(SNN.spiketimes(population); kwargs...)
 end
 
-function firing_rate(populations; mean_pop = false, kwargs...)
+function firing_rate(populations; mean_pop = false, time_average=false, kwargs...)
     spiketimes_pop, names_pop = spiketimes_split(populations)
     fr_pop = []
     interval = nothing
     for n in eachindex(spiketimes_pop)
-        rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
+        if time_average
+            rates = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, time_average=true, kwargs...)
+        else
+            rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
+        end
         push!(fr_pop, rates)
     end
     return fr_pop, interval, names_pop
