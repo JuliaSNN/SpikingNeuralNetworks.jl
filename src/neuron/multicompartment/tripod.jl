@@ -51,11 +51,14 @@ Tripod
     NMDA::NMDAT = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k)
     t::VIT = [0]
     param::AdExType = AdExSoma()
+
     # Membrane potential and adaptation
     v_s::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
     w_s::VFT = zeros(N)
     v_d1::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
     v_d2::VFT = param.Vr .+ rand(N) .* (param.Vt - param.Vr)
+    I::VFT = zeros(N)
+    I_d::VFT = zeros(N)
 
     # Synapses dendrites
     g_d1::MFT = zeros(N, 4)
@@ -184,7 +187,7 @@ function integrate!(p::Tripod, param::AdExSoma, dt::Float32)
                     Δv_temp[_i] = Δv[_i]
                 end
                 update_tripod!(p, Δv, i, param, dt)
-                v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1])
+                v_s[i] += 0.5 * dt * (Δv_temp[1] + Δv[1]) 
                 v_d1[i] += 0.5 * dt * (Δv_temp[2] + Δv[2])
                 v_d2[i] += 0.5 * dt * (Δv_temp[3] + Δv[3])
                 w_s[i] += dt * (param.a * (v_s[i] - param.Er) - w_s[i]) / param.τw
@@ -269,7 +272,7 @@ function update_tripod!(
 )
 
     @fastmath @inbounds begin
-        @unpack v_d1, v_d2, v_s, w_s, ge_s, gi_s, g_d1, g_d2, θ = p
+        @unpack v_d1, v_d2, v_s, I_d, I, w_s, ge_s, gi_s, g_d1, g_d2, θ = p
         @unpack d1, d2 = p
         @unpack soma_syn, dend_syn, NMDA = p
         @unpack is, cs = p
@@ -305,20 +308,19 @@ function update_tripod!(
         @turbo for _i ∈ 1:3
             is[_i] = clamp(is[_i], -1500, 1500)
         end
-        # @info Δv
-        # @info v_d1[i], Δv[2], gm1[i], is[2], cs[1], cd1[i] 
 
         # update membrane potential
         @unpack C, gl, Er, ΔT = param
-        Δv[1] =
-            (
-                gl * (
-                    (-v_s[i] + Δv[1] * dt + Er) +
-                    ΔT * exp32(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
-                ) - w_s[i] - is[1] - sum(cs)
-            ) / C
-        Δv[2] = ((-(v_d1[i] + Δv[2] * dt) + Er) * d1.gm[i] - is[2] + cs[1]) / d1.C[i]
-        Δv[3] = ((-(v_d2[i] + Δv[3] * dt) + Er) * d2.gm[i] - is[3] + cs[2]) / d2.C[i]
+        Δv[1] = 1/C * (
+                        + gl * (-v_s[i] + Δv[1] * dt + Er) + ΔT * exp32(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
+                        - w_s[i]  # adaptation
+                        - is[1]   # synapses
+                        - sum(cs) # axial currents
+                        + I[i]  # external current
+                        ) 
+
+        Δv[2] = ((-(v_d1[i] + Δv[2] * dt) + Er) * d1.gm[i] - is[2] + cs[1] + I_d[i]) / d1.C[i]
+        Δv[3] = ((-(v_d2[i] + Δv[3] * dt) + Er) * d2.gm[i] - is[3] + cs[2] + I_d[i]) / d2.C[i]
     end
 end
 
