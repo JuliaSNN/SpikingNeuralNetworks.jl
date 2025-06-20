@@ -222,30 +222,21 @@ A tuple containing:
 function firing_rate(
     spiketimes::Spiketimes;
     interval::AbstractVector = [],
-    sampling = 20ms,
     τ = 25ms,
-    ttf = -1,
-    tt0 = -1,
     interpolate = true,
     pop_average = false,
     time_average = false,
     neurons = :ALL,
+    kwargs...
 )
     # Check if the interval is empty and create an interval
-    if isempty(interval)
-        max_time =
-            all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
-        tt0 = tt0 > 0 ? tt0 : 0.0f0
-        ttf = ttf > 0 ? ttf : max_time
-        interval = tt0:sampling:ttf
-    end
-
+    interval = _retrieve_interval(interval; kwargs...)
     neurons = neurons == :ALL ? eachindex(spiketimes) : neurons
     rates = nothing
-
     if time_average
-        return sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
+        return time_average_fr(spiketimes, interval, pop_average), interval
     end
+
     if length(spiketimes) < 1
         rates = zeros(Float32, 0, length(interval))
     elseif all(isempty.(spiketimes))
@@ -278,6 +269,32 @@ function firing_rate(
     return rates, interval
 end
 
+function _retrieve_interval(interval;
+    sampling = 20ms,
+    ttf = -1,
+    tt0 = -1,
+    kwargs...)
+    if isempty(interval)
+        max_time =
+            all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
+        tt0 = tt0 > 0 ? tt0 : 0.0f0
+        ttf = ttf > 0 ? ttf : max_time
+        interval = tt0:sampling:ttf
+    end
+    return interval
+end
+
+function time_average_fr(spiketimes, interval, pop_average)
+    rates = sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
+    if pop_average
+        rates = mean(rates)
+        isnan(rates) && (rates = 0.0f0)
+    else
+        rates
+    end
+    return rates
+end
+
 firing_rate(P, interval::T; kwargs...) where {T<:AbstractRange} =
     firing_rate(P; interval, kwargs...)
 
@@ -288,16 +305,12 @@ function firing_rate(
     return firing_rate(SNN.spiketimes(population); kwargs...)
 end
 
-function firing_rate(populations; mean_pop = false, time_average=false, kwargs...)
+function firing_rate(populations; mean_pop = false, kwargs...)
     spiketimes_pop, names_pop = spiketimes_split(populations)
     fr_pop = []
     interval = nothing
     for n in eachindex(spiketimes_pop)
-        if time_average
-            rates = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, time_average=true, kwargs...)
-        else
-            rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
-        end
+        rates, interval = firing_rate(spiketimes_pop[n]; pop_average = mean_pop, kwargs...)
         push!(fr_pop, rates)
     end
     return fr_pop, interval, names_pop
