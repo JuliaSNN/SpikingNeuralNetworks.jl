@@ -118,6 +118,12 @@ function train!(args...; model = (time = Time(), name = "Model"), kwargs...)
     return get_time(model.time)
 end
 
+train!(model::NamedTuple, duration::R = 1s; kwargs...) where {R<:Real}= 
+    train!(;model, duration, kwargs...)
+
+sim!(model::NamedTuple, duration::R=1s; kwargs...) where {R<:Real} =
+    train!(;model, duration, kwargs...)
+
 function sim!(args...; model = (time = Time(), name = "Model"), kwargs...)
     pop, syn, stim = _args_model(args, model)
     mytime = sim!(pop, syn, stim; time = model.time, kwargs...)
@@ -125,6 +131,8 @@ function sim!(args...; model = (time = Time(), name = "Model"), kwargs...)
     return get_time(model.time)
     # sim!(collect(model.pop), collect(model.syn), collect(model.stim); kwargs...)
 end
+
+
 
 function initialize!(; kwargs...)
     train!(; kwargs...)

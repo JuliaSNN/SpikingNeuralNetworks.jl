@@ -176,7 +176,10 @@ macro update(base, update_expr)
             value = :($(esc(rhs)))
 
             # Assert the left-hand side has the correct structure
-            @assert lhs.head == Symbol(".")
+            # if isa(lhs, Symbol)
+            #     pushfirst!(fields, lhs)  # Add the first part
+            # else
+                # @assert lhs.head == Symbol(".")
             fields = []
             while !isa(lhs, Symbol)
                 pushfirst!(fields, lhs.args[2].value)  # Collect the field names

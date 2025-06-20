@@ -87,7 +87,8 @@ function add_connection!(graph, pre_id, post_id, k, syn, type)
     pre_name = get_prop(graph, pre_node, :name)
     post_name = get_prop(graph, post_node, :name)
     sym = haskey(syn.targets, :sym) ? syn.targets[:sym] : :soma
-    syn_name = "$(syn.name): $(pre_name) -> $(post_name).$sym"
+    syn_name = "$(syn.name)"
+    syn_pop = "$(pre_name) -> $(post_name).$sym"
     id = syn.id
     if !has_edge(graph, pre_node, post_node)
         add_edge!(
@@ -97,6 +98,7 @@ function add_connection!(graph, pre_id, post_id, k, syn, type)
             Dict(
                 :type => [type],
                 :name => [syn_name],
+                :pop => [syn_pop],
                 :key => [k],
                 :id => [id],
                 :norm => [:none],
@@ -110,6 +112,7 @@ function add_connection!(graph, pre_id, post_id, k, syn, type)
         _multi = multi_dict[:multi] + 1
         multi_dict[:multi] = _multi
         push!(multi_dict[:name], syn_name)
+        push!(multi_dict[:pop], syn_pop)
         push!(multi_dict[:type], type)
         push!(multi_dict[:key], k)
         push!(multi_dict[:id], id)

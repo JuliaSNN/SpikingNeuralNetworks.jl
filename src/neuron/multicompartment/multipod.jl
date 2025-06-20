@@ -73,6 +73,7 @@ function synaptic_target(targets::Dict, post::Multipod, sym::Symbol, target::Num
     g = getfield(post, _sym)[target]
     v_post = getfield(post, _v)[target]
     push!(targets, :sym => Symbol(string(_sym, target)))
+    return g, v_post
 end
 
 
@@ -86,7 +87,7 @@ function Multipod(
     N::Int,
     soma_syn = TripodSomaSynapse,
     dend_syn = TripodDendSynapse,
-    NMDA::NMDAVoltageDependency = NMDAVoltageDependency(mg = Mg_mM, b = nmda_b, k = nmda_k),
+    NMDA::NMDAVoltageDependency,
     kwargs...,
 )
 

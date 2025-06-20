@@ -222,30 +222,21 @@ A tuple containing:
 function firing_rate(
     spiketimes::Spiketimes;
     interval::AbstractVector = [],
-    sampling = 20ms,
     τ = 25ms,
-    ttf = -1,
-    tt0 = -1,
     interpolate = true,
     pop_average = false,
     time_average = false,
     neurons = :ALL,
+    kwargs...
 )
     # Check if the interval is empty and create an interval
-    if isempty(interval)
-        max_time =
-            all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
-        tt0 = tt0 > 0 ? tt0 : 0.0f0
-        ttf = ttf > 0 ? ttf : max_time
-        interval = tt0:sampling:ttf
-    end
-
+    interval = _retrieve_interval(interval; kwargs...)
     neurons = neurons == :ALL ? eachindex(spiketimes) : neurons
     rates = nothing
-
     if time_average
-        return sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
+        return time_average_fr(spiketimes, interval, pop_average), interval
     end
+
     if length(spiketimes) < 1
         rates = zeros(Float32, 0, length(interval))
     elseif all(isempty.(spiketimes))
@@ -253,9 +244,9 @@ function firing_rate(
     else
         spiketimes = spiketimes[neurons]
         alpha_kernel = get_alpha_kernel(τ, interval)
-        rates = tmap(eachindex(spiketimes)) do n
+        rates = map(eachindex(spiketimes)) do n
             spike_train, _ =
-                bin_spiketimes(spiketimes[n]; time_range = interval, do_sparse = false)
+                bin_spiketimes(spiketimes[n]; interval = interval, do_sparse = false)
             conv(spike_train, alpha_kernel)[1:length(interval)] .* s # times
         end
         rates = hcat(rates...)'
@@ -277,6 +268,35 @@ function firing_rate(
     end
     return rates, interval
 end
+
+function _retrieve_interval(interval;
+    sampling = 20ms,
+    ttf = -1,
+    tt0 = -1,
+    kwargs...)
+    if isempty(interval)
+        max_time =
+            all(isempty.(spiketimes)) ? 1.0f0 : maximum(Iterators.flatten(spiketimes))
+        tt0 = tt0 > 0 ? tt0 : 0.0f0
+        ttf = ttf > 0 ? ttf : max_time
+        interval = tt0:sampling:ttf
+    end
+    return interval
+end
+
+function time_average_fr(spiketimes, interval, pop_average)
+    rates = sum.(length.(spiketimes))./(interval[end] - interval[1])./Hz
+    if pop_average
+        rates = mean(rates)
+        isnan(rates) && (rates = 0.0f0)
+    else
+        rates
+    end
+    return rates
+end
+
+firing_rate(P, interval::T; kwargs...) where {T<:AbstractRange} =
+    firing_rate(P; interval, kwargs...)
 
 function firing_rate(
     population::T;
@@ -350,7 +370,7 @@ function compute_cross_correlogram(
     # Create a binary spike train
     # bin_width = 1000/sr
 
-    spike_train1, time_range = bin_spiketimes(spike_times1; max_lag, bin_width)
+    spike_train1, interval = bin_spiketimes(spike_times1; max_lag, bin_width)
     if !isempty(spike_times2)
         if shift_predictor
             spike_times2 = spike_times2 .+ 1000.0
@@ -435,30 +455,30 @@ containing the time points corresponding to the center of each bin.
 """
 function bin_spiketimes(
     spike_times::Vector{Float32};
-    time_range::AbstractRange = 0:-1,
+    interval::AbstractRange,
     max_lag = 500ms,
     bin_width = 1.0ms,
     do_sparse = true,
 )
-    time_range =
-        isempty(time_range) ? (0.0:bin_width:(maximum(spike_times)+max_lag)) : time_range
-    bin_width = step(time_range)
-    spike_train = zeros(length(time_range))
-    st = sort(spike_times) .- first(time_range)
-    for i in findall(x -> x > 0 && x < length(time_range)*bin_width, st)
+    # interval =
+    #     isempty(interval) ? (0.0:bin_width:(maximum(spike_times)+max_lag)) : interval
+    bin_width = step(interval)
+    spike_train = zeros(length(interval))
+    st = sort(spike_times) .- first(interval)
+    for i in findall(x -> x > 0 && x < length(interval)*bin_width, st)
         index = floor(Int, st[i] / bin_width) + 1
         if index <= length(spike_train)
             spike_train[index] += 1.0
         end
     end
     if do_sparse
-        return sparse(spike_train), time_range
+        return SNN.sparse(spike_train), interval
     else
-        return spike_train, time_range
+        return spike_train, interval
     end
 end
 
-function bin_spiketimes(spike_times::Vector{Vector{Float32}}; kwargs...)
+function bin_spiketimes(spike_times::Spiketimes; kwargs...)
     sample, r = bin_spiketimes(spike_times[1]; kwargs..., do_sparse = false)
     bin_array = zeros(length(spike_times), length(sample))
     for n in eachindex(spike_times)
@@ -466,6 +486,17 @@ function bin_spiketimes(spike_times::Vector{Vector{Float32}}; kwargs...)
     end
     return bin_array, r
 end
+
+bin_spiketimes(P::AbstractPopulation; kwargs...) = bin_spiketimes(spiketimes(P); kwargs...)
+bin_spiketimes(P::AbstractStimulus; kwargs...) = bin_spiketimes(spiketimes(P); kwargs...)
+bin_spiketimes(P, interval::T; kwargs...) where {T<:AbstractRange} = bin_spiketimes(P; interval, kwargs...)
+
+function bin_spiketimes(populations; interval, kwargs...)
+    st_pops, names_pop = spiketimes_split(populations)
+    ss = map(st->bin_spiketimes(st; interval, kwargs...)[1],eachindex(st_pops)) 
+    return ss, interval, names_pop
+end
+
 
 
 

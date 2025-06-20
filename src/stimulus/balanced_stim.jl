@@ -65,13 +65,13 @@ function BalancedStimulus(
     sym_e::Symbol,
     sym_i::Symbol,
     target = nothing;
-    neurons = [],
+    neurons = :ALL,
     μ = 1.0f0,
     param::Union{BalancedStimulusParameter,R},
     kwargs...,
 ) where {T<:AbstractPopulation,R<:Real}
 
-    neurons = 1:post.N
+    neurons = neurons ==:ALL ? (1:post.N) : neurons
     w = zeros(Float32, length(neurons), length(neurons))
     w = μ * sparse(w)
     rowptr, colptr, I, J, index, W = dsparse(w)
@@ -90,7 +90,6 @@ function BalancedStimulus(
 
     N_pre = ceil(Int, param.r0 * maximum([1, param.β / 100]))
 
-    # Construct the SpikingSynapse instance
     return BalancedStimulus(;
         param = param,
         N = length(neurons),

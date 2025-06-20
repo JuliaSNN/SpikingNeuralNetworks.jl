@@ -57,6 +57,10 @@ BallAndStick
     hi_d::VFT = zeros(N) #! target
     he_d::VFT = zeros(N) #! target
 
+    ## Ext input
+    Is::VFT = zeros(N)
+    Id::VFT = zeros(N)
+
     # Receptors properties
     exc_receptors::VIT = [1, 2]
     inh_receptors::VIT = [3, 4]
@@ -84,8 +88,9 @@ function synaptic_target(targets::Dict, post::BallAndStick, sym::Symbol, target)
     _sym = Symbol("$(sym)_$target")
     _v = Symbol("v_$target")
     g = getfield(post, _sym)
-    hasfield(typeof(post), _v) && (v_post = getfield(post, _v))
+    v_post = getfield(post, _v)
     push!(targets, :sym => _sym)
+    return g, v_post
 end
 
 function BallAndStick(
@@ -230,7 +235,7 @@ function update_ballandstick!(
 )
 
     @fastmath @inbounds begin
-        @unpack v_d, v_s, w_s, ge_s, gi_s, g_d, θ, d = p
+        @unpack v_d, v_s, w_s, ge_s, gi_s, g_d, θ, d, I, I_d = p
         @unpack soma_syn, dend_syn, NMDA = p
         @unpack is, cs = p
         @unpack mg, b, k = NMDA
@@ -268,9 +273,9 @@ function update_ballandstick!(
                 gl * (
                     (-v_s[i] + Δv[1] * dt + Er) +
                     ΔT * exp32(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
-                ) - w_s[i] - is[1] - cs[1]
+                ) - w_s[i] - is[1] - cs[1] + I[i] 
             ) / C
-        Δv[2] = ((-(v_d[i] + Δv[2] * dt) + Er) * d.gm[i] - is[2] + cs[1]) / d.C[i]
+        Δv[2] = ((-(v_d[i] + Δv[2] * dt) + Er) * d.gm[i] - is[2] + cs[1] +I_d[i]) / d.C[i]
     end
 
 end
