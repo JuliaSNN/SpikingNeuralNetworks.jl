@@ -190,6 +190,10 @@ function record!(obj, T::Time)
             record_fire!(obj.fire, obj.records[:fire], T, records[:indices])
             continue
         end
+        if key == :gax
+            record_sym!(obj.d.gax, obj, key, T, records[:indices], records[:sr][key])
+            continue
+        end
         for v in records[:variables]
             if startswith(string(key), string(v))
                 sym = string(key)[length(string(v))+2:end] |> Symbol
@@ -246,6 +250,12 @@ function monitor!(
                 !isempty(ind) && (obj.records[:indices][key] = ind)
                 obj.records[:sr][key] = sr
                 obj.records[key] = Vector{typ}()
+            elseif sym == :gax
+                typ = typeof(getfield(getfield(obj,:d), sym))
+                key = :gax
+                !isempty(ind) && (obj.records[:indices][key] = ind)
+                obj.records[:sr][key] = sr
+                obj.records[key] = Vector{typ}()
             else
                 @warn "Field $sym not found in $(nameof(typeof(obj)))"
                 continue
@@ -256,9 +266,17 @@ function monitor!(
                 key = Symbol(variables,"_", sym)
                 variables ∈ obj.records[:variables] && continue
                 push!(obj.records[:variables], variables)
+            elseif sym == :gax
+                typ = typeof(getfield(getfield(obj,:d), sym))
+                key = :gax
             else
-                @warn "Field $variables not found in $(nameof(typeof(obj)))"
+                @warn "Field $variables not found in $(nameof(typeof(obj)))!"
             end
+
+            # if sym == :gax
+            #     obj.records[:gax] = Vector{Float32}()
+            #     continue
+            # end 
         end
         !isempty(ind) && (obj.records[:indices][key] = ind)
         obj.records[:sr][key] = sr
