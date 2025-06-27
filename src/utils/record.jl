@@ -330,7 +330,7 @@ function get_interpolator(A::AbstractArray)
     return Tuple(interp)
 end
 
-function record(p, sym; interpolate = true)
+function record(p, sym; interpolate = true, kwargs...)
     if interpolate
         return interpolated_record(p, sym)
     else
@@ -338,6 +338,16 @@ function record(p, sym; interpolate = true)
     end
 end
 
+function record(p, sym::Symbol, interval::R; kwargs...) where {R<:AbstractRange}
+    if sym == :fire
+        fr, r = firing_rate(p, interval; kwargs...)
+        return fr[:, r]
+    else
+        v, r = interpolated_record(p, sym)
+        return v[:, interval]
+    end
+
+end
 
 
 
