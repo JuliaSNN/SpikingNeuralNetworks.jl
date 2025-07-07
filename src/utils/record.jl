@@ -330,13 +330,25 @@ function get_interpolator(A::AbstractArray)
     return Tuple(interp)
 end
 
-function record(p, sym; interpolate = true, kwargs...)
+function _record(p, sym; interpolate = true, kwargs...)
     if interpolate
         return interpolated_record(p, sym)
     else
         return getvariable(p, sym)
     end
 end
+
+function record(p, sym::Symbol; interval = nothing, kwargs...)
+    if sym == :fire
+        @assert !isnothing(interval) "Range must be provided for firing rate recording"
+        v, r = firing_rate(p, interval; kwargs...)
+        return v
+    else
+        v, r = _record(p, sym; kwargs...)
+        return v
+    end
+end
+
 
 function record(p, sym::Symbol, interval::R; kwargs...) where {R<:AbstractRange}
     if sym == :fire
