@@ -224,9 +224,71 @@ function linear_network(N; σ_w = 0.38, w_max = 2.0, kwargs...)
     return W
 end
 
+"""
+    spatial_activity(points, activity; N, L, grid_size=(x=0.1, y=0.1))
+
+Compute the spatial average of activity data over a grid.
+
+# Arguments
+- `points::Tuple{Vector{Float64}, Vector{Float64}}`: A tuple containing two vectors `xs` and `ys`, which represent the x and y coordinates of the points.
+- `activity::Matrix{Float64}`: A matrix where rows correspond to points and columns correspond to activity values over time.
+- `N::Int`: The number of time steps to group together for averaging.
+- `L::Float64`: The size of each grid cell in both x and y directions.
+- `grid_size::NamedTuple{(:x, :y), Tuple{Float64, Float64}}` (optional): The total size of the grid in the x and y directions. Defaults to `(x=0.1, y=0.1)`.
+
+# Returns
+- `spatial_avg::Array{Float64, 3}`: A 3D array where the first two dimensions correspond to the grid cells in the x and y directions, and the third dimension corresponds to the time groups. Each element contains the average activity for the points within the corresponding grid cell and time group.
+- `x_range::Vector{Float64}`: A vector representing the range of x coordinates for the grid cells.
+- `y_range::Vector{Float64}`: A vector representing the range of y coordinates for the grid cells.
+
+# Details
+The function divides the spatial domain into a grid based on the `grid_size` and `L` parameters. For each grid cell, it computes the average activity of the points that fall within the cell over time groups defined by `N`. If no points are found in a grid cell, the average for that cell is skipped.
+
+# Example
+```julia
+xs = [0.05, 0.15, 0.25, 0.35]
+ys = [0.05, 0.15, 0.25, 0.35]
+points = (xs, ys)
+activity = rand(4, 100)  # Random activity data for 4 points over 100 time steps
+N = 10
+L = 0.1
+grid_size = (x=0.4, y=0.4)
+
+spatial_avg, x_range, y_range = spatial_activity(points, activity; N, L, grid_size)
+```
+"""
+function spatial_activity(points, activity; N, L, grid_size=(x= 0.1, y= 0.1))
+    xs, ys = points
+    _, num_values = size(activity)
+    num_matrices = num_values ÷ N
+
+    # Define the grid size
+    x_range = ceil(Int,grid_size.x / L)
+    y_range = ceil(Int,grid_size.y / L)
+
+    spatial_avg = zeros(Float64, x_range, y_range, num_matrices)
+    for t in 1:num_matrices
+        time_index = (1+(t-1) * N) : (t * N - 1)
+        for j  in 1:x_range
+            for k in 1:y_range
+                # Find points within the current grid cell
+                indices_x = findall(_x-> ((j-1)*L <= _x < j*L), xs) |> Set
+                indices_y = findall(_y-> ((k-1)*L <= _y < k*L), ys) |> Set
+                indices = intersect(indices_x, indices_y) |> collect
+                isempty(indices) && continue
+                spatial_avg[j, k, t] = mean(activity[indices, time_index])
+            end
+        end
+    end
+    x_range  = range(0, stop=grid_size.x, length=x_range)
+    y_range  = range(0, stop=grid_size.y, length=y_range)
+    return spatial_avg, x_range, y_range
+end
+
 export place_populations,
     periodic_distance,
     compute_connections,
     neurons_within_circle,
     neurons_outside_area,
-    linear_network
+    linear_network,
+    spatial_activity

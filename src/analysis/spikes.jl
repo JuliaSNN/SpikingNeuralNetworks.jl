@@ -38,7 +38,7 @@ function spiketimes(
         return _spiketimes
     end
     if isnothing(interval)
-        interval = (0, firing_time[end])
+        interval = (0, firing_time[end]+1)
     end
     tt0, tt1 = findfirst(x -> x > interval[1], firing_time),
     findlast(x -> x < interval[end], firing_time)
