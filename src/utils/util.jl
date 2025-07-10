@@ -151,6 +151,18 @@ end
     return x
 end
 
+@inline function exp64(x::R) where {R<:Real}
+    x = ifelse(x < -10.0f0, -64.0f0, x)
+    x = 1.0f0 + x / 64.0f0
+    x *= x
+    x *= x
+    x *= x
+    x *= x
+    x *= x
+    x *= x
+    return x
+end
+
 @inline function exp256(x::Float32)
     x = ifelse(x < -10.0f0, -256.0f0, x)
     x = 1.0f0 + x / 256.0f0
@@ -430,6 +442,7 @@ export connect!,
     sparse_matrix,
     replace_sparse_matrix!,
     exp32,
+    exp64,
     exp256,
     print_summary,
     indices,
