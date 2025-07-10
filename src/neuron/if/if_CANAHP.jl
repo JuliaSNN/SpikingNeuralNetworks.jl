@@ -178,8 +178,8 @@ function update_synapses!(p::IF_CANAHP, param::IF_CANAHPParameter, dt::Float32)
         @unpack τr⁻, τd⁻ = syn[n]
         # @fastmath @turbo 
         for i ∈ 1:N
-            g[i, n] = exp32(-dt * τd⁻) * (g[i, n] + dt * h[i, n])
-            h[i, n] = exp32(-dt * τr⁻) * (h[i, n])
+            g[i, n] = exp64(-dt * τd⁻) * (g[i, n] + dt * h[i, n])
+            h[i, n] = exp64(-dt * τr⁻) * (h[i, n])
         end
     end
 end
@@ -197,7 +197,7 @@ end
             @simd for i ∈ 1:N
                 syn_curr[i] +=
                     area * gsyn * g[i, r] * (v[i] - E_rev) /
-                    (1.0f0 + (mg / b) * exp32(k * (v[i])))
+                    (1.0f0 + (mg / b) * exp64(k * (v[i])))
             end
         else
             @simd for i ∈ 1:N

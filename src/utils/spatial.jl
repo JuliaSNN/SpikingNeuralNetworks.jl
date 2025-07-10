@@ -155,7 +155,7 @@ function compute_connections(pre::Symbol, post::Symbol, points; conn, spatial)
             begin
                 x = periodic_distance(post[1], pre[1], grid_size[1])
                 y = periodic_distance(post[2], pre[2], grid_size[2])
-                return SNN.exp32(-(x/σx)^2 -(y/σy)^2)
+                return SNN.exp64(-(x/σx)^2 -(y/σy)^2)
             end
         end
         @unpack σs, grid_size, ϵ = spatial

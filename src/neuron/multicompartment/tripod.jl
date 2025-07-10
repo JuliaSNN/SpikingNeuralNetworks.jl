@@ -242,22 +242,22 @@ function update_synapses!(
         for n in eachindex(dend_syn)
             @unpack τr⁻, τd⁻ = dend_syn[n]
             @turbo for i ∈ 1:N
-                g_d1[i, n] = exp32(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
-                h_d1[i, n] = exp32(-dt * τr⁻) * (h_d1[i, n])
-                g_d2[i, n] = exp32(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
-                h_d2[i, n] = exp32(-dt * τr⁻) * (h_d2[i, n])
+                g_d1[i, n] = exp64(-dt * τd⁻) * (g_d1[i, n] + dt * h_d1[i, n])
+                h_d1[i, n] = exp64(-dt * τr⁻) * (h_d1[i, n])
+                g_d2[i, n] = exp64(-dt * τd⁻) * (g_d2[i, n] + dt * h_d2[i, n])
+                h_d2[i, n] = exp64(-dt * τr⁻) * (h_d2[i, n])
             end
         end
 
         @unpack τr⁻, τd⁻ = soma_syn[1]
         @turbo for i ∈ 1:N
-            ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
-            he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
+            ge_s[i] = exp64(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
+            he_s[i] = exp64(-dt * τr⁻) * (he_s[i])
         end
         @unpack τr⁻, τd⁻ = soma_syn[2]
         @turbo for i ∈ 1:N
-            gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
-            hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
+            gi_s[i] = exp64(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
+            hi_s[i] = exp64(-dt * τr⁻) * (hi_s[i])
         end
     end
 
@@ -296,10 +296,10 @@ function update_tripod!(
             if nmda > 0.0f0
                 is[2] +=
                     gsyn * g_d1[i, r] * (v_d1[i] + Δv[2] * dt - E_rev) /
-                    (1.0f0 + (mg / b) * exp32(k * (v_d1[i] + Δv[2] * dt)))
+                    (1.0f0 + (mg / b) * exp256(k * (v_d1[i] + Δv[2] * dt)))
                 is[3] +=
                     gsyn * g_d2[i, r] * (v_d2[i] + Δv[3] * dt - E_rev) /
-                    (1.0f0 + (mg / b) * exp32(k * (v_d2[i] + Δv[2] * dt)))
+                    (1.0f0 + (mg / b) * exp256(k * (v_d2[i] + Δv[2] * dt)))
             else
                 is[2] += gsyn * g_d1[i, r] * (v_d1[i] + Δv[2] * dt - E_rev)
                 is[3] += gsyn * g_d2[i, r] * (v_d2[i] + Δv[3] * dt - E_rev)
@@ -312,7 +312,7 @@ function update_tripod!(
         # update membrane potential
         @unpack C, gl, Er, ΔT = param
         Δv[1] = 1/C * (
-                        + gl * (-v_s[i] + Δv[1] * dt + Er) + ΔT * exp32(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
+                        + gl * (-v_s[i] + Δv[1] * dt + Er) + ΔT * exp64(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
                         - w_s[i]  # adaptation
                         - is[1]   # synapses
                         - sum(cs) # axial currents

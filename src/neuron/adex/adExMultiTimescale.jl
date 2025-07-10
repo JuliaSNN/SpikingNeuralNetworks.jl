@@ -111,8 +111,8 @@ function update_synapses!(
         τr⁻ = 1/τr[n]
         τd⁻ = 1/τd[n]
         @fastmath @turbo for i ∈ 1:N
-            g[i, n] = exp32(-dt * τd⁻) * (g[i, n] + dt * h[n][i])
-            h[n][i] = exp32(-dt * τr⁻) * h[n][i]
+            g[i, n] = exp64(-dt * τd⁻) * (g[i, n] + dt * h[n][i])
+            h[n][i] = exp64(-dt * τr⁻) * h[n][i]
         end
     end
 

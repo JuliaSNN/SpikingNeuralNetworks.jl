@@ -10,7 +10,7 @@ function nmda_(x, func)
 end
 
 
-function exp32(x::R) where {R<:Real}
+function exp64(x::R) where {R<:Real}
     x = ifelse(x < -10.0f0, -32.0f0, x)
     x = 1.0f0 + x / 32.0f0
     x *= x
@@ -51,7 +51,7 @@ end
 xr = -70:0.1:0
 plot(xr, nmda_.(xr, exp256), label= "exp256")
 plot!(xr,nmda_.(xr, exp64), label= "exp64")
-plot!(xr,nmda_.(xr, exp32), label= "exp32")
+plot!(xr,nmda_.(xr, exp64), label= "exp64")
 plot!(xr,nmda_.(xr,  exp), label= "exp")
 ##
 

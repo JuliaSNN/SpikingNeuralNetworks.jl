@@ -104,7 +104,7 @@ export spikecount
 # spikecount(x::Spiketimes) = length.(x)
 
 # function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
-#     return SNN.exp32(- (t - t0) / τ) * Θ((t - t0))
+#     return SNN.exp64(- (t - t0) / τ) * Θ((t - t0))
 # end
 
 # """
