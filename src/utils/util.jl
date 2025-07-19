@@ -140,7 +140,7 @@ function dsparse(A)
 end
 
 
-@inline function exp64(x::R) where {R<:Real}
+@inline function exp32(x::R) where {R<:Real}
     x = ifelse(x < -10.0f0, -32.0f0, x)
     x = 1.0f0 + x / 32.0f0
     x *= x
