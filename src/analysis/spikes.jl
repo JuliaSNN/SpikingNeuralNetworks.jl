@@ -104,7 +104,7 @@ export spikecount
 # spikecount(x::Spiketimes) = length.(x)
 
 # function alpha_function(t::T; t0::T, τ::T) where {T<:Float32}
-#     return SNN.exp32(- (t - t0) / τ) * Θ((t - t0))
+#     return SNN.exp64(- (t - t0) / τ) * Θ((t - t0))
 # end
 
 # """
@@ -829,7 +829,7 @@ function sample_spikes(
     spiketimes = Vector{Float32}[[] for _ = 1:N]
     @assert length(rate) == length(interval)
     steps = step(interval) / dt
-    t = dt
+    t = dt + Float32(interval[1])
     for i in eachindex(interval)
         r = rate[i] * Hz
         for _ = 1:steps
@@ -846,18 +846,37 @@ end
 
 function sample_inputs(
     N,
-    rate::Matrix,
+    rate::Matrix{F},
     interval::R;
     dt = 0.125f0,
     rate_factor = 1.0f0,
     seed = nothing,
-) where {R<:AbstractRange}
+) where {R<:AbstractRange, F<:Real}
     !isnothing(seed) && (Random.seed!(seed))
     inputs = Vector{Float32}[]
     for i = 1:size(rate, 1)
         for n in sample_spikes(N, rate[i, :], interval; dt = dt, rate_factor = rate_factor)
             push!(inputs, n)
         end
+    end
+    inputs
+end
+
+function sample_inputs(
+    N,
+    spikes::BitMatrix,
+    interval::R;
+    rate_factor,
+    dt = 0.125f0,
+    seed = nothing,
+) where {R<:AbstractRange}
+    !isnothing(seed) && (Random.seed!(seed))
+    inputs = Vector{Float32}[]
+    @assert size(spikes, 2) == length(interval)
+    for i = 1:size(spikes, 1)
+        st_n = findall(spikes[i, :])
+        isnothing(st_n) && push!(inputs, Float32[])
+        push!(inputs, interval[st_n])
     end
     inputs
 end

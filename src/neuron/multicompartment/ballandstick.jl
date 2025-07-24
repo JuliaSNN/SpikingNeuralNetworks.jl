@@ -207,20 +207,20 @@ function update_synapses!(
     for n in eachindex(dend_syn)
         @unpack τr⁻, τd⁻ = dend_syn[n]
         @fastmath @turbo for i ∈ 1:N
-            g_d[i, n] = exp32(-dt * τd⁻) * (g_d[i, n] + dt * h_d[i, n])
-            h_d[i, n] = exp32(-dt * τr⁻) * (h_d[i, n])
+            g_d[i, n] = exp64(-dt * τd⁻) * (g_d[i, n] + dt * h_d[i, n])
+            h_d[i, n] = exp64(-dt * τr⁻) * (h_d[i, n])
         end
     end
 
     @unpack τr⁻, τd⁻ = soma_syn[1]
     @fastmath @turbo for i ∈ 1:N
-        ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
-        he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
+        ge_s[i] = exp64(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
+        he_s[i] = exp64(-dt * τr⁻) * (he_s[i])
     end
     @unpack τr⁻, τd⁻ = soma_syn[2]
     @fastmath @turbo for i ∈ 1:N
-        gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
-        hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
+        gi_s[i] = exp64(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
+        hi_s[i] = exp64(-dt * τr⁻) * (hi_s[i])
     end
 
 end
@@ -257,7 +257,7 @@ function update_ballandstick!(
             if nmda > 0.0f0
                 is[2] +=
                     gsyn * g_d[i, r] * (v_d[i] + Δv[2] * dt - E_rev) /
-                    (1.0f0 + (mg / b) * exp32(k * (v_d[i] + Δv[2] * dt)))
+                    (1.0f0 + (mg / b) * exp256(k * (v_d[i] + Δv[2] * dt)))
             else
                 is[2] += gsyn * g_d[i, r] * (v_d[i] + Δv[2] * dt - E_rev)
             end
@@ -272,7 +272,7 @@ function update_ballandstick!(
             (
                 gl * (
                     (-v_s[i] + Δv[1] * dt + Er) +
-                    ΔT * exp32(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
+                    ΔT * exp64(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
                 ) - w_s[i] - is[1] - cs[1] + I[i] 
             ) / C
         Δv[2] = ((-(v_d[i] + Δv[2] * dt) + Er) * d.gm[i] - is[2] + cs[1] +I_d[i]) / d.C[i]

@@ -42,8 +42,8 @@ function plasticity!(
     @inbounds for j = 1:(length(colptr)-1)
         if fireJ[j]
             for s = colptr[j]:(colptr[j+1]-1)
-                Apre[s] *= exp32(-(t - tpre[s]) / τpre)
-                Apost[s] *= exp32(-(t - tpost[s]) / τpost)
+                Apre[s] *= exp64(-(t - tpre[s]) / τpre)
+                Apost[s] *= exp64(-(t - tpost[s]) / τpost)
                 Apre[s] += ΔApre
                 tpre[s] = t
                 W[s] = clamp(W[s] + Apost[s], 0.0f0, Wmax)
@@ -54,8 +54,8 @@ function plasticity!(
         if fireI[i]
             for st = rowptr[i]:(rowptr[i+1]-1)
                 s = index[st]
-                Apre[s] *= exp32(-(t - tpre[s]) / τpre)
-                Apost[s] *= exp32(-(t - tpost[s]) / τpost)
+                Apre[s] *= exp64(-(t - tpre[s]) / τpre)
+                Apost[s] *= exp64(-(t - tpost[s]) / τpost)
                 Apost[s] += ΔApost
                 tpost[s] = t
                 W[s] = clamp(W[s] + Apre[s], 0.0f0, Wmax)

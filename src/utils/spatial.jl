@@ -155,7 +155,7 @@ function compute_connections(pre::Symbol, post::Symbol, points; conn, spatial)
             begin
                 x = periodic_distance(post[1], pre[1], grid_size[1])
                 y = periodic_distance(post[2], pre[2], grid_size[2])
-                return SNN.exp32(-(x/σx)^2 -(y/σy)^2)
+                return SNN.exp64(-(x/σx)^2 -(y/σy)^2)
             end
         end
         @unpack σs, grid_size, ϵ = spatial
@@ -257,31 +257,33 @@ grid_size = (x=0.4, y=0.4)
 spatial_avg, x_range, y_range = spatial_activity(points, activity; N, L, grid_size)
 ```
 """
-function spatial_activity(points, activity; N, L, grid_size=(x= 0.1, y= 0.1))
+function spatial_activity(points, activity; N, L, grid_size=(x= [0,0.1], y= [0,0.1]))
     xs, ys = points
     _, num_values = size(activity)
     num_matrices = num_values ÷ N
 
     # Define the grid size
-    x_range = ceil(Int,grid_size.x / L)
-    y_range = ceil(Int,grid_size.y / L)
+    @unpack x, y = grid_size
+    x_range = ceil(Int,diff(collect(x))[1] / L)
+    y_range = ceil(Int,diff(collect(y))[1] / L)
 
-    spatial_avg = zeros(Float64, x_range, y_range, num_matrices)
+    spatial_avg = Array{Any,3}(undef, x_range, y_range, num_matrices)
+    spatial_avg[:].=0
     for t in 1:num_matrices
         time_index = (1+(t-1) * N) : (t * N - 1)
         for j  in 1:x_range
             for k in 1:y_range
                 # Find points within the current grid cell
-                indices_x = findall(_x-> ((j-1)*L <= _x < j*L), xs) |> Set
-                indices_y = findall(_y-> ((k-1)*L <= _y < k*L), ys) |> Set
+                indices_x = findall(_x-> ((j-1)*L <= _x-x[1] < j*L), xs) |> Set
+                indices_y = findall(_y-> ((k-1)*L <= _y-y[1] < k*L), ys) |> Set
                 indices = intersect(indices_x, indices_y) |> collect
                 isempty(indices) && continue
                 spatial_avg[j, k, t] = mean(activity[indices, time_index])
             end
         end
     end
-    x_range  = range(0, stop=grid_size.x, length=x_range)
-    y_range  = range(0, stop=grid_size.y, length=y_range)
+    x_range  = range(x[1], stop=x[end], length=x_range)
+    y_range  = range(y[1], stop=y[end], length=y_range)
     return spatial_avg, x_range, y_range
 end
 

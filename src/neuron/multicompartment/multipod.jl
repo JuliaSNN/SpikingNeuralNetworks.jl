@@ -121,7 +121,7 @@ function Multipod(
         dendrites = dendrites,
         soma_syn = synapsearray(soma_syn),
         dend_syn = synapsearray(dend_syn),
-        NMDA = NMDA,
+        NMDA = EyalNMDA,
         α = [syn.α for syn in dend_syn],
         gax = gax,
         cd = cd,
@@ -227,21 +227,21 @@ function update_synapses!(
         @unpack τr⁻, τd⁻ = dend_syn[n]
         for d in eachindex(v_d)
             @fastmath @turbo for i ∈ 1:N
-                g_d[i, d, n] = exp32(-dt * τd⁻) * (g_d[i, d, n] + dt * h_d[i, d, n])
-                h_d[i, d, n] = exp32(-dt * τr⁻) * (h_d[i, d, n])
+                g_d[i, d, n] = exp64(-dt * τd⁻) * (g_d[i, d, n] + dt * h_d[i, d, n])
+                h_d[i, d, n] = exp64(-dt * τr⁻) * (h_d[i, d, n])
             end
         end
     end
 
     @unpack τr⁻, τd⁻ = soma_syn[1]
     @fastmath @turbo for i ∈ 1:N
-        ge_s[i] = exp32(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
-        he_s[i] = exp32(-dt * τr⁻) * (he_s[i])
+        ge_s[i] = exp64(-dt * τd⁻) * (ge_s[i] + dt * he_s[i])
+        he_s[i] = exp64(-dt * τr⁻) * (he_s[i])
     end
     @unpack τr⁻, τd⁻ = soma_syn[2]
     @fastmath @turbo for i ∈ 1:N
-        gi_s[i] = exp32(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
-        hi_s[i] = exp32(-dt * τr⁻) * (hi_s[i])
+        gi_s[i] = exp64(-dt * τd⁻) * (gi_s[i] + dt * hi_s[i])
+        hi_s[i] = exp64(-dt * τr⁻) * (hi_s[i])
     end
 
 end
@@ -281,8 +281,8 @@ function update_multipod!(
                 @unpack gsyn, E_rev, nmda = dend_syn[r]
                 if nmda > 0.0f0
                     is[d+1] +=
-                        gsyn * g_d[i, d, r] * (v_d[d][i] + Δv[d+1] * dt - E_rev) /
-                        (1.0f0 + (mg / b) * exp32(k * (v_d[d][i] + Δv[d+1] * dt)))
+                        gsyn * g_d[i, d, r] * (v_d[d][i] + Δv[d+1] * dt - E_rev) / (1.0f0 + (mg / b) * exp256(k * (v_d[d][i] + Δv[d+1] * dt))
+                        )
                 else
                     is[d+1] += gsyn * g_d[i, d, r] * (v_d[d][i] + Δv[d+1] * dt - E_rev)
                 end
@@ -298,7 +298,7 @@ function update_multipod!(
             (
                 gl * (
                     (-v_s[i] + Δv[1] * dt + Er) +
-                    ΔT * exp32(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
+                    ΔT * exp64(1 / ΔT * (v_s[i] + Δv[1] * dt - θ[i]))
                 ) - w_s[i] - is[1] - sum(cs)
             ) / C
 
@@ -315,7 +315,7 @@ export Multipod, MultipodNeurons
 #     return 1/ AdEx.C * (
 #         AdEx.gl * (
 #                 (-v + AdEx.Er) + 
-#                 AdEx.ΔT * exp32(1 / AdEx.ΔT * (v - θ))
+#                 AdEx.ΔT * exp64(1 / AdEx.ΔT * (v - θ))
 #                 ) 
 #                 - w 
 #                 - synaptic 

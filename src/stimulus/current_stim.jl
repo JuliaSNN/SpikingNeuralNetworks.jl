@@ -12,11 +12,14 @@ end
 end
 
 function CurrentNoiseParameter(
-    N;
-    I_base::Number,
+    N::Union{Number, AbstractPopulation};
+    I_base::Number=0,
     I_dist::Distribution = Normal(0.0, 0.0),
-    α::Number = 1.0,
+    α::Number = 0.0,
 )
+    if isa(N, AbstractPopulation)
+        N = N.N
+    end
     return CurrentNoiseParameter(
         I_base = fill(Float32(I_base), N),
         I_dist = I_dist,
@@ -31,7 +34,7 @@ end
     DT = Distribution{Univariate,Continuous},
     VIT = Vector{Int},
 } <: AbstractStimulus
-    param::CurrentStimulusParameter = CurrentStimulusParameter()
+    param::CurrentStimulusParameter
     name::String = "Current"
     id::String = randstring(12)
     neurons::VIT
@@ -49,24 +52,12 @@ function CurrentStimulus(
     post::T, 
     sym::Symbol=:I;
     neurons = :ALL,
-    # α::R = 1f0,
-    # I_dist::Distribution = Normal(0.0, 0.0),
-    # I_base = 10pA,
-
     param,
     kwargs...,
 ) where {T<:AbstractPopulation}
     if neurons == :ALL
         neurons = 1:post.N
     end
-
-    # if 
-    # I_base = isa(I_base, Number) ? fill(I_base, length(neurons)) : I_base
-    # α = isa(α, Number) ? fill(α, length(neurons)) : α
-    # @show α
-    # param = CurrentNoiseParameter(I_base, I_dist, α)
-
-
     targets =
         Dict(:pre => :Current, :post => post.id, :sym => :soma, :type=>:CurrentStimulus)
     return CurrentStimulus(
@@ -89,7 +80,7 @@ function stimulate!(p, param::CurrentNoiseParameter, time::Time, dt::Float32)
     @unpack I_base, I_dist, α = param
     rand!(I_dist, randcache)
     @inbounds @simd for i in p.neurons
-        I[i] = (I_base[i] .+ randcache[i]) * α[i] + I[i] * (1 - α[i])
+        I[i] = (I_base[i]+ randcache[i])*(1-α[i]) + I[i]* (α[i])
     end
 end
 

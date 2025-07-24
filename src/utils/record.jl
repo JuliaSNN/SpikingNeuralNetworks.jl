@@ -334,18 +334,26 @@ function _record(p, sym; interpolate = true, kwargs...)
     if interpolate
         return interpolated_record(p, sym)
     else
-        return getvariable(p, sym)
+        return getvariable(p, sym), []
     end
 end
 
-function record(p, sym::Symbol; interval = nothing, kwargs...)
+function record(p, sym::Symbol; range=false, interval = nothing, kwargs...)
     if sym == :fire
         @assert !isnothing(interval) "Range must be provided for firing rate recording"
         v, r = firing_rate(p, interval; kwargs...)
-        return v
+        if range
+            return v, r
+        else
+            return v
+        end#
     else
         v, r = _record(p, sym; kwargs...)
-        return v
+        if range
+            return v, r
+        else
+            return v
+        end
     end
 end
 

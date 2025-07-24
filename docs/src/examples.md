@@ -105,12 +105,315 @@ plot(plots...,
 )
 ```
 
-
 ![Firing patterns of AdEx neuron](assets/examples/AdEx.png)
 
+## Noise input current
+
+In 'in vivo' experiments neurons are driven with noisy inputs that can be modeled by splitting the input current in two components
+``I = Iˆ{det}(t) + I^{noise}(t)``.
+
+the neuronal dynamics is then determined (for a generalized Leaky and Integrate model) by the equation:
+
+```math
+\tau_{m} \frac{d u}{ d t} = f(u) + R I^{det}(t) + R I^{noise}(t)
+```
+
+In this description the ``I^{noise}(t)`` is the stochastic component of the external current, which is normally assumed to be a white noise.  Under white noise, the average value of the external current is ``\langle I_{noise} \rangle = 0`` and the autocorrelation is determined by the neuronal timescale and the noise variance, ``\langle I^{noise}(t) I^{noise}(t') \rangle = \tau_m \sigma \delta (t-t')``.
+
+To introduce white noise in the model we can use the `CurrentNoiseParameter` type. In the following example:
+
+1. define a Leaky Integrate-and-Fire neuron ;
+2. define a `CurrentNoiseParameter`, it accepts a I_base value (the deterministic current) and a distribution, which we set to be a Normal distribution with zero average and `100pA` variance;
+3. `CurrentStimulus` attaches an `<: AbstraactStimulus` to the `:I` variable of the population `E`;
+4. record the variables, simulate and plot the results.
 
 
-## Balanced EI network
+```julia
+
+import SNNPlots: vecplot, plot
+using SpikingNeuralNetworks
+using Distributions
+SNN.@load_units
+
+if_parameter = SNN.IFParameter(
+    R = 0.5GΩ,
+    Vt = -50mV,
+    ΔT = 2mV,
+    El = -70mV,
+    τm = 20ms,
+    Vr = -55mV,
+)
+
+# Create the IF neuron with tonic firing parameters
+E = SNN.IF(; N = 1, 
+    param=if_parameter,
+    )
+SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
+
+# Create a withe noise input current 
+current_param = CurrentNoiseParameter(E.N; I_base=30pA, I_dist=Normal(00pA, 100pA))
+current = CurrentStimulus(E, :I, param=current_param)
+model = merge_models(; E = E, I=current)
+SNN.sim!(; model, duration = 2000ms)
+
+p = plot(
+    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10), c=:black),
+    vecplot(E, :I, ylabel="External current (pA)", c=:gray, lw=0.4, alpha=0.4),
+    layout=(
+        2, 1
+    ),
+    size=(600, 500),
+    xlabel= "Time (s)",
+    leftmargin=10Plots.mm,
+)
+
+```
+
+![Noise input current](assets/examples/noise_current.png)
+
+The library also allows to define an arbitrary complex noise function with the `CurrentVariableParameter` type. In this case we must define a function, in this case `sinusoidal_current`, which is called runtime to determine the input current to each neuron in the population, the function must accept three arguments: 
+1. a dictionary with the `variables::Dict`;
+2. the time of the model `t::Float32`;
+3. the index of the neuron `i::Int32`.
+
+We thus define the set of variables that the function uses to determine the current and pass them along the function to `CurrentVariableParameter`. 
+
+In the following example we used a plain sinusoidal current that stimulate the two neurons in the population with a phase a frequency of 1Hz and a phase shift of `3/4 π`
+
+```julia 
+
+
+# Create a populations with 2 IF neurons
+E = SNN.IF(; N = 2, 
+    param=if_parameter,
+    )
+SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
+
+# Create a withe noise input current 
+
+function sinusoidal_current(variables::Dict, t::Float32, i::Int)
+    # Extract the parameters from the variables dictionary
+    amplitude = variables[:amplitude]
+    frequency = variables[:frequency]
+    phase = variables[:shift_phase]
+    
+    # Calculate the current value at time t for neuron i
+    return amplitude * sin(2 * π * frequency * t + i*phase)
+end
+
+variables = Dict(
+    :amplitude => 50pA,
+    :frequency => 1Hz,
+    :shift_phase => π*3/4, # Phase shift for each neuron
+)
+
+current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current )
+current = CurrentStimulus(E, :I, param=current_param)
+model = merge_models(; E = E, I=current)
+SNN.sim!(; model, duration = 2000ms)
+
+p = plot(
+    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10)),
+    vecplot(E, :I, ylabel="External current (pA)", c=:gray, lw=0.4, alpha=0.4),
+    layout=(
+        2, 1
+    ),
+    size=(600, 500),
+    xlabel= "Time (s)",
+    leftmargin=10Plots.mm,
+)
+
+```
+
+![Variable input current](assets/examples/variable_current.png)
+
+## Balanced input spikes
+
+In biophysical networks, and in the brain, neurons' membrane potential is not driven by external currents but by the opening and closing of ionic channels following an afferent spike. Spikes cause the release of vescicles in the synaptic cleft that bind to the ionic channels on the post-synaptic neuron's membrane.  The opening of a ionic channel can lead to a depolarizing or hyperpolarizing current, dependently on its reversal potential. 
+
+In this example we use two spike trains, an excitatory and an inhibitory one, to stimulate a Leaky Integrate-and-Fire neuron above the spike-threshold. The large number of spikes received increases the synaptic conductance of the cell, to the point that it dominates over the leakage conductance term. In this condition, the neurons membrane dynamics is dominated by the external inputs, and the neuron is in the so-called "High-conductance state". 
+
+```julia
+using SpikingNeuralNetworks
+using SNNPlots
+import SNNPlots: vecplot, plot, savefig, gplot
+SNN.@load_units
+
+if_parameter = SNN.IFParameter(
+    R = 0.5GΩ,
+    Vt = -50mV,
+    ΔT = 2mV,
+    El = -70mV,
+    τm = 20ms,
+    Vr = -55mV,
+    E_i = -75mV,
+    E_e = 0mV,
+)
+
+# Create the IF neuron
+# E = SNN.AdEx(; N = 1, 
+#     # param=if_parameter,
+#     )
+E = SNN.IF(; N = 1, 
+    param=if_parameter,
+    )
+
+# Create an excitatory and inhibitory spike trains
+
+# Define the Poisson stimulus parameters 
+poisson_exc = SNN.PoissonStimulusLayer(
+    1.2Hz,    # Mean firing rate (Hz) 
+    p = 1f0,  # Probability of connecting to a neuron
+    μ = 1.0,  # Synaptic strength (nS)
+    N = 1000, # Neurons in the Poisson Layer
+)
+
+poisson_inh = SNN.PoissonStimulusLayer(
+    3Hz,       # Mean firing rate (Hz)
+    p = 1f0,   # Probability of connecting to a neuron
+    μ = 4.0,   # Synaptic strength (nS)
+    N = 1000,  # Neurons in the Poisson Layer
+)
+
+# Create the Poisson layers for excitatory and inhibitory inputs
+stim_exc = PoissonLayer(E, :ge, param=poisson_exc, name="noiseE")
+stim_inh = PoissonLayer(E, :gi, param=poisson_inh, name="noiseI")
+
+# Create the model and run the simulation
+model = merge_models(; E = E, stim_exc, stim_inh)
+SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
+SNN.monitor!(model.stim, [:fire])
+SNN.sim!(; model, duration = 1000ms)
+
+# Plot the results
+# gplot is a special function the plots the synaptic currents
+
+SNNPlots.default(palette=:okabe_ito)
+p = plot(
+    raster(model.stim),
+    gplot(E, v_sym=:v, ge_sym=:ge, gi_sym=:gi, 
+        Ee_rev=0mV, Ei_rev=-75mV,
+        ylabel="Synapti current (μA)"),
+    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10), c=:black),
+    layout=(
+        3, 1
+    ),
+    fgcolorlegend=:transparent,
+    size=(800, 900),
+    xlabel= "Time (s)",
+    leftmargin=10SNNPlots.Plots.mm,
+)
+```
+
+![Poisson input](assets/examples/poisson_input.png)
+
+
+## Recurrent EI network
+
+
+
+```julia
+using DrWatson
+using Plots
+using UnPack
+using SpikingNeuralNetworks
+SNN.@load_units
+##
+
+Zerlaut2019_network = (Npop = (E=8000, I=2000),
+    exc = IFParameterSingleExponential(
+                τm = 200pF / 10nS, 
+                El = -70mV, 
+                Vt = -50.0mV, 
+                Vr = -70.0f0mV,
+                R  = 1/10nS, 
+                τabs = 2ms,       
+                τi=5ms,
+                τe=5ms,
+                E_i = -80mV,
+                E_e = 0mV,
+                ),
+
+    inh = IFParameterSingleExponential(
+                τm = 200pF / 10nS, 
+                El = -70mV, 
+                Vt = -53.0mV, 
+                Vr = -70.0f0mV,
+                R  = 1/10nS, 
+                τabs = 2ms,       
+                τi=5ms,
+                τe=5ms,
+                E_i = -80mV,
+                E_e = 0mV,
+                ),
+
+    connections = (
+        E_to_E = (p = 0.05, μ = 2nS),
+        E_to_I = (p = 0.05, μ = 2nS),
+        I_to_E = (p = 0.05, μ = 10nS),
+        I_to_I = (p = 0.05, μ = 10nS),
+        ),
+    
+    afferents = (
+        N = 100,
+        p = 0.1f0,
+        rate = 20Hz,
+        μ = 4.0,
+        ), 
+)
+
+function network(config)
+    @unpack afferents, connections, Npop = config
+    E = IF(N=Npop.E, param=config.exc, name="E")
+    I = IF(N=Npop.I, param=config.inh, name="I")
+
+    AfferentParam = PoissonStimulusLayer(afferents.rate; afferents...)
+    afferentE = PoissonLayer(E, :ge, param=AfferentParam, name="noiseE")
+    afferentI = PoissonLayer(I, :ge, param=AfferentParam, name="noiseI")
+
+    synapses = (
+        E_to_E = SpikingSynapse(E, E, :ge, p=connections.E_to_E.p, μ=connections.E_to_E.μ, name="E_to_E"),
+        E_to_I = SpikingSynapse(E, I, :ge, p=connections.E_to_I.p, μ=connections.E_to_I.μ, name="E_to_I"),
+        I_to_E = SpikingSynapse(I, E, :gi, p=connections.I_to_E.p, μ=connections.I_to_E.μ, name="I_to_E"),
+        I_to_I = SpikingSynapse(I, I, :gi, p=connections.I_to_I.p, μ=connections.I_to_I.μ, name="I_to_I"),
+    )
+    model = merge_models(;E,I, afferentE, afferentI, synapses..., silent=true, name="Balanced network") 
+    monitor!(model.pop, [:fire])
+    monitor!(model.stim, [:fire])
+    # monitor!(model.pop, [:v], sr=200Hz)
+    return merge_models(;model..., silent=true)
+end
+
+
+##
+plots = map([4, 10]) do input_rate
+    config = @update Zerlaut2019_network begin
+        afferents.rate = input_rate*Hz
+    end 
+    model = network(config)
+    sim!(;model, duration=10_000ms,  pbar=true)
+    pr= raster(model.pop, every=40)
+
+    # Firing rate of the network with a fixed afferent rate
+    frE, r = firing_rate(model.pop.E, interval=3s:10s, pop_average=true)
+    frI, r = firing_rate(model.pop.I, interval=3s:10s, pop_average=true)
+    pf = plot(r, [frE, frI], labels=["E" "I"],
+        xlabel="Time (s)", ylabel="Firing rate (Hz)", 
+        title="Afferent rate: $input_rate Hz",
+        size=(600, 400), lw=2)
+
+    # Plot the raster plot of the network
+    plot(pf, pr, layout=(2, 1))
+end
+
+plot(plots..., layout=(1,2), size=(1200, 600), xlabel="Time (s)", leftmargin=10Plots.mm)
+##
+```
+
+![Recurrent network](assets/examples/recurrent_network.png)
+
+
+
 
 ## FORCE learning
 
