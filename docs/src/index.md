@@ -20,7 +20,7 @@ JuliaSNN builds on the idea that a neural network is composed of three classes o
 
 <!-- An example of a model is the classical `Balanced Network` by [Brunel, 2000](https://link.springer.com/article/10.1023/A:1008925309027) : -->
 
-```julia
+```md
 ================
 [Info:  Model: Balanced network
 [Info:  ----------------
@@ -75,7 +75,7 @@ Connections and stimuli objects maintain internal pointers to the populations' f
 
 JuliaSNN is not yet available on the public Julia repository. For the moment, you can easily install the last version of the library with:
 
-```julia
+```
 ]add https://github.com/JuliaSNN/SpikingNeuralNetworks.jl
 ```
 
@@ -86,3 +86,6 @@ Models can be easily extended by importing the `AbstractPopulation`, `AbstractCo
 Tutorials on how to instantiate network models are presented in [Models Examples](@ref)
 
 ![A raster plot of a spiking neural network](assets/spiking.png)
+
+
+
