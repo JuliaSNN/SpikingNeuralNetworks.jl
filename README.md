@@ -24,9 +24,9 @@
 SpikingNeuralNetworks.jl is a toolbox written in Julia providing models, plots, and analysis functions for spiking and rate networks simulations.
 
 The SpikingNeuralNetwork.jl package is an umbrella package for:
-- `SNNBase.jl`
-- `SNNPlots.jl`
-- `SNNUtils.jl`
+- [SNNBase.jl](https://github.com/JuliaSNN/SNNBase.jl)
+- [SNNPlots.jl](https://github.com/JuliaSNN/SNNPlots.jl)
+- [SNNUtils.jl](https://github.com/JuliaSNN/SNNUtils.jl)
 and future contributions of the spiking neural network ecosystem.
 
 **Documentation** is [here](https://juliasnn.github.io/SpikingNeuralNetworks.jl/stable/).
