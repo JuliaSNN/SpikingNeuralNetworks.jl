@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="docs/src/assets/SNNLogo.png" alt="SpikingNeuralNetworks.jl" width="200">
+    <img src="material/SNNLogo.svg" alt="SpikingNeuralNetworks.jl" width="200">
 </div>
 
 <h2 align="center">A Spiking Neural Network framework for Julia

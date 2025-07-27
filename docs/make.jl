@@ -1,7 +1,7 @@
 using Documenter, SpikingNeuralNetworks
 
 makedocs(sitename = "Julia SpikingNeuralNetworks",
-        # # sitenameurl = "https://aquaresi.github.io/SpikingNeuralNetworks.jl",
+        sitenameurl = "https://aquaresi.github.io/SpikingNeuralNetworks.jl",
         modules = [SpikingNeuralNetworks])
         # pages = [
         #     "Home" => "index.md",
