@@ -1,15 +1,14 @@
 name = "SpikingNeuralNetworks"
 uuid = "9d8b7fda-1049-58bc-9481-071a9f369938"
-
 authors = ["Alessio <alessio.quaresima@inventati.org>"]
 version = "1.0.0"
 
 [deps]
-SNNBase = "5fb03681-66ea-42c3-a459-1265ed30d607"
+SNNModels = "5fb03681-66ea-42c3-a459-1265ed30d607"
 SNNPlots = "1906bf50-7128-11ef-3209-891d16f9be9f"
 SNNUtils = "df079cdf-2344-43fe-90b5-fc41d8d26db7"
 
 [compat]
-SNNBase = "1.5.0"
+SNNModels = "1.5.0"
 SNNPlots = "0.2.0"
 SNNUtils = "0.1.0"

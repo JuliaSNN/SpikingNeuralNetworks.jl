@@ -1,11 +1,11 @@
 module SpikingNeuralNetworks
 
 
-    using SNNBase
+    using SNNModels
     using SNNPlots
     using SNNUtils
 
-    export SNNBase, SNNPlots, SNNUtils
+    export SNNModels, SNNPlots, SNNUtils
 
     SNN = SpikingNeuralNetworks
     export SNN
