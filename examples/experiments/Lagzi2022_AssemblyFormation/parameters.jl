@@ -10,13 +10,13 @@ NSSTs = 0:10:100
 synapses = [:ampa, :nmda]
 
 # Model parameters
-JInh  = 10 # inhibitory synaptic weight
+JInh = 10 # inhibitory synaptic weight
 μ = 0.25mV # mean synaptic weight
 ext_rate = 2kHz # external input rate
 
 # STDP parameters
 λ = 0.53 # peak difference in the STDP curve LTP and LTD branches 
-η_exc =25e-4ms # exc learning rate 
+η_exc = 25e-4ms # exc learning rate 
 η_sst = 1e-2 # sst learning rate
 η_pv = 1e-2 # pv learning rate
 
@@ -26,33 +26,32 @@ stim_rate = 0.5
 
 
 adex_model = (
-    nmda = begin 
+    nmda = begin
         My_SomaGlu = Glutamatergic(
             Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.6),
             ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 100.0, g0 = 0.3, nmda = 1.0f0),
         )
         syn = Synapse(My_SomaGlu, SomaGABA)
-        AdExSynapseParam(syn; a=0, b=0, Vr=-55)
+        AdExSynapseParam(syn; a = 0, b = 0, Vr = -55)
     end,
-    ampa = begin 
+    ampa = begin
         My_SomaGlu = Glutamatergic(
             Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.6),
             ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 1.0, g0 = 0.0, nmda = 0.0f0),
         )
         syn = Synapse(My_SomaGlu, SomaGABA)
-        AdExSynapseParam(syn; a=0, b=0, Vr=-55)
-    end
-    )
+        AdExSynapseParam(syn; a = 0, b = 0, Vr = -55)
+    end,
+)
 
 
-config = 
-(
+config = (
     NE = 400,
     NI = 200,
     NSST = 60,
     adex_param = adex_model.ampa,
-    pv_param = IFParameter(El=-55mV),
-    sst_param = IFParameter(El=-55mV),
+    pv_param = IFParameter(El = -55mV),
+    sst_param = IFParameter(El = -55mV),
     stim_τ = 100ms,
     stim_rate = 0.5,
     J = JInh,
@@ -62,52 +61,31 @@ config =
     IE = (p = 0.4, μ = JInh*μ),
     E_noise = (1-stim_rate)*ext_rate,
     I_noise = 0.6*ext_rate,
-    signal_param = Dict(:X => 2.0f0,
+    signal_param = Dict(
+        :X => 2.0f0,
         :σ => 0.4kHz,
         :dt => 0.125f0,
         :θ => 1/stim_τ,
-        :μ => stim_rate*ext_rate
-        ),
-    stdp_exc = STDPParameter(
-        A_pre = η_exc,
-        A_post =  -λ* η_exc,
-        τpost = 30ms,
-        τpre = 15ms,
-    ) ,
-    stdp_sst = STDPParameter(
-        A_pre = η_sst,
-        A_post =  -λ* η_sst,
-        τpost = 30ms,
-        τpre = 30ms,
-    ) ,
-    stdp_pv = STDPParameter(
-        A_pre = η_pv,
-        A_post =  η_pv,
-        τpost = 20ms,
-        τpre = 20ms,
+        :μ => stim_rate*ext_rate,
     ),
-    duration = 500s
+    stdp_exc = STDPParameter(A_pre = η_exc, A_post = -λ * η_exc, τpost = 30ms, τpre = 15ms),
+    stdp_sst = STDPParameter(A_pre = η_sst, A_post = -λ * η_sst, τpost = 30ms, τpre = 30ms),
+    stdp_pv = STDPParameter(A_pre = η_pv, A_post = η_pv, τpost = 20ms, τpre = 20ms),
+    duration = 500s,
 )
 
 
 experiments = Dict(
-    "NMDA"  => (; config...,
-        adex_param = AdExSynapseParameter(a=0, b=0),
+    "NMDA" => (;
+        config...,
+        adex_param = AdExSynapseParameter(a = 0, b = 0),
         E_noise = 0.5ext_rate,
         name = "NMDA",
-        factor = 1
-
+        factor = 1,
     ),
-    "doublesize" => (; config...,
-            NE = 400*2,
-            NI = 200*2,
-            name = "doublesize",
-            factor = 2
-    ),
-    "baseline" => (; config...,
-        name = "baseline",
-        factor = 1
-    ),
+    "doublesize" =>
+        (; config..., NE = 400*2, NI = 200*2, name = "doublesize", factor = 2),
+    "baseline" => (; config..., name = "baseline", factor = 1),
 )
 
 # @unpack stdp_exc, stdp_sst, stdp_pv = config

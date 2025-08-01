@@ -52,7 +52,7 @@ addprocs(4)
             param = SNN.iSTDPParameterRate(r = 4Hz),
         )
         norm = SNN.SynapseNormalization(E, [E_to_E], param = SNN.AdditiveNorm(τ = 30ms))
-        
+
         # Store neurons and synapses into a dictionary
         pop = SNN.@symdict E I
         syn = SNN.@symdict I_to_E E_to_I E_to_E norm I_to_I
@@ -60,16 +60,15 @@ addprocs(4)
     end
 
     # Create background for the network simulation
-    noise  = SNN.PoissonStimulus(network.pop[:E], :ge, param=2.8kHz, neurons=:ALL)
-    model = SNN.merge_models(network, noise=noise, silent=true)
+    noise = SNN.PoissonStimulus(network.pop[:E], :ge, param = 2.8kHz, neurons = :ALL)
+    model = SNN.merge_models(network, noise = noise, silent = true)
     SNN.monitor([model.pop...], [:fire])
     simtime = SNN.Time()
-    train!(model=model, duration = 5000ms, time = simtime, dt = 0.125f0)
+    train!(model = model, duration = 5000ms, time = simtime, dt = 0.125f0)
     path = datadir("example_cluster") |> mkpath
-    DrWatson.save(joinpath(path,"network_with_spikes_$(myid()).jld2"), "model", model)
+    DrWatson.save(joinpath(path, "network_with_spikes_$(myid()).jld2"), "model", model)
 end
 
-for i in 1:nprocs()
+for i = 1:nprocs()
     s = @spawnat :any create_network()
 end
-

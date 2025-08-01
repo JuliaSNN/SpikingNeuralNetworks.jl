@@ -8,13 +8,13 @@ function initialize()
     E = SNN.AdEx(; N = 2000, param = AdExParameterSingleExponential(El = -65mV))
     I = SNN.IF(; N = 500, param = SNN.IFParameterSingleExponential())
     EE = SNN.SpikingSynapse(E, E, :ge; μ = 1.0, p = 0.2)
-    EI = SNN.SpikingSynapse(E, I, :ge; μ = 5., p = 0.2)
+    EI = SNN.SpikingSynapse(E, I, :ge; μ = 5.0, p = 0.2)
     IE = SNN.SpikingSynapse(I, E, :gi; μ = 10.0, p = 0.2)
     II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.2)
-    S = SNN.PoissonStimulus(E, :ge,  param=800Hz, neurons=:ALL, μ=1.7f0,)
+    S = SNN.PoissonStimulus(E, :ge, param = 800Hz, neurons = :ALL, μ = 1.7f0)
     P = [E, I]
     C = [EE, EI, IE, II]
-    S = [S] 
+    S = [S]
     return P, C, S
 end
 ##

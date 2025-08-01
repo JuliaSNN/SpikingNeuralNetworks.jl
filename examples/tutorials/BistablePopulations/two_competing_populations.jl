@@ -22,7 +22,7 @@ function define_network(N = 800)
         E,
         :hi,
         p = 0.2,
-        μ = 10.,
+        μ = 10.0,
         param = SNN.iSTDPParameterRate(r = 4Hz),
     )
     norm = SNN.SynapseNormalization(E, [E_to_E], param = SNN.AdditiveNorm(τ = 10ms))
@@ -39,15 +39,15 @@ network1 = define_network(800)
 network2 = define_network(800)
 inter = (
     E1_to_I2 = SNN.SpikingSynapse(network1.pop.E, network2.pop.I, :he, p = 0.2, μ = 4.25),
-    E2_to_I1 = SNN.SpikingSynapse(network2.pop.E, network1.pop.I, :he, p = 0.2, μ = 4.25)
+    E2_to_I1 = SNN.SpikingSynapse(network2.pop.E, network1.pop.I, :he, p = 0.2, μ = 4.25),
 )
 
 noise = (
-    A = SNN.PoissonStimulus(network1.pop.E, :he,  param=4.5kHz, neurons=:ALL, μ=1.7f0,),
-    B = SNN.PoissonStimulus(network2.pop.E, :he,  param=4.5kHz, neurons=:ALL, μ=1.7f0,),
+    A = SNN.PoissonStimulus(network1.pop.E, :he, param = 4.5kHz, neurons = :ALL, μ = 1.7f0),
+    B = SNN.PoissonStimulus(network2.pop.E, :he, param = 4.5kHz, neurons = :ALL, μ = 1.7f0),
 )
 
-model = merge_models( noise, inter; n1=network1, n2=network2)
+model = merge_models(noise, inter; n1 = network1, n2 = network2)
 
 ## @info "Initializing network"
 SNN.monitor([model.pop...], [:fire, :v, :he, :ge])
@@ -55,7 +55,7 @@ train!(model = model, duration = 15000ms, pbar = true, dt = 0.125ms)
 SNN.raster([model.pop...], [14s, 15s])
 
 train!(model = model, duration = 1000ms, pbar = true, dt = 0.125ms)
-SNN.vecplot(model.pop.n1_E, [:v, :he, :ge], r=0.01s:0.001:1s, dt=0.125ms)
+SNN.vecplot(model.pop.n1_E, [:v, :he, :ge], r = 0.01s:0.001:1s, dt = 0.125ms)
 
 
 ##

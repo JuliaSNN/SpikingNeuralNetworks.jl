@@ -29,7 +29,7 @@ network = let
         param = SNN.iSTDPParameterRate(r = 4Hz),
     )
     norm = SNN.SynapseNormalization(E, [E_to_E], param = SNN.AdditiveNorm(τ = 30ms))
-    
+
     # Store neurons and synapses into a dictionary
     pop = SNN.@symdict E I
     syn = SNN.@symdict I_to_E E_to_I E_to_E norm I_to_I
@@ -38,28 +38,29 @@ end
 
 
 # Create background for the network simulation
-noise  = SNN.PoissonStimulus(network.pop[:E], :ge, param=2.8kHz, neurons=:ALL)
-noise2 = SNN.PoissonStimulus(network.pop[:E], :gi, param=3kHz, neurons=:ALL)
-old_model = SNN.merge_models(network, noise=noise, noise2=noise2)
+noise = SNN.PoissonStimulus(network.pop[:E], :ge, param = 2.8kHz, neurons = :ALL)
+noise2 = SNN.PoissonStimulus(network.pop[:E], :gi, param = 3kHz, neurons = :ALL)
+old_model = SNN.merge_models(network, noise = noise, noise2 = noise2)
 
-using SpikingNeuralNetworks:MetaGraphs
+using SpikingNeuralNetworks: MetaGraphs
 my_graph = SNN.graph(old_model)
 ##
 
 
 ##
 set_theme!(theme_light())
-f, ax, p = graphplot(my_graph, 
-                    edge_width=[0.1 for i in 1:ne(my_graph)],
-                     node_size=[30 for i in 1:nv(my_graph)],
-                     arrow_shift=0.90,
-                     nlabels=[get_prop(my_graph, v, :name) for v in vertices(my_graph)],
-                     nlabels_distance=20,
-                     )
+f, ax, p = graphplot(
+    my_graph,
+    edge_width = [0.1 for i = 1:ne(my_graph)],
+    node_size = [30 for i = 1:nv(my_graph)],
+    arrow_shift = 0.90,
+    nlabels = [get_prop(my_graph, v, :name) for v in vertices(my_graph)],
+    nlabels_distance = 20,
+)
 
 
 
-                # f, ax, p = graphplot(my_graph, n_labels=names, nlabels_fontsize=12,node_size = 30, edge_width = .1, arrow_shift=.90)
+# f, ax, p = graphplot(my_graph, n_labels=names, nlabels_fontsize=12,node_size = 30, edge_width = .1, arrow_shift=.90)
 # hidedecorations!(ax)
 # names = [get_prop(my_graph, v, :name) for v in vertices(my_graph)]
 deregister_interaction!(ax, :rectanglezoom)

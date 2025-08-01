@@ -61,11 +61,11 @@ EI = SNN.SpikingSynapse(E, I, :ge; μ = μEI, p = 0.2)
 IE = SNN.SpikingSynapse(I, E, :gi; μ = μIE, p = 0.2)
 II = SNN.SpikingSynapse(I, I, :gi; μ = μII, p = 0.2)
 
-Input_E = SNN.PoissonStimulus(E, :ge, param = νe, neurons=:ALL)
-Input_I = SNN.PoissonStimulus(I, :ge, param = νi, neurons=:ALL)
+Input_E = SNN.PoissonStimulus(E, :ge, param = νe, neurons = :ALL)
+Input_I = SNN.PoissonStimulus(I, :ge, param = νi, neurons = :ALL)
 
 ##
-model =  merge_models(SNN.@symdict E I Input_E Input_I EE EI IE II )
+model = merge_models(SNN.@symdict E I Input_E Input_I EE EI IE II)
 SNN.monitor(model.pop, [:fire])
 
 SNN.sim!(P, C; duration = 15second)

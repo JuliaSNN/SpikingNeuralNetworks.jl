@@ -11,7 +11,7 @@ function define_network(N = 800)
     # Number of neurons in the network
     N = N
     # Create dendrites for each neuron
-    E = SNN.AdEx(N = N, param = SNN.AdExParameter(Vr = -55mV, At = 0mV, b=0, a=0))
+    E = SNN.AdEx(N = N, param = SNN.AdExParameter(Vr = -55mV, At = 0mV, b = 0, a = 0))
     # Define interneurons 
     I = SNN.IF(; N = N ÷ 2, param = SNN.IFParameter(τm = 20ms, El = -50mV))
     # Define synaptic interactions between neurons and interneurons
@@ -40,7 +40,11 @@ n_assemblies = 2
 ## Instantiate the network assemblies and local inhibitory populations
 subnets = Dict(Symbol("sub_$n") => define_network(400) for n = 1:n_assemblies)
 # Add noise to each assembly
-noise = Dict(Symbol("noise_$(i)") => SNN.PoissonStimulus(subnets[i].pop.E, :he, param=2.5kHz, neurons=:ALL) for i in eachindex(subnets))
+noise = Dict(
+    Symbol("noise_$(i)") =>
+        SNN.PoissonStimulus(subnets[i].pop.E, :he, param = 2.5kHz, neurons = :ALL) for
+    i in eachindex(subnets)
+)
 # Create synaptic connections between the assemblies and the lateral inhibitory populations
 syns = Dict{Symbol,Any}()
 for i in eachindex(subnets)
@@ -73,17 +77,19 @@ end
 
 
 stimuli = Dict{Symbol,Any}()
-for n in 1:n_assemblies
-    push!(stimuli, Symbol("stim_$n")=> 
-        SNN.PoissonStimulus(
-            subnets[Symbol("sub_$n")].pop.E, 
-            :ge, 
-            neurons=:ALL,
-            param=PSParam(
-                rate=input,  
-                variables = Dict(
-                    :id => n,
-                    :n_assemblies => n_assemblies))))
+for n = 1:n_assemblies
+    push!(
+        stimuli,
+        Symbol("stim_$n") => SNN.PoissonStimulus(
+            subnets[Symbol("sub_$n")].pop.E,
+            :ge,
+            neurons = :ALL,
+            param = PSParam(
+                rate = input,
+                variables = Dict(:id => n, :n_assemblies => n_assemblies),
+            ),
+        ),
+    )
 end
 network = SNN.merge_models(noise, subnets, syns, stimuli)
 
@@ -155,4 +161,4 @@ plot(p1, p2, layout = (2, 1), size = (600, 800), margin = 5Plots.mm)
 using Statistics, StatsBase
 pcor = plot()
 n = 800
-plot(0:5:5*n,autocor(rates[1], 0:n))
+plot(0:5:(5*n), autocor(rates[1], 0:n))

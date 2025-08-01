@@ -55,19 +55,26 @@ plot(
     [rI],
     xlabel = "Input to I neurons (nA)",
     ylabel = "Inhibitory neurons (Hz)",
-    label="",
+    label = "",
     lc = [:blue],
     lw = 4,
     legend = :topright,
 )
-plot!([[], []], lc=[:blue :red], label=["Excitatory" "Inhibitory"], legend=:top, legendfontsize=12, lw=4)
+plot!(
+    [[], []],
+    lc = [:blue :red],
+    label = ["Excitatory" "Inhibitory"],
+    legend = :top,
+    legendfontsize = 12,
+    lw = 4,
+)
 #
 plot!(
     SNN.SNNPlots.twinx(),
     Irange,
     [rE],
     lc = [:red],
-    label="",
+    label = "",
     lw = 4,
     ylabel = "Excitatory neurons (Hz)",
     legend = :topright,
