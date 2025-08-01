@@ -14,6 +14,8 @@ The library strength points are:
 
 `SpikingNeuralNetworks.jl` is defined within the `JuliaSNN` ecosystem, which offers `SNNPlots` to plot models' recordings and `SNNUtils` for further stimulation protocols and analysis.
 
+![A raster plot of a spiking neural network](assets/spiking.png)
+
 ## Models: populations, connections, and stimuli
 
 SpikingNeuralNetworks.jl builds on the idea that a neural network is composed of three classes of objects, the network _populations_, their recurrent _connections_, and the external _stimuli_ they receive. Thus, a SNN model is simply a`NamedTuple` with keys: `pop`, `syn`, `stim`. The element associated to the keys must be concrete subtypes of `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus`. 
@@ -127,9 +129,8 @@ Models can be easily extended by importing the `AbstractPopulation`, `AbstractCo
 
 Tutorials on how to instantiate neuronal and network models are presented in [Examples](@ref). 
 
-The collection of available 
+The collection of available models can be found under [Models](@ref)
 
-![A raster plot of a spiking neural network](assets/spiking.png)
 
 
 
