@@ -1,4 +1,4 @@
-# Models Examples
+# Examples
 
 ## AdEx neuron 
 
