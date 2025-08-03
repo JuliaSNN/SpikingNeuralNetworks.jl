@@ -119,17 +119,24 @@ Connections and stimuli objects maintain internal pointers to the populations' f
 
 ## Installation
 
-JuliaSNN is not yet available on the public Julia repository. For the moment, you can easily install the last version of the library with:
+JuliaSNN is now available on the public Julia repository!
+You can easily install the last stable release via:
+
+```
+]add SpikingNeuralNetworks
+```
+
+otherwise, you can install the most recent updates from the git repository:
 
 ```
 ]add https://github.com/JuliaSNN/SpikingNeuralNetworks.jl
 ```
 
-Models can be easily extended by importing the `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus` types. Guidelines on how to create a model are presented in [Models Extensions ](@ref)
+The collection of available models can be found under [Models](@ref) (WIP)
+Models can be easily extended by importing the `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus` types. Guidelines on how to create a model are presented in [Models Extensions ](@ref) (WIP)
 
-Tutorials on how to instantiate neuronal and network models are presented in [Examples](@ref). 
+To learn how to use the library you can follow the [Tutorial](@ref).
 
-The collection of available models can be found under [Models](@ref)
 
 
 
