@@ -15,9 +15,7 @@ model = SNN.merge_models(; E, I)
 E.I .= 100pA
 SNN.sim!(model, 1s)
 
-
 plot(SNN.vecplot(E, :v), SNN.vecplot(E, :w), layout = (2, 1))
-
 
 ##
 

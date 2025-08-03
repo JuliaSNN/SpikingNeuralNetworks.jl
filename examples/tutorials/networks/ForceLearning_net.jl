@@ -1,4 +1,3 @@
-using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -19,18 +18,18 @@ f(t) =
 
 for t = 0:0.1ms:2440ms
     SS.f = f(t)
-    SNN.train!(; model, duration = SNN.dt)
+    SNN.train!(; model, duration=0.125f0)
 end
 
-for t = 2440ms:0.1ms:3700ms
+for t = 2440ms:0.1ms:3000ms
     SS.f = f(t)
-    SNN.sim!(; model, duration = SNN.dt)
+    SNN.sim!(; model, duration = 0.125f0)
 end
 
-plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["f" "z"]);
+plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["f" "z"], lw=3);
 
 SS.records
 
 SS.records[:f]
 
-vline!([2440ms], color = :cyan, label = "")
+vline!([2440ms], color = :black, label = "")

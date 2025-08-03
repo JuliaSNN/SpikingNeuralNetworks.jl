@@ -1,4 +1,3 @@
-using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -22,8 +21,8 @@ f(t) =
 ts = 0:0.1ms:1440ms
 for (i, t) in enumerate(ts)
     ppc_ppc.f .= [f(t); ppc_ppc.g[2:end]]
-    SNN.train!(P, C, 0.1f0)
+    SNN.train!(P, C, duration=0.125f0)
 end
 
 SNN.vecplot(ppc_ppc, :g);
-plot!(f.(ts));
+plot!(f.(ts))

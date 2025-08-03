@@ -1,5 +1,4 @@
-using SNNPlots
-import SNNPlots: vecplot, plot, savefig, gplot
+import SpikingNeuralNetworks: vecplot, plot, savefig, gplot, Plots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -38,11 +37,11 @@ poisson_inh = SNN.PoissonStimulusLayer(
 )
 
 # Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = PoissonLayer(E, :ge, param = poisson_exc, name = "noiseE")
-stim_inh = PoissonLayer(E, :gi, param = poisson_inh, name = "noiseI")
+stim_exc = SNN.PoissonLayer(E, :ge, param = poisson_exc, name = "noiseE")
+stim_inh = SNN.PoissonLayer(E, :gi, param = poisson_inh, name = "noiseI")
 
 # Create the model and run the simulation
-model = merge_models(; E = E, stim_exc, stim_inh)
+model = SNN.merge_models(; E = E, stim_exc, stim_inh)
 SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
 SNN.monitor!(model.stim, [:fire])
 SNN.sim!(; model, duration = 1000ms)
@@ -50,10 +49,10 @@ SNN.sim!(; model, duration = 1000ms)
 # Plot the results
 # gplot is a special function the plots the synaptic currents
 
-SNNPlots.default(palette = :okabe_ito)
+Plots.default(palette = :okabe_ito)
 p = plot(
-    raster(model.stim),
-    gplot(
+    SNN.raster(model.stim),
+    SNN.gplot(
         E,
         v_sym = :v,
         ge_sym = :ge,
@@ -62,7 +61,7 @@ p = plot(
         Ei_rev = -75mV,
         ylabel = "Synapti current (μA)",
     ),
-    vecplot(
+    SNN.vecplot(
         E,
         :v,
         add_spikes = true,
@@ -74,16 +73,10 @@ p = plot(
     fgcolorlegend = :transparent,
     size = (800, 900),
     xlabel = "Time (s)",
-    leftmargin = 10SNNPlots.Plots.mm,
+    leftmargin = 10Plots.mm,
 )
 #
 
-
-# using StatsBase
-# v, r = SNN.record(E,:v, range=true)
-
-# aa = autocor(v[1,r], 1:100)
-# plot(r[1:100], aa)
 
 savefig(
     p,

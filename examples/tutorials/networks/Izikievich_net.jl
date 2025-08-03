@@ -1,4 +1,3 @@
-using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -21,7 +20,7 @@ IE = SNN.SpikingSynapse(I, E, :v; μ = -1.0, p = 0.8)
 II = SNN.SpikingSynapse(I, I, :v; μ = -1.0, p = 0.8)
 P = (; E, I)
 C = (; EE, EI, IE, II)
-model = merge_models(; P..., C..., name = "IZ_network")
+model = SNN.merge_models(; P..., C..., name = "IZ_network")
 
 SNN.monitor!([E, I], [:fire])
 for t = 1:1000

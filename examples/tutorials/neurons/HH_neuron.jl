@@ -1,4 +1,3 @@
-using SNNPlots
 using SpikingNeuralNetworks
 SNN.@load_units
 using Statistics
@@ -16,7 +15,7 @@ for n in eachindex(xs)
     E.I .= xs[n]
     SNN.monitor!(E, [:v, :fire])
     SNN.sim!([E]; dt = 0.01ms, duration = 5000ms, pbar = true)
-    r = mean(SNN.firing_rate(E)[1])
+    r = mean(SNN.firing_rate(E, 0:5s, time_average=true)[1])
     ys[n] = r
 end
 plot(xs, ys)

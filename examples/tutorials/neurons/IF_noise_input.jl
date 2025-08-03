@@ -1,11 +1,11 @@
 
-
-import SNNPlots: vecplot, plot, Plots
+using SpikingNeuralNetworks
+import SpikingNeuralNetworks: vecplot, plot, Plots
 using SpikingNeuralNetworks
 using Distributions
 SNN.@load_units
 
-SNNPlots.default(palette = :okabe_ito)
+SNN.SNNPlots.default(palette = :okabe_ito)
 
 if_parameter =
     SNN.IFParameter(R = 0.5GΩ, Vt = -50mV, ΔT = 2mV, El = -70mV, τm = 20ms, Vr = -55mV)
@@ -15,9 +15,9 @@ E = SNN.IF(; N = 1, param = if_parameter)
 SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
 
 # Create a withe noise input current 
-current_param = CurrentNoiseParameter(E.N; I_base = 30pA, I_dist = Normal(00pA, 100pA))
-current = CurrentStimulus(E, :I, param = current_param)
-model = merge_models(; E = E, I = current)
+current_param = SNN.CurrentNoiseParameter(E.N; I_base = 30pA, I_dist = Normal(00pA, 100pA))
+current_stim = SNN.CurrentStimulus(E, :I, param = current_param)
+model = SNN.merge_models(; E = E, I = current_stim)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(
@@ -34,11 +34,6 @@ p = plot(
     size = (600, 500),
     xlabel = "Time (s)",
     leftmargin = 10Plots.mm,
-)
-
-savefig(
-    p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/noise_current.png",
 )
 
 # Create a populations with 2 IF neurons
@@ -64,8 +59,8 @@ variables = Dict(
 )
 
 current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current)
-current = CurrentStimulus(E, :I, param = current_param)
-model = merge_models(; E = E, I = current)
+current_stim = SNN.CurrentStimulus(E, :I, param = current_param)
+model = SNN.merge_models(; E = E, I = current_stim)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(
@@ -83,7 +78,7 @@ p = plot(
     leftmargin = 10Plots.mm,
 )
 
-savefig(
-    p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/variable_current.png",
-)
+# savefig(
+#     p,
+#     "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/variable_current.png",
+# )
