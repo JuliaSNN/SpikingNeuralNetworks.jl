@@ -1,32 +1,27 @@
 using SpikingNeuralNetworks
-# using SNNPlots
 SNN.@load_units
 import SpikingNeuralNetworks: AdExParameter
 using Statistics, Random
 
+## AdEx neuron with synaptic connections with multiple receptors
+E = SNN.AdExNeuron(; N = 800, param = SNN.AdExSynapseParameter(; El = -50mV))
 
-E = SNN.AdExNeuron(; N = 800, param = AdExSynapseParameter(; El = -50mV))
+E.param.syn[1]
 I = SNN.IF(; N = 200, param = SNN.IFParameter())
 # G = SNN.Rate(; N = 100)
 EE = SNN.SpikingSynapse(E, E, :he; μ = 10, p = 0.02)
 EI = SNN.SpikingSynapse(E, I, :ge; μ = 40, p = 0.02)
 IE = SNN.SpikingSynapse(I, E, :hi; μ = 50, p = 0.02)
 II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
-# EG = SNN.SpikeRateSynapse(E, G; μ = 1.0, p = 0.02)
-# GG = SNN.RateSynapse(G, G; μ = 1.2, p = 1.0)
-# P = [E, I]
-# C = [EE, EI, IE, II, EG]
-# C = [EE, EG, GG]
-model = merge_models(; E = E, I = I, EE = EE, EI = EI, IE = IE, II = II)
+model = SNN.merge_models(; E = E, I = I, EE = EE, EI = EI, IE = IE, II = II)
 
 SNN.monitor!(E, [:he, :h, :g, :v])
-# SNN.monitor!(G, [(:r)])
 SNN.monitor!(model.pop, [:fire])
 SNN.sim!(model = model; duration = 4second)
 
-raster(model.pop, [3.4s, 4s])
-vecplot(E, :g, sym_id = 1, neurons = 1, r = 3:4s)
-vecplot(E, :v, neurons = 1, r = 3:4s)
+SNN.raster(model.pop, [3.4s, 4s])
+SNN.vecplot(E, :g, sym_id = 1, neurons = 1, r = 3:4s)
+SNN.vecplot(E, :v, neurons = 1, r = 3:4s, add_spikes = true)
 
 # # Random.seed!(101)
 # # E = SNN.AdEx(;N = 100, param = AdExParameter(;El=-40mV))
