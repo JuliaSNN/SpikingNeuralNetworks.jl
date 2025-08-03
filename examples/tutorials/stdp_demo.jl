@@ -11,11 +11,11 @@ end
 SNN.monitor!([E1, E2], [:fire])
 SNN.monitor!(EE, [:W])
 
-SNN.merge_models(;E1, E2, EE)
+SNN.merge_models(; E1, E2, EE)
 for t = 1:N
     E1.v[t] = 100
     E2.v[N-t+1] = 100
-    SNN.train!(model, duration=5ms)
+    SNN.train!(model, duration = 5ms)
 end
 SNN.raster(model.pop)
 # ΔW = EE.records[:W][end]

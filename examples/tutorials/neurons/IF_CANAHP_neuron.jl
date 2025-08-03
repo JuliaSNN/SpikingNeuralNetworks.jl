@@ -19,18 +19,10 @@ SNN.sim!(; model, duration = 3s)
 SNN.vecplot(E, :v, r = 0.8s:1ms:10s)
 SNN.vecplot(E, :syn_curr, r = 0.8s:1ms:10s)
 
-p1 = SNN.vecplot(E, :g, sym_id = 1, r = 0.8s:1ms:10s, label="ampa")
-p1 = SNN.vecplot!(p1, E, :g, sym_id = 2, r = 0.8s:1ms:10s, label="nmda")
-p2 = SNN.vecplot(E, :g, sym_id = 3, r = 0.8s:1ms:10s, label="gaba_a")
-p2 = SNN.vecplot!(p2, E, :g, sym_id = 4, r = 0.8s:1ms:10s, label="gaba_b")
-p3 = SNN.vecplot(E, :v, r = 0.8s:1ms:10s, lc=:black, label="")
-plot(
-    p1,
-    p2,
-    p3,
-    layout = (3, 1),
-    size = (800, 600),
-    xlabel = "Time [s]",
-    legend = :topleft,
-)
+p1 = SNN.vecplot(E, :g, sym_id = 1, r = 0.8s:1ms:10s, label = "ampa")
+p1 = SNN.vecplot!(p1, E, :g, sym_id = 2, r = 0.8s:1ms:10s, label = "nmda")
+p2 = SNN.vecplot(E, :g, sym_id = 3, r = 0.8s:1ms:10s, label = "gaba_a")
+p2 = SNN.vecplot!(p2, E, :g, sym_id = 4, r = 0.8s:1ms:10s, label = "gaba_b")
+p3 = SNN.vecplot(E, :v, r = 0.8s:1ms:10s, lc = :black, label = "")
+plot(p1, p2, p3, layout = (3, 1), size = (800, 600), xlabel = "Time [s]", legend = :topleft)
 plot!(ylims = :auto)

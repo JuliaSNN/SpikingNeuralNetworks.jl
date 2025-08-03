@@ -29,4 +29,4 @@ plots = map(P) do p
 end
 
 
-SNN.SNNPlots.plot(plots...,layout = (4, 2), size = (800, 600), title = "IZ Neurons")
+SNN.SNNPlots.plot(plots..., layout = (4, 2), size = (800, 600), title = "IZ Neurons")

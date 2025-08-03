@@ -18,7 +18,7 @@ f(t) =
 
 for t = 0:0.1ms:2440ms
     SS.f = f(t)
-    SNN.train!(; model, duration=0.125f0)
+    SNN.train!(; model, duration = 0.125f0)
 end
 
 for t = 2440ms:0.1ms:3000ms
@@ -26,7 +26,7 @@ for t = 2440ms:0.1ms:3000ms
     SNN.sim!(; model, duration = 0.125f0)
 end
 
-plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["f" "z"], lw=3);
+plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["f" "z"], lw = 3);
 
 SS.records
 

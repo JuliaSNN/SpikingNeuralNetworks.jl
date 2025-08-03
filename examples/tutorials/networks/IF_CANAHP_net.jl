@@ -6,10 +6,8 @@ IF_param = SNN.IF_CANAHPParameter()
 E = SNN.IF_CANAHP(N = 450, param = IF_param)
 I = SNN.IF_CANAHP(N = 150, param = IF_param)
 
-I_param_E =
-    SNN.CurrentNoiseParameter(E.N; I_base = 100pA, I_dist = Normal(500pA, 200pA))
-I_param_I =
-    SNN.CurrentNoiseParameter(E.N; I_base = 100pA, I_dist = Normal(250pA, 200pA))
+I_param_E = SNN.CurrentNoiseParameter(E.N; I_base = 100pA, I_dist = Normal(500pA, 200pA))
+I_param_I = SNN.CurrentNoiseParameter(E.N; I_base = 100pA, I_dist = Normal(250pA, 200pA))
 I_stimE = SNN.CurrentStimulus(E, param = I_param_E)
 I_stimI = SNN.CurrentStimulus(I, param = I_param_I)
 
