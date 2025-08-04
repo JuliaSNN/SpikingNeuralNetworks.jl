@@ -8,9 +8,7 @@
     <img src="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/workflows/CI/badge.svg"
          alt="Build Status">
   </a>
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://USER_NAME.github.io/PACKAGE_NAME.jl/stable)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://USER_NAME.github.io/PACKAGE_NAME.jl/dev)
-  <a href="https://juliasnn.github.io/SpikingNeuralNetworks.jl/stable/">
+  <a href="https://juliasnn.github.io/SpikingNeuralNetworks.jl/dev/">
     <img src="https://img.shields.io/badge/docs-stable-blue.svg"
          alt="stable documentation">
   </a>
