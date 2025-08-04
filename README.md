@@ -8,7 +8,7 @@
     <img src="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/workflows/CI/badge.svg"
          alt="Build Status">
   </a>
-  <a href="https://juliasnn.github.io/SpikingNeuralNetworks.jl/stable/">
+  <a href="https://juliasnn.github.io/SpikingNeuralNetworks.jl/dev/">
     <img src="https://img.shields.io/badge/docs-stable-blue.svg"
          alt="stable documentation">
   </a>
