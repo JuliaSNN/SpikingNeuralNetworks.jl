@@ -122,14 +122,9 @@ Connections and stimuli objects maintain internal pointers to the populations' f
 
 ## Installation
 
-JuliaSNN is now available on the public Julia repository!
-You can easily install the last stable release via:
+JuliaSNN/SpikingNeuralNetworks.jl is not yet available on the public Julia repository! For the moment `]add SpikingNeuralNetworks` will still direct you to the old version of the package. 
 
-```
-]add SpikingNeuralNetworks
-```
-
-otherwise, you can install the most recent updates from the git repository:
+You can install the latest version directly from the git repository:
 
 ```
 ]add https://github.com/JuliaSNN/SpikingNeuralNetworks.jl
