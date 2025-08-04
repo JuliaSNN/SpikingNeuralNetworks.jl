@@ -4,6 +4,7 @@
 
 Julia Spiking Neural Networks (JuliaSNN) is a library for simulation of biophysical and abstract neuronal network models. 
 
+This documentation is _work in progress_ please consider contacting me via the github repository if you have any specific questions. 
 
 ## Simple and powerful simulation framework
 
@@ -54,40 +55,22 @@ model = SNN.merge_models(;subnet1, subnet2)
 In this case the field `model.pop.subnet1_E` and `model.pop.subnet2_E` are instantiated.
 
 
-NB.
-User are not expected to use the abstract types, which, but only their concrete subtypes.  . Populations are the fundamental block, a model must at least include one population.
-Because in biophysical models connections are normally synapses, the two terms are used interchangably. In future version we may change the AbstractConnection type for AbstractSynapse, thus the explicit use of this abstract type is strongly discouraged.
+!!! note
+    - User are not expected to use the abstract types, which, but only their concrete subtypes.
+    - Models must at least include one population. Connections and Stimuli always target one population.
+    - Because in biophysical models connections are normally synapses, the two terms are used interchangably. 
 
 
+### Pre-existing models
+
+For each subtype, JuliaSNN offers a library of pre-existing models. In the aforementioned case, an integrate-and-fire population (`IF<:AbstractPopulation`), a spiking synapse (`SpikingSynapse<:AbstractSynapse`) and poisson-distributed spike train (`PoissonStimulus<:AbstractStimulus`). The collection of available models can be found under [Models](@ref).
+
+Models can also be extended by importing the `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus` types. Guidelines on how to create new models are presented in [Models Extensions ](@ref) (WIP)
 
 
-The classical network model is the __Balanced Network__ by [Brunel, 2000](https://link.springer.com/article/10.1023/A:1008925309027)
+## Simulation
 
-
-
-```md
-================
-[Info:  Model: Balanced network
-[Info:  ----------------
-[Info:  Populations (2):
-[Info:  E         : IF        :  4000       IFParamete
-[Info:  I         : IF        :  1000       IFParamete
-[Info:  ----------------
-[Info:  Synapses (4): 
-[Info:  E_to_E             : E -> E.ge                     :          : NoLTP      : NoSTP     
-[Info:  E_to_I             : E -> I.ge                     :          : NoLTP      : NoSTP     
-[Info:  I_to_E             : I -> E.gi                     :          : NoLTP      : NoSTP     
-[Info:  I_to_I             : I -> I.gi                     :          : NoLTP      : NoSTP     
-[Info:  ----------------
-[Info:  Stimuli (2):
-[Info:  noiseE     : noiseE -> E.ge                 PoissonStimulus
-[Info:  noiseI     : noiseI -> I.ge                 PoissonStimulus
-[Info:  ================
-```
-
-For each subtype, JuliaSNN offers a library of pre-existing models. In the aforementioned case, an integrate-and-fire population (`IF<:AbstractPopulation`), a spiking synapse (`SpikingSynapse<:AbstractSynapse`) and poisson-distributed spike train (`PoissonStimulus<:AbstractStimulus`).
-
-Leveraging the Julia's [multiple dispatch](https://docs.julialang.org/en/v1/manual/methods/#Methods), the simulation loop calls the methods defined for each type of model and parameter:
+Leveraging Julia's [multiple dispatch](https://docs.julialang.org/en/v1/manual/methods/#Methods), the simulation loop calls the methods defined for each type of model and parameter:
 
 ```julia
 
@@ -113,11 +96,9 @@ function sim!(...)
 end
 ```
 
-This allows for great flexibility, 
+In a loop step, the first to be activated are the stimuli which provide inputs to the populations. Thus, the differential equations associated to the populations are integrated. Finally, the population activity is propagated through the synapses (connections!). 
 
-Populations are stimulated, integrated, and their information is propagated through connections. 
-Connections and stimuli objects maintain internal pointers to the populations' fields they are attached to. This allow to seamlessy read and updates the populations fields within the `stimulate!` and `forward!` functions.
-
+Using Julia's [passing-by-sharing](https://docs.julialang.org/en/v1/manual/functions/#man-argument-passing), connections and stimuli maintain internal pointers to the populations' fields they are attached to. This allow to seamlessy read and updates the populations variables within the `stimulate!` and `forward!` functions.
 
 
 ## Installation
@@ -130,8 +111,6 @@ You can install the latest version directly from the git repository:
 ]add https://github.com/JuliaSNN/SpikingNeuralNetworks.jl
 ```
 
-The collection of available models can be found under [Models](@ref) (WIP)
-Models can be easily extended by importing the `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus` types. Guidelines on how to create a model are presented in [Models Extensions ](@ref) (WIP)
 
 To learn how to use the library you can follow the [Tutorial](@ref).
 
