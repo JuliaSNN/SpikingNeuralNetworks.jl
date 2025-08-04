@@ -16,7 +16,6 @@ The library strength points are:
 
 `SpikingNeuralNetworks.jl` is defined within the `JuliaSNN` ecosystem, which offers `SNNPlots` to plot models' recordings and `SNNUtils` for further stimulation protocols and analysis.
 
-<!-- ![A raster plot of a spiking neural network](assets/spiking.png) -->
 
 ## Models: populations, connections, and stimuli
 

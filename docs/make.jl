@@ -24,4 +24,4 @@ makedocs(
 #     using SNNPlots
 #     SNN.@load_units
 # """)
-deploydocs(repo = "github.com/JuliaSNN/SpikingNeuralNetworks.jl.git")
+deploydocs(repo = "github.com/JuliaSNN/SpikingNeuralNetworks.jl.git",  devurl = "docs")
