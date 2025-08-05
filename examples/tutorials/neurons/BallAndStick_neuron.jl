@@ -94,6 +94,12 @@ SNN.sim!(model, 3s)
 p = SNN.vecplot(E, :v_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment")
 SNN.vecplot!(p, E, :v_s, sym_id=2, interval=1:2ms:get_time(model), neurons=1, add_spikes=true, label="Soma Compartment")
 plot!(ylims=:auto, legend=:outertop, legendfontsize=12, xlabel="Time (s)", ylabel="Voltage (mV)", title="Ball and Stick Neuron Model")
+
+savefig(
+    p,
+    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/ballandstick_neuron.png",
+)
+ 
 ##
 p = SNN.vecplot(E, :g_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label="AMPA", factor=DendSynapse.AMPA.gsyn)
 SNN.vecplot!(p, E, :g_d, sym_id=2, interval=1:2ms:get_time(model), neurons=1, label="NMDA", factor=DendSynapse.NMDA.gsyn*0.3)
