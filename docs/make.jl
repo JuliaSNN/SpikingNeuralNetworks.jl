@@ -4,6 +4,7 @@ makedocs(
     sitename = "Julia SpikingNeuralNetworks",
     # sitenameurl = "https://aquaresi.github.io/SpikingNeuralNetworks.jl",
     modules = [SpikingNeuralNetworks],
+     warnonly = [:autodocs_block],
     
 )
 # pages = [
