@@ -9,6 +9,6 @@ SNNPlots = "1906bf50-7128-11ef-3209-891d16f9be9f"
 SNNUtils = "df079cdf-2344-43fe-90b5-fc41d8d26db7"
 
 [compat]
-SNNModels = "1.5.1"
+SNNModels = "1.5.3"
 SNNPlots = "0.2.3"
 SNNUtils = "0.2.3"
