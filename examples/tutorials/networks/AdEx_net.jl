@@ -2,8 +2,6 @@ using SpikingNeuralNetworks
 SNN.@load_units
 using Statistics, Random, Plots
 
-
-
 ## AdEx neuron with fixed external current connections with multiple receptors
 E = SNN.AdExNeuron(; N = 800, param = SNN.AdExParameter(; El = -50mV))
 
