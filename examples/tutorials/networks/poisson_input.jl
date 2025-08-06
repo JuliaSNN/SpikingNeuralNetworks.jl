@@ -41,7 +41,7 @@ stim_exc = SNN.PoissonLayer(E, :ge, param = poisson_exc, name = "noiseE")
 stim_inh = SNN.PoissonLayer(E, :gi, param = poisson_inh, name = "noiseI")
 
 # Create the model and run the simulation
-model = SNN.merge_models(; E = E, stim_exc, stim_inh)
+model = SNN.compose(; E = E, stim_exc, stim_inh)
 SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
 SNN.monitor!(model.stim, [:fire])
 SNN.sim!(; model, duration = 1000ms)

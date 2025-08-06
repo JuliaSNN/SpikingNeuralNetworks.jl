@@ -39,7 +39,7 @@ sound = mean(rates)
 function update_model_parameters!(model; exp_config, config)
 
     no_ext_input = filter_items(model.stim, condition = x->!occursin("ExtSignal", x.name))
-    model = merge_models(model.pop, no_ext_input, model.syn, silent = true)
+    model = compose(model.pop, no_ext_input, model.syn, silent = true)
 
     # Set external noise
     # @unpack ext_rate = config

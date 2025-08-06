@@ -8,7 +8,7 @@ stim2 = SNN.PoissonStimulus(E, :gi, param = rate, μ = 5.1f0, neurons = :ALL)
 # E.I = [11]
 SNN.monitor!(E, [:v, :fire, :ge, :gi], sr = 1000Hz)
 
-model = SNN.merge_models(E, sE = stim1, sI = stim2, silent = true)
+model = SNN.compose(E, sE = stim1, sI = stim2, silent = true)
 SNN.sim!(model = model; duration = 10s)
 plot(
     SNN.vecplot(E, :v, r = 4s:1ms:5s, add_spikes = true),

@@ -79,7 +79,7 @@ plots = map(eachrow(df)) do row
         param,
         )
     SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
-    model = merge_models(; E = E, silent=true)
+    model = compose(; E = E, silent=true)
 
     E.I .= Float32(05pA)
     SNN.sim!(; model, duration = 30ms)
@@ -153,7 +153,7 @@ SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
 # Create a withe noise input current 
 current_param = CurrentNoiseParameter(E.N; I_base=30pA, I_dist=Normal(00pA, 100pA))
 current = CurrentStimulus(E, :I, param=current_param)
-model = merge_models(; E = E, I=current)
+model = compose(; E = E, I=current)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(
@@ -209,7 +209,7 @@ variables = Dict(
 
 current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current )
 current = CurrentStimulus(E, :I, param=current_param)
-model = merge_models(; E = E, I=current)
+model = compose(; E = E, I=current)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(
@@ -280,7 +280,7 @@ stim_exc = PoissonLayer(E, :ge, param=poisson_exc, name="noiseE")
 stim_inh = PoissonLayer(E, :gi, param=poisson_inh, name="noiseI")
 
 # Create the model and run the simulation
-model = merge_models(; E = E, stim_exc, stim_inh)
+model = compose(; E = E, stim_exc, stim_inh)
 SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
 SNN.monitor!(model.stim, [:fire])
 SNN.sim!(; model, duration = 1000ms)
@@ -399,7 +399,7 @@ poisson_inh = SNN.PoissonStimulusLayer(
 stim_exc = SNN.PoissonLayer(E, :glu, :d, param=poisson_exc, name="noiseE")
 stim_inh = SNN.PoissonLayer(E, :gaba, :d, param=poisson_inh, name="noiseI")
 
-model = SNN.merge_models(;E, stim_exc, stim_inh)
+model = SNN.compose(;E, stim_exc, stim_inh)
 SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr=1000Hz)
 
 #
@@ -481,11 +481,11 @@ function network(config)
         I_to_E = SpikingSynapse(I, E, :gi, p=connections.I_to_E.p, μ=connections.I_to_E.μ, name="I_to_E"),
         I_to_I = SpikingSynapse(I, I, :gi, p=connections.I_to_I.p, μ=connections.I_to_I.μ, name="I_to_I"),
     )
-    model = merge_models(;E,I, afferentE, afferentI, synapses..., silent=true, name="Balanced network") 
+    model = compose(;E,I, afferentE, afferentI, synapses..., silent=true, name="Balanced network") 
     monitor!(model.pop, [:fire])
     monitor!(model.stim, [:fire])
     # monitor!(model.pop, [:v], sr=200Hz)
-    return merge_models(;model..., silent=true)
+    return compose(;model..., silent=true)
 end
 
 

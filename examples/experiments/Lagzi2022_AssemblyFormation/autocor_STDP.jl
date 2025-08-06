@@ -53,7 +53,7 @@ Threads.@threads for n in eachindex(τs)
     monitor(W11, [:W], sr = 20Hz)
     monitor(E1, [:fire])
     monitor(E2, [:fire])
-    model = merge_models(; signal1, signal2, E1, E2, W11, W22, W12, W21)
+    model = compose(; signal1, signal2, E1, E2, W11, W22, W12, W21)
     train!(model = model, duration = 200s, pbar = true)
     save_model(path = path, name = "ModelIdentity", model = model, info = Dict(:τ=>τ))
 end

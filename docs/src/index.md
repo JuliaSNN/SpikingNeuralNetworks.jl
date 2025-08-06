@@ -22,35 +22,35 @@ The library strength points are:
 
 SpikingNeuralNetworks.jl builds on the idea that a neural network is composed of three classes of objects, the network _populations_, their recurrent _connections_, and the external _stimuli_ they receive. Thus, a SNN model is simply a`NamedTuple` with keys: `pop`, `syn`, `stim`. The element associated to the keys must be concrete subtypes of `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus`. 
 
-Models can be generated using `merge_models` with any population, connection, or stimulus type as keyworded arguments -The user can define the model by associating the correct subtypes to the named tuple, but we advise against it. For example:
+Models can be generated using `compose` with any population, connection, or stimulus type as keyworded arguments -The user can define the model by associating the correct subtypes to the named tuple, but we advise against it. For example:
 
 ```julia
 using SpikingNeuralNetworks
 
 E = SNN.IF(N = 100) # create an Integrate-and-Fire model population with 100 neurons. Use default parameters
 EE = SNN.SpikingSynapse(E, E, :ge, w = rand(E.N, E.N)) # connect the populations with recurrent, spiking synapses, the synapse target the :ge field.
-my_model = SNN.merge_models(E=E, EE=EE) # create a model with the E population and the EE connection.
-# my_model = SNN.merge_models(;E, EE) # equivalent
+my_model = SNN.compose(E=E, EE=EE) # create a model with the E population and the EE connection.
+# my_model = SNN.compose(;E, EE) # equivalent
 ```
 
-`merge_models` assigns the correct typpes to the `pop` and `syn` and carries further integrity checks. 
+`compose` assigns the correct typpes to the `pop` and `syn` and carries further integrity checks. 
 The population and synapse elements will be assigned to `my_model.pop.E` and `my_model.syn.EE`, respectively.
 
-`merge_models` can also be used recursively. This is useful when we want to instantiante multiple subnetworks with same population names.
+`compose` can also be used recursively. This is useful when we want to instantiante multiple subnetworks with same population names.
 
 ```julia
 using SpikingNeuralNetworks
 subnet1 = let
     E = SNN.IF() # create an Integrate-and-Fire model
     EE = SNN.SpikingSynapse(E, E, :ge, w = zeros(E.N, E.N))
-    SNN.merge_models(E=E, EE=EE)
+    SNN.compose(E=E, EE=EE)
 end
 subnet2 = let
     E = SNN.IF() # create an Integrate-and-Fire model
     EE = SNN.SpikingSynapse(E, E, :ge, w = zeros(E.N, E.N))
-    SNN.merge_models(E=E, EE=EE)
+    SNN.compose(E=E, EE=EE)
 end
-model = SNN.merge_models(;subnet1, subnet2)
+model = SNN.compose(;subnet1, subnet2)
 ```
 In this case the field `model.pop.subnet1_E` and `model.pop.subnet2_E` are instantiated.
 

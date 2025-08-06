@@ -3,7 +3,7 @@ SNN.@load_units
 
 S = SNN.Rate(; N = 200)
 SS = SNN.FLSynapse(S, S; μ = 1.5, p = 1.0)
-model = SNN.merge_models(; S, SS)
+model = SNN.compose(; S, SS)
 
 SNN.monitor!(SS, [:f, :z], sr = 1000Hz)
 

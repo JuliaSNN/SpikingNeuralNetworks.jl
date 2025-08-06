@@ -11,7 +11,7 @@ end
 SNN.monitor!([E1, E2], [:fire])
 SNN.monitor!(EE, [:W])
 
-SNN.merge_models(; E1, E2, EE)
+SNN.compose(; E1, E2, EE)
 for t = 1:N
     E1.v[t] = 100
     E2.v[N-t+1] = 100

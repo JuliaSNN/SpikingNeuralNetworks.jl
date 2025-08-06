@@ -65,7 +65,7 @@ Input_E = SNN.PoissonStimulus(E, :ge, param = νe, neurons = :ALL)
 Input_I = SNN.PoissonStimulus(I, :ge, param = νi, neurons = :ALL)
 
 ##
-model = merge_models(SNN.@symdict E I Input_E Input_I EE EI IE II)
+model = compose(SNN.@symdict E I Input_E Input_I EE EI IE II)
 SNN.monitor(model.pop, [:fire])
 
 SNN.sim!(P, C; duration = 15second)

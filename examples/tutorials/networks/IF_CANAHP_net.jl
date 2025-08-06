@@ -19,7 +19,7 @@ synapses = (
     I_to_I = SNN.SpikingSynapse(I, I, :hi, p = 0.2, μ = 0.1, name = "I_to_I"),
 )
 
-model = SNN.merge_models(; E, I_stimE, I_stimI, I, synapses, silent = true)
+model = SNN.compose(; E, I_stimE, I_stimI, I, synapses, silent = true)
 SNN.monitor!(model.pop, [:v, :fire, :v], sr = 200Hz)
 
 #

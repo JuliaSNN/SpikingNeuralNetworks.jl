@@ -15,7 +15,7 @@ function initialize()
     ProjE = SNN.SpikingSynapse(inputs, E, :ge; μ = 5, p = 0.2)
     P = (; E, I, inputs)
     C = (; EE, EI, IE, II, ProjE)
-    return SNN.merge_models(; P..., C..., silent = true)
+    return SNN.compose(; P..., C..., silent = true)
 end
 #
 

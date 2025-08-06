@@ -15,7 +15,7 @@ param = AggregateScalingParameter(
 )
 A = AggregateScaling(E, [S], param = param)
 ##
-model = merge_models(E = E, P = P, S = S, A = A)
+model = compose(E = E, P = P, S = S, A = A)
 SNN.monitor!(E, [:fire])
 SNN.monitor!(A, [:Y], sr = 100Hz)
 SNN.monitor!(S, [:W], sr = 100Hz)

@@ -74,7 +74,7 @@ network =
                 ),
                 # :stim_i => SNN.CurrentStimulus(I1, I_base=I_base, neurons=:ALL),
             )
-            merge_models(pop, synapses, stim, silent = true)
+            compose(pop, synapses, stim, silent = true)
         end
 
 
