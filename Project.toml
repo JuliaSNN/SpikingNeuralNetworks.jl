@@ -11,4 +11,4 @@ SNNUtils = "df079cdf-2344-43fe-90b5-fc41d8d26db7"
 [compat]
 SNNModels = "1.5"
 SNNPlots = "0.2"
-SNNUtils = "0.2"
+SNNUtils = "0.1"
