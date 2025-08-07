@@ -22,20 +22,21 @@ The library's strength points are:
 
 SpikingNeuralNetworks.jl builds on the idea that a neural network is composed of three classes of objects: the network _populations_, their recurrent _connections_, and the external _stimuli_ they receive. Thus, a SNN model is simply a `NamedTuple` with keys: `pop`, `syn`, `stim`. The element associated with the keys must be concrete subtypes of `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus`. 
 
-Models can be generated using `merge_models` with any population, connection, or stimulus type as keyworded arguments. The user can define the model by associating the correct subtypes to the named tuple, but we advise against it. For example:
+
+Models can be generated using `compose` with any population, connection, or stimulus type as keyworded arguments. The user can define the model by associating the correct subtypes to the named tuple, but we advise against it. For example:
 
 ```julia
 using SpikingNeuralNetworks
 
 E = SNN.IF(N = 100) # create an Integrate-and-Fire model population with 100 neurons. Use default parameters
+
 EE = SNN.SpikingSynapse(E, E, :ge, w = rand(E.N, E.N)) # connect the populations with recurrent, spiking synapses, targeting the :ge field.
-my_model = SNN.merge_models(E=E, EE=EE) # create a model with the E population and the EE connection.
-# my_model = SNN.merge_models(;E, EE) # equivalent
+my_model = SNN.compose(E=E, EE=EE) # create a model with the E population and the EE connection.
+# my_model = SNN.compose(;E, EE) # equivalent
 ```
 
-`merge_models` assigns the correct types to the `pop` and `syn` and carries further integrity checks. 
+`compose` assigns the correct types to the `pop` and `syn` and carries further integrity checks. 
 The population and synapse elements will be assigned to `my_model.pop.E` and `my_model.syn.EE`, respectively.
-
 !!! note
     - User are not expected to use the abstract types, but only their concrete subtypes.
     - Models must at least include one population. Connections and Stimuli always target one population.

@@ -11,7 +11,7 @@ I = SNN.CurrentStimulus(
 )
 SNN.monitor!(E, [:v, :w])
 
-model = SNN.merge_models(; E, I)
+model = SNN.compose(; E, I)
 E.I .= 100pA
 SNN.sim!(model, 1s)
 

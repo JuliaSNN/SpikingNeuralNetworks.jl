@@ -9,7 +9,7 @@ SNN.monitor!(E, [:v, :fire, :hi, :he, :g, :h, :I, :syn_curr], sr = 8000Hz)
 I_param = SNN.CurrentNoiseParameter(1; I_base = 100pA)
 I_stim = SNN.CurrentStimulus(E, param = I_param)
 
-model = SNN.merge_models(; E, I_stim)
+model = SNN.compose(; E, I_stim)
 SNN.sim!(; model, duration = 5s)
 E.he[1] += 0.1
 SNN.sim!(; model, duration = 2s)

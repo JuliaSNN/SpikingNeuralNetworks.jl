@@ -85,7 +85,7 @@ poisson_inh = SNN.PoissonStimulusLayer(
 stim_exc = SNN.PoissonLayer(E, :glu, :d, param=poisson_exc, name="noiseE")
 stim_inh = SNN.PoissonLayer(E, :gaba, :d, param=poisson_inh, name="noiseI")
 
-model = SNN.merge_models(;E, stim_exc, stim_inh)
+model = SNN.compose(;E, stim_exc, stim_inh)
 SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr=1000Hz)
 
 #

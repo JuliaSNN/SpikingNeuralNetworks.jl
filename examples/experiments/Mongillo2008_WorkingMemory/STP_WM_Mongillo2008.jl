@@ -33,7 +33,7 @@ stim_assembly = Dict(
     end for assembly in assemblies
 )
 
-model = SNN.merge_models(model, stim_assembly)
+model = SNN.compose(model, stim_assembly)
 #
 SNN.monitor([model.pop...], [:fire, :v], sr = 50Hz)
 SNN.monitor(model.syn.EE, [:u, :x], sr = 50Hz)

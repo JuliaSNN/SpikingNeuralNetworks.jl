@@ -17,7 +17,7 @@ SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
 # Create a withe noise input current 
 current_param = SNN.CurrentNoiseParameter(E.N; I_base = 30pA, I_dist = Normal(00pA, 100pA))
 current_stim = SNN.CurrentStimulus(E, :I, param = current_param)
-model = SNN.merge_models(; E = E, I = current_stim)
+model = SNN.compose(; E = E, I = current_stim)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(
@@ -60,7 +60,7 @@ variables = Dict(
 
 current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current)
 current_stim = SNN.CurrentStimulus(E, :I, param = current_param)
-model = SNN.merge_models(; E = E, I = current_stim)
+model = SNN.compose(; E = E, I = current_stim)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(

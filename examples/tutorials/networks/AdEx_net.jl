@@ -2,8 +2,6 @@ using SpikingNeuralNetworks
 SNN.@load_units
 using Statistics, Random, Plots
 
-
-
 ## AdEx neuron with fixed external current connections with multiple receptors
 E = SNN.AdExNeuron(; N = 800, param = SNN.AdExParameter(; El = -50mV))
 
@@ -12,7 +10,7 @@ EE = SNN.SpikingSynapse(E, E, :he; μ = 2, p = 0.02)
 EI = SNN.SpikingSynapse(E, I, :ge; μ = 30, p = 0.02)
 IE = SNN.SpikingSynapse(I, E, :hi; μ = 50, p = 0.02)
 II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
-model = SNN.merge_models(; E = E, I = I, EE = EE, EI = EI, IE = IE, II = II)
+model = SNN.compose(; E = E, I = I, EE = EE, EI = EI, IE = IE, II = II)
 
 SNN.monitor!(E, [:ge, :gi, :v])
 SNN.monitor!(model.pop, [:fire])

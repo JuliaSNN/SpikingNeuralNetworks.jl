@@ -145,7 +145,7 @@ function potjans_layer(scale)
         )
         stimuli[Symbol(string("PoissonE_", pop))] = s
     end
-    return merge_models(neurons, connections, stimuli)
+    return compose(neurons, connections, stimuli)
 end
 
 

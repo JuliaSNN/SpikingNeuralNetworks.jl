@@ -10,7 +10,7 @@ TC2 = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.02, b = 0.25, c = -65, d =
 RZ = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.1, b = 0.26, c = -65, d = 2))
 LTS = SNN.IZ(; N = 1, param = SNN.IZParameter(; a = 0.1, b = 0.25, c = -65, d = 2))
 P = (; RS, IB, CH, FS, TC1, TC2, RZ, LTS)
-model = SNN.merge_models(; P..., name = "IZ_neurons")
+model = SNN.compose(; P..., name = "IZ_neurons")
 
 SNN.monitor!(model.pop, [:v])
 T = 2second

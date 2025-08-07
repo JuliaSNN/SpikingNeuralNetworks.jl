@@ -226,5 +226,5 @@ function network(; local_config, type = :pv1)
             end
         end
     end
-    merge_models(noise, pop, synapses; signal)
+    compose(noise, pop, synapses; signal)
 end

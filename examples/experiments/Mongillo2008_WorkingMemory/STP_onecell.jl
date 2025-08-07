@@ -15,7 +15,7 @@ w = ones(1, 1)
 EE = SpikingSynapse(pre, post, :ge, w = w, param = SNN.STPParameter())
 SNN.monitor(post, [:v, :ge])
 SNN.monitor(EE, [:u, :x], sr = 250Hz)
-test = merge_models(pre = pre, post = post, EE)
+test = compose(pre = pre, post = post, EE)
 SNN.train!(model = test, duration = 5s, dt = 0.125, pbar = true)
 for x = 1:6
     pre.g[1] = 1

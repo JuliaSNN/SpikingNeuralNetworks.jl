@@ -47,7 +47,7 @@ plots = map(eachrow(df)) do row
 
     E = SNN.AdExNeuron(; N = 1, param)
     SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
-    model = merge_models(; E = E, silent = true)
+    model = compose(; E = E, silent = true)
 
     E.I .= Float32(05pA)
     SNN.sim!(; model, duration = 30ms)

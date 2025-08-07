@@ -32,7 +32,7 @@ for (n, t) in enumerate([10, 20, 50, 100])
     monitor(signal, [:fire])
     monitor(E, [:fire])
     monitor(E, [:fire, :spikecount])
-    model = merge_models(signal = signal, E = E)
+    model = compose(signal = signal, E = E)
     sim!(model = model, duration = 60s)
     fr, r = firing_rate(model.pop.E, interval = 1s:1ms:20s, τ = 10ms)
     xs=1:200
