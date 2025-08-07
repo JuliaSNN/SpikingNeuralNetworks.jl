@@ -1,7 +1,5 @@
 # SpikingNeuralNetworks.jl Documentation
 
-
-
 Julia Spiking Neural Networks (JuliaSNN) is a library for simulating biophysical neuronal network models. 
 
 This documentation is _work in progress_; please contact me via the GitHub repository if you have any specific questions or want to collaborate! 
@@ -15,7 +13,7 @@ The library's strength points are:
  - Access to all models' variables at runtime and save-load-rerun of arbitrarily complex networks;
  - Growing ecosystem for stimulation protocols, network analysis, and visualization ([SNNUtils](https://github.com/JuliaSNN/SNNUtils), [SNNPlots](https://github.com/JuliaSNN/SNNPlots), [SNNGeometry](https://github.com/JuliaSNN/SNNGeometry)).
 
-`SpikingNeuralNetworks.jl` is defined within the `JuliaSNN` ecosystem, which offers `SNNPlots` to plot models' recordings and `SNNUtils` for further stimulation protocols and analysis.
+`SpikingNeuralNetworks.jl` leverages the `JuliaSNN` ecosystem, which offers `SNNPlots` to plot models' recordings and `SNNUtils` for further stimulation protocols and analysis.
 
 
 ## Models: populations, connections, and stimuli
