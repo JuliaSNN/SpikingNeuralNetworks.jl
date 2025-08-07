@@ -1,20 +1,14 @@
 name = "SpikingNeuralNetworks"
 uuid = "9d8b7fda-1049-58bc-9481-071a9f369938"
-version = "0.1.1"
+authors = ["Alessio <alessio.quaresima@inventati.org>"]
+version = "0.6.1"
 
 [deps]
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Requires = "ae029012-a4dd-5104-9daa-d747884805df"
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+SNNModels = "5fb03681-66ea-42c3-a459-1265ed30d607"
+SNNPlots = "1906bf50-7128-11ef-3209-891d16f9be9f"
+SNNUtils = "df079cdf-2344-43fe-90b5-fc41d8d26db7"
 
 [compat]
-Requires = "0.5, 1"
-UnPack = "1"
-julia = "1"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
+SNNModels = "1.5.3"
+SNNPlots = "0.2.3"
+SNNUtils = "0.2.3"
