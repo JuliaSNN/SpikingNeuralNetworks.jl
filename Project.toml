@@ -1,7 +1,7 @@
 name = "SpikingNeuralNetworks"
 uuid = "9d8b7fda-1049-58bc-9481-071a9f369938"
 authors = ["Alessio <alessio.quaresima@inventati.org>"]
-version = "0.6.1"
+version = "1.0.0"
 
 [deps]
 SNNModels = "5fb03681-66ea-42c3-a459-1265ed30d607"
