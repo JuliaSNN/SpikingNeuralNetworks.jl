@@ -42,7 +42,8 @@ The SpikingNeuralNetwork.jl package is an umbrella package for:
 - `SNNModels.jl`
 - `SNNPlots.jl`
 - `SNNUtils.jl`
-and future contributions of the spiking neural network ecosystem.
+
+and future contributions of the JuliaSNN ecosystem.
 
 **Documentation** is [here](https://juliasnn.github.io/SpikingNeuralNetworks.jl/dev/).
 
