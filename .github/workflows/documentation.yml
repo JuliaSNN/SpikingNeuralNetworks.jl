@@ -5,6 +5,7 @@ on:
     branches:
       - main # update to match your development branch (master, main, dev, trunk, ...)
       - docs
+      - dev
     tags: '*'
   pull_request:
 
