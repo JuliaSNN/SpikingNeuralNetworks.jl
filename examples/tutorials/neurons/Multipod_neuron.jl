@@ -1,11 +1,10 @@
 using SpikingNeuralNetworks
 using Plots
 using Random
+using DrWatson
 SNN.@load_units
 import SpikingNeuralNetworks: Synapse, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray
 import SpikingNeuralNetworks: get_time
-
-using BenchmarkTools
 
 ## Define the neuron model parameters
 Random.seed!(1234)
@@ -61,11 +60,11 @@ dend_neuron = DendNeuronParameter(
     NMDA = NMDA,
 
     # dendrite
-    ds = [160um],
+    ds = [160um, 200um],
     physiology = SNN.human_dend,
 )
 
-E = SNN.SNNModels.BallAndStick(N=1, param = dend_neuron)
+E = SNN.SNNModels.Multipod(N=1, param = dend_neuron)
 
 poisson_exc = SNN.PoissonStimulusLayer(
     10.2Hz,    # Mean firing rate (Hz) 
@@ -82,21 +81,30 @@ poisson_inh = SNN.PoissonStimulusLayer(
 )
 
 # Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = SNN.PoissonLayer(E, :glu, :d, param=poisson_exc, name="noiseE")
-stim_inh = SNN.PoissonLayer(E, :gaba, :d, param=poisson_inh, name="noiseI")
+stims = map([1,2]) do d
+    exc = SNN.PoissonLayer(E, :glu, d, param=poisson_exc, name="noiseE")
+    inh = SNN.PoissonLayer(E, :gaba, d, param=poisson_inh, name="noiseI")
+    Dict("exc_$d" => exc, "inh_$d"=>inh) |> dict2ntuple
+end
 
-model = SNN.compose(;E, stim_exc, stim_inh)
+model = SNN.compose(stims...;E)
 SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr=1000Hz)
 
 #
 Plots.default(palette = :okabe_ito)
 SNN.sim!(model, 3s)
-p = SNN.vecplot(E, :v_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment")
+p = SNN.vecplot(E, :v_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment 1")
+SNN.vecplot!(p, E, :v_d, sym_id=2, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment 2")
 SNN.vecplot!(p, E, :v_s, sym_id=2, interval=1:2ms:get_time(model), neurons=1, add_spikes=true, label="Soma Compartment")
 plot!(ylims=:auto, legend=:outertop, legendfontsize=12, xlabel="Time (s)", ylabel="Voltage (mV)", title="Ball and Stick Neuron Model")
-plot!(fg_legend = :transparent)
+plot!(fg_legend=:transparent)
 
 ##
+
+SNN.getvariable(E, :g_d)
+rec = SNN.getrecord(E, :v_d)
+1rec = SNN.getrecord(E, :g_d) |> x->cat(x...)
+rec[1]
 p = plot()
 for i in 1:4
     SNN.vecplot!(p, E, :g_d, sym_id=i)
@@ -104,9 +112,12 @@ end
 plot!()
 
 ##
+plot!()
+
+##
 savefig(
     p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/ballandstick_neuron.png",
+    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/tripod_neuron.png",
 )
  
 ##
