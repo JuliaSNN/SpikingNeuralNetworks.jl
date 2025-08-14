@@ -1,22 +1,3 @@
-# Models Extensions
-
-Users can define new concrete types of the three abstract models (`AbstractPopulation`, `AbstractStimulus`, and `AbstractSynapse`) to extend the functionality of the SpikingNeural Networks package.
-
-New populations, stimuli, or synapses models can be added by users by defining new types.
-
-## Adding a New Population Model
-
-To add a new population model, users need to define a new concrete type that inherits from `AbstractPopulation`. The new population model should include the following:
-
-1. **Parameters**: Define a new type for the parameters of the population model. This type should inherit from `AbstractPopulationParameter`.
-2. **State Variables**: Define the state variables of the population model. These variables should be included in the new type that inherits from `AbstractPopulation`.
-3. **Integration Function**: Define a `integrate(population::P, param::T, dt::Float32) where {P<:AbstractPopulation, T<:AbstractPopulationParameter}` function to integrate the population model. This function should update the state variables of the population model at each time step.
-
-### Example: Adding a New Neuron Model
-
-Here is an example of how to add a new neuron model:
-
-```julia src/SpikingNeuralNetworks.jl/examples/tutorials/extensions/neuron_model.jl
 using Pkg
 Pkg.add(url="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl")
 Pkg.add("Distributions")
@@ -29,8 +10,8 @@ SNN.@load_units
 @eval SNN.SNNModels begin
 
     """
-    Define the neuron model parameters.
-    Parameters are used at integration time to compute the equation update.
+    Define the neuron model parameters. 
+    Parameters are used at integration time to compute the equation update. 
     All parameters are optional. We strongly advise using SI units and default values.
     """
     NeuronParameter
@@ -46,7 +27,7 @@ SNN.@load_units
     end
 
     """
-    Define the neuron model.
+    Define the neuron model. 
     The neuron model holds the parameters and state variables of the neuron.
     The state variables are used to compute the equation update at integration time and can be recorded.
 
@@ -58,7 +39,7 @@ SNN.@load_units
      - `records::Dict{Symbol, Any}`: A dictionary to store recorded variables.
     are compulsory
     """
-    Neuron
+    Neuron 
 
     @snn_kw struct Neuron <: AbstractPopulation
         param::NeuronParameter = NeuronParameter()
@@ -83,11 +64,12 @@ SNN.@load_units
     - Use the `@unpack` macro to extract the state variables from the neuron model.
     - Use the `@inbounds` macro to skip bounds checking for performance reasons.
     - Update the state variables in a for loop over the number of neurons `N`.
-    - Update the state variables using the timestep `dt` and the parameters from `param`.
+    - Update the state variables using the timestep `dt` and the parameters from `param`. 
 
     The macro `@inbounds` is used to skip bounds checking for performance reasons. It leads to segment faults if the indices are out of bounds.
-
+    
     The macro `@fastmath` is used to allow the compiler to use fast math operations, which may lead to slight inaccuracies but improves performance. We consider that in the context of biophysical networks this imprecisions are not critical.
+    
     """
     integrate!
 
@@ -95,11 +77,11 @@ SNN.@load_units
         @unpack N, v, ge, gi, fire, I = p
         @inbounds @fastmath for i in 1:N
             if fire[i]
-                v[i] = param.Er
+                v[i] = param.Er 
                 fire[i] = false
             else
-                v[i] += dt*(param.Er - v[i] +
-                        (ge[i] - gi[i]) * param.R +
+                v[i] += dt*(param.Er - v[i] + 
+                        (ge[i] - gi[i]) * param.R + 
                         I[i] * param.R )
             end
             ge[i] -= ge[i] / param.τe * dt
@@ -118,7 +100,7 @@ import SpikingNeuralNetworks: NeuronParameter, Neuron, CurrentNoiseParameter, Cu
 
 param = NeuronParameter()
 neuron = Neuron(param=param, N=1)
-# Create a withe noise input current
+# Create a withe noise input current 
 current_param = CurrentNoiseParameter(neuron.N; I_base = 0pA, I_dist = Normal(-50pA, 100pA))
 current_stim = CurrentStimulus(neuron, :I, param = current_param)
 
@@ -134,53 +116,3 @@ vecplot(
     # ylims = (-80, 10),
     c = :black,
 )
-```
-
-
-```julia
-@eval SNN.SNNModels begin
-    """
-    Define the Poisson refractory stimulus parameters.
-    Parameters are used at integration time to compute the equation update.
-    All parameters are optional. We strongly advise using SI units and default values.
-    """
-    PoissonRefractoryParameter
-    @snn_kw struct PoissonRefractoryParameter{R} <: PoissonLayerParameter
-        ΔT::Float32 = 2f0ms  # Absolute refractory period
-        last_spike::Vector{Float32} = zeros(Float32, N)  # Last spike time for each neuron
-        rate::Vector{R} = ones(Float32, N) * 100Hz  # Firing rate for each neuron
-        N::Int32 = 100  # Number of neurons
-        p::Float32 = 0.1f0  # Fraction of neurons receiving the stimulus
-        μ::Float32 = 1f0  # Mean of the weight distribution
-        σ::Float32 = 0f0  # Standard deviation of the weight distribution
-        active::Vector{Bool} = [true]  # Active neurons
-    end
-
-    """
-    Generate a Poisson stimulus with an absolute refractory period for a postsynaptic population.
-    """
-    function stimulate!(
-        p::PoissonStimulus,
-        param::PoissonRefractoryParameter,
-        time::Time,
-        dt::Float32,
-    )
-        @unpack N, randcache, fire, neurons, colptr, W, I, g, last_spike = p
-        @unpack rate, ΔT = param
-        current_time = get_time(time)
-        rand!(randcache)
-        @inbounds @simd for j = 1:N
-            if (current_time - last_spike[j]) > ΔT && randcache[j] < rate[j] * dt
-  `             fire[j] = true
-                last_spike[j] = current_time
-                @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g[I[s]] += W[s]
-                end
-            else
-                fire[j] = false
-            end
-        end
-    end
-    export PoissonRefractoryParameter, stimulate!
-end
-```

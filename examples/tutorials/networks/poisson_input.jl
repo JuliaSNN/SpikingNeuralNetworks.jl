@@ -22,14 +22,14 @@ E = SNN.IF(; N = 1, param = if_parameter)
 # Create an excitatory and inhibitory spike trains
 
 # Define the Poisson stimulus parameters 
-poisson_exc = SNN.PoissonStimulusLayer(
+poisson_exc = SNN.PoissonLayerParameter(
     1.2Hz,    # Mean firing rate (Hz) 
     p = 1.0f0,  # Probability of connecting to a neuron
     μ = 1.0,  # Synaptic strength (nS)
     N = 1000, # Neurons in the Poisson Layer
 )
 
-poisson_inh = SNN.PoissonStimulusLayer(
+poisson_inh = SNN.PoissonLayerParameter(
     3Hz,       # Mean firing rate (Hz)
     p = 1.0f0,   # Probability of connecting to a neuron
     μ = 4.0,   # Synaptic strength (nS)
