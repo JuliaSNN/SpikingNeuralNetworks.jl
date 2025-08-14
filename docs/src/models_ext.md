@@ -4,7 +4,7 @@ Users can define new concrete types of the three abstract models (`AbstractPopul
 
 New populations, stimuli, or synapses models can be added by users by defining new types.
 
-## Adding a New Population Model
+## Adding a Population Model
 
 To add a new population model, users need to define a new concrete type that inherits from `AbstractPopulation`. The new population model should include the following:
 
@@ -12,15 +12,10 @@ To add a new population model, users need to define a new concrete type that inh
 2. **State Variables**: Define the state variables of the population model. These variables should be included in the new type that inherits from `AbstractPopulation`.
 3. **Integration Function**: Define a `integrate(population::P, param::T, dt::Float32) where {P<:AbstractPopulation, T<:AbstractPopulationParameter}` function to integrate the population model. This function should update the state variables of the population model at each time step.
 
-### Example: Adding a New Neuron Model
+### Current-based IF 
 
-Here is an example of how to add a new neuron model:
 
 ```julia src/SpikingNeuralNetworks.jl/examples/tutorials/extensions/neuron_model.jl
-using Pkg
-Pkg.add(url="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl")
-Pkg.add("Distributions")
-##
 using SpikingNeuralNetworks
 using Distributions
 SNN.@load_units
@@ -136,20 +131,37 @@ vecplot(
 )
 ```
 
+## Adding a Stimulus Model
+
+Thanks to the multidispatching the simulation loop will call the function that matches the `population`, `stimulus`, or `connection` type and its parameter. Thus we don't need to always define a new type, defining a new parameter and a function that specializes for it is sufficient to introduce a new behaviour.
+
+Here we extend the `PoissonStimulus<:AbstractStimulus` adding a new `PoissonRefractoryParameter<:AbstractStimulusParameter`. We use the function `PoissonLayer` to create an input layer that stimulate the postsynaptic population with Poisson distributed spikes with a ΔT absolute refractory period. 
+
+### Poisson Stimulus with refractory time
 
 ```julia
+using SpikingNeuralNetworks
+using Distributions
+SNN.@load_units
+using ProtoStructs
+
+# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
 @eval SNN.SNNModels begin
+
     """
     Define the Poisson refractory stimulus parameters.
     Parameters are used at integration time to compute the equation update.
-    All parameters are optional. We strongly advise using SI units and default values.
+    All parameters are optional. 
     """
     PoissonRefractoryParameter
-    @snn_kw struct PoissonRefractoryParameter{R} <: PoissonLayerParameter
+
+    @snn_kw struct PoissonRefractoryParameter <: PoissonStimulusParameter #{R} where {R<:Float32}
+    # @proto struct PoissonRefractoryParameter{R = Float32} 
         ΔT::Float32 = 2f0ms  # Absolute refractory period
+        N::Int = 100  # Number of neurons
+        rate::Float32 = 10Hz
         last_spike::Vector{Float32} = zeros(Float32, N)  # Last spike time for each neuron
-        rate::Vector{R} = ones(Float32, N) * 100Hz  # Firing rate for each neuron
-        N::Int32 = 100  # Number of neurons
+        rates::Vector{Float32} = fill(rate, N)  # Firing rate for each neuron
         p::Float32 = 0.1f0  # Fraction of neurons receiving the stimulus
         μ::Float32 = 1f0  # Mean of the weight distribution
         σ::Float32 = 0f0  # Standard deviation of the weight distribution
@@ -165,13 +177,13 @@ vecplot(
         time::Time,
         dt::Float32,
     )
-        @unpack N, randcache, fire, neurons, colptr, W, I, g, last_spike = p
-        @unpack rate, ΔT = param
+        @unpack N, randcache, fire, neurons, colptr, W, I, g = p
+        @unpack rates, ΔT, last_spike = param
         current_time = get_time(time)
         rand!(randcache)
         @inbounds @simd for j = 1:N
-            if (current_time - last_spike[j]) > ΔT && randcache[j] < rate[j] * dt
-  `             fire[j] = true
+            if (current_time - last_spike[j]) > ΔT && randcache[j] < rates[j] * dt
+                fire[j] = true
                 last_spike[j] = current_time
                 @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
                     g[I[s]] += W[s]
@@ -183,4 +195,32 @@ vecplot(
     end
     export PoissonRefractoryParameter, stimulate!
 end
+
+import SpikingNeuralNetworks: PoissonLayer, PoissonRefractoryParameter, compose, sim!, monitor!, vecplot
+# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
+
+neuron_param = SNN.IdentityParam()
+neuron = SNN.Identity(; param = neuron_param, N = 1, name = "Identity Neuron")
+
+# Create a withe noise input current
+stim_param = PoissonRefractoryParameter(N=1, ΔT = 20ms, p=1)
+stim = PoissonLayer(neuron, :g; param=stim_param)
+
+monitor!(neuron, [:g, :fire], sr = 2kHz)
+model = compose(; neuron, stim)
+sim!(; model, duration = 100000ms, pbar=true)
+
+vecplot(
+    neuron,
+    :g,
+    neurons=1,
+    add_spikes = true,
+    ylabel = "Membrane potential (mV)",
+    xlims = (0, 1000ms),
+    # ylims = (-80, 10),
+    c = :black,
+)
+
+st = SNN.spiketimes(neuron)[1]
+diff(st) |> x-> SNNPlots.histogram(x, bins=100)
 ```
