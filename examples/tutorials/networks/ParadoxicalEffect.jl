@@ -5,8 +5,8 @@ import SpikingNeuralNetworks: plot, plot!
 using Statistics, Random
 
 function initialize()
-    E = SNN.IF(; N = 2000, param = SNN.IFParameterSingleExponential())
-    I = SNN.IF(; N = 500, param = SNN.IFParameterSingleExponential())
+    E = SNN.IF(; N = 2000, param = SNN.IFSinExpParameter())
+    I = SNN.IF(; N = 500, param = SNN.IFSinExpParameter())
     EE = SNN.SpikingSynapse(E, E, :ge; μ = 2.0, p = 0.2)
     EI = SNN.SpikingSynapse(E, I, :ge; μ = 10.0, p = 0.2)
     IE = SNN.SpikingSynapse(I, E, :gi; μ = 10.0, p = 0.2)

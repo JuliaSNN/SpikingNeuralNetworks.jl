@@ -26,10 +26,10 @@ SomaSynapse = Synapse(
 )
 
 DendSynapse = Synapse(
-    AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
-    NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
-    GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
-    GABAb = Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006), 
+    AMPA = Receptor(name="AMPA", E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
+    NMDA = Receptor(name="NMDA", E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
+    GABAa = Receptor(name="GABAa", E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
+    GABAb = Receptor(name="GABAb", E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006), 
 )
 
 NMDA = let
@@ -58,6 +58,8 @@ dend_neuron = DendNeuronParameter(
     postspike = SNN.PostSpike(A= 10.0, τA= 30.0), 
 
     # synaptic properties
+    glu_receptors = [1,2],
+    gaba_receptors = [3,4],
     soma_syn = SomaSynapse,
     dend_syn = DendSynapse,
     NMDA = NMDA,

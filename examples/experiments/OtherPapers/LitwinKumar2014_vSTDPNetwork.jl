@@ -19,7 +19,7 @@ R = SNN.C / SNN.gL
 C = 300SNN.pF
 R = τm / C
 
-LKD_AdEx_exc = AdExParameterSingleExponential(
+LKD_AdEx_exc = AdExSinExpParameter(
     τm = 20ms,
     τe = 6ms,
     τi = 2ms,
@@ -28,7 +28,7 @@ LKD_AdEx_exc = AdExParameterSingleExponential(
     El = -70mV,
     R = R,
 )
-LKD_AdEx_inh = AdExParameterSingleExponential(
+LKD_AdEx_inh = AdExSinExpParameter(
     τm = 20ms,
     τe = 6ms,
     τi = 2ms,

@@ -92,7 +92,7 @@ stdp_sym = SymmetricSTDP(
 
 C = 200pF
 gl = 10nS
-neuron_param = IFParameterSingleExponential(
+neuron_param = IFSinExpParameter(
     R = 1 / gl,
     τm = C/gl,
     τabs = 5ms,

@@ -425,7 +425,7 @@ SNN.@load_units
 ##
 
 Zerlaut2019_network = (Npop = (E=8000, I=2000),
-    exc = IFParameterSingleExponential(
+    exc = IFSinExpParameter(
                 τm = 200pF / 10nS, 
                 El = -70mV, 
                 Vt = -50.0mV, 
@@ -438,7 +438,7 @@ Zerlaut2019_network = (Npop = (E=8000, I=2000),
                 E_e = 0mV,
                 ),
 
-    inh = IFParameterSingleExponential(
+    inh = IFSinExpParameter(
                 τm = 200pF / 10nS, 
                 El = -70mV, 
                 Vt = -53.0mV, 
