@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tutorial · Julia SpikingNeuralNetworks</title><meta name="title" content="Tutorial · Julia SpikingNeuralNetworks"/><meta property="og:title" content="Tutorial · Julia SpikingNeuralNetworks"/><meta property="twitter:title" content="Tutorial · Julia SpikingNeuralNetworks"/><meta name="description" content="Documentation for Julia SpikingNeuralNetworks."/><meta property="og:description" content="Documentation for Julia SpikingNeuralNetworks."/><meta property="twitter:description" content="Documentation for Julia SpikingNeuralNetworks."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.svg" alt="Julia SpikingNeuralNetworks logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">Julia SpikingNeuralNetworks</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">SpikingNeuralNetworks.jl Documentation</a></li><li><a class="tocitem" href="../api_reference/">API References</a></li><li><a class="tocitem" href="../contributing/">Contributing</a></li><li class="is-active"><a class="tocitem" href>Tutorial</a><ul class="internal"><li><a class="tocitem" href="#AdEx-neuron"><span>AdEx neuron</span></a></li><li><a class="tocitem" href="#Noise-input-current"><span>Noise input current</span></a></li><li><a class="tocitem" href="#Balanced-input-spikes"><span>Balanced input spikes</span></a></li><li><a class="tocitem" href="#Ball-and-Stick-neuron"><span>Ball and Stick neuron</span></a></li><li><a class="tocitem" href="#Recurrent-EI-network"><span>Recurrent EI network</span></a></li><li><a class="tocitem" href="#FORCE-learning"><span>FORCE learning</span></a></li><li><a class="tocitem" href="#Recurrent-network-with-dendrites"><span>Recurrent network with dendrites</span></a></li><li><a class="tocitem" href="#Working-memory-with-synaptic-plasticity"><span>Working memory with synaptic plasticity</span></a></li></ul></li><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../installation/">Installation</a></li><li><a class="tocitem" href="../models/">Models</a></li><li><a class="tocitem" href="../models_ext/">Models Extensions</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/docs/src/examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Tutorial"><a class="docs-heading-anchor" href="#Tutorial">Tutorial</a><a id="Tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#Tutorial" title="Permalink"></a></h1><h2 id="AdEx-neuron"><a class="docs-heading-anchor" href="#AdEx-neuron">AdEx neuron</a><a id="AdEx-neuron-1"></a><a class="docs-heading-anchor-permalink" href="#AdEx-neuron" title="Permalink"></a></h2><p>A single neuron under a fixed depolaring current can be modeled with an Adaptive Exponential model, with equations:</p><p class="math-container">\[\begin{aligned}
+\tau_m \frac{dV}{dt} &amp;=&amp;  (V^s-V_r) + \Delta_T \exp{\frac{V^s-V_t}{\Delta_T}} - R (w + I) \\
+\tau_w\frac{dw}{dt} &amp;=&amp; -w + a (V^s-V_r) + b \cdot \delta(t-t_{spike})
+\end{aligned}\]</p><p>This model is implemented in the <code>AdEx</code> neuron model. The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma (<a href="https://neuronaldynamics.epfl.ch/online/Ch6.S2.html">AdEx firing patterns</a>, <a href="https://pubmed.ncbi.nlm.nih.gov/16014787/">Adaptive exponential integrate-and-fire model as an effective description of neuronal activity</a>).  </p><pre><code class="language-julia hljs">using SNNPlots
+import SNNPlots: vecplot, plot
+using SpikingNeuralNetworks
+using DataFrames
+SNN.@load_units
+
+# Define the data
+data = [
+    (&quot;Tonic&quot;, 20, 0.0, 30.0, 60.0, -55.0, 65),
+    (&quot;Adapting&quot;, 20, 0.0, 100.0, 5.0, -55.0, 65),
+    (&quot;Init. burst&quot;,  5.0, 0.5, 100.0, 7.0, -51.0, 65),
+    (&quot;Bursting&quot;,  5.0, -0.5, 100.0, 7.0, -46.0, 65),
+    # (&quot;Irregular&quot;, 14.4, -0.5, 100.0, 7.0, -46.0, 65),
+    (&quot;Transient&quot;, 10, 1.0, 100, 10.0, -60.0, 65),
+    (&quot;Delayed&quot;, 5.0, -1.0, 100.0, 10.0, -60., 25)
+]
+
+
+
+# Create the DataFrame
+df = DataFrame(
+    Type = [row[1] for row in data],
+    τm = [row[2] for row in data],
+    a = [row[3] for row in data],
+    τw = [row[4] for row in data],
+    b = [row[5] for row in data],
+    ur = [row[6] for row in data],
+    i = [row[7] for row in data]
+)
+
+# Display the DataFrame</code></pre><table><tr><th style="text-align: right">Row</th><th style="text-align: right">Type</th><th style="text-align: right">τm</th><th style="text-align: right">a</th><th style="text-align: right">τw</th><th style="text-align: right">b</th><th style="text-align: right">ur</th><th style="text-align: right">i</th></tr><tr><td style="text-align: right">1</td><td style="text-align: right">Tonic</td><td style="text-align: right">20</td><td style="text-align: right">0.0</td><td style="text-align: right">30.0</td><td style="text-align: right">60.0</td><td style="text-align: right">-55.0</td><td style="text-align: right">65</td></tr><tr><td style="text-align: right">2</td><td style="text-align: right">Adapting</td><td style="text-align: right">20</td><td style="text-align: right">0.0</td><td style="text-align: right">100.0</td><td style="text-align: right">5.0</td><td style="text-align: right">-55.0</td><td style="text-align: right">65</td></tr><tr><td style="text-align: right">3</td><td style="text-align: right">Init. burst</td><td style="text-align: right">5.0</td><td style="text-align: right">0.5</td><td style="text-align: right">100.0</td><td style="text-align: right">7.0</td><td style="text-align: right">-51.0</td><td style="text-align: right">65</td></tr><tr><td style="text-align: right">4</td><td style="text-align: right">Bursting</td><td style="text-align: right">5.0</td><td style="text-align: right">-0.5</td><td style="text-align: right">100.0</td><td style="text-align: right">7.0</td><td style="text-align: right">-46.0</td><td style="text-align: right">65</td></tr><tr><td style="text-align: right">5</td><td style="text-align: right">Irregular</td><td style="text-align: right">14.4</td><td style="text-align: right">-0.5</td><td style="text-align: right">100.0</td><td style="text-align: right">7.0</td><td style="text-align: right">-46.0</td><td style="text-align: right">65</td></tr><tr><td style="text-align: right">6</td><td style="text-align: right">Transient</td><td style="text-align: right">10</td><td style="text-align: right">1.0</td><td style="text-align: right">100</td><td style="text-align: right">10.0</td><td style="text-align: right">-60.0</td><td style="text-align: right">65</td></tr><tr><td style="text-align: right">7</td><td style="text-align: right">Delayed</td><td style="text-align: right">5.0</td><td style="text-align: right">-1.0</td><td style="text-align: right">100.0</td><td style="text-align: right">10.0</td><td style="text-align: right">-60.0</td><td style="text-align: right">25</td></tr></table><pre><code class="language-julia hljs">plots = map(eachrow(df)) do row
+    param = AdExParameter(
+        R = 0.5GΩ,
+        Vt = -50mV,
+        ΔT = 2mV,
+        El = -70mV,
+        # τabs=0,
+        τm = row.τm * ms,
+        Vr = row.ur * mV,
+        a = row.a * nS,
+        b= row.b * pA,
+        τw = row.τw * ms,
+        At = 0f0
+    )
+
+
+    E = SNN.AdExNeuron(; N = 1, 
+        param,
+        )
+    SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
+    model = compose(; E = E, silent=true)
+
+    E.I .= Float32(05pA)
+    SNN.sim!(; model, duration = 30ms)
+    E.I .= Float32(row.i)
+    # E.I .= row.i, # Current step
+    SNN.sim!(; model, duration = 300ms)
+
+    default(color=:black)
+    p1 = plot(vecplot(E, :w, ylabel=&quot;Adapt. current (nA)&quot;), 
+            vecplot(E, :v, add_spikes=true, ylabel=&quot;Membrane potential (mV)&quot;, ylims=(-80, 10)), 
+            title = row.Type,
+            layout = (1,2), 
+            size = (600, 800), 
+            margin=10Plots.mm)
+end
+
+plot(plots...,  
+    layout = (7, 1), 
+    size = (800, 2000), 
+    xlabel=&quot;Time (ms)&quot;, 
+    legend=:outerright,
+    leftmargin=15Plots.mm,
+)</code></pre><p><img src="../assets/examples/AdEx.png" alt="Firing patterns of AdEx neuron"/></p><h2 id="Noise-input-current"><a class="docs-heading-anchor" href="#Noise-input-current">Noise input current</a><a id="Noise-input-current-1"></a><a class="docs-heading-anchor-permalink" href="#Noise-input-current" title="Permalink"></a></h2><p>In &#39;in vivo&#39; experiments neurons are driven with noisy inputs that can be modeled by splitting the input current in two components <span>$I = Iˆ{det}(t) + I^{noise}(t)$</span>.</p><p>the neuronal dynamics is then determined (for a generalized Leaky and Integrate model) by the equation:</p><p class="math-container">\[\tau_{m} \frac{d u}{ d t} = f(u) + R I^{det}(t) + R I^{noise}(t)\]</p><p>In this description the <span>$I^{noise}(t)$</span> is the stochastic component of the external current, which is normally assumed to be a white noise.  Under white noise, the average value of the external current is <span>$\langle I_{noise} \rangle = 0$</span> and the autocorrelation is determined by the neuronal timescale and the noise variance, <span>$\langle I^{noise}(t) I^{noise}(t&#39;) \rangle = \tau_m \sigma \delta (t-t&#39;)$</span>.</p><p>To introduce white noise in the model we can use the <code>CurrentNoiseParameter</code> type. In the following example:</p><ol><li>define a Leaky Integrate-and-Fire neuron ;</li><li>define a <code>CurrentNoiseParameter</code>, it accepts a I_base value (the deterministic current) and a distribution, which we set to be a Normal distribution with zero average and <code>100pA</code> variance;</li><li><code>CurrentStimulus</code> attaches an <code>&lt;: AbstraactStimulus</code> to the <code>:I</code> variable of the population <code>E</code>;</li><li>record the variables, simulate and plot the results.</li></ol><pre><code class="language-julia hljs">
+import SNNPlots: vecplot, plot
+using SpikingNeuralNetworks
+using Distributions
+SNN.@load_units
+
+if_parameter = SNN.IFParameter(
+    R = 0.5GΩ,
+    Vt = -50mV,
+    ΔT = 2mV,
+    El = -70mV,
+    τm = 20ms,
+    Vr = -55mV,
+)
+
+# Create the IF neuron with tonic firing parameters
+E = SNN.IF(; N = 1, 
+    param=if_parameter,
+    )
+SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
+
+# Create a withe noise input current 
+current_param = CurrentNoiseParameter(E.N; I_base=30pA, I_dist=Normal(00pA, 100pA))
+current = CurrentStimulus(E, :I, param=current_param)
+model = compose(; E = E, I=current)
+SNN.sim!(; model, duration = 2000ms)
+
+p = plot(
+    vecplot(E, :v, add_spikes=true, ylabel=&quot;Membrane potential (mV)&quot;, ylims=(-80, 10), c=:black),
+    vecplot(E, :I, ylabel=&quot;External current (pA)&quot;, c=:gray, lw=0.4, alpha=0.4),
+    layout=(
+        2, 1
+    ),
+    size=(600, 500),
+    xlabel= &quot;Time (s)&quot;,
+    leftmargin=10Plots.mm,
+)
+</code></pre><p><img src="../assets/examples/noise_current.png" alt="Noise input current"/></p><p>The library also allows to define an arbitrary complex noise function with the <code>CurrentVariableParameter</code> type. In this case we must define a function, in this case <code>sinusoidal_current</code>, which is called runtime to determine the input current to each neuron in the population, the function must accept three arguments: </p><ol><li>a dictionary with the <code>variables::Dict</code>;</li><li>the time of the model <code>t::Float32</code>;</li><li>the index of the neuron <code>i::Int32</code>.</li></ol><p>We thus define the set of variables that the function uses to determine the current and pass them along the function to <code>CurrentVariableParameter</code>. </p><p>In the following example we used a plain sinusoidal current that stimulate the two neurons in the population with a phase a frequency of 1Hz and a phase shift of <code>3/4 π</code></p><pre><code class="language-julia hljs">
+
+# Create a populations with 2 IF neurons
+E = SNN.IF(; N = 2, 
+    param=if_parameter,
+    )
+SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
+
+# Create a withe noise input current 
+
+function sinusoidal_current(variables::Dict, t::Float32, i::Int)
+    # Extract the parameters from the variables dictionary
+    amplitude = variables[:amplitude]
+    frequency = variables[:frequency]
+    phase = variables[:shift_phase]
+    
+    # Calculate the current value at time t for neuron i
+    return amplitude * sin(2 * π * frequency * t + i*phase)
+end
+
+variables = Dict(
+    :amplitude =&gt; 50pA,
+    :frequency =&gt; 1Hz,
+    :shift_phase =&gt; π*3/4, # Phase shift for each neuron
+)
+
+current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current )
+current = CurrentStimulus(E, :I, param=current_param)
+model = compose(; E = E, I=current)
+SNN.sim!(; model, duration = 2000ms)
+
+p = plot(
+    vecplot(E, :v, add_spikes=true, ylabel=&quot;Membrane potential (mV)&quot;, ylims=(-80, 10)),
+    vecplot(E, :I, ylabel=&quot;External current (pA)&quot;, c=:gray, lw=0.4, alpha=0.4),
+    layout=(
+        2, 1
+    ),
+    size=(600, 500),
+    xlabel= &quot;Time (s)&quot;,
+    leftmargin=10Plots.mm,
+)
+</code></pre><p><img src="../assets/examples/variable_current.png" alt="Variable input current"/></p><h2 id="Balanced-input-spikes"><a class="docs-heading-anchor" href="#Balanced-input-spikes">Balanced input spikes</a><a id="Balanced-input-spikes-1"></a><a class="docs-heading-anchor-permalink" href="#Balanced-input-spikes" title="Permalink"></a></h2><p>In biophysical networks, and in the brain, neurons&#39; membrane potential is not driven by external currents but by the opening and closing of ionic channels following an afferent spike. Spikes cause the release of vescicles in the synaptic cleft that bind to the ionic channels on the post-synaptic neuron&#39;s membrane.  The opening of a ionic channel can lead to a depolarizing or hyperpolarizing current, dependently on its reversal potential. </p><p>In this example we use two spike trains, an excitatory and an inhibitory one, to stimulate a Leaky Integrate-and-Fire neuron above the spike-threshold. The large number of spikes received increases the synaptic conductance of the cell, to the point that it dominates over the leakage conductance term. In this condition, the neurons membrane dynamics is dominated by the external inputs, and the neuron is in the so-called &quot;High-conductance state&quot;. </p><pre><code class="language-julia hljs">using SpikingNeuralNetworks
+using SNNPlots
+import SNNPlots: vecplot, plot, savefig, gplot
+SNN.@load_units
+
+if_parameter = SNN.IFParameter(
+    R = 0.5GΩ,
+    Vt = -50mV,
+    ΔT = 2mV,
+    El = -70mV,
+    τm = 20ms,
+    Vr = -55mV,
+    E_i = -75mV,
+    E_e = 0mV,
+)
+
+# Create the IF neuron
+# E = SNN.AdEx(; N = 1, 
+#     # param=if_parameter,
+#     )
+E = SNN.IF(; N = 1, 
+    param=if_parameter,
+    )
+
+# Create an excitatory and inhibitory spike trains
+
+# Define the Poisson stimulus parameters 
+poisson_exc = SNN.PoissonLayerParameter(
+    1.2Hz,    # Mean firing rate (Hz) 
+    p = 1f0,  # Probability of connecting to a neuron
+    μ = 1.0,  # Synaptic strength (nS)
+    N = 1000, # Neurons in the Poisson Layer
+)
+
+poisson_inh = SNN.PoissonLayerParameter(
+    3Hz,       # Mean firing rate (Hz)
+    p = 1f0,   # Probability of connecting to a neuron
+    μ = 4.0,   # Synaptic strength (nS)
+    N = 1000,  # Neurons in the Poisson Layer
+)
+
+# Create the Poisson layers for excitatory and inhibitory inputs
+stim_exc = PoissonLayer(E, :ge, param=poisson_exc, name=&quot;noiseE&quot;)
+stim_inh = PoissonLayer(E, :gi, param=poisson_inh, name=&quot;noiseI&quot;)
+
+# Create the model and run the simulation
+model = compose(; E = E, stim_exc, stim_inh)
+SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
+SNN.monitor!(model.stim, [:fire])
+SNN.sim!(; model, duration = 1000ms)
+
+# Plot the results
+# gplot is a special function the plots the synaptic currents
+
+SNNPlots.default(palette=:okabe_ito)
+p = plot(
+    raster(model.stim),
+    gplot(E, v_sym=:v, ge_sym=:ge, gi_sym=:gi, 
+        Ee_rev=0mV, Ei_rev=-75mV,
+        ylabel=&quot;Synapti current (μA)&quot;),
+    vecplot(E, :v, add_spikes=true, ylabel=&quot;Membrane potential (mV)&quot;, ylims=(-80, 10), c=:black),
+    layout=(
+        3, 1
+    ),
+    fgcolorlegend=:transparent,
+    size=(800, 900),
+    xlabel= &quot;Time (s)&quot;,
+    leftmargin=10SNNPlots.Plots.mm,
+)</code></pre><p><img src="../assets/examples/poisson_input.png" alt="Poisson input"/></p><h2 id="Ball-and-Stick-neuron"><a class="docs-heading-anchor" href="#Ball-and-Stick-neuron">Ball and Stick neuron</a><a id="Ball-and-Stick-neuron-1"></a><a class="docs-heading-anchor-permalink" href="#Ball-and-Stick-neuron" title="Permalink"></a></h2><p>We can also implement more complex cellular models. A classical extension of the single-compartment cell, or point-neuron, is the ball-and-stick neuron. This model has a passive dendritic compartment and an active, non-linear soma.  In our case, the dendritic compartment can be endowed with synaptic non-linearities, such as the NMDA receptor voltage-dependence. The following example implements a ball and stick model with a steep dendritic non-linearity. The cell is stimulated with balanced excitatory-inhibitory inputs on the denrite.</p><pre><code class="language-julia hljs">using SpikingNeuralNetworks
+using Plots
+using Random
+SNN.@load_units
+import SpikingNeuralNetworks: Synapse, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray, get_time
+
+using BenchmarkTools
+
+Random.seed!(1234)
+## Define the neuron model parameters
+# Define the synaptic properties for the soma and dendrites
+SomaSynapse = Synapse(
+    AMPA = Receptor(E_rev = 0.0, 
+                    τr = 0.26, 
+                    τd = 2.0, 
+                    g0 = 0.73),
+    GABAa = Receptor(E_rev = -70.0, 
+                     τr = 0.1, 
+                     τd = 15.0, 
+                     g0 = 0.38)
+    # SomaSynapse has not NMDA and GABAb receptors, 
+    # they are assigned to a NullReceptor and skipped at simulation time
+)
+
+DendSynapse = Synapse(
+    AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
+    NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
+    GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
+    GABAb = Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006), 
+)
+
+NMDA = let
+    Mg_mM = 1.0mM
+    nmda_b = 3.36   # voltage dependence of nmda channels
+    nmda_k = -0.077     # Eyal 2018
+    SNN.NMDAVoltageDependency(mg = Mg_mM/mM, b = nmda_b, k = nmda_k)
+end
+
+# We then define the dendritic neuron model. The dendritic neuron holds has the soma and dendritic compartments parameters, and the synaptic properties for both compartments. 
+dend_neuron = DendNeuronParameter(
+    # adex parameters
+    C = 281pF,
+    gl = 40nS,
+    Vr = -55.6,
+    Er = -70.6,
+    ΔT = 2,
+    Vt = -50.4,
+    a = 4,
+    b = 80.5pA,
+    τw = 144,
+    up = 0.1ms,
+    τabs = 0.1ms,
+
+    # post-spike adaptation
+    postspike = SNN.PostSpike(A= 10.0, τA= 30.0), 
+
+    # synaptic properties
+    soma_syn = SomaSynapse,
+    dend_syn = DendSynapse,
+    NMDA = NMDA,
+
+    # dendrite
+    ds = [160um],
+    physiology = SNN.human_dend,
+)
+
+E = SNN.SNNModels.BallAndStick(N=1, param = dend_neuron)
+
+poisson_exc = SNN.PoissonLayerParameter(
+    10.2Hz,    # Mean firing rate (Hz) 
+    p = 1f0,  # Probability of connecting to a neuron
+    μ = 1.0,  # Synaptic strength (nS)
+    N = 1000, # Neurons in the Poisson Layer
+)
+
+poisson_inh = SNN.PoissonLayerParameter(
+    3Hz,       # Mean firing rate (Hz)
+    p = 1f0,   # Probability of connecting to a neuron
+    μ = 4.0,   # Synaptic strength (nS)
+    N = 1000,  # Neurons in the Poisson Layer
+)
+
+# Create the Poisson layers for excitatory and inhibitory inputs
+stim_exc = SNN.PoissonLayer(E, :glu, :d, param=poisson_exc, name=&quot;noiseE&quot;)
+stim_inh = SNN.PoissonLayer(E, :gaba, :d, param=poisson_inh, name=&quot;noiseI&quot;)
+
+model = SNN.compose(;E, stim_exc, stim_inh)
+SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr=1000Hz)
+
+#
+Plots.default(palette = :okabe_ito)
+SNN.sim!(model, 3s)
+p = SNN.vecplot(E, :v_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label=&quot;Dendritic Compartment&quot;)
+SNN.vecplot!(p, E, :v_s, sym_id=2, interval=1:2ms:get_time(model), neurons=1, add_spikes=true, label=&quot;Soma Compartment&quot;)
+plot!(ylims=:auto, legend=:outertop, legendfontsize=12, xlabel=&quot;Time (s)&quot;, ylabel=&quot;Voltage (mV)&quot;, title=&quot;Ball and Stick Neuron Model&quot;)</code></pre><p><img src="../assets/examples/ballandstick_neuron.png" alt="Ball-and-Stick"/></p><h2 id="Recurrent-EI-network"><a class="docs-heading-anchor" href="#Recurrent-EI-network">Recurrent EI network</a><a id="Recurrent-EI-network-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-EI-network" title="Permalink"></a></h2><pre><code class="language-julia hljs">using DrWatson
+using Plots
+using UnPack
+using SpikingNeuralNetworks
+SNN.@load_units
+##
+
+Zerlaut2019_network = (Npop = (E=8000, I=2000),
+    exc = IFSinExpParameter(
+                τm = 200pF / 10nS, 
+                El = -70mV, 
+                Vt = -50.0mV, 
+                Vr = -70.0f0mV,
+                R  = 1/10nS, 
+                τabs = 2ms,       
+                τi=5ms,
+                τe=5ms,
+                E_i = -80mV,
+                E_e = 0mV,
+                ),
+
+    inh = IFSinExpParameter(
+                τm = 200pF / 10nS, 
+                El = -70mV, 
+                Vt = -53.0mV, 
+                Vr = -70.0f0mV,
+                R  = 1/10nS, 
+                τabs = 2ms,       
+                τi=5ms,
+                τe=5ms,
+                E_i = -80mV,
+                E_e = 0mV,
+                ),
+
+    connections = (
+        E_to_E = (p = 0.05, μ = 2nS),
+        E_to_I = (p = 0.05, μ = 2nS),
+        I_to_E = (p = 0.05, μ = 10nS),
+        I_to_I = (p = 0.05, μ = 10nS),
+        ),
+    
+    afferents = (
+        N = 100,
+        p = 0.1f0,
+        rate = 20Hz,
+        μ = 4.0,
+        ), 
+)
+
+function network(config)
+    @unpack afferents, connections, Npop = config
+    E = IF(N=Npop.E, param=config.exc, name=&quot;E&quot;)
+    I = IF(N=Npop.I, param=config.inh, name=&quot;I&quot;)
+
+    AfferentParam = PoissonLayerParameter(afferents.rate; afferents...)
+    afferentE = PoissonLayer(E, :ge, param=AfferentParam, name=&quot;noiseE&quot;)
+    afferentI = PoissonLayer(I, :ge, param=AfferentParam, name=&quot;noiseI&quot;)
+
+    synapses = (
+        E_to_E = SpikingSynapse(E, E, :ge, p=connections.E_to_E.p, μ=connections.E_to_E.μ, name=&quot;E_to_E&quot;),
+        E_to_I = SpikingSynapse(E, I, :ge, p=connections.E_to_I.p, μ=connections.E_to_I.μ, name=&quot;E_to_I&quot;),
+        I_to_E = SpikingSynapse(I, E, :gi, p=connections.I_to_E.p, μ=connections.I_to_E.μ, name=&quot;I_to_E&quot;),
+        I_to_I = SpikingSynapse(I, I, :gi, p=connections.I_to_I.p, μ=connections.I_to_I.μ, name=&quot;I_to_I&quot;),
+    )
+    model = compose(;E,I, afferentE, afferentI, synapses..., silent=true, name=&quot;Balanced network&quot;) 
+    monitor!(model.pop, [:fire])
+    monitor!(model.stim, [:fire])
+    # monitor!(model.pop, [:v], sr=200Hz)
+    return compose(;model..., silent=true)
+end
+
+
+##
+plots = map([4, 10]) do input_rate
+    config = @update Zerlaut2019_network begin
+        afferents.rate = input_rate*Hz
+    end 
+    model = network(config)
+    sim!(;model, duration=10_000ms,  pbar=true)
+    pr= raster(model.pop, every=40)
+
+    # Firing rate of the network with a fixed afferent rate
+    frE, r = firing_rate(model.pop.E, interval=3s:10s, pop_average=true)
+    frI, r = firing_rate(model.pop.I, interval=3s:10s, pop_average=true)
+    pf = plot(r, [frE, frI], labels=[&quot;E&quot; &quot;I&quot;],
+        xlabel=&quot;Time (s)&quot;, ylabel=&quot;Firing rate (Hz)&quot;, 
+        title=&quot;Afferent rate: $input_rate Hz&quot;,
+        size=(600, 400), lw=2)
+
+    # Plot the raster plot of the network
+    plot(pf, pr, layout=(2, 1))
+end
+
+plot(plots..., layout=(1,2), size=(1200, 600), xlabel=&quot;Time (s)&quot;, leftmargin=10Plots.mm)
+##</code></pre><p><img src="../assets/examples/recurrent_network.png" alt="Recurrent network"/></p><h2 id="FORCE-learning"><a class="docs-heading-anchor" href="#FORCE-learning">FORCE learning</a><a id="FORCE-learning-1"></a><a class="docs-heading-anchor-permalink" href="#FORCE-learning" title="Permalink"></a></h2><h2 id="Recurrent-network-with-dendrites"><a class="docs-heading-anchor" href="#Recurrent-network-with-dendrites">Recurrent network with dendrites</a><a id="Recurrent-network-with-dendrites-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-network-with-dendrites" title="Permalink"></a></h2><h2 id="Working-memory-with-synaptic-plasticity"><a class="docs-heading-anchor" href="#Working-memory-with-synaptic-plasticity">Working memory with synaptic plasticity</a><a id="Working-memory-with-synaptic-plasticity-1"></a><a class="docs-heading-anchor-permalink" href="#Working-memory-with-synaptic-plasticity" title="Permalink"></a></h2></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../contributing/">« Contributing</a><a class="docs-footer-nextpage" href="../getting_started/">Getting Started »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Tuesday 19 August 2025 14:08">Tuesday 19 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
