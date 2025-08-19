@@ -180,14 +180,14 @@ E = SNN.IF(; N = 1,
 # Create an excitatory and inhibitory spike trains
 
 # Define the Poisson stimulus parameters 
-poisson_exc = SNN.PoissonStimulusLayer(
+poisson_exc = SNN.PoissonLayerParameter(
     1.2Hz,    # Mean firing rate (Hz) 
     p = 1f0,  # Probability of connecting to a neuron
     μ = 1.0,  # Synaptic strength (nS)
     N = 1000, # Neurons in the Poisson Layer
 )
 
-poisson_inh = SNN.PoissonStimulusLayer(
+poisson_inh = SNN.PoissonLayerParameter(
     3Hz,       # Mean firing rate (Hz)
     p = 1f0,   # Probability of connecting to a neuron
     μ = 4.0,   # Synaptic strength (nS)
@@ -289,14 +289,14 @@ dend_neuron = DendNeuronParameter(
 
 E = SNN.SNNModels.BallAndStick(N=1, param = dend_neuron)
 
-poisson_exc = SNN.PoissonStimulusLayer(
+poisson_exc = SNN.PoissonLayerParameter(
     10.2Hz,    # Mean firing rate (Hz) 
     p = 1f0,  # Probability of connecting to a neuron
     μ = 1.0,  # Synaptic strength (nS)
     N = 1000, # Neurons in the Poisson Layer
 )
 
-poisson_inh = SNN.PoissonStimulusLayer(
+poisson_inh = SNN.PoissonLayerParameter(
     3Hz,       # Mean firing rate (Hz)
     p = 1f0,   # Probability of connecting to a neuron
     μ = 4.0,   # Synaptic strength (nS)
@@ -323,7 +323,7 @@ SNN.@load_units
 ##
 
 Zerlaut2019_network = (Npop = (E=8000, I=2000),
-    exc = IFParameterSingleExponential(
+    exc = IFSinExpParameter(
                 τm = 200pF / 10nS, 
                 El = -70mV, 
                 Vt = -50.0mV, 
@@ -336,7 +336,7 @@ Zerlaut2019_network = (Npop = (E=8000, I=2000),
                 E_e = 0mV,
                 ),
 
-    inh = IFParameterSingleExponential(
+    inh = IFSinExpParameter(
                 τm = 200pF / 10nS, 
                 El = -70mV, 
                 Vt = -53.0mV, 
@@ -369,7 +369,7 @@ function network(config)
     E = IF(N=Npop.E, param=config.exc, name=&quot;E&quot;)
     I = IF(N=Npop.I, param=config.inh, name=&quot;I&quot;)
 
-    AfferentParam = PoissonStimulusLayer(afferents.rate; afferents...)
+    AfferentParam = PoissonLayerParameter(afferents.rate; afferents...)
     afferentE = PoissonLayer(E, :ge, param=AfferentParam, name=&quot;noiseE&quot;)
     afferentI = PoissonLayer(I, :ge, param=AfferentParam, name=&quot;noiseI&quot;)
 
@@ -409,4 +409,4 @@ plots = map([4, 10]) do input_rate
 end
 
 plot(plots..., layout=(1,2), size=(1200, 600), xlabel=&quot;Time (s)&quot;, leftmargin=10Plots.mm)
-##</code></pre><p><img src="../assets/examples/recurrent_network.png" alt="Recurrent network"/></p><h2 id="FORCE-learning"><a class="docs-heading-anchor" href="#FORCE-learning">FORCE learning</a><a id="FORCE-learning-1"></a><a class="docs-heading-anchor-permalink" href="#FORCE-learning" title="Permalink"></a></h2><h2 id="Recurrent-network-with-dendrites"><a class="docs-heading-anchor" href="#Recurrent-network-with-dendrites">Recurrent network with dendrites</a><a id="Recurrent-network-with-dendrites-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-network-with-dendrites" title="Permalink"></a></h2><h2 id="Working-memory-with-synaptic-plasticity"><a class="docs-heading-anchor" href="#Working-memory-with-synaptic-plasticity">Working memory with synaptic plasticity</a><a id="Working-memory-with-synaptic-plasticity-1"></a><a class="docs-heading-anchor-permalink" href="#Working-memory-with-synaptic-plasticity" title="Permalink"></a></h2></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../contributing/">« Contributing</a><a class="docs-footer-nextpage" href="../getting_started/">Getting Started »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Monday 18 August 2025 17:57">Monday 18 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+##</code></pre><p><img src="../assets/examples/recurrent_network.png" alt="Recurrent network"/></p><h2 id="FORCE-learning"><a class="docs-heading-anchor" href="#FORCE-learning">FORCE learning</a><a id="FORCE-learning-1"></a><a class="docs-heading-anchor-permalink" href="#FORCE-learning" title="Permalink"></a></h2><h2 id="Recurrent-network-with-dendrites"><a class="docs-heading-anchor" href="#Recurrent-network-with-dendrites">Recurrent network with dendrites</a><a id="Recurrent-network-with-dendrites-1"></a><a class="docs-heading-anchor-permalink" href="#Recurrent-network-with-dendrites" title="Permalink"></a></h2><h2 id="Working-memory-with-synaptic-plasticity"><a class="docs-heading-anchor" href="#Working-memory-with-synaptic-plasticity">Working memory with synaptic plasticity</a><a id="Working-memory-with-synaptic-plasticity-1"></a><a class="docs-heading-anchor-permalink" href="#Working-memory-with-synaptic-plasticity" title="Permalink"></a></h2></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../contributing/">« Contributing</a><a class="docs-footer-nextpage" href="../getting_started/">Getting Started »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Tuesday 19 August 2025 14:07">Tuesday 19 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
