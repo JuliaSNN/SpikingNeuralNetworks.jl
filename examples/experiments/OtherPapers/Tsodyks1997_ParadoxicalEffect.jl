@@ -5,8 +5,8 @@ import SpikingNeuralNetworks: AdExParameter
 using Statistics, Random
 
 function initialize()
-    E = SNN.AdEx(; N = 2000, param = AdExParameterSingleExponential(El = -65mV))
-    I = SNN.IF(; N = 500, param = SNN.IFParameterSingleExponential())
+    E = SNN.AdEx(; N = 2000, param = AdExSinExpParameter(El = -65mV))
+    I = SNN.IF(; N = 500, param = SNN.IFSinExpParameter())
     EE = SNN.SpikingSynapse(E, E, :ge; μ = 1.0, p = 0.2)
     EI = SNN.SpikingSynapse(E, I, :ge; μ = 5.0, p = 0.2)
     IE = SNN.SpikingSynapse(I, E, :gi; μ = 10.0, p = 0.2)

@@ -261,14 +261,14 @@ E = SNN.IF(; N = 1,
 # Create an excitatory and inhibitory spike trains
 
 # Define the Poisson stimulus parameters 
-poisson_exc = SNN.PoissonStimulusLayer(
+poisson_exc = SNN.PoissonLayerParameter(
     1.2Hz,    # Mean firing rate (Hz) 
     p = 1f0,  # Probability of connecting to a neuron
     μ = 1.0,  # Synaptic strength (nS)
     N = 1000, # Neurons in the Poisson Layer
 )
 
-poisson_inh = SNN.PoissonStimulusLayer(
+poisson_inh = SNN.PoissonLayerParameter(
     3Hz,       # Mean firing rate (Hz)
     p = 1f0,   # Probability of connecting to a neuron
     μ = 4.0,   # Synaptic strength (nS)
@@ -381,14 +381,14 @@ dend_neuron = DendNeuronParameter(
 
 E = SNN.SNNModels.BallAndStick(N=1, param = dend_neuron)
 
-poisson_exc = SNN.PoissonStimulusLayer(
+poisson_exc = SNN.PoissonLayerParameter(
     10.2Hz,    # Mean firing rate (Hz) 
     p = 1f0,  # Probability of connecting to a neuron
     μ = 1.0,  # Synaptic strength (nS)
     N = 1000, # Neurons in the Poisson Layer
 )
 
-poisson_inh = SNN.PoissonStimulusLayer(
+poisson_inh = SNN.PoissonLayerParameter(
     3Hz,       # Mean firing rate (Hz)
     p = 1f0,   # Probability of connecting to a neuron
     μ = 4.0,   # Synaptic strength (nS)
@@ -425,7 +425,7 @@ SNN.@load_units
 ##
 
 Zerlaut2019_network = (Npop = (E=8000, I=2000),
-    exc = IFParameterSingleExponential(
+    exc = IFSinExpParameter(
                 τm = 200pF / 10nS, 
                 El = -70mV, 
                 Vt = -50.0mV, 
@@ -438,7 +438,7 @@ Zerlaut2019_network = (Npop = (E=8000, I=2000),
                 E_e = 0mV,
                 ),
 
-    inh = IFParameterSingleExponential(
+    inh = IFSinExpParameter(
                 τm = 200pF / 10nS, 
                 El = -70mV, 
                 Vt = -53.0mV, 
@@ -471,7 +471,7 @@ function network(config)
     E = IF(N=Npop.E, param=config.exc, name="E")
     I = IF(N=Npop.I, param=config.inh, name="I")
 
-    AfferentParam = PoissonStimulusLayer(afferents.rate; afferents...)
+    AfferentParam = PoissonLayerParameter(afferents.rate; afferents...)
     afferentE = PoissonLayer(E, :ge, param=AfferentParam, name="noiseE")
     afferentI = PoissonLayer(I, :ge, param=AfferentParam, name="noiseI")
 

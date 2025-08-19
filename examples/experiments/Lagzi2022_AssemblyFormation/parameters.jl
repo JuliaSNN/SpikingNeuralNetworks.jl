@@ -78,7 +78,7 @@ config = (
 experiments = Dict(
     "NMDA" => (;
         config...,
-        adex_param = AdExSynapseParameter(a = 0, b = 0),
+        adex_param = AdExReceptorParameter(a = 0, b = 0),
         E_noise = 0.5ext_rate,
         name = "NMDA",
         factor = 1,

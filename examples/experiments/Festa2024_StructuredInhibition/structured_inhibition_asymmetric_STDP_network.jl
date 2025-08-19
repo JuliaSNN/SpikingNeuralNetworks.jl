@@ -82,7 +82,7 @@ SNN.stdp_kernel(stdp, fill = false, ΔTs = -500ms:10:500ms)
 
 C = 200pF
 gl = 10nS
-neuron_param = IFParameterSingleExponential(
+neuron_param = IFSinExpParameter(
     R = 1 / gl,
     τm = C/gl,
     τabs = 5ms,

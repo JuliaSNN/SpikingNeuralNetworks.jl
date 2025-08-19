@@ -1,6 +1,8 @@
-using SpikingNeuralNetworks
 using Plots
+using DrWatson
 using Random
+
+using SpikingNeuralNetworks
 SNN.@load_units
 import SpikingNeuralNetworks: Synapse, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray
 import SpikingNeuralNetworks: get_time
@@ -24,10 +26,10 @@ SomaSynapse = Synapse(
 )
 
 DendSynapse = Synapse(
-    AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
-    NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
-    GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
-    GABAb = Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006), 
+    AMPA = Receptor(name="AMPA", E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
+    NMDA = Receptor(name="NMDA", E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
+    GABAa = Receptor(name="GABAa", E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
+    GABAb = Receptor(name="GABAb", E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006), 
 )
 
 NMDA = let
@@ -56,16 +58,18 @@ dend_neuron = DendNeuronParameter(
     postspike = SNN.PostSpike(A= 10.0, τA= 30.0), 
 
     # synaptic properties
+    glu_receptors = [1,2],
+    gaba_receptors = [3,4],
     soma_syn = SomaSynapse,
     dend_syn = DendSynapse,
     NMDA = NMDA,
 
     # dendrite
-    ds = [160um],
+    ds = [160um, 200um],
     physiology = SNN.human_dend,
 )
 
-E = SNN.SNNModels.BallAndStick(N=1, param = dend_neuron)
+E = SNN.SNNModels.Tripod(N=1, param = dend_neuron)
 
 poisson_exc = SNN.PoissonLayerParameter(
     10.2Hz,    # Mean firing rate (Hz) 
@@ -82,31 +86,35 @@ poisson_inh = SNN.PoissonLayerParameter(
 )
 
 # Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = SNN.PoissonLayer(E, :glu, :d, param=poisson_exc, name="noiseE")
-stim_inh = SNN.PoissonLayer(E, :gaba, :d, param=poisson_inh, name="noiseI")
+stims = map([:d1, :d2]) do d
+    exc = SNN.PoissonLayer(E, :glu, d, param=poisson_exc, name="noiseE")
+    inh = SNN.PoissonLayer(E, :gaba, d, param=poisson_inh, name="noiseI")
+    Dict("exc_$d" => exc, "inh_$d"=>inh) |> dict2ntuple
+end
 
-model = SNN.compose(;E, stim_exc, stim_inh)
-SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr=1000Hz)
+model = SNN.compose(stims...;E)
+SNN.monitor!(E, [:v_s, :v_d1, :v_d2, :fire, :g_s, :g_d1, :g_d2], sr=1000Hz)
 
 #
 Plots.default(palette = :okabe_ito)
 SNN.sim!(model, 3s)
-p = SNN.vecplot(E, :v_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment")
+p = SNN.vecplot(E, :v_d1, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment 1")
+SNN.vecplot!(p, E, :v_d2, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment 2")
 SNN.vecplot!(p, E, :v_s, sym_id=2, interval=1:2ms:get_time(model), neurons=1, add_spikes=true, label="Soma Compartment")
 plot!(ylims=:auto, legend=:outertop, legendfontsize=12, xlabel="Time (s)", ylabel="Voltage (mV)", title="Ball and Stick Neuron Model")
-plot!(fg_legend = :transparent)
+plot!(fg_legend=:transparent)
 
 ##
 p = plot()
 for i in 1:4
-    SNN.vecplot!(p, E, :g_d, sym_id=i)
+    SNN.vecplot!(p, E, :g_d1, sym_id=i)
 end
 plot!()
 
 ##
 savefig(
     p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/ballandstick_neuron.png",
+    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/tripod_neuron.png",
 )
  
 ##
