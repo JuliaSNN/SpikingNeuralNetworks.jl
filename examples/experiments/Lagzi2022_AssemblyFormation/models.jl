@@ -7,8 +7,8 @@ function network(; local_config, type = :pv1)
     @unpack E_noise, I_noise = local_config
     @unpack signal_param = local_config
 
-    E1 = SNN.AdExNeuron(N = NE, param = adex_param, name = "Exc1")
-    E2 = SNN.AdExNeuron(N = NE, param = adex_param, name = "Exc2")
+    E1 = SNN.AdEx(N = NE, param = adex_param, name = "Exc1")
+    E2 = SNN.AdEx(N = NE, param = adex_param, name = "Exc2")
     pop = nothing
     noise = nothing
     if type == :pv1
