@@ -1,6 +1,6 @@
 # Recordings
 
-One of the strengths of the SpikingNeuralNetwork.jl library is its easy access to all network variables. You can record any dynamic variable used at runtime. To optimize memory usage, recordings can be subsampled.
+One of the strengths of the **SpikingNeuralNetworks.jl** library is its easy access to all network variables. You can record any dynamic variable used at runtime, and to optimize memory usage, recordings can be subsampled.
 
 To demonstrate how recordings work, let’s instantiate a network model with excitatory and inhibitory recurrent connections. Excitatory connections follow **short-term plasticity (STP)**, while inhibitory connections use **long-term plasticity (LTP)**. We will show how to record different types of variables simulated in the network.
 
@@ -19,7 +19,9 @@ II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
 model = SNN.compose(; E, I, EE, EI, IE, II)
 ```
 
-To monitor any model variable, use the `monitor!` function. This function takes the component instance (e.g., `E`) and the symbol (or list of symbols) you want to record. Optionally, you can specify the sampling rate (`sr`, default: 1kHz) for the recording.
+To monitor any model variable, use the [`monitor!`](@ref SNN.SNNModels.monitor!) function. This function takes the component instance (e.g., `E`) and the symbol (or list of symbols) you want to record. Optionally, you can specify the sampling rate (`sr`, default: 1kHz) for the recording.
+
+---
 
 ## Population Variables
 
@@ -32,7 +34,7 @@ SNN.monitor!(model.pop, :fire)
 SNN.sim!(model = model; duration = 5second)
 ```
 
-To access recorded variables, use the `record(comp<:AbstractComponent, sym::Symbol)` function. This function takes the network component and the variable of interest as arguments. It returns an array (neurons × time), interpolated over the interval defined by `:start_time` and `:end_time` (the model’s time when `monitor!` was called and the last time point of the simulation). The resolution of the recording is determined by the sampling rate. Thanks to interpolation, you can access the variable at any continuous time point.
+To access recorded variables, use the [`record`](@ref SNN.SNNModels.record) function. This function takes the network component and the variable of interest as arguments. It returns an array (neurons × time), interpolated over the interval defined by `:start_time` and `:end_time` (the model’s time when `monitor!` was called and the last time point of the simulation). The resolution of the recording is determined by the sampling rate. Thanks to interpolation, you can access the variable at any continuous time point.
 
 ```julia
 v = SNN.record(model.pop.E, :v)
@@ -48,6 +50,8 @@ v = SNN.record(model.pop.E, :v, interpolate=false)
 !!! note
     Currently, it is not possible to deactivate recordings while keeping the variable in the monitored pool. This behavior may change in future updates.
 
+---
+
 ### Spiketimes and Firing Rates
 
 Spiketimes are stored as `SNN.Spiketimes`, a `Vector` of `Vector`. The first vector contains the spiketimes of each neuron in milliseconds (neurons × times).
@@ -56,7 +60,8 @@ Spiketimes are stored as `SNN.Spiketimes`, a `Vector` of `Vector`. The first vec
 # Spiketimes
 spiketimes = SNN.spiketimes(model.pop.E) # All spiketimes
 @info "Spiketimes is: type $(nameof(typeof(spiketimes))), size $(size(spiketimes)), neuron 1 has $(length(spiketimes[1])) spikes"
-spiketimes = SNN.spiketimes(model.pop.E; interval) # Spiketimes in the specified interval
+
+spiketimes = SNN.spiketimes(model.pop.E; interval=0:1ms:5second) # Spiketimes in the specified interval
 @info "Spiketimes is: type $(nameof(typeof(spiketimes))), size $(size(spiketimes)), neuron 1 has $(length(spiketimes[1])) spikes"
 ```
 
@@ -64,6 +69,7 @@ For convenience, you can also access binned spikes using `bin_spiketimes(comp<:A
 
 ```julia
 # Binned spikes
+interval = 0:10ms:5s # 
 bins, r = SNN.bin_spiketimes(model.pop.E; interval)
 @info "Bins is: type $(nameof(typeof(bins))), size $(size(bins)), r size: $(size(r))"
 ```
@@ -102,19 +108,25 @@ SNN.record(model.pop.E, :spikes)
 
 ---
 
-## Synaptic Variables: 
+## Synaptic Variables
 
-We now add to the recordings the synaptic strength (`:W`) and efficacy (`:ρ`) for the inhibitory and excitatory connections. Also, we record the variables (`:x` and `:u`) for the STP in the excitatory connections and the filtered post-synaptic trace of the inhibitory STDP (`:tpost`). When we record plasticity variables, we ought to specify which is the set of variables we are referring to, this can be done by the keyword argument `variables` or implicitly adding a third position argument to the `monitor!` function. 
+We now add to the recordings the synaptic strength (`:W`) and efficacy (`:ρ`) for the inhibitory and excitatory connections. We also record the variables (`:x` and `:u`) for the STP in the excitatory connections and the filtered post-synaptic trace of the inhibitory STDP (`:tpost`). When recording plasticity variables, you must specify which set of variables you are referring to. This can be done using the keyword argument `variables` or implicitly by adding a third positional argument to the `monitor!` function.
 
 ```julia
 SNN.monitor!(EE, [:ρ], sr=10Hz)
 SNN.monitor!(EI, [:W], sr=10Hz)
-
 SNN.monitor!(IE, [:tpost]; sr=10Hz, variables=:LTPVars)
 SNN.monitor!(EE, [:x, :u], :STPVars; sr=10Hz)
-
 SNN.train!(model = model; duration = 5second)
 ```
+
+!!! warning
+    Recording synaptic strength or efficacy can be memory-intensive in large networks. We recommend using a low sampling rate.
+
+!!! note
+    `STPVars` and `LTPVars` are special keywords representing sets of short-term and long-term plasticity-related variables, respectively.
+
+---
 
 ### Synaptic Connectivity
 
@@ -130,17 +142,16 @@ W = SNN.matrix(EE, :W)
 
 You can access the pre- and post-synaptic neurons for a single neuron or a set of neurons:
 
-##### Single Neuron
+**Single Neuron**
 ```julia
 neuron = 1
 Is = SNN.postsynaptic(EE, neuron)  # Post-synaptic neurons
 mean(W[Is, neuron])  # Mean synaptic weight of post-synaptic connections
-
 Js = SNN.presynaptic(EE, neuron)  # Pre-synaptic neurons
 mean(W[neuron, Js])  # Mean synaptic weight of pre-synaptic connections
 ```
 
-##### Multiple Neurons
+**Multiple Neurons**
 ```julia
 neurons = 1:10
 W = SNN.matrix(EE)
@@ -148,48 +159,50 @@ Is = SNN.presynaptic(EE, neurons)  # Pre-synaptic neurons for multiple neurons
 Js = SNN.postsynaptic(EE, neurons)  # Post-synaptic neurons for multiple neurons
 ```
 
-
 #### Synaptic Weight Matrices
 
 When recorded, the matrix of synaptic weights or synaptic efficacy can be obtained using the `record` function. The returned value is a sparse matrix in a vector format, where only the non-zero values are maintained.
 
-1. **Get the sparse vector `ρ` at time point `t`:**
+**Get the sparse vector `ρ` at time point `t`:**
    This returns only the non-zero elements of the matrix.
-
    ```julia
    ρ, r = SNN.record(EE, :ρ, range=true)
    histogram(ρ[:, 6.5s])
    ```
 
-2. **Reconstruct the full matrix from the sparse vector `ρ` at time point `t`:**
+**Reconstruct the full matrix from the sparse vector `ρ` at time point `t`:**
    This operation reverses the sparse representation and returns the full matrix. You can pass either the vector obtained from `SNN.record` or the synapse object and the symbol of the variable.
-
    ```julia
    ρ_mat1 = SNN.matrix(EE, ρ, 6.5s)
    ρ_mat2 = SNN.matrix(EE, :ρ, 6.5s)
    all(ρ_mat1 .== ρ_mat2)  # true
    ```
 
-3. **Get the matrix at multiple time points:**
+**Get the matrix at multiple time points:**
    This returns a 3D array of size `(N_E, N_E, T)`, where `T` is the number of time points in the specified range.
-
    ```julia
    ρ_T1 = SNN.matrix(EE, :ρ, 6.5s:10ms:7s)
    ρ_T2 = SNN.matrix(EE, ρ, 6.5s:10ms:7s)
    ```
 
+!!! tip
+    For visualization, you can use the functions defined in [Plots](@ref) or use packages like `Plots.jl` to plot recorded variables or  
+    ```julia
+    using Plots
+    plot(r, v[1,:], label="Membrane potential of neuron 1")
+    ```
+
 ---
 
 ### Plasticity Variables
 
-Plasticity-related variables, such as STP (`:x`, `:u`) or LTP (`:tpost`), can also be accessed using the `record` function adding as prefix the name of the set of variable of interest (`STPVars` or `LTPVars`). For example, to retrieve the STP variables for the synapse `EE`:
+Plasticity-related variables, such as STP (`:x`, `:u`) or LTP (`:tpost`), can also be accessed using the `record` function by adding the name of the set of variables of interest (`STPVars` or `LTPVars`) as a prefix. For example, to retrieve the STP variables for the synapse `EE`:
 
 ```julia
 x = SNN.record(EE, :STPVars_x)
-@info "x is: type $(nameof(typeof(x))), size $(size(x)), r size: $(size(r))"
+@info "x is: type $(nameof(typeof(x))), size $(size(x))"
 x[1, 3.14s]
-x[1:10, 3.4s:15ms:3.1s]
-
+x[1:10, 2.4s:15ms:3.1s]
 x, r = SNN.record(EE, :STPVars_x, range=true)
 @info "x is: type $(nameof(typeof(x))), size $(size(x)), r size: $(size(r))"
 x = SNN.record(EE, :STPVars_x, interpolate=false)
@@ -208,3 +221,6 @@ tpost, r = SNN.record(IE, :LTPVars_tpost, range=true)
 tpost = SNN.record(IE, :LTPVars_tpost, interpolate=false)
 @info "tpost is: type $(nameof(typeof(tpost))), size $(size(tpost))"
 ```
+
+!!! note
+    High sampling rates or recording many variables simultaneously can impact performance. Use subsampling (`sr` keyword) to balance memory usage and resolution.
