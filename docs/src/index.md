@@ -10,7 +10,7 @@ The library's strength points are:
  - Modular, intuitive, and quick instantiation of complex biophysical models;
  - Large pool of standard models already available and easy implementation of custom new models;
  - High performance and native multi-threading support, laptop and cluster-friendly;
- - Access to all models' variables at runtime and save-load-rerun of arbitrarily complex networks;
+ - Access to all network's variables at runtime and save-load-rerun of arbitrarily complex networks;
  - Growing ecosystem for stimulation protocols, network analysis, and visualization ([SNNUtils](https://github.com/JuliaSNN/SNNUtils), [SNNPlots](https://github.com/JuliaSNN/SNNPlots), [SNNGeometry](https://github.com/JuliaSNN/SNNGeometry)).
 
 `SpikingNeuralNetworks.jl` leverages the `JuliaSNN` ecosystem, which offers `SNNPlots` to plot models' recordings and `SNNUtils` for further stimulation protocols and analysis.
@@ -18,10 +18,10 @@ The library's strength points are:
 
 ## Models: populations, connections, and stimuli
 
-SpikingNeuralNetworks.jl builds on the idea that a neural network is composed of three classes of objects: the network _populations_, their recurrent _connections_, and the external _stimuli_ they receive. Thus, a SNN model is simply a `NamedTuple` with keys: `pop`, `syn`, `stim`. The element associated with the keys must be concrete subtypes of `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus`. 
+SpikingNeuralNetworks.jl builds on the idea that a neural network is composed of three classes of objects: the network _populations_, their recurrent _connections_, and the external _stimuli_ they receive. Thus, a network model is simply a `NamedTuple` with keys: `pop`, `syn`, `stim`. The element associated with the keys must be concrete subtypes of `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus`. 
 
 
-Models can be generated using `compose` with any population, connection, or stimulus type as keyworded arguments. The user can define the model by associating the correct subtypes to the named tuple, but we advise against it. For example:
+Network models can be generated using `compose` with any population, connection, or stimulus type as keyworded arguments. The user can define the network model by associating the correct subtypes to the named tuple, but we advise against it. For example:
 
 ```julia
 using SpikingNeuralNetworks
@@ -37,8 +37,8 @@ my_model = SNN.compose(E=E, EE=EE) # create a model with the E population and th
 The population and synapse elements will be assigned to `my_model.pop.E` and `my_model.syn.EE`, respectively.
 !!! note
     - User are not expected to use the abstract types, but only their concrete subtypes.
-    - Models must at least include one population. Connections and Stimuli always target one population.
-    - Because in biophysical models connections are typically synapses, the two terms are used interchangeably. 
+    - Network models must at least include one population. Connections and Stimuli always target one population.
+    - Because in biophysical network models connections are typically synapses, the two terms are used interchangeably. 
 
 
 ### Pre-existing models
@@ -84,14 +84,14 @@ Using Julia's [passing-by-sharing](https://docs.julialang.org/en/v1/manual/funct
 
 ## Installation
 
-JuliaSNN/SpikingNeuralNetworks.jl is not yet available on the public Julia repository! For the moment `]add SpikingNeuralNetworks` will still direct you to the old version of the package. 
+JuliaSNN/SpikingNeuralNetworks.jl is available on the public Julia repository.
+Install the module via `]add SpikingNeuralNetworks`.
 
 You can install the latest version directly from the git repository:
 
 ```
 ]add https://github.com/JuliaSNN/SpikingNeuralNetworks.jl
 ```
-
 
 To learn how to use the library you can follow the [Tutorial](@ref).
 
