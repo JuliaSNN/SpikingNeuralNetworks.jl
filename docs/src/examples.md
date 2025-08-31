@@ -75,7 +75,7 @@ plots = map(eachrow(df)) do row
     )
 
 
-    E = SNN.AdExNeuron(; N = 1, 
+    E = SNN.AdEx(; N = 1, 
         param,
         )
     SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
@@ -514,12 +514,64 @@ plot(plots..., layout=(1,2), size=(1200, 600), xlabel="Time (s)", leftmargin=10P
 ##
 ```
 
+
 ![Recurrent network](assets/examples/recurrent_network.png)
 
 
 
-
 ## FORCE learning
+
+An example of a rate-based spiking neural network (SNN) that implements the force learning algorithm described  ["Generating Coherent Patterns of Activity from Chaotic Neural Networks"](https://www.sciencedirect.com/science/article/pii/S0896627309005479?via%3Dihub) by D. Sussillo and L.F. Abbott (2009). The network consists of a 200 rate units with force learning synapses. The network is trained on a sinusoidal input signal for a certain duration, and then tested on the same signal. The plot shows the input signal and the network's prediction.
+
+```julia
+
+using SpikingNeuralNetworks
+SNN.@load_units
+using Plots
+
+S = SNN.Rate(; N = 200)
+SS = SNN.FLSynapse(S, S; μ = 1.5, p = 1.0)
+model = SNN.compose(; S, SS)
+
+SNN.monitor!(SS, [:f, :z], sr = 1000Hz)
+
+A = 1.3 / 1.5;
+fr = 1 / 60ms;
+f(t) =
+    (A / 1.0) * sin(1π * fr * t) +
+    (A / 2.0) * sin(2π * fr * t) +
+    (A / 6.0) * sin(3π * fr * t) +
+(A / 3.0) * sin(4π * fr * t)
+
+
+for t = 0:0.125ms:2440ms
+    SS.f = f(t)
+    SNN.train!(; model, duration = 0.125f0)
+end
+
+for t = 2440ms:0.125ms:3500ms
+    SS.f = f(t)
+    SNN.sim!(; model, duration = 0.125f0)
+end
+
+#
+p = plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["Signal" "Prediction"], lw = 3);
+plot!(p, xlabel = "Time (ms)", ylabel = "Signal", title = "Force Learning Network",
+      legend = :outerright, size = (800, 400), grid = false, ylims = (-1.8, 1.5), xlims =(2000, 3000), 
+      fg_legend=:transparent, legendfontsize=14)
+annotate!(p, [(2240ms, -1.5, "Training phase")], textsize = 10, color = :black)
+annotate!(p, [(2650ms, -1.5, "Testing phase")], textsize = 10, color = :black)
+
+SS.records
+
+SS.records[:f]
+
+vline!([2440ms], color = :black, label = "", lw=3)
+```
+
+![Force Learning](assets/examples/force_learning.png)
+
+## STDP with homeostatic plasticity
 
 ## Recurrent network with dendrites
 

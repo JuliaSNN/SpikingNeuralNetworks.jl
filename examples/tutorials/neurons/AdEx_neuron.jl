@@ -45,7 +45,7 @@ plots = map(eachrow(df)) do row
     )
 
 
-    E = SNN.AdExNeuron(; N = 1, param)
+    E = SNN.AdEx(; N = 1, param)
     SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
     model = compose(; E = E, silent = true)
 
