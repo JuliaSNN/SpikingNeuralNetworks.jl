@@ -164,26 +164,28 @@ Js = SNN.postsynaptic(EE, neurons)  # Post-synaptic neurons for multiple neurons
 When recorded, the matrix of synaptic weights or synaptic efficacy can be obtained using the `record` function. The returned value is a sparse matrix in a vector format, where only the non-zero values are maintained.
 
 **Get the sparse vector `ρ` at time point `t`:**
-   This returns only the non-zero elements of the matrix.
-   ```julia
-   ρ, r = SNN.record(EE, :ρ, range=true)
-   histogram(ρ[:, 6.5s])
-   ```
+
+This returns only the non-zero elements of the matrix.
+```julia
+ρ, r = SNN.record(EE, :ρ, range=true)
+histogram(ρ[:, 6.5s])
+```
 
 **Reconstruct the full matrix from the sparse vector `ρ` at time point `t`:**
-   This operation reverses the sparse representation and returns the full matrix. You can pass either the vector obtained from `SNN.record` or the synapse object and the symbol of the variable.
-   ```julia
-   ρ_mat1 = SNN.matrix(EE, ρ, 6.5s)
-   ρ_mat2 = SNN.matrix(EE, :ρ, 6.5s)
-   all(ρ_mat1 .== ρ_mat2)  # true
-   ```
+
+This operation reverses the sparse representation and returns the full matrix. You can pass either the vector obtained from `SNN.record` or the synapse object and the symbol of the variable.
+```julia
+ρ_mat1 = SNN.matrix(EE, ρ, 6.5s)
+ρ_mat2 = SNN.matrix(EE, :ρ, 6.5s)
+all(ρ_mat1 .== ρ_mat2)  # true
+```
 
 **Get the matrix at multiple time points:**
-   This returns a 3D array of size `(N_E, N_E, T)`, where `T` is the number of time points in the specified range.
-   ```julia
-   ρ_T1 = SNN.matrix(EE, :ρ, 6.5s:10ms:7s)
-   ρ_T2 = SNN.matrix(EE, ρ, 6.5s:10ms:7s)
-   ```
+This returns a 3D array of size `(N_E, N_E, T)`, where `T` is the number of time points in the specified range.
+```julia
+ρ_T1 = SNN.matrix(EE, :ρ, 6.5s:10ms:7s)
+ρ_T2 = SNN.matrix(EE, ρ, 6.5s:10ms:7s)
+```
 
 !!! tip
     For visualization, you can use the functions defined in [Plots](@ref) or use packages like `Plots.jl` to plot recorded variables or  
