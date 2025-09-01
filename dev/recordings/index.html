@@ -49,37 +49,23 @@ Js = SNN.presynaptic(EE, neuron)  # Pre-synaptic neurons
 mean(W[neuron, Js])  # Mean synaptic weight of pre-synaptic connections</code></pre><p><strong>Multiple Neurons</strong></p><pre><code class="language-julia hljs">neurons = 1:10
 W = SNN.matrix(EE)
 Is = SNN.presynaptic(EE, neurons)  # Pre-synaptic neurons for multiple neurons
-Js = SNN.postsynaptic(EE, neurons)  # Post-synaptic neurons for multiple neurons</code></pre><h4 id="Synaptic-Weight-Matrices"><a class="docs-heading-anchor" href="#Synaptic-Weight-Matrices">Synaptic Weight Matrices</a><a id="Synaptic-Weight-Matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Synaptic-Weight-Matrices" title="Permalink"></a></h4><p>When recorded, the matrix of synaptic weights or synaptic efficacy can be obtained using the <code>record</code> function. The returned value is a sparse matrix in a vector format, where only the non-zero values are maintained.</p><p><strong>Get the sparse vector <code>ρ</code> at time point <code>t</code>:</strong>    This returns only the non-zero elements of the matrix.</p><pre><code class="language-julia hljs">   ρ, r = SNN.record(EE, :ρ, range=true)
-   histogram(ρ[:, 6.5s])
-   ```
-
-**Reconstruct the full matrix from the sparse vector `ρ` at time point `t`:**
-   This operation reverses the sparse representation and returns the full matrix. You can pass either the vector obtained from `SNN.record` or the synapse object and the symbol of the variable.
-   ```julia
-   ρ_mat1 = SNN.matrix(EE, ρ, 6.5s)
-   ρ_mat2 = SNN.matrix(EE, :ρ, 6.5s)
-   all(ρ_mat1 .== ρ_mat2)  # true
-   ```
-
-**Get the matrix at multiple time points:**
-   This returns a 3D array of size `(N_E, N_E, T)`, where `T` is the number of time points in the specified range.
-   ```julia
-   ρ_T1 = SNN.matrix(EE, :ρ, 6.5s:10ms:7s)
-   ρ_T2 = SNN.matrix(EE, ρ, 6.5s:10ms:7s)
-   ```
-
-!!! tip
-    For visualization, you can use the functions defined in [Plots](@ref) or use packages like `Plots.jl` to plot recorded variables or  
-    ```julia
-    using Plots
-    plot(r, v[1,:], label=&quot;Membrane potential of neuron 1&quot;)
-    ```
-
----
-
-### Plasticity Variables
-
-Plasticity-related variables, such as STP (`:x`, `:u`) or LTP (`:tpost`), can also be accessed using the `record` function by adding the name of the set of variables of interest (`STPVars` or `LTPVars`) as a prefix. For example, to retrieve the STP variables for the synapse `EE`:
-</code></pre><p>julia x = SNN.record(EE, :STPVars<em>x) @info &quot;x is: type nameof(typeof(x)), size size(x)&quot; x[1, 3.14s] x[1:10, 2.4s:15ms:3.1s] x, r = SNN.record(EE, :STPVars</em>x, range=true) @info &quot;x is: type nameof(typeof(x)), size size(x), r size: size(r)&quot; x = SNN.record(EE, :STPVars_x, interpolate=false) @info &quot;x is: type nameof(typeof(x)), size size(x)&quot;</p><pre><code class="nohighlight hljs">
-Similarly, for LTP variables in the synapse `IE`:
-</code></pre><p>julia tpost = SNN.record(IE, :LTPVars<em>tpost) @info &quot;tpost is: type nameof(typeof(tpost)), size size(tpost)&quot; tpost[1, 3.14s] tpost[1:10, 2.4s:15ms:3.1s] tpost, r = SNN.record(IE, :LTPVars</em>tpost, range=true) @info &quot;tpost is: type nameof(typeof(tpost)), size size(tpost), r size: size(r)&quot; tpost = SNN.record(IE, :LTPVars_tpost, interpolate=false) @info &quot;tpost is: type nameof(typeof(tpost)), size size(tpost)&quot; ```</p><div class="admonition is-info" id="Note-d4eff8577e939a3"><header class="admonition-header">Note<a class="admonition-anchor" href="#Note-d4eff8577e939a3" title="Permalink"></a></header><div class="admonition-body"><p>High sampling rates or recording many variables simultaneously can impact performance. Use subsampling (<code>sr</code> keyword) to balance memory usage and resolution.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../models_ext/">« Models Extensions</a><a class="docs-footer-nextpage" href="../visualization/">Plots »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Sunday 31 August 2025 17:15">Sunday 31 August 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+Js = SNN.postsynaptic(EE, neurons)  # Post-synaptic neurons for multiple neurons</code></pre><h4 id="Synaptic-Weight-Matrices"><a class="docs-heading-anchor" href="#Synaptic-Weight-Matrices">Synaptic Weight Matrices</a><a id="Synaptic-Weight-Matrices-1"></a><a class="docs-heading-anchor-permalink" href="#Synaptic-Weight-Matrices" title="Permalink"></a></h4><p>When recorded, the matrix of synaptic weights or synaptic efficacy can be obtained using the <code>record</code> function. The returned value is a sparse matrix in a vector format, where only the non-zero values are maintained.</p><p><strong>Get the sparse vector <code>ρ</code> at time point <code>t</code>:</strong></p><p>This returns only the non-zero elements of the matrix.</p><pre><code class="language-julia hljs">ρ, r = SNN.record(EE, :ρ, range=true)
+histogram(ρ[:, 6.5s])</code></pre><p><strong>Reconstruct the full matrix from the sparse vector <code>ρ</code> at time point <code>t</code>:</strong></p><p>This operation reverses the sparse representation and returns the full matrix. You can pass either the vector obtained from <code>SNN.record</code> or the synapse object and the symbol of the variable.</p><pre><code class="language-julia hljs">ρ_mat1 = SNN.matrix(EE, ρ, 6.5s)
+ρ_mat2 = SNN.matrix(EE, :ρ, 6.5s)
+all(ρ_mat1 .== ρ_mat2)  # true</code></pre><p><strong>Get the matrix at multiple time points:</strong> This returns a 3D array of size <code>(N_E, N_E, T)</code>, where <code>T</code> is the number of time points in the specified range.</p><pre><code class="language-julia hljs">ρ_T1 = SNN.matrix(EE, :ρ, 6.5s:10ms:7s)
+ρ_T2 = SNN.matrix(EE, ρ, 6.5s:10ms:7s)</code></pre><div class="admonition is-success" id="Tip-a7c489b3056bad78"><header class="admonition-header">Tip<a class="admonition-anchor" href="#Tip-a7c489b3056bad78" title="Permalink"></a></header><div class="admonition-body"><p>For visualization, you can use the functions defined in SNNPlots library or use packages like <code>Plots.jl</code> to plot recorded variables or  </p><pre><code class="language-julia hljs">using Plots
+plot(r, v[1,:], label=&quot;Membrane potential of neuron 1&quot;)</code></pre></div></div><hr/><h3 id="Plasticity-Variables"><a class="docs-heading-anchor" href="#Plasticity-Variables">Plasticity Variables</a><a id="Plasticity-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#Plasticity-Variables" title="Permalink"></a></h3><p>Plasticity-related variables, such as STP (<code>:x</code>, <code>:u</code>) or LTP (<code>:tpost</code>), can also be accessed using the <code>record</code> function by adding the name of the set of variables of interest (<code>STPVars</code> or <code>LTPVars</code>) as a prefix. For example, to retrieve the STP variables for the synapse <code>EE</code>:</p><pre><code class="language-julia hljs">x = SNN.record(EE, :STPVars_x)
+@info &quot;x is: type $(nameof(typeof(x))), size $(size(x))&quot;
+x[1, 3.14s]
+x[1:10, 2.4s:15ms:3.1s]
+x, r = SNN.record(EE, :STPVars_x, range=true)
+@info &quot;x is: type $(nameof(typeof(x))), size $(size(x)), r size: $(size(r))&quot;
+x = SNN.record(EE, :STPVars_x, interpolate=false)
+@info &quot;x is: type $(nameof(typeof(x))), size $(size(x))&quot;</code></pre><p>Similarly, for LTP variables in the synapse <code>IE</code>:</p><pre><code class="language-julia hljs">tpost = SNN.record(IE, :LTPVars_tpost)
+@info &quot;tpost is: type $(nameof(typeof(tpost))), size $(size(tpost))&quot;
+tpost[1, 3.14s]
+tpost[1:10, 2.4s:15ms:3.1s]
+tpost, r = SNN.record(IE, :LTPVars_tpost, range=true)
+@info &quot;tpost is: type $(nameof(typeof(tpost))), size $(size(tpost)), r size: $(size(r))&quot;
+tpost = SNN.record(IE, :LTPVars_tpost, interpolate=false)
+@info &quot;tpost is: type $(nameof(typeof(tpost))), size $(size(tpost))&quot;</code></pre><div class="admonition is-info" id="Note-d4eff8577e939a3"><header class="admonition-header">Note<a class="admonition-anchor" href="#Note-d4eff8577e939a3" title="Permalink"></a></header><div class="admonition-body"><p>High sampling rates or recording many variables simultaneously can impact performance. Use subsampling (<code>sr</code> keyword) to balance memory usage and resolution.</p></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../models_ext/">« Models Extensions</a><a class="docs-footer-nextpage" href="../visualization/">Plots »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Monday 1 September 2025 09:42">Monday 1 September 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
