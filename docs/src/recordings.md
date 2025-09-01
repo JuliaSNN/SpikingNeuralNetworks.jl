@@ -188,7 +188,7 @@ This returns a 3D array of size `(N_E, N_E, T)`, where `T` is the number of time
 ```
 
 !!! tip
-    For visualization, you can use the functions defined in [Plots](@ref) or use packages like `Plots.jl` to plot recorded variables or  
+    For visualization, you can use the functions defined in SNNPlots library or use packages like `Plots.jl` to plot recorded variables or  
     ```julia
     using Plots
     plot(r, v[1,:], label="Membrane potential of neuron 1")
