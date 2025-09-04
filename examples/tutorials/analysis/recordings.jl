@@ -7,21 +7,22 @@ import SpikingNeuralNetworks.SNNPlots: default, plot, histogram, Plots, plot!, s
 E = SNN.AdEx(; N = 800, param = SNN.AdExParameter(; El = -50mV))
 I = SNN.IF(; N = 200, param = SNN.IFParameter())
 EE = SNN.SpikingSynapse(E, E, :he; μ = 2, p = 0.02, STPParam = SNN.MarkramSTPParameter())
-EI = SNN.SpikingSynapse(E, I, :ge; μ = 30, p = 0.02)
+EI = SNN.SpikingSynapse(E, I, :ge; μ = 30, p = 0.02, STPParam = SNN.MarkramSTPParameter())
 IE = SNN.SpikingSynapse(I, E, :hi; μ = 50, p = 0.02, LTPParam = SNN.iSTDPRate(r=5Hz))
 II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
 model = SNN.compose(;  E, I, EE, EI, IE, II)
 
 
-SNN.monitor!(E, [:ge, :gi, :v], sr=200Hz)
-SNN.monitor!(model.pop, :fire)
-SNN.train!(model = model; duration = 5second, pbar=true)
+# SNN.monitor!(E, [:ge, :gi, :v], sr=200Hz)
+# SNN.monitor!(model.pop, :fire)
+# SNN.train!(model = model; duration = 5second, pbar=true)
 
 ##
-SNN.monitor!(EE, [:x, :u], :STPVars; sr=10Hz)
+SNN.monitor!(EE, [:x, :u, :_ρ], :STPVars; sr=10Hz)
 SNN.monitor!(IE, [:tpost]; sr=10Hz, variables=:LTPVars)
 SNN.monitor!(EE, [:ρ], sr=10Hz)
 SNN.monitor!(EI, [:W], sr=10Hz)
+
 SNN.train!(model = model; duration = 5second)
 
 interval = 1s:5s
