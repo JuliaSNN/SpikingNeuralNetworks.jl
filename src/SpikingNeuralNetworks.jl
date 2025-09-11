@@ -10,14 +10,8 @@ export SNNModels, SNNPlots, SNNUtils
 SNN = SpikingNeuralNetworks
 export SNN
 
-"""
-porcodio
-"""
-f
+DOCS_ASSETS_PATH = joinpath(dirname(dirname(pathof(SpikingNeuralNetworks))), "docs", "src", "assets") 
+export DOCS_ASSETS_PATH
 
-function f()
-    @info "SpikingNeuralNetworks.jl is loaded. Use SNNModels, SNNPlots, and SNNUtils for your spiking neural network needs."
-    return nothing
-end
 
 end
