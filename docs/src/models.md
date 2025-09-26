@@ -12,7 +12,8 @@ Pages = ["models.md"]
 
 ## Populations
 
-### Types
+
+### Neuron Models
 ```@autodocs
 Modules = [SpikingNeuralNetworks, SNN.SNNModels]
 Order   = [:type]
