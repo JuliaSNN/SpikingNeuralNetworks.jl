@@ -24,18 +24,13 @@ active_neuron = SNN.DendNeuronParameter(
 E_active = SNN.BallAndStick(N=200; name="Active", param =  active_neuron)
 E_passive = SNN.BallAndStick(N=200; name="Passive", param = passive_neuron)
 
-input_param = SNN.PoissonLayerParameter(
-    N = 100,
-    rate = 20Hz,
-    p = 0.5,
-    μ = 2nS
-)
+input_param = SNN.PoissonLayer( N = 100, rate = 20Hz,)
+projection = (p = 0.5,μ = 2nS)
+I_active = SNN.Stimulus(input_param, E_active, :glu, :d, conn=projection)
+I_passive =SNN.Stimulus(input_param, E_passive, :glu, :d, conn=projection)
 
-I_active = SNN.PoissonLayer( E_active, :glu, :d, param=input_param)
-I_passive = SNN.PoissonLayer( E_passive, :glu, :d, param=input_param)
-
-EE_passive = SNN.SpikingSynapse(E_passive, E_passive, :glu, :d; μ = 2, p = 0.01)
-EE_active = SNN.SpikingSynapse(E_active, E_active, :glu, :d; μ = 2, p = 0.01)
+EE_passive = SNN.SpikingSynapse(E_passive, E_passive, :glu, :d; conn= (μ = 2, p = 0.01))
+EE_active = SNN.SpikingSynapse(E_active, E_active, :glu, :d; conn= (μ = 2, p = 0.01))
 
 model = SNN.compose(; E_active, E_passive, I_active, I_passive, EE_active, EE_passive)
 SNN.monitor!(model.pop, [:fire])

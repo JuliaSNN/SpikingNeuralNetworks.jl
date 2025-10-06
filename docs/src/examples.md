@@ -202,12 +202,12 @@ function sinusoidal_current(variables::Dict, t::Float32, i::Int)
 end
 
 variables = Dict(
-    :amplitude => 50pA,
-    :frequency => 1Hz,
-    :shift_phase => π*3/4, # Phase shift for each neuron
+    :amplitude => [50pA],
+    :frequency => [1Hz],
+    :shift_phase => [π*3/4], # Phase shift for each neuron
 )
 
-current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current )
+current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current)
 current = CurrentStimulus(E, :I, param=current_param)
 model = compose(; E = E, I=current)
 SNN.sim!(; model, duration = 2000ms)
