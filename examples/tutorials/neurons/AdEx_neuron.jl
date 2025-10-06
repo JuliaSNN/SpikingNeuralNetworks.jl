@@ -1,6 +1,6 @@
-using SNNPlots
-import SNNPlots: vecplot, plot
 using SpikingNeuralNetworks
+using SNNPlots
+import SNNPlots: vecplot, plot, Plots
 using DataFrames
 SNN.@load_units
 
@@ -30,7 +30,7 @@ df = DataFrame(
 println(df)
 
 plots = map(eachrow(df)) do row
-    param = AdExParameter(
+    param = SNN.AdExParameter(
         R = 0.5GΩ,
         Vt = -50mV,
         ΔT = 2mV,
@@ -47,7 +47,7 @@ plots = map(eachrow(df)) do row
 
     E = SNN.AdEx(; N = 1, param)
     SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
-    model = compose(; E = E, silent = true)
+    model = SNN.compose(; E = E, silent = true)
 
     E.I .= Float32(05pA)
     SNN.sim!(; model, duration = 30ms)
@@ -55,7 +55,7 @@ plots = map(eachrow(df)) do row
     # E.I .= row.i, # Current step
     SNN.sim!(; model, duration = 300ms)
 
-    default(color = :black)
+    Plots.default(color = :black)
     p1 = plot(
         vecplot(
             E,

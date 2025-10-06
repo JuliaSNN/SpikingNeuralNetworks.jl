@@ -10,12 +10,12 @@ using Statistics, Random, Plots
 ## AdEx neuron with fixed external current connections with multiple receptors
 E = SNN.AdEx(; N = 500, param = SNN.AdExParameter(; El = -50mV))
 I = SNN.IF(; N = 100, param = SNN.IFParameter())
-EE = SNN.SpikingSynapse(E, E, :he; μ = 5, σ=0.2, p = 0.02, 
+EE = SNN.SpikingSynapse(E, E, :he; conn=(μ = 5, σ=0.2, p = 0.02), 
                         LTPParam=SNN.vSTDPParameter())
 Norm = SNN.SynapseNormalization(E, [EE], param=SNN.AdditiveNorm(τ=50ms))
-EI = SNN.SpikingSynapse(E, I, :ge; μ = 30, p = 0.02)
-IE = SNN.SpikingSynapse(I, E, :hi; μ = 50, p = 0.02)
-II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
+EI = SNN.SpikingSynapse(E, I, :ge; conn=(μ = 30, p = 0.02))
+IE = SNN.SpikingSynapse(I, E, :hi; conn=(μ = 50, p = 0.02))
+II = SNN.SpikingSynapse(I, I, :gi; conn=(μ = 10, p = 0.02))
 model = SNN.compose(; E, I,EE, EI, IE, II, Norm)
 
 W0 = copy(EE.W)

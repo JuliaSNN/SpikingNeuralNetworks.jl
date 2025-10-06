@@ -13,10 +13,10 @@ I_stimI = SNN.CurrentStimulus(I, param = I_param_I)
 
 
 synapses = (
-    E_to_E = SNN.SpikingSynapse(E, E, :he, p = 0.2, μ = 0.001, name = "E_to_E"),
-    E_to_I = SNN.SpikingSynapse(E, I, :he, p = 0.2, μ = 0.1, name = "E_to_I"),
-    I_to_E = SNN.SpikingSynapse(I, E, :hi, p = 0.2, μ = 0.1, name = "I_to_E"),
-    I_to_I = SNN.SpikingSynapse(I, I, :hi, p = 0.2, μ = 0.1, name = "I_to_I"),
+    E_to_E = SNN.SpikingSynapse(E, E, :he, conn=(p = 0.2, μ = 0.001), name = "E_to_E"),
+    E_to_I = SNN.SpikingSynapse(E, I, :he, conn=(p = 0.2, μ = 0.1, ),name = "E_to_I"),
+    I_to_E = SNN.SpikingSynapse(I, E, :hi, conn=(p = 0.2, μ = 0.1, ),name = "I_to_E"),
+    I_to_I = SNN.SpikingSynapse(I, I, :hi, conn=(p = 0.2, μ = 0.1, ),name = "I_to_I"),
 )
 
 model = SNN.compose(; E, I_stimE, I_stimI, I, synapses, silent = true)

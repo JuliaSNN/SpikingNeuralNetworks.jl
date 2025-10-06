@@ -22,23 +22,27 @@ E = SNN.IF(; N = 1, param = if_parameter)
 # Create an excitatory and inhibitory spike trains
 
 # Define the Poisson stimulus parameters 
-poisson_exc = SNN.PoissonLayerParameter(
-    1.2Hz,    # Mean firing rate (Hz) 
-    p = 1.0f0,  # Probability of connecting to a neuron
-    μ = 1.0,  # Synaptic strength (nS)
+poisson_exc = SNN.PoissonLayer(
+    rate=1Hz,    # Mean firing rate (Hz) 
     N = 1000, # Neurons in the Poisson Layer
 )
 
-poisson_inh = SNN.PoissonLayerParameter(
-    3Hz,       # Mean firing rate (Hz)
-    p = 1.0f0,   # Probability of connecting to a neuron
-    μ = 4.0,   # Synaptic strength (nS)
+proj_exc = (
+    p = 1,
+    μ = 2nS
+)
+poisson_inh = SNN.PoissonLayer(
+    rate = 6Hz,       # Mean firing rate (Hz)
     N = 1000,  # Neurons in the Poisson Layer
 )
 
+proj_inh = (p = 1.0f0,   # Probability of connecting to a neuron
+            μ = 4.0,   # Synaptic strength (nS)
+)
+
 # Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = SNN.PoissonLayer(E, :ge, param = poisson_exc, name = "noiseE")
-stim_inh = SNN.PoissonLayer(E, :gi, param = poisson_inh, name = "noiseI")
+stim_exc = SNN.Stimulus(poisson_exc, E, :ge, name = "noiseE", conn=proj_exc)
+stim_inh = SNN.Stimulus(poisson_inh, E, :gi, name = "noiseI", conn=proj_inh)
 
 # Create the model and run the simulation
 model = SNN.compose(; E = E, stim_exc, stim_inh)
@@ -75,7 +79,7 @@ p = plot(
     xlabel = "Time (s)",
     leftmargin = 10Plots.mm,
 )
-#
+##
 
 
 savefig(

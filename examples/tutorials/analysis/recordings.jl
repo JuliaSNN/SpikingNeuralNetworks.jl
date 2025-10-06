@@ -6,22 +6,24 @@ import SpikingNeuralNetworks.SNNPlots: default, plot, histogram, Plots, plot!, s
 ## AdEx neuron with fixed external current connections with multiple receptors
 E = SNN.AdEx(; N = 800, param = SNN.AdExParameter(; El = -50mV))
 I = SNN.IF(; N = 200, param = SNN.IFParameter())
-EE = SNN.SpikingSynapse(E, E, :he; μ = 2, p = 0.02, STPParam = SNN.MarkramSTPParameter())
-EI = SNN.SpikingSynapse(E, I, :ge; μ = 30, p = 0.02)
-IE = SNN.SpikingSynapse(I, E, :hi; μ = 50, p = 0.02, LTPParam = SNN.iSTDPRate(r=5Hz))
-II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
+EE = SNN.SpikingSynapse(E, E, :he; conn=(μ = 2, p = 0.02), STPParam = SNN.MarkramSTPParameter())
+EI = SNN.SpikingSynapse(E, I, :ge; conn=(μ = 30, p = 0.02), STPParam = SNN.MarkramSTPParameter())
+IE = SNN.SpikingSynapse(I, E, :hi; conn=(μ = 50, p = 0.02), LTPParam = SNN.iSTDPRate(r=5Hz))
+II = SNN.SpikingSynapse(I, I, :gi; conn=(μ = 10, p = 0.02))
 model = SNN.compose(;  E, I, EE, EI, IE, II)
 
 
-SNN.monitor!(E, [:ge, :gi, :v], sr=200Hz)
-SNN.monitor!(model.pop, :fire)
-SNN.train!(model = model; duration = 5second, pbar=true)
+# SNN.monitor!(E, [:ge, :gi, :v], sr=200Hz)
+# SNN.monitor!(model.pop, :fire)
+# SNN.train!(model = model; duration = 5second, pbar=true)
 
 ##
-SNN.monitor!(EE, [:x, :u], :STPVars; sr=10Hz)
+SNN.monitor!(EE, [:x, :u, :_ρ], :STPVars; sr=10Hz)
 SNN.monitor!(IE, [:tpost]; sr=10Hz, variables=:LTPVars)
 SNN.monitor!(EE, [:ρ], sr=10Hz)
 SNN.monitor!(EI, [:W], sr=10Hz)
+SNN.monitor!(model.pop, [:fire])
+SNN.monitor!(model.pop, [:v], sr=200Hz)
 SNN.train!(model = model; duration = 5second)
 
 interval = 1s:5s
@@ -100,17 +102,17 @@ v[:, 3.54321s] # it will return the value at 3.54321s
 # 1. Get the sparse vector ρ at time point t, this returns only the non-zero elements of the matrix.
 # 
 ρ, r = SNN.record(EE, :ρ, range=true) 
-histogram(ρ[:,6.5s])
+histogram(ρ[:,4.5s])
 
 # 2. Reconstruct the matrix from the sparse vector ρ at time point t. This operation reverses the sparse representation and returns the full matrix. The user can pass either the vector obtained from SNN.record or the synapse object and the symbol of the variable. 
-ρ_mat1 = SNN.matrix(EE, ρ, 6.5s)
-ρ_mat2 = SNN.matrix(EE, :ρ, 6.5s)
+ρ_mat1 = SNN.matrix(EE, ρ, 4.5s)
+ρ_mat2 = SNN.matrix(EE, :ρ, 4.5s)
 all(ρ_mat1 .== ρ_mat2) # true
 
 #3. Get the matrix at multiple time points. This returns a 3D array of size (N_E, N_E, T) where T is the number of time points in the range.
 
-ρ_T1 = SNN.matrix(EE, :ρ, 6.5s:10ms:7s)
-ρ_T2 = SNN.matrix(EE, ρ, 6.5s:10ms:7s)
+ρ_T1 = SNN.matrix(EE, :ρ, 2.5s:10ms:4.5s)
+ρ_T2 = SNN.matrix(EE, ρ, 2.5s:10ms:4s)
 
 
 ## Synaptic connectivity is stored in a sparse format of a matrix with dimensions (N_post, N_pre). The user can also access the synaptic weights of the connections.
@@ -148,8 +150,8 @@ mean(SNN.record(IE, :LTPVars_tpost), dims=1)[1,:] |> plot!
 
 x,r = SNN.record(EE, :STPVars_x, range=true)
 @info "x is: type $(nameof(typeof(x))), size $(size(x)), r size: $(size(r))"
-x[1, 6.14s]
-x[1:10, 6.4s:15ms:9.1s]
+x[1, 4.14s]
+x[1:10, 3.4s:15ms:4.1s]
 
 x, r = SNN.record(EE, :STPVars_x, range=true)
 @info "x is: type $(nameof(typeof(x))), size $(size(x)), r size: $(size(r))"

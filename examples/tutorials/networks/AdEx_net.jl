@@ -2,20 +2,19 @@ using SpikingNeuralNetworks
 SNN.@load_units
 
 ## AdEx neuron with fixed external current connections with multiple receptors
-E = SNN.AdEx(; N = 800, param = SNN.AdExParameter(; El = -50mV))
-
-I = SNN.IF(; N = 200, param = SNN.IFParameter())
-EE = SNN.SpikingSynapse(E, E, :he; μ = 2, p = 0.02)
-EI = SNN.SpikingSynapse(E, I, :ge; μ = 30, p = 0.02)
-IE = SNN.SpikingSynapse(I, E, :hi; μ = 50, p = 0.02)
-II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
+E = SNN.Population(SNN.AdExParameter(; El = -50mV), SNN.DoubleExpSynapse(); N = 800, name="Excitatory")
+I = SNN.Population(SNN.IFParameter(),SNN.SingleExpSynapse(); N = 200, name="Inhibitory" )
+EE = SNN.SpikingSynapse(E, E, :he; conn=(μ = 2, p = 0.02))
+EI = SNN.SpikingSynapse(E, I, :ge; conn=(μ = 30, p = 0.02))
+IE = SNN.SpikingSynapse(I, E, :hi; conn=(μ = 50, p = 0.02))
+II = SNN.SpikingSynapse(I, I, :gi; conn=(μ = 10, p = 0.02))
 model = SNN.compose(;  E, I, EE, EI, IE, II)
 
 SNN.monitor!(E, [:ge, :gi, :v])
 SNN.monitor!(model.pop, [:fire])
 SNN.sim!(model = model; duration = 4second)
 
-default(palette = :okabe_ito)
+# default(palette = :okabe_ito)
 
 ## Plot
 import SpikingNeuralNetworks.SNNPlots: default, plot, histogram, Plots, plot!, savefig

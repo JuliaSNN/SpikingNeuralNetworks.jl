@@ -14,10 +14,10 @@ I = SNN.IZ(;
     name = "I",
 )
 
-EE = SNN.SpikingSynapse(E, E, :v; μ = 0.05, p = 0.8)
-EI = SNN.SpikingSynapse(E, I, :v; μ = 0.5, p = 0.8)
-IE = SNN.SpikingSynapse(I, E, :v; μ = -1.0, p = 0.8)
-II = SNN.SpikingSynapse(I, I, :v; μ = -1.0, p = 0.8)
+EE = SNN.SpikingSynapse(E, E, :v; conn=(μ = 0.05, p = 0.8))
+EI = SNN.SpikingSynapse(E, I, :v; conn=(μ = 0.5, p = 0.8))
+IE = SNN.SpikingSynapse(I, E, :v; conn=(μ = -1.0, p = 0.8))
+II = SNN.SpikingSynapse(I, I, :v; conn=(μ = -1.0, p = 0.8))
 P = (; E, I)
 C = (; EE, EI, IE, II)
 model = SNN.compose(; P..., C..., name = "IZ_network")
