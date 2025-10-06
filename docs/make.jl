@@ -1,4 +1,4 @@
-using Documenter, SpikingNeuralNetworks, SNNModels, SNNPlots, SNNUtils
+using Documenter, SpikingNeuralNetworks, .SNNModels, .SNNPlots, .SNNUtils
 
 makedocs(
     sitename = "Julia SpikingNeuralNetworks",
