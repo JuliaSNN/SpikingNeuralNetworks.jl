@@ -1,0 +1,5 @@
+.vscode
+Manifest.toml
+docs/build
+docs/.DS_Store
+.DS_Store
