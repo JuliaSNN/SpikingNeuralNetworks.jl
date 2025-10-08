@@ -11,7 +11,7 @@ p_in = 0.05
 μ_in = 7
 
 ge_in = μ_in * ν * (N * p_in) * 3 * AdExParameter().τde
-R = SNN.C / SNN.gL
+R = SNN.C / SNN.gl
 
 
 ## LKD parameters
