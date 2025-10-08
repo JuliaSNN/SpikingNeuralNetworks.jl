@@ -111,7 +111,7 @@ function learning_plot(plot_path::String, model, config)
         )
     end
     fig = plot!(
-        xlabel = "Synapse",
+        xlabel = "Receptors",
         ylabel = "Weight",
         title = "Synaptic weights",
         xrotation = 45,

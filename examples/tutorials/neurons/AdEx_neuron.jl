@@ -41,7 +41,6 @@ plots = map(eachrow(df)) do row
         a = row.a * nS,
         b = row.b * pA,
         τw = row.τw * ms,
-        At = 0.0f0,
     )
 
 

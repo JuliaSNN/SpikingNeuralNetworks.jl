@@ -3,7 +3,7 @@ SNN.@load_units
 
 # Passive neuron parameters, no NMDA receptor
 passive_neuron = SNN.DendNeuronParameter(
-    dend_syn = SNN.SynapseArray(
+    dend_syn = SNN.ReceptorArray(
         [SNN.Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 2.73),
         SNN.ReceptorVoltage(),
         SNN.Receptor(),
@@ -15,7 +15,7 @@ passive_neuron = SNN.DendNeuronParameter(
 
 # Active neuron with NMDA receptor
 active_neuron = SNN.DendNeuronParameter(
-    dend_syn = SNN.SynapseArray(
+    dend_syn = SNN.ReceptorArray(
         [SNN.Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
         SNN.Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
         SNN.Receptor(),

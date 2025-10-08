@@ -4,7 +4,7 @@ SNN.@load_units
 ## AdEx neuron with fixed external current connections with multiple receptors
 
 passive_neuron = SNN.DendNeuronParameter(
-    dend_syn = SNN.SynapseArray(
+    dend_syn = SNN.ReceptorArray(
         [SNN.Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 2.73),
         SNN.ReceptorVoltage()]
 ),
@@ -13,7 +13,7 @@ passive_neuron = SNN.DendNeuronParameter(
 )
 
 active_neuron = SNN.DendNeuronParameter(
-    dend_syn = SNN.SynapseArray(
+    dend_syn = SNN.ReceptorArray(
         [SNN.Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
         SNN.Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0)]
     ),

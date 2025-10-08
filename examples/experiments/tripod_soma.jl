@@ -6,8 +6,8 @@ using Test
 N = 1
 E = TripodHet(
     N = N,
-    soma_syn = Synapse(DuarteGluSoma, MilesGabaSoma),
-    dend_syn = Synapse(EyalGluDend, MilesGabaDend),
+    soma_syn = Receptors(DuarteGluSoma, MilesGabaSoma),
+    dend_syn = Receptors(EyalGluDend, MilesGabaDend),
     NMDA = EyalNMDA,
     param = AdExSoma(El = -55mV),
 )
