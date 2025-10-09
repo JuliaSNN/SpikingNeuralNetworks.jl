@@ -2,16 +2,7 @@
 
 ## AdEx neuron 
 
-A single neuron under a fixed depolaring current can be modeled with an Adaptive Exponential model, with equations:
-
-```math
-\begin{aligned}
-\tau_m \frac{dV}{dt} &=&  (V^s-V_r) + \Delta_T \exp{\frac{V^s-V_t}{\Delta_T}} - R (w + I) \\
-\tau_w\frac{dw}{dt} &=& -w + a (V^s-V_r) + b \cdot \delta(t-t_{spike})
-\end{aligned}
-```
-
-This model is implemented in the `AdEx` neuron model. The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)).  
+The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)).  
 
 ```julia
 using SNNPlots
