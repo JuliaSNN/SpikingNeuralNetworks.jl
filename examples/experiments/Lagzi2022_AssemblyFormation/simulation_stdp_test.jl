@@ -22,7 +22,7 @@ syn_nmda = begin
         Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.6),
         ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 100.0, g0 = 0.3, nmda = 1.0f0),
     )
-    Synapse(My_SomaGlu, SomaGABA)
+    Receptors(My_SomaGlu, SomaGABA)
 end
 
 syn_ampa = begin
@@ -30,7 +30,7 @@ syn_ampa = begin
         Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.6),
         ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 1.0, g0 = 0.0, nmda = 0.0f0),
     )
-    Synapse(My_SomaGlu, SomaGABA)
+    Receptors(My_SomaGlu, SomaGABA)
 end
 ##
 

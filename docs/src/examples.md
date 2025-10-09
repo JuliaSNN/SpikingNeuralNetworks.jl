@@ -2,16 +2,7 @@
 
 ## AdEx neuron 
 
-A single neuron under a fixed depolaring current can be modeled with an Adaptive Exponential model, with equations:
-
-```math
-\begin{aligned}
-\tau_m \frac{dV}{dt} &=&  (V^s-V_r) + \Delta_T \exp{\frac{V^s-V_t}{\Delta_T}} - R (w + I) \\
-\tau_w\frac{dw}{dt} &=& -w + a (V^s-V_r) + b \cdot \delta(t-t_{spike})
-\end{aligned}
-```
-
-This model is implemented in the `AdEx` neuron model. The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)).  
+The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)).  
 
 ```julia
 using SNNPlots
@@ -317,14 +308,14 @@ using SpikingNeuralNetworks
 using Plots
 using Random
 SNN.@load_units
-import SpikingNeuralNetworks: Synapse, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray, get_time
+import SpikingNeuralNetworks: Receptors, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray, get_time
 
 using BenchmarkTools
 
 Random.seed!(1234)
 ## Define the neuron model parameters
 # Define the synaptic properties for the soma and dendrites
-SomaSynapse = Synapse(
+SomaSynapse = Receptors(
     AMPA = Receptor(E_rev = 0.0, 
                     τr = 0.26, 
                     τd = 2.0, 
@@ -337,7 +328,7 @@ SomaSynapse = Synapse(
     # they are assigned to a NullReceptor and skipped at simulation time
 )
 
-DendSynapse = Synapse(
+DendSynapse = Receptors(
     AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
     NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
     GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
@@ -357,7 +348,7 @@ dend_neuron = DendNeuronParameter(
     C = 281pF,
     gl = 40nS,
     Vr = -55.6,
-    Er = -70.6,
+    El = -70.6,
     ΔT = 2,
     Vt = -50.4,
     a = 4,

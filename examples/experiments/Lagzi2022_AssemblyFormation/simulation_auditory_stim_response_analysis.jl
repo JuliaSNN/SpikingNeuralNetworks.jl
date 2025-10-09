@@ -18,10 +18,10 @@ include("protocol.jl")
 include("plots.jl")
 include("experiments_config.jl")
 
-root = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh")
+root = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh")
 @assert isdir(root)
 
-# ResponsePath = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh", "SoundResponseExp5_LowInput")
+# ResponsePath = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh", "SoundResponseExp5_LowInput")
 # @assert isdir(ResponsePath)
 
 SYNAPSE = :nmda
@@ -82,23 +82,23 @@ savefig(p, plotsdir("SoundResponsePlots_$SYNAPSE.pdf"))
 
 
 # ##
-# data = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh", experiments[3]) |> x->test_experiment(x).plot
+# data = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh", experiments[3]) |> x->test_experiment(x).plot
 
-# data = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh", experiments[5]) |> x->test_experiment(x).models
+# data = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh", experiments[5]) |> x->test_experiment(x).models
 
 # info = (τ= 100ms, rate=0.5, signal=:off, NSST=50)
-# ExpPath = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh")
+# ExpPath = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh")
 # load_data(ExpPath,  )
 # raster(data[1].model.pop, 100s:105s)
 # data[1].exp_config
 # plot()
 
-# data = load_model("/pasteur/appa/homes/aquaresi/spiking/network_models/data/zeus/Lagzi2022_AssemblyFormation/mixed_inh/HighNoise/Model_sst-NSST=10-rate=0.5-τ=100.0.model.jld2")
+# data = load_model("/pasteur/appa/homes/aquaresi/spiking/network_models/data/helix/Lagzi2022_AssemblyFormation/mixed_inh/HighNoise/Model_sst-NSST=10-rate=0.5-τ=100.0.model.jld2")
 
 # data.config |> dump|> print
 # # write config to file:
 # for path in ["HighNoise", "Noise_0.8", "DoubleSizeNetwork"]
-#         path = datadir("zeus","Lagzi2022_AssemblyFormation", "mixed_inh", path)
+#         path = datadir("helix","Lagzi2022_AssemblyFormation", "mixed_inh", path)
 #         data = load_model(path)
 #         open(path, "w") do io
 #                 println(io, "config = ", data.config)

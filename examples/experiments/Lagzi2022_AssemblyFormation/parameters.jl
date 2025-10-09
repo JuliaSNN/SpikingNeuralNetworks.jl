@@ -31,7 +31,7 @@ adex_model = (
             Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.6),
             ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 100.0, g0 = 0.3, nmda = 1.0f0),
         )
-        syn = Synapse(My_SomaGlu, SomaGABA)
+        syn = Receptors(My_SomaGlu, SomaGABA)
         AdExSynapseParam(syn; a = 0, b = 0, Vr = -55)
     end,
     ampa = begin
@@ -39,7 +39,7 @@ adex_model = (
             Receptor(E_rev = 0.0, τr = 1ms, τd = 6.0ms, g0 = 0.6),
             ReceptorVoltage(E_rev = 0.0, τr = 1ms, τd = 1.0, g0 = 0.0, nmda = 0.0f0),
         )
-        syn = Synapse(My_SomaGlu, SomaGABA)
+        syn = Receptors(My_SomaGlu, SomaGABA)
         AdExSynapseParam(syn; a = 0, b = 0, Vr = -55)
     end,
 )

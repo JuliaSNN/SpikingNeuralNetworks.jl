@@ -41,7 +41,6 @@ plots = map(eachrow(df)) do row
         a = row.a * nS,
         b = row.b * pA,
         τw = row.τw * ms,
-        At = 0.0f0,
     )
 
 
@@ -83,5 +82,5 @@ p = plot(
 
 savefig(
     p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/AdEx.png",
+    "/home/user/mnt/helix/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/AdEx.png",
 )

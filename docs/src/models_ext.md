@@ -32,7 +32,7 @@ SNN.@load_units
     @snn_kw struct NeuronParameter <: AbstractPopulationParameter
         # adex parameters
         R::Float32 = 1f0GΩ
-        Er::Float32 = -70.6f0
+        El::Float32 = -70.6f0
         Vt::Float32 = -50.4f0
         up::Float32 = 0.1f0 * ms
         τabs::Float32 = 0.1f0 * ms
@@ -90,10 +90,10 @@ SNN.@load_units
         @unpack N, v, ge, gi, fire, I = p
         @inbounds @fastmath for i in 1:N
             if fire[i]
-                v[i] = param.Er
+                v[i] = param.El
                 fire[i] = false
             else
-                v[i] += dt*(param.Er - v[i] +
+                v[i] += dt*(param.El - v[i] +
                         (ge[i] - gi[i]) * param.R +
                         I[i] * param.R )
             end

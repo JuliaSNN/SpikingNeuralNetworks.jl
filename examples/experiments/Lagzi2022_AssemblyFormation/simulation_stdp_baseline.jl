@@ -12,7 +12,7 @@ include("parameters.jl")
 
 exp_name = length(ARGS) > 0 ? ARG[1] : "baseline"
 path =
-    datadir("zeus", "Lagzi2022_AssemblyFormation/mixed_inh", experiments[exp_name].name) |>
+    datadir("helix", "Lagzi2022_AssemblyFormation/mixed_inh", experiments[exp_name].name) |>
     mkpath
 
 for syn in [:nmda, :ampa]

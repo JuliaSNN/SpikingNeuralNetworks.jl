@@ -84,7 +84,7 @@ p = plot(
 
 savefig(
     p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/poisson_input.png",
+    "/home/user/mnt/helix/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/poisson_input.png",
 )
 
 p

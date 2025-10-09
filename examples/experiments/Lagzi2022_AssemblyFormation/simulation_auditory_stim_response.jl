@@ -10,7 +10,7 @@ using Statistics
 # Instantiate a  Symmetric STDP model with these parameters:
 
 
-root = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh")
+root = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh")
 @assert isdir(root)
 include("experiments_config.jl")
 include("parameters.jl")

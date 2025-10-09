@@ -33,7 +33,7 @@ response_experiments_names = keys(response_experiments)
 
 running_exps = [:hetEE, :sameEE, :low_noise, :low_input, :low_input2, :stp, :highEE]
 
-@unpack rates, interval = load(datadir("zeus", "ExpData", "ACrates.jld2")) |> dict2ntuple
+@unpack rates, interval = load(datadir("helix", "ExpData", "ACrates.jld2")) |> dict2ntuple
 sound = mean(rates)
 
 function update_model_parameters!(model; exp_config, config)

@@ -21,7 +21,7 @@ include("plots.jl")
 # %%
 WW = zeros(2, 4, length(NSSTs), length(synapses))
 frs = Matrix{Any}(undef, length(NSSTs), length(synapses))
-path = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh", "baseline")
+path = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh", "baseline")
 models = Matrix{Any}(undef, length(NSSTs), length(synapses))
 Threads.@threads for n in eachindex(NSSTs)
     for s in eachindex(synapses)
@@ -114,7 +114,7 @@ plot(p1, p2, layout = (2, 1), size = (800, 700), margin = 5Plots.mm, legend = :o
 # nsst = 30
 # syn = :nmda
 NSSTs = 10:10:90
-path = datadir("zeus", "Lagzi2022_AssemblyFormation", "mixed_inh", "baseline")
+path = datadir("helix", "Lagzi2022_AssemblyFormation", "mixed_inh", "baseline")
 for s in eachindex(synapses)
     for n in eachindex(NSSTs)
         global path, config

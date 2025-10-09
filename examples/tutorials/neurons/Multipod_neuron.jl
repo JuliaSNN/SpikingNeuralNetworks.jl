@@ -3,13 +3,13 @@ using Plots
 using Random
 using DrWatson
 SNN.@load_units
-import SpikingNeuralNetworks: Synapse, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray
+import SpikingNeuralNetworks: Receptors, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray
 import SpikingNeuralNetworks: get_time
 
 ## Define the neuron model parameters
 Random.seed!(1234)
 # Define the synaptic properties for the soma and dendrites
-SomaSynapse = Synapse(
+SomaSynapse = Receptors(
     AMPA = Receptor(E_rev = 0.0, 
                     τr = 0.26, 
                     τd = 2.0, 
@@ -22,7 +22,7 @@ SomaSynapse = Synapse(
     # they are assigned to a NullReceptor and skipped at simulation time
 )
 
-DendSynapse = Synapse(
+DendSynapse = Receptors(
     AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
     NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
     GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
@@ -42,7 +42,7 @@ dend_neuron = DendNeuronParameter(
     C = 281pF,
     gl = 40nS,
     Vr = -55.6,
-    Er = -70.6,
+    El = -70.6,
     ΔT = 2,
     Vt = -50.4,
     a = 4,
@@ -117,7 +117,7 @@ plot!()
 ##
 savefig(
     p,
-    "/home/user/mnt/zeus/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/tripod_neuron.png",
+    "/home/user/mnt/helix/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/tripod_neuron.png",
 )
  
 ##

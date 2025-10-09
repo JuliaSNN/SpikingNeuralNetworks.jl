@@ -10,7 +10,7 @@ using StatsBase
 using SparseArrays
 using Distributions
 @unpack rates, interval =
-    DrWatson.load(datadir("zeus", "ExpData", "ACrates.jld2")) |> dict2ntuple
+    DrWatson.load(datadir("helix", "ExpData", "ACrates.jld2")) |> dict2ntuple
 sound = rates[1]
 
 ##
