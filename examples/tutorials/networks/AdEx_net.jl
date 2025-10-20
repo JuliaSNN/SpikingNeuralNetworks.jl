@@ -1,9 +1,6 @@
-using SpikingNeuralNetworks
-SNN.@load_units
-
 ## AdEx neuron with fixed external current connections with multiple receptors
-E = SNN.Population(SNN.AdExParameter(; El = -50mV), SNN.DoubleExpSynapse(); N = 800, name="Excitatory")
-I = SNN.Population(SNN.IFParameter(),SNN.SingleExpSynapse(); N = 200, name="Inhibitory" )
+E = SNN.Population(SNN.AdExParameter(; El = -50mV), synapse=SNN.DoubleExpSynapse(); N = 800, name="Excitatory")
+I = SNN.Population(SNN.IFParameter(), synapse = SNN.SingleExpSynapse(); N = 200, name="Inhibitory", spike=PostSpike() )
 EE = SNN.SpikingSynapse(E, E, :he; conn=(μ = 2, p = 0.02))
 EI = SNN.SpikingSynapse(E, I, :ge; conn=(μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn=(μ = 50, p = 0.02))

@@ -1,28 +1,51 @@
 # Tutorial
 
-## AdEx neuron 
+In the following we will guide the user in running models with _SpikingNeuralNetworks.jl_. The tutorial aim most of the functionalities of the library, although much more can be obtained by composing together the basic building blocks.
 
-The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)).  
+The scripts for the tutorials can be found in the [examples](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/tree/main/examples) folder of the package.
+
+We assume the user has the environment manager [DrWatson](https://juliadynamics.github.io/DrWatson.jl/dev/) installed.  
+
+All scripts assume the following code being loaded. The script are plot with the `Plots` package in `SNNPlots`. Future versions will move to `Makie`. 
 
 ```julia
-using SNNPlots
-import SNNPlots: vecplot, plot
+using DrWatson
+findproject(@__DIR__) |> quickactivate
+projectdir() 
 using SpikingNeuralNetworks
-using DataFrames
+using SNNPlots
+import SNNPlots: vecplot, plot, Plots
 SNN.@load_units
+```
+
+
+## AdEx neuron 
+
+The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)). 
+The model has two equations and two variables, one for the membrane and one for the adaptive current:
+
+```math
+\begin{align}
+    \frac{dV}{dt} &= - \frac{(V - E_l)}{\tau_m} + \Delta T \exp{\frac{V - \theta}{\Delta T}} + R (-w + I - I_{syn}) \\ \\
+    \frac{dw}{dt} &= \frac{(a (V - E_l) - w)}{\tau_w}
+\end{align}
+```
+
+Changing the parameters of the reset voltage, the membrane timescale and current timescales, and the adaptive current parameters we obtain different firing patterns.
+
+
+```julia
+using DataFrames
 
 # Define the data
 data = [
     ("Tonic", 20, 0.0, 30.0, 60.0, -55.0, 65),
     ("Adapting", 20, 0.0, 100.0, 5.0, -55.0, 65),
-    ("Init. burst",  5.0, 0.5, 100.0, 7.0, -51.0, 65),
-    ("Bursting",  5.0, -0.5, 100.0, 7.0, -46.0, 65),
-    # ("Irregular", 14.4, -0.5, 100.0, 7.0, -46.0, 65),
+    ("Init. burst", 5.0, 0.5, 100.0, 7.0, -51.0, 65),
+    ("Bursting", 5.0, -0.5, 100.0, 7.0, -46.0, 65),
     ("Transient", 10, 1.0, 100, 10.0, -60.0, 65),
-    ("Delayed", 5.0, -1.0, 100.0, 10.0, -60., 25)
+    ("Delayed", 5.0, -1.0, 100.0, 10.0, -60.0, 25),
 ]
-
-
 
 # Create the DataFrame
 df = DataFrame(
@@ -32,9 +55,64 @@ df = DataFrame(
     τw = [row[4] for row in data],
     b = [row[5] for row in data],
     ur = [row[6] for row in data],
-    i = [row[7] for row in data]
+    i = [row[7] for row in data],
 )
 
+# Display the DataFrame
+println(df)
+
+plots = map(eachrow(df)) do row
+    param = SNN.AdExParameter(
+        R = 0.5GΩ,
+        Vt = -50mV,
+        ΔT = 2mV,
+        El = -70mV,
+        # τabs=0,
+        τm = row.τm * ms,
+        Vr = row.ur * mV,
+        a = row.a * nS,
+        b = row.b * pA,
+        τw = row.τw * ms,
+    )
+
+
+    E = SNN.AdEx(; N = 1, param)
+    SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
+    model = SNN.compose(; E = E, silent = true)
+
+    E.I .= Float32(05pA)
+    SNN.sim!(; model, duration = 30ms)
+    E.I .= Float32(row.i)
+    # E.I .= row.i, # Current step
+    SNN.sim!(; model, duration = 300ms)
+
+    Plots.default(color = :black)
+    p1 = plot(
+        vecplot(
+            E,
+            :v,
+            add_spikes = true,
+            ylabel = "Membrane potential (mV)",
+            ylims = (-80, 10),
+        ),
+        vecplot(E, :w, ylabel = "Adapt. current (nA)", c = :grey, margin = 10Plots.mm),
+        plot_title = row.Type,
+        layout = (1, 2),
+        legend = false,
+        size = (600, 800),
+        topmargin = 1Plots.mm,
+    )
+end
+
+p = plot(
+    plots...,
+    layout = (3, 2),
+    size = (1600, 1000),
+    xlabel = "Time (ms)",
+    leftmargin = 10Plots.mm,
+)
+
+savefig(p, ASSET_PATH * "/AdEx_neuron_types.png")
 # Display the DataFrame
 ```
 
@@ -44,64 +122,16 @@ df = DataFrame(
 | 2   | Adapting     | 20  | 0.0  | 100.0| 5.0  | -55.0| 65  |
 | 3   | Init. burst  | 5.0 | 0.5  | 100.0| 7.0  | -51.0| 65  |
 | 4   | Bursting     | 5.0 | -0.5 | 100.0| 7.0  | -46.0| 65  |
-| 5   | Irregular    | 14.4| -0.5 | 100.0| 7.0  | -46.0| 65  |
 | 6   | Transient    | 10  | 1.0  | 100  | 10.0 | -60.0| 65  |
 | 7   | Delayed      | 5.0 | -1.0 | 100.0| 10.0 | -60.0| 25  |
 
-
-```julia
-plots = map(eachrow(df)) do row
-    param = AdExParameter(
-        R = 0.5GΩ,
-        Vt = -50mV,
-        ΔT = 2mV,
-        El = -70mV,
-        # τabs=0,
-        τm = row.τm * ms,
-        Vr = row.ur * mV,
-        a = row.a * nS,
-        b= row.b * pA,
-        τw = row.τw * ms,
-        At = 0f0
-    )
-
-
-    E = SNN.AdEx(; N = 1, 
-        param,
-        )
-    SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
-    model = compose(; E = E, silent=true)
-
-    E.I .= Float32(05pA)
-    SNN.sim!(; model, duration = 30ms)
-    E.I .= Float32(row.i)
-    # E.I .= row.i, # Current step
-    SNN.sim!(; model, duration = 300ms)
-
-    default(color=:black)
-    p1 = plot(vecplot(E, :w, ylabel="Adapt. current (nA)"), 
-            vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10)), 
-            title = row.Type,
-            layout = (1,2), 
-            size = (600, 800), 
-            margin=10Plots.mm)
-end
-
-plot(plots...,  
-    layout = (7, 1), 
-    size = (800, 2000), 
-    xlabel="Time (ms)", 
-    legend=:outerright,
-    leftmargin=15Plots.mm,
-)
-```
 
 ![Firing patterns of AdEx neuron](assets/examples/AdEx.png)
 
 ## Noise input current
 
 In 'in vivo' experiments neurons are driven with noisy inputs that can be modeled by splitting the input current in two components
-``I = Iˆ{det}(t) + I^{noise}(t)``.
+``I = I^{det}(t) + I^{noise}(t)``.
 
 the neuronal dynamics is then determined (for a generalized Leaky and Integrate model) by the equation:
 
@@ -121,102 +151,51 @@ To introduce white noise in the model we can use the `CurrentNoiseParameter` typ
 
 ```julia
 
-import SNNPlots: vecplot, plot
-using SpikingNeuralNetworks
 using Distributions
-SNN.@load_units
 
-if_parameter = SNN.IFParameter(
-    R = 0.5GΩ,
-    Vt = -50mV,
-    ΔT = 2mV,
-    El = -70mV,
-    τm = 20ms,
-    Vr = -55mV,
-)
+SNN.PostSpike()
+if_neuron =(  
+    param = SNN.IFParameter(R = 0.5GΩ, Vt = -50mV, ΔT = 2mV, El = -70mV, τm = 20ms, Vr = -55mV),
+    spike = SNN.PostSpike(),
+    synapse = SNN.SingleExpSynapse(),
+    )
+
 
 # Create the IF neuron with tonic firing parameters
-E = SNN.IF(; N = 1, 
-    param=if_parameter,
-    )
+E = SNN.Population(;N = 1, if_neuron...)
 SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
 
 # Create a withe noise input current 
-current_param = CurrentNoiseParameter(E.N; I_base=30pA, I_dist=Normal(00pA, 100pA))
-current = CurrentStimulus(E, :I, param=current_param)
-model = compose(; E = E, I=current)
+current_param = SNN.CurrentNoise(E.N; I_base = 30pA, I_dist = Normal(00pA, 100pA))
+current_stim = SNN.Stimulus(current_param, E, :I)
+model = SNN.compose(; E = E, I = current_stim)
+SNN.clear_records!(model)
 SNN.sim!(; model, duration = 2000ms)
 
 p = plot(
-    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10), c=:black),
-    vecplot(E, :I, ylabel="External current (pA)", c=:gray, lw=0.4, alpha=0.4),
-    layout=(
-        2, 1
+    vecplot(
+        E,
+        :v,
+        add_spikes = true,
+        ylabel = "Membrane potential (mV)",
+        ylims = (-80, 10),
+        c = :black,
     ),
-    size=(600, 500),
-    xlabel= "Time (s)",
-    leftmargin=10Plots.mm,
+    vecplot(E, :I, ylabel = "External current (pA)", c = :gray, lw = 0.4, alpha = 0.6),
+    layout = (2, 1),
+    size = (600, 500),
+    xlabel = "Time (s)",
+    leftmargin = 10Plots.mm,
+)
+
+savefig(
+    p,
+    joinpath(ASSET_PATH, "noise_current.png"),
 )
 
 ```
 
 ![Noise input current](assets/examples/noise_current.png)
-
-The library also allows to define an arbitrary complex noise function with the `CurrentVariableParameter` type. In this case we must define a function, in this case `sinusoidal_current`, which is called runtime to determine the input current to each neuron in the population, the function must accept three arguments: 
-1. a dictionary with the `variables::Dict`;
-2. the time of the model `t::Float32`;
-3. the index of the neuron `i::Int32`.
-
-We thus define the set of variables that the function uses to determine the current and pass them along the function to `CurrentVariableParameter`. 
-
-In the following example we used a plain sinusoidal current that stimulate the two neurons in the population with a phase a frequency of 1Hz and a phase shift of `3/4 π`
-
-```julia 
-
-
-# Create a populations with 2 IF neurons
-E = SNN.IF(; N = 2, 
-    param=if_parameter,
-    )
-SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
-
-# Create a withe noise input current 
-
-function sinusoidal_current(variables::Dict, t::Float32, i::Int)
-    # Extract the parameters from the variables dictionary
-    amplitude = variables[:amplitude]
-    frequency = variables[:frequency]
-    phase = variables[:shift_phase]
-    
-    # Calculate the current value at time t for neuron i
-    return amplitude * sin(2 * π * frequency * t + i*phase)
-end
-
-variables = Dict(
-    :amplitude => [50pA],
-    :frequency => [1Hz],
-    :shift_phase => [π*3/4], # Phase shift for each neuron
-)
-
-current_param = SNN.CurrentVariableParameter(variables, sinusoidal_current)
-current = CurrentStimulus(E, :I, param=current_param)
-model = compose(; E = E, I=current)
-SNN.sim!(; model, duration = 2000ms)
-
-p = plot(
-    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10)),
-    vecplot(E, :I, ylabel="External current (pA)", c=:gray, lw=0.4, alpha=0.4),
-    layout=(
-        2, 1
-    ),
-    size=(600, 500),
-    xlabel= "Time (s)",
-    leftmargin=10Plots.mm,
-)
-
-```
-
-![Variable input current](assets/examples/variable_current.png)
 
 ## Balanced input spikes
 
