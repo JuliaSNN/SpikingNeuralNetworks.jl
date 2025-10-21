@@ -1,4 +1,4 @@
-# Models Extensions
+# Model Extensions
 
 Users can define new concrete types of the three abstract models (`AbstractPopulation`, `AbstractStimulus`, and `AbstractSynapse`) to extend the functionality of the SpikingNeural Networks package.
 

@@ -1,7 +1,6 @@
 using Distributions
 SNN.SNNPlots.default(palette = :okabe_ito)
 
-SNN.PostSpike()
 if_neuron =(  
     param = SNN.IFParameter(R = 0.5GΩ, Vt = -50mV, ΔT = 2mV, El = -70mV, τm = 20ms, Vr = -55mV),
     spike = SNN.PostSpike(),
@@ -29,9 +28,8 @@ p = plot(
         ylims = (-80, 10),
         c = :black,
     ),
-    vecplot(E, :I, ylabel = "External current (pA)", lw = 0.4, alpha = 0.6),
+    vecplot(E, :I, ylabel = "External current (pA)", lw = 0.4, alpha = 0.9),
     layout = (2, 1),
-    size = (600, 500),
     xlabel = "Time (s)",
     leftmargin = 10Plots.mm,
 )

@@ -1,6 +1,6 @@
 # Tutorial
 
-In the following we will guide the user in running models with _SpikingNeuralNetworks.jl_. The tutorial aim most of the functionalities of the library, although much more can be obtained by composing together the basic building blocks.
+In the following we will guide the user in running models with _SpikingNeuralNetworks.jl_. The tutorial aims to showcase the basic functionalities of the library, much more can be obtained by composing together the basic building blocks.
 
 The scripts for the tutorials can be found in the [examples](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/tree/main/examples) folder of the package.
 
@@ -21,7 +21,7 @@ SNN.@load_units
 
 ## AdEx neuron 
 
-The AdEx model can reproduce several different firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)). 
+The AdEx model can reproduce several firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)). 
 The model has two equations and two variables, one for the membrane and one for the adaptive current:
 
 ```math
@@ -30,6 +30,8 @@ The model has two equations and two variables, one for the membrane and one for 
     \frac{dw}{dt} &= \frac{(a (V - E_l) - w)}{\tau_w}
 \end{align}
 ```
+
+The `AdEx` is a concrete type of the `AbstractGeneralizedIFParameter` (GIF) class. Populations of this type are widely used in biophysical models. `JuliaSNN` offers extended support for this type, the methods are documented in [Generalized Integrate and Fire models](@ref)
 
 Changing the parameters of the reset voltage, the membrane timescale and current timescales, and the adaptive current parameters we obtain different firing patterns.
 
@@ -199,58 +201,50 @@ savefig(
 
 ## Balanced input spikes
 
-In biophysical networks, and in the brain, neurons' membrane potential is not driven by external currents but by the opening and closing of ionic channels following an afferent spike. Spikes cause the release of vescicles in the synaptic cleft that bind to the ionic channels on the post-synaptic neuron's membrane.  The opening of a ionic channel can lead to a depolarizing or hyperpolarizing current, dependently on its reversal potential. 
+In biophysical networks, and in the brain, neurons' membrane potential is not driven by external currents but by the opening and closing of ionic channels following a pre-synaptic spike. Spikes cause the release of neurotransmitter vescicles in the synaptic cleft that bind to the ionic channels on the post-synaptic neuron's membrane. This process is modeled with [synaptic models](https://neuronaldynamics.epfl.ch/online/Ch3.S1.html). `JuliaSNN` offers the classical synaptic models for populations in the GIF family. 
+
+The opening of ionic channel can lead to a depolarizing or hyperpolarizing current, dependently on its reversal potential. 
 
 In this example we use two spike trains, an excitatory and an inhibitory one, to stimulate a Leaky Integrate-and-Fire neuron above the spike-threshold. The large number of spikes received increases the synaptic conductance of the cell, to the point that it dominates over the leakage conductance term. In this condition, the neurons membrane dynamics is dominated by the external inputs, and the neuron is in the so-called "High-conductance state". 
 
 ```julia
-using SpikingNeuralNetworks
-using SNNPlots
-import SNNPlots: vecplot, plot, savefig, gplot
-SNN.@load_units
-
-if_parameter = SNN.IFParameter(
-    R = 0.5GΩ,
-    Vt = -50mV,
-    ΔT = 2mV,
-    El = -70mV,
-    τm = 20ms,
-    Vr = -55mV,
-    E_i = -75mV,
-    E_e = 0mV,
+neuron_parameter =(
+    param = SNN.AdExParameter(
+        R=0.5GΩ,
+        Vt = -50mV,
+        ΔT = 2mV,
+        El = -70mV,
+        τm = 20ms,
+        Vr = -55mV,),
+    synapse = SNN.DoubleExpSynapse(),
+    spike = SNN.PostSpike(τabs= 5ms)
 )
 
 # Create the IF neuron
-# E = SNN.AdEx(; N = 1, 
-#     # param=if_parameter,
-#     )
-E = SNN.IF(; N = 1, 
-    param=if_parameter,
-    )
+E = SNN.Population(;neuron_parameter..., N = 1)
 
 # Create an excitatory and inhibitory spike trains
 
 # Define the Poisson stimulus parameters 
-poisson_exc = SNN.PoissonLayerParameter(
-    1.2Hz,    # Mean firing rate (Hz) 
-    p = 1f0,  # Probability of connecting to a neuron
-    μ = 1.0,  # Synaptic strength (nS)
+poisson_exc = SNN.PoissonLayer(
+    rate=1Hz,    # Mean firing rate (Hz) 
     N = 1000, # Neurons in the Poisson Layer
 )
-
-poisson_inh = SNN.PoissonLayerParameter(
-    3Hz,       # Mean firing rate (Hz)
-    p = 1f0,   # Probability of connecting to a neuron
-    μ = 4.0,   # Synaptic strength (nS)
+poisson_inh = SNN.PoissonLayer(
+    rate = 10Hz,       # Mean firing rate (Hz)
     N = 1000,  # Neurons in the Poisson Layer
+)
+conn = (
+    p = 1,
+    μ = 5nS
 )
 
 # Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = PoissonLayer(E, :ge, param=poisson_exc, name="noiseE")
-stim_inh = PoissonLayer(E, :gi, param=poisson_inh, name="noiseI")
+stim_exc = SNN.Stimulus(poisson_exc, E, :ge, name = "Exc Noise"; conn)
+stim_inh = SNN.Stimulus(poisson_inh, E, :gi, name = "Inh Noise"; conn)
 
 # Create the model and run the simulation
-model = compose(; E = E, stim_exc, stim_inh)
+model = SNN.compose(; E = E, stim_exc, stim_inh)
 SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
 SNN.monitor!(model.stim, [:fire])
 SNN.sim!(; model, duration = 1000ms)
@@ -258,24 +252,37 @@ SNN.sim!(; model, duration = 1000ms)
 # Plot the results
 # gplot is a special function the plots the synaptic currents
 
-SNNPlots.default(palette=:okabe_ito)
+Plots.default(palette = :okabe_ito)
 p = plot(
-    raster(model.stim),
-    gplot(E, v_sym=:v, ge_sym=:ge, gi_sym=:gi, 
-        Ee_rev=0mV, Ei_rev=-75mV,
-        ylabel="Synapti current (μA)"),
-    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10), c=:black),
-    layout=(
-        3, 1
+    SNN.raster(model.stim),
+    SNN.gplot(
+        E,
+        v_sym = :v,
+        ge_sym = :ge,
+        gi_sym = :gi,
+        Ee_rev = 0mV,
+        Ei_rev = -75mV,
+        r = 0ms:2.5ms:1000ms,
+        ylabel = "Synaptic current (μA)",
     ),
-    fgcolorlegend=:transparent,
-    size=(800, 900),
-    xlabel= "Time (s)",
-    leftmargin=10SNNPlots.Plots.mm,
+    SNN.vecplot(
+        E,
+        :v,
+        add_spikes = true,
+        ylabel = "Membrane potential (mV)",
+        ylims = (-80, 10),
+        c = :black,
+    ),
+    layout = (3, 1),
+    fgcolorlegend = :transparent,
+    size = (800, 900),
+    xlabel = "Time (s)",
+    leftmargin = 10Plots.mm,
 )
+
 ```
 
-![Poisson input](assets/examples/poisson_input.png)
+![Poisson input](assets/examples/balanced_stimuli.png)
 
 ## Ball and Stick neuron
 

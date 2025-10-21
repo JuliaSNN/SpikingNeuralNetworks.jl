@@ -46,7 +46,7 @@ The population and synapse elements will be assigned to `my_model.pop.E` and `my
 For each subtype, JuliaSNN offers a library of pre-existing models. In the case above, an integrate-and-fire population (`IF<:AbstractPopulation`), a spiking synapse (`SpikingSynapse<:AbstractSynapse`). The collection of available models can be found under [Populations](@ref).
 
 
-Models can also be extended by importing the `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus` types. Guidelines on how to create new models are presented in [Models Extensions ](@ref) (WIP)
+Models can also be extended by importing the `AbstractPopulation`, `AbstractConnection`, or `AbstractStimulus` types. Guidelines on how to create new models are presented in [Model Extensions ](@ref) (WIP)
 
 
 ## Simulation

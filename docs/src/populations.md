@@ -9,6 +9,8 @@ CurrentModule = SpikingNeuralNetworks
 Pages = ["models.md"]
 ```
 
+This page documents the populations model available in `SpikingNeuralNetworks.jl`. Models can be extended or added following the guidelines in [Model Extensions](@ref)
+
 ## Generalized Integrate and Fire models
 
 This set of models are implementations of the abstract type:
@@ -25,7 +27,7 @@ The leaky integrate-and-fire is one of the simplest model for neuronal integrati
 \end{align}
 ```
 
-where the adaptations parameters are optional and set to zero by default.
+Where the adaptations parameters are optional and set to zero by default.
 
 
 ```@autodocs
