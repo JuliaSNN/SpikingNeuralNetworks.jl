@@ -11,7 +11,7 @@ neurons = [1, 2, 3]            # neuron indices
 param = SpikeTimeParameter(spiketimes, neurons)
 
 # Create a spike time stimulus
-stim = SpikeTimeStimulus(E, :ge, param=param, p=1, μ=1)
+stim = SpikeTimeStimulus(E, :ge, param = param, p = 1, μ = 1)
 
 # Create a model and simulate
 model = compose(; E = E, stim)
@@ -20,10 +20,17 @@ sim!(; model, duration = 1s)
 
 # Plot the results
 p = plot(
-    vecplot(E, :v, add_spikes=true, ylabel="Membrane potential (mV)", ylims=(-80, 10), c=:black),
-    vecplot(E, :ge, ylabel="Synaptic conductance (nS)", c=:gray, lw=0.4, alpha=0.4),
-    layout=(2, 1),
-    size=(600, 500),
-    xlabel= "Time (s)",
-    leftmargin=10Plots.mm,
+    vecplot(
+        E,
+        :v,
+        add_spikes = true,
+        ylabel = "Membrane potential (mV)",
+        ylims = (-80, 10),
+        c = :black,
+    ),
+    vecplot(E, :ge, ylabel = "Synaptic conductance (nS)", c = :gray, lw = 0.4, alpha = 0.4),
+    layout = (2, 1),
+    size = (600, 500),
+    xlabel = "Time (s)",
+    leftmargin = 10Plots.mm,
 )

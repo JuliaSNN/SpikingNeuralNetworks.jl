@@ -10,4 +10,4 @@ using UnPack
 using Random
 ASSET_PATH = joinpath(@__DIR__, "../..", "docs", "src", "assets", "examples")
 Plots.default(palette = :okabe_ito)
-Plots.default(size=(800,600))
+Plots.default(size = (800, 600))

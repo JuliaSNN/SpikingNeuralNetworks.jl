@@ -7,7 +7,7 @@ pages = [
     "Stimuli" => "stimuli.md",
     "Plasticity" => "plasticity.md",
     "API Reference" => "api_reference.md",
-    "Models Extension" => "models_ext.md"
+    "Models Extension" => "models_ext.md",
 ]
 makedocs(
     sitename = "SpikingNeuralNetworks.jl",
@@ -21,17 +21,16 @@ makedocs(
     #          # Other available options are
     #          # :autodocs_block, :cross_references, :docs_block, :eval_block, :example_block, :footnote, :meta_block, :missing_docs, :setup_block
     #      ],
-         
+
 
     modules = [SpikingNeuralNetworks, SNNModels],
-     warnonly = [:autodocs_block],
+    warnonly = [:autodocs_block],
     format = Documenter.HTML(
-        # analytics = "UA-90474609-3",
-        # assets = ["assets/favicon.ico"],
-        # canonical = "https://surrogates.sciml.ai/stable/"
+    # analytics = "UA-90474609-3",
+    # assets = ["assets/favicon.ico"],
+    # canonical = "https://surrogates.sciml.ai/stable/"
     ),
-    pages = pages
-    
+    pages = pages,
 )
 # clean = true,
 # assets = ["assets"],

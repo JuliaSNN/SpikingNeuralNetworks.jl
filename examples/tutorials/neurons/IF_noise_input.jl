@@ -1,15 +1,22 @@
 using Distributions
 SNN.SNNPlots.default(palette = :okabe_ito)
 
-if_neuron =(  
-    param = SNN.IFParameter(R = 0.5GΩ, Vt = -50mV, ΔT = 2mV, El = -70mV, τm = 20ms, Vr = -55mV),
+if_neuron = (
+    param = SNN.IFParameter(
+        R = 0.5GΩ,
+        Vt = -50mV,
+        ΔT = 2mV,
+        El = -70mV,
+        τm = 20ms,
+        Vr = -55mV,
+    ),
     spike = SNN.PostSpike(),
     synapse = SNN.SingleExpSynapse(),
-    )
+)
 
 
 # Create the IF neuron with tonic firing parameters
-E = SNN.Population(;N = 1, if_neuron...)
+E = SNN.Population(; N = 1, if_neuron...)
 SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
 
 # Create a withe noise input current 
@@ -34,7 +41,4 @@ p = plot(
     leftmargin = 10Plots.mm,
 )
 
-savefig(
-    p,
-    joinpath(ASSET_PATH, "noise_current.png"),
-)
+savefig(p, joinpath(ASSET_PATH, "noise_current.png"))

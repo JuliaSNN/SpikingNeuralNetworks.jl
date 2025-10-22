@@ -14,15 +14,15 @@ using ProtoStructs
     PoissonRefractoryParameter
 
     @snn_kw struct PoissonRefractoryParameter <: PoissonStimulusParameter #{R} where {R<:Float32}
-    # @proto struct PoissonRefractoryParameter{R = Float32} 
-        ΔT::Float32 = 2f0ms  # Absolute refractory period
+        # @proto struct PoissonRefractoryParameter{R = Float32} 
+        ΔT::Float32 = 2.0f0ms  # Absolute refractory period
         N::Int = 100  # Number of neurons
         rate::Float32 = 10Hz
         last_spike::Vector{Float32} = zeros(Float32, N)  # Last spike time for each neuron
         rates::Vector{Float32} = fill(rate, N)  # Firing rate for each neuron
         p::Float32 = 0.1f0  # Fraction of neurons receiving the stimulus
-        μ::Float32 = 1f0  # Mean of the weight distribution
-        σ::Float32 = 0f0  # Standard deviation of the weight distribution
+        μ::Float32 = 1.0f0  # Mean of the weight distribution
+        σ::Float32 = 0.0f0  # Standard deviation of the weight distribution
         active::Vector{Bool} = [true]  # Active neurons
     end
 
@@ -54,24 +54,25 @@ using ProtoStructs
     export PoissonRefractoryParameter, stimulate!
 end
 
-import SpikingNeuralNetworks: PoissonLayer, PoissonRefractoryParameter, compose, sim!, monitor!, vecplot
+import SpikingNeuralNetworks:
+    PoissonLayer, PoissonRefractoryParameter, compose, sim!, monitor!, vecplot
 # validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
 
 neuron_param = SNN.IdentityParam()
 neuron = SNN.Identity(; param = neuron_param, N = 1, name = "Identity Neuron")
 
 # Create a withe noise input current 
-stim_param = PoissonRefractoryParameter(N=1, ΔT = 20ms, p=1)
-stim = PoissonLayer(neuron, :g; param=stim_param)
+stim_param = PoissonRefractoryParameter(N = 1, ΔT = 20ms, p = 1)
+stim = PoissonLayer(neuron, :g; param = stim_param)
 
 monitor!(neuron, [:g, :fire], sr = 2kHz)
 model = compose(; neuron, stim)
-sim!(; model, duration = 100000ms, pbar=true)
+sim!(; model, duration = 100000ms, pbar = true)
 
 vecplot(
     neuron,
     :g,
-    neurons=1,
+    neurons = 1,
     add_spikes = true,
     ylabel = "Membrane potential (mV)",
     xlims = (0, 1000ms),
@@ -80,4 +81,4 @@ vecplot(
 )
 
 st = SNN.spiketimes(neuron)[1]
-diff(st) |> x-> SNNPlots.histogram(x, bins=100)
+diff(st) |> x -> SNNPlots.histogram(x, bins = 100)

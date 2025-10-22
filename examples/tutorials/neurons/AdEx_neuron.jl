@@ -76,4 +76,3 @@ p = plot(
 )
 
 savefig(p, ASSET_PATH * "/AdEx_neuron_types.png")
-

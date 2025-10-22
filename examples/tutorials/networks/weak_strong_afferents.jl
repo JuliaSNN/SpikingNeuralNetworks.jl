@@ -7,72 +7,73 @@ SNN.@load_units;
 
 
 Zerlaut2019_network = (
-    Npop = (E=4000, I=1000),
+    Npop = (E = 4000, I = 1000),
     exc = SNN.IFSinExpParameter(
-                τm = 200pF / 10nS, 
-                El = -70mV, 
-                Vt = -50.0mV, 
-                Vr = -70.0f0mV,
-                R  = 1/10nS, 
-                τabs = 2ms,       
-                τi=5ms,
-                τe=5ms,
-                E_i = -80mV,
-                E_e = 0mV,
-                ),
-
+        τm = 200pF / 10nS,
+        El = -70mV,
+        Vt = -50.0mV,
+        Vr = -70.0f0mV,
+        R = 1/10nS,
+        τabs = 2ms,
+        τi = 5ms,
+        τe = 5ms,
+        E_i = -80mV,
+        E_e = 0mV,
+    ),
     inh = SNN.IFSinExpParameter(
-                τm = 200pF / 10nS, 
-                El = -70mV, 
-                Vt = -53.0mV, 
-                Vr = -70.0f0mV,
-                R  = 1/10nS, 
-                τabs = 2ms,       
-                τi=5ms,
-                τe=5ms,
-                E_i = -80mV,
-                E_e = 0mV,
-                ),
-
+        τm = 200pF / 10nS,
+        El = -70mV,
+        Vt = -53.0mV,
+        Vr = -70.0f0mV,
+        R = 1/10nS,
+        τabs = 2ms,
+        τi = 5ms,
+        τe = 5ms,
+        E_i = -80mV,
+        E_e = 0mV,
+    ),
     connections = (
         E_to_E = (p = 0.05, μ = 2nS),
         E_to_I = (p = 0.05, μ = 2nS),
         I_to_E = (p = 0.05, μ = 10nS),
         I_to_I = (p = 0.05, μ = 10nS),
-        ),
-    
-    afferents = (
-        N = 100,
-        rate = 20Hz,
-        conn = (p = 0.1f0, μ = 4.0,), 
-    )
+    ),
+    afferents = (N = 100, rate = 20Hz, conn = (p = 0.1f0, μ = 4.0)),
 )
 
 function network(config)
     @unpack afferents, connections, Npop = config
-    E = SNN.IF(N=Npop.E, param=config.exc, name="E")
-    I = SNN.IF(N=Npop.I, param=config.inh, name="I")
+    E = SNN.IF(N = Npop.E, param = config.exc, name = "E")
+    I = SNN.IF(N = Npop.I, param = config.inh, name = "I")
 
     AfferentParam = SNN.PoissonLayer(afferents.rate; afferents...)
-    afferentE = SNN.Stimulus(AfferentParam, E, :ge, conn= afferents.conn, name="noiseE")
-    afferentI = SNN.Stimulus(AfferentParam, I, :ge, conn= afferents.conn, name="noiseI")
+    afferentE = SNN.Stimulus(AfferentParam, E, :ge, conn = afferents.conn, name = "noiseE")
+    afferentI = SNN.Stimulus(AfferentParam, I, :ge, conn = afferents.conn, name = "noiseI")
 
     synapses = (
-        E_to_E = SNN.SpikingSynapse(E, E, :ge, conn=connections.E_to_E, name="E_to_E"),
-        E_to_I = SNN.SpikingSynapse(E, I, :ge, conn=connections.E_to_I, name="E_to_I"),
-        I_to_E = SNN.SpikingSynapse(I, E, :gi, conn=connections.I_to_E, name="I_to_E"),
-        I_to_I = SNN.SpikingSynapse(I, I, :gi, conn=connections.I_to_I, name="I_to_I"),
+        E_to_E = SNN.SpikingSynapse(E, E, :ge, conn = connections.E_to_E, name = "E_to_E"),
+        E_to_I = SNN.SpikingSynapse(E, I, :ge, conn = connections.E_to_I, name = "E_to_I"),
+        I_to_E = SNN.SpikingSynapse(I, E, :gi, conn = connections.I_to_E, name = "I_to_E"),
+        I_to_I = SNN.SpikingSynapse(I, I, :gi, conn = connections.I_to_I, name = "I_to_I"),
     )
-    model = SNN.compose(;E,I, afferentE, afferentI, synapses..., silent=true, name="Balanced network") 
+    model = SNN.compose(;
+        E,
+        I,
+        afferentE,
+        afferentI,
+        synapses...,
+        silent = true,
+        name = "Balanced network",
+    )
     SNN.monitor!(model.pop, [:fire])
     SNN.monitor!(model.stim, [:fire])
     # monitor!(model.pop, [:v], sr=200Hz)
-    return SNN.compose(;model..., silent=true)
+    return SNN.compose(; model..., silent = true)
 end
 
 config = SNN.@update Zerlaut2019_network begin
     afferents.rate = 10Hz
-end 
+end
 model = network(config)
 
 
@@ -98,22 +99,29 @@ model = network(config)
 # ##
 
 
-νs =  exp.(range(log(1),log(50), 20))
+νs = exp.(range(log(1), log(50), 20))
 frs = []
 plots = map(νs) do input_rate
     config = SNN.@update Zerlaut2019_network begin
-        afferents.rate = input_rate* Hz
-    end 
+        afferents.rate = input_rate * Hz
+    end
     model = network(config)
-    SNN.sim!(;model, duration=3_000ms,  pbar=true)
+    SNN.sim!(; model, duration = 3_000ms, pbar = true)
 
     # Firing rate of the network with a fixed afferent rate
-    frE, r = SNN.firing_rate(model.pop.E, interval=1s:3s, pop_average=true)
+    frE, r = SNN.firing_rate(model.pop.E, interval = 1s:3s, pop_average = true)
     @show mean(frE)
     push!(frs, mean(frE))
 end
 
 frs = mean.(frs)
-plot(νs, frs, xscale=:log10,
-    xlabel="Afferent rate (Hz)", ylabel="Firing rate (Hz)", 
-    labels=["E" "I"], lw=2, size=(600, 400))
+plot(
+    νs,
+    frs,
+    xscale = :log10,
+    xlabel = "Afferent rate (Hz)",
+    ylabel = "Firing rate (Hz)",
+    labels = ["E" "I"],
+    lw = 2,
+    size = (600, 400),
+)
