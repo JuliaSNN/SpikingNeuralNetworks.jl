@@ -1,77 +1,40 @@
-## Example connectivity
-pre = SNN.Identity(N=3)
-post = SNN.Identity(N=5)
-
-w  = zeros(Float32, 5, 3)
-w[3,1] = 1.0
-w[2,2] = 1.0
-w[5,3] = 1
-
-conn = SNN.SpikingSynapse(pre, post, :g; conn=w)
-SNN.matrix(conn) |> x->heatmap(x, yflip=true)
-
-## Brief recap on sparse synapses.
-# in SpikingNeuralNetworks.jl connections are maintained in the SparseMatrixCSC format, which means that they are indicized by column (pre-synaptic neurons).
-# For each pre-synaptic j, we have a indices of the non-zero connections in colptr[j]:colptr[j+1]-1 (or postsynaptic_idxs(conn, j))
-SNN.postsynaptic_idxs(conn, 1)
-
-# and we can add a connection from pre-synaptic neuron j to post-synaptic neuron i with
-SNN.connect!(conn, 1, 2, 0.5)
-SNN.matrix(conn) |> x->heatmap(x, yflip=true)
-
-## Now let's modify the connectivity. First we swap post-synaptic cells, so that the detailed out-degree is preserved.
-
-# Let's say we want to swap post-synaptic neurons 1 and 2
-conn.I[2] = 1
-
-# this means that the second connection (which was from pre-synaptic neuron 1 to post-synaptic neuron 2) is now from pre-synaptic neuron 1 to post-synaptic neuron 1
-SNN.matrix(conn) |> x->heatmap(x, yflip=true)
-
-# the postsynaptic indices of pre-synaptic neuron are correct because they depend on colptr 
-SNN.postsynaptic(conn,1)
-
-# but now the presynaptic indices are not correct, because they depend on I and J
-SNN.presynaptic(conn,1)
-
-# To fix this, we need to update the sparse matrix structure
-SNN.update_sparse_matrix!(conn)
-@assert SNN.presynaptic(conn,1) == [1]
-
-## let s instead swap pre-synaptic neurons 1 and 2
-conn.J[1] = 3
-SNN.matrix(conn) |> x->heatmap(x, yflip=true)
-
-# now the presynaptic indices of post-synaptic neuron are correct because they depend on rowptr
-SNN.presynaptic(conn,1)
-# but now the postsynaptic indices are not correct, because they depend on colptr
-SNN.postsynaptic(conn,3)
-# To fix this, we need to update the sparse matrix structure
-SNN.update_sparse_matrix!(conn)
-
-## Let's now do synaptic turnover in a network
+## AdEx neuron with fixed external current connections with multiple receptors
 E_uni = SNN.AdExParameter(; El = -50mV)
-E = SNN.Population(E_uni, synapse=SNN.DoubleExpSynapse(); N = 1000, name="Excitatory")
+E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10f0, 2f0), b= Normal(60f0,4f0))
+E = SNN.Population(E_het, synapse=SNN.DoubleExpSynapse(); N = 800, name="Excitatory")
 
 I = SNN.Population(SNN.IFParameter(), synapse = SNN.SingleExpSynapse(); N = 200, name="Inhibitory", spike=SNN.PostSpike() )
-EE = SNN.SpikingSynapse(E, E, :he; conn=(μ = 2, p = 0.2, rule=:FixedOut))
+EE = SNN.SpikingSynapse(E, E, :he; conn=(μ = 2, p = 0.02))
 EI = SNN.SpikingSynapse(E, I, :ge; conn=(μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn=(μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn=(μ = 10, p = 0.02))
 model = SNN.compose(;  E, I, EE, EI, IE, II)
 
+SNN.monitor!(E, [(:ge,1:1), (:gi,1:1), ], variables=:synvars)
+SNN.monitor!(E, (:v, 1:3))
 
-#
+SNN.monitor!(model.pop, [:fire])
+SNN.sim!(model = model; duration = 4second)
 
-synaptic_turnover!(EE; p_rewire=0.0015)
-# for _ in 1:29
-#     synaptic_turnover!(EE; p_rewire=0.05)
-# end
-anim = @animate for _ in 1:50
-    synaptic_turnover!(EE; p_rewire=0.015)
-    SNN.matrix(EE) |> x->heatmap(x, yflip=true)
+## Synaptic turnover
+
+pre_tt = randn(size(EE.fireJ))
+post_tt = randn(size(EE.fireI))
+
+old = Int[]
+new = Int[]
+@unpack colptr, I, J, index, W, fireJ = EE
+for j in eachindex(fireJ)
+    for s = colptr[j]:(colptr[j+1]-1)
+        @show I[s], j
+        if pre_tt[J[index[s]]] + post_tt[I[s]] .< -2.5
+            I[s] = rand(1:model.pop.E.N)
+            # push!(old, s)
+            # push!(new, rand(1:model.pop.E.N))
+        end
+    end
 end
-gif(anim, "tmp.gif", fps=10)
-##
+
 
 
 EE.colptr = []

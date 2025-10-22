@@ -1,6 +1,7 @@
 using SpikingNeuralNetworks
 using SNNPlots
 import SNNPlots: vecplot, gplot
+
 SNN.@load_units
 
 using Plots

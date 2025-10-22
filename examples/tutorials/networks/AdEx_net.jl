@@ -1,6 +1,6 @@
 ## AdEx neuron with fixed external current connections with multiple receptors
 E_uni = SNN.AdExParameter(; El = -50mV)
-E_het = SNN.heterogeneous(E_param, 800; τm = Normal(10f0, 2f0), b= Normal(60f0,4f0))
+E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10f0, 2f0), b= Normal(60f0,4f0))
 E = SNN.Population(E_het, synapse=SNN.DoubleExpSynapse(); N = 800, name="Excitatory")
 
 I = SNN.Population(SNN.IFParameter(), synapse = SNN.SingleExpSynapse(); N = 200, name="Inhibitory", spike=SNN.PostSpike() )

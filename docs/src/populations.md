@@ -68,13 +68,30 @@ Order   = [:type]
 Filter = t -> t <: SNN.AdEx
 ```
 
-### Generalized IF synapses
+## Generalized Integrated and Fire synapses
 
-Models of the type Generalized IF implements can implement these type of synapses:
+Models of the type Generalized IF implements can implement any type of synapse that is subtype of `AbstractSynapseParameter`. 
+
+`AbstractSynapseParameter` must implement the following 
+
+A list of 
 
 
 ```@autodocs
-Modules = [SpikingNeuralNetworks, SNN.SNNModels]
+Modules = [SNNModels]
+Order   = [:type]
+Filter = t -> t == SNN.AbstractSynapseParameter
+```
+
+```@autodocs
+Modules = [SNNModels]
 Order   = [:type]
 Filter = t -> t <: SNN.AbstractSynapseParameter
+```
+
+
+```@autodocs
+Modules = [SNNModels]
+Order   = [:type]
+Filter = t -> t <: SNN.AbstractSynapseVariable
 ```
