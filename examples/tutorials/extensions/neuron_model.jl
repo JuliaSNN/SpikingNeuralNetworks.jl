@@ -1,5 +1,5 @@
 using Pkg
-Pkg.add(url="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl")
+Pkg.add(url = "https://github.com/JuliaSNN/SpikingNeuralNetworks.jl")
 Pkg.add("Distributions")
 ##
 using SpikingNeuralNetworks
@@ -17,13 +17,13 @@ SNN.@load_units
     NeuronParameter
     @snn_kw struct NeuronParameter <: AbstractPopulationParameter
         # adex parameters
-        R::Float32 = 1f0GΩ
+        R::Float32 = 1.0f0GΩ
         El::Float32 = -70.6f0
         Vt::Float32 = -50.4f0
         up::Float32 = 0.1f0 * ms
         τabs::Float32 = 0.1f0 * ms
-        τe::Float32 = 10f0ms
-        τi::Float32 = 10f0ms
+        τe::Float32 = 10.0f0ms
+        τi::Float32 = 10.0f0ms
     end
 
     """
@@ -39,19 +39,19 @@ SNN.@load_units
      - `records::Dict{Symbol, Any}`: A dictionary to store recorded variables.
     are compulsory
     """
-    Neuron 
+    Neuron
 
     @snn_kw struct Neuron <: AbstractPopulation
         param::NeuronParameter = NeuronParameter()
         N::Int64 = 10
-        name::String= "Neuron"
+        name::String = "Neuron"
         id::String = randstring(12)
         v::Vector{Float32} = ones(Float32, N)*-70.6f0  # Initial membrane potential
         ge::Vector{Float32} = zeros(Float32, N)
         gi::Vector{Float32} = zeros(Float32, N)
         fire::Vector{Bool} = falses(N)
         I::Vector{Float32} = zeros(Float32, N)
-        records::Dict{Symbol, Any} = Dict{Symbol, Any}()
+        records::Dict{Symbol,Any} = Dict{Symbol,Any}()
     end
 
     """
@@ -67,22 +67,20 @@ SNN.@load_units
     - Update the state variables using the timestep `dt` and the parameters from `param`. 
 
     The macro `@inbounds` is used to skip bounds checking for performance reasons. It leads to segment faults if the indices are out of bounds.
-    
+
     The macro `@fastmath` is used to allow the compiler to use fast math operations, which may lead to slight inaccuracies but improves performance. We consider that in the context of biophysical networks this imprecisions are not critical.
-    
+
     """
     integrate!
 
     function integrate!(p::Neuron, param::NeuronParameter, dt::Float32)
         @unpack N, v, ge, gi, fire, I = p
-        @inbounds @fastmath for i in 1:N
+        @inbounds @fastmath for i = 1:N
             if fire[i]
-                v[i] = param.El 
+                v[i] = param.El
                 fire[i] = false
             else
-                v[i] += dt*(param.El - v[i] + 
-                        (ge[i] - gi[i]) * param.R + 
-                        I[i] * param.R )
+                v[i] += dt*(param.El - v[i] + (ge[i] - gi[i]) * param.R + I[i] * param.R)
             end
             ge[i] -= ge[i] / param.τe * dt
             gi[i] -= gi[i] / param.τi * dt
@@ -95,18 +93,26 @@ SNN.@load_units
     export Neuron, NeuronParameter, integrate!
 end
 
-import SpikingNeuralNetworks: NeuronParameter, Neuron, CurrentNoiseParameter, CurrentStimulus, compose, sim!, monitor!, vecplot
+import SpikingNeuralNetworks:
+    NeuronParameter,
+    Neuron,
+    CurrentNoiseParameter,
+    CurrentStimulus,
+    compose,
+    sim!,
+    monitor!,
+    vecplot
 # validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
 
 param = NeuronParameter()
-neuron = Neuron(param=param, N=1)
+neuron = Neuron(param = param, N = 1)
 # Create a withe noise input current 
 current_param = CurrentNoiseParameter(neuron.N; I_base = 0pA, I_dist = Normal(-50pA, 100pA))
 current_stim = CurrentStimulus(neuron, :I, param = current_param)
 
 monitor!(neuron, [:v, :fire, :ge, :gi, :I], sr = 2kHz)
 model = compose(; neuron, current_stim)
-sim!(; model, duration = 1000ms, pbar=true)
+sim!(; model, duration = 1000ms, pbar = true)
 
 vecplot(
     neuron,

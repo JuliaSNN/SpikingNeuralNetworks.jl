@@ -22,9 +22,44 @@ SNN.monitor!(E, (:v, 1:3))
 SNN.monitor!(model.pop, [:fire])
 SNN.sim!(model = model; duration = 4second)
 
+## Synaptic turnover
+
+pre_tt = randn(size(EE.fireJ))
+post_tt = randn(size(EE.fireI))
+
+old = Int[]
+new = Int[]
+@unpack colptr, I, J, index, W, fireJ = EE
+for j in eachindex(fireJ)
+    for s = colptr[j]:(colptr[j+1]-1)
+        @show I[s], j
+        if pre_tt[J[index[s]]] + post_tt[I[s]] .< -2.5
+            I[s] = rand(1:model.pop.E.N)
+            # push!(old, s)
+            # push!(new, rand(1:model.pop.E.N))
+        end
+    end
+end
+
+
+
+EE.colptr = []
+
+
+SNN.postsynaptic(EE)[800]
+
+tt
+
+
+tt = rand(Uniform(0, 1), length(EE.W))
+β = 0.01
+findall(tt .< β)
+
+
+##
 # default(palette = :okabe_ito)
 ## Plot
-p1 = plot(
+xxp1 = plot(
     [
         SNN.vecplot(
             E,

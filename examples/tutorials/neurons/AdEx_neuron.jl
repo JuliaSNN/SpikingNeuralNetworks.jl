@@ -1,8 +1,4 @@
-using SpikingNeuralNetworks
-using SNNPlots
-import SNNPlots: vecplot, plot, Plots
 using DataFrames
-SNN.@load_units
 
 # Define the data
 data = [
@@ -10,7 +6,6 @@ data = [
     ("Adapting", 20, 0.0, 100.0, 5.0, -55.0, 65),
     ("Init. burst", 5.0, 0.5, 100.0, 7.0, -51.0, 65),
     ("Bursting", 5.0, -0.5, 100.0, 7.0, -46.0, 65),
-    # ("Irregular", 14.4, -0.5, 100.0, 7.0, -46.0, 65),
     ("Transient", 10, 1.0, 100, 10.0, -60.0, 65),
     ("Delayed", 5.0, -1.0, 100.0, 10.0, -60.0, 25),
 ]
@@ -80,7 +75,4 @@ p = plot(
     leftmargin = 10Plots.mm,
 )
 
-savefig(
-    p,
-    "/home/user/mnt/helix/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/AdEx.png",
-)
+savefig(p, ASSET_PATH * "/AdEx_neuron_types.png")

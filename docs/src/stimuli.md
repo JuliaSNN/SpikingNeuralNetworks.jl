@@ -9,6 +9,15 @@ CurrentModule = SpikingNeuralNetworks
 Pages = ["models.md"]
 ```
 
+## Basic types
+
+```@autodocs
+Modules = [SNNModels]
+Order   = [:type]
+Filter = t -> t == SNNModels.AbstractParameter || t == SNNModels.AbstractConnectionParameter
+```
+
+
 ## SpikeTime Stimulus
 ```@autodocs
 Modules = [SpikingNeuralNetworks, SNN.SNNModels]
@@ -52,4 +61,26 @@ Filter = t -> t <: SNN.PoissonStimulusParameter
 Modules = [SpikingNeuralNetworks, SNN.SNNModels]
 Order   = [:type]
 Filter = t -> t <: SNN.PoissonStimulus
+```
+
+## Balanced Stimulus
+
+```@autodocs
+Modules = [SpikingNeuralNetworks, SNN.SNNModels]
+Order   = [:type]
+Filter = t -> t <: SNNModels.BalancedParameter
+```
+
+## Stimulus Parameter
+
+```@autodocs
+Modules = [SpikingNeuralNetworks, SNN.SNNModels]
+Order   = [:type]
+Filter = t -> t <: SNN.AbstractStimulus
+```
+
+```@autodocs
+Modules = [SpikingNeuralNetworks, SNN.SNNModels]
+Order   = [:type]
+Filter = t -> t <: SNN.AbstractStimulusParameter
 ```

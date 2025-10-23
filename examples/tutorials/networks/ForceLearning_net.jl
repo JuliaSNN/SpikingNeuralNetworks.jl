@@ -16,7 +16,7 @@ f(t) =
     (A / 1.0) * sin(1π * fr * t) +
     (A / 2.0) * sin(2π * fr * t) +
     (A / 6.0) * sin(3π * fr * t) +
-(A / 3.0) * sin(4π * fr * t)
+    (A / 3.0) * sin(4π * fr * t)
 
 
 for t = 0:0.125ms:2440ms
@@ -30,10 +30,24 @@ for t = 2440ms:0.125ms:3500ms
 end
 
 #
-p = plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["Signal" "Prediction"], lw = 3);
-plot!(p, xlabel = "Time (ms)", ylabel = "Signal", title = "Force Learning Network",
-      legend = :outerright, size = (800, 400), grid = false, ylims = (-1.8, 1.5), xlims =(2000, 3000), 
-      fg_legend=:transparent, legendfontsize=14)
+p = plot(
+    [SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)],
+    label = ["Signal" "Prediction"],
+    lw = 3,
+);
+plot!(
+    p,
+    xlabel = "Time (ms)",
+    ylabel = "Signal",
+    title = "Force Learning Network",
+    legend = :outerright,
+    size = (800, 400),
+    grid = false,
+    ylims = (-1.8, 1.5),
+    xlims = (2000, 3000),
+    fg_legend = :transparent,
+    legendfontsize = 14,
+)
 annotate!(p, [(2240ms, -1.5, "Training phase")], textsize = 10, color = :black)
 annotate!(p, [(2650ms, -1.5, "Testing phase")], textsize = 10, color = :black)
 
@@ -41,7 +55,7 @@ SS.records
 
 SS.records[:f]
 
-vline!([2440ms], color = :black, label = "", lw=3)
+vline!([2440ms], color = :black, label = "", lw = 3)
 
 savefig(p, joinpath(SNN.DOCS_ASSETS_PATH, "examples", "force_learning.png"))
 
