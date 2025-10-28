@@ -5,6 +5,7 @@ pages = [
     "Tutorial" => "examples.md",
     "Populations" => "populations.md",
     "Stimuli" => "stimuli.md",
+    "Recordings" => "recordings.md",
     "Plasticity" => "plasticity.md",
     "API Reference" => "api_reference.md",
     "Models Extension" => "models_ext.md",
