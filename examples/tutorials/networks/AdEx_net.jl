@@ -20,6 +20,9 @@ SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
 SNN.monitor!(E, (:v, 1:3))
 
 SNN.monitor!(model.pop, [:fire])
+
+
+model.pop.E.records[:start_time]
 SNN.sim!(model = model; duration = 4second)
 
 # default(palette = :okabe_ito)

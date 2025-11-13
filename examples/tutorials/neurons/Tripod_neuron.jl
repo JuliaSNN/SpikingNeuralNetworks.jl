@@ -14,20 +14,32 @@ using BenchmarkTools
 Random.seed!(1234)
 # Define the synaptic properties for the soma and dendrites
 SomaReceptors = Receptors(
-    Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73, nmda=false, target = :glu),
-    Receptor(E_rev = -70.0, τr = 0.1, τd = 15.0, g0 = 0.38, nmda=false, target= :gaba),
+    Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73, nmda = false, target = :glu),
+    Receptor(E_rev = -70.0, τr = 0.1, τd = 15.0, g0 = 0.38, nmda = false, target = :gaba),
 )
-SomaSynapse = ReceptorSynapse(
-    glu_receptors = [1],
-    gaba_receptors = [2],
-    syn = SomaReceptors,
-)
+SomaSynapse =
+    ReceptorSynapse(glu_receptors = [1], gaba_receptors = [2], syn = SomaReceptors)
 
 DendReceptors = Receptors(
     Receptor(name = "AMPA", E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73, target = :glu),
-    Receptor(name = "NMDA", E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0, target = :glu),
+    Receptor(
+        name = "NMDA",
+        E_rev = 0.0,
+        τr = 8,
+        τd = 35.0,
+        g0 = 1.31,
+        nmda = 1.0f0,
+        target = :glu,
+    ),
     Receptor(name = "GABAa", E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27, target = :gaba),
-    Receptor(name = "GABAb", E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006, target = :gaba),
+    Receptor(
+        name = "GABAb",
+        E_rev = -90.0,
+        τr = 30,
+        τd = 400.0,
+        g0 = 0.0006,
+        target = :gaba,
+    ),
 )
 DendSynapse = ReceptorSynapse(
     glu_receptors = [1, 2],
@@ -38,28 +50,26 @@ DendSynapse = ReceptorSynapse(
         nmda_b = 3.36   # voltage dependence of nmda channels
         nmda_k = -0.077     # Eyal 2018
         SNN.NMDAVoltageDependency(mg = Mg_mM/mM, b = nmda_b, k = nmda_k)
-    end
+    end,
 )
 
 
 
 # We then define the dendritic neuron model. The dendritic neuron holds has the soma and dendritic compartments parameters, and the synaptic properties for both compartments. 
-dend_neuron = (; 
-    param = SNN.TripodParameter(
-        ds = [160um, 200um],
-    ),
+dend_neuron = (;
+    param = SNN.TripodParameter(ds = [160um, 200um]),
     adex = AdExParameter(
-            # adex parameters
-            C = 281pF,
-            gl = 40nS,
-            Vr = -55.6,
-            El = -70.6,
-            ΔT = 2,
-            Vt = -50.4,
-            a = 4,
-            b = 80.5pA,
-            τw = 144,
-        ),
+        # adex parameters
+        C = 281pF,
+        gl = 40nS,
+        Vr = -55.6,
+        El = -70.6,
+        ΔT = 2,
+        Vt = -50.4,
+        a = 4,
+        b = 80.5pA,
+        τw = 144,
+    ),
 
     # post-spike adaptation
     spike = SNN.PostSpike(At = 10.0, τA = 30.0),
