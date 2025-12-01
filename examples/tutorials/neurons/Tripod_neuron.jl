@@ -4,8 +4,7 @@ using Random
 
 using SpikingNeuralNetworks
 SNN.@load_units
-import SpikingNeuralNetworks:
-    Receptors, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray
+import SpikingNeuralNetworks:   Receptors, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray, ReceptorSynapse, Population, AdExParameter, PostSpike, PoissonLayer, Stimulus, compose, sim!
 import SpikingNeuralNetworks: get_time
 
 using BenchmarkTools
@@ -57,7 +56,7 @@ DendSynapse = ReceptorSynapse(
 
 # We then define the dendritic neuron model. The dendritic neuron holds has the soma and dendritic compartments parameters, and the synaptic properties for both compartments. 
 dend_neuron = (;
-    param = SNN.TripodParameter(ds = [160um, 200um]),
+    param = SNN.TripodParameter(ds = [160um, 400um]),
     adex = AdExParameter(
         # adex parameters
         C = 281pF,
@@ -140,7 +139,7 @@ plot!(fg_legend = :transparent)
 ##
 p = plot()
 for i = 1:4
-    SNN.vecplot!(p, E, :synvars_d1_g, sym_id = i)
+    SNN.vecplot!(p, E, :g, variables=:synvars_d1, sym_id = i)
 end
 plot!()
 
@@ -153,41 +152,45 @@ savefig(
 ##
 p = SNN.vecplot(
     E,
-    :g_d,
+    :g,
+    variables=:synvars_d1,
     sym_id = 1,
     interval = 1:2ms:get_time(model),
     neurons = 1,
     label = "AMPA",
-    factor = DendSynapse.AMPA.gsyn,
+    factor = DendSynapse.syn[1].gsyn,
 )
 SNN.vecplot!(
     p,
     E,
-    :g_d,
+    :g,
+    variables=:synvars_d1,
     sym_id = 2,
     interval = 1:2ms:get_time(model),
     neurons = 1,
     label = "NMDA",
-    factor = DendSynapse.NMDA.gsyn*0.3,
+    factor = DendSynapse.syn[2].gsyn*0.3,
 )
 SNN.vecplot!(
     p,
     E,
-    :g_d,
+    :g,
+    variables=:synvars_d1,
     sym_id = 3,
     interval = 1:2ms:get_time(model),
     neurons = 1,
     label = "GABAa",
-    factor = DendSynapse.GABAa.gsyn,
+    factor = DendSynapse.syn[3].gsyn,
 )
 SNN.vecplot!(
     p,
     E,
-    :g_d,
+    :g,
+    variables=:synvars_d1,
     sym_id = 4,
     interval = 1:2ms:get_time(model),
     neurons = 1,
     label = "GABAb",
-    factor = DendSynapse.GABAb.gsyn,
+    factor = DendSynapse.syn[4].gsyn,
 )
 plot!(legend = :outertop, ylims = :auto)
