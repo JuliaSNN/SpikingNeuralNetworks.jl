@@ -1,7 +1,5 @@
 ## AdEx neuron with fixed external current connections with multiple receptors
-E_uni = SNN.AdExParameter(; El = -50mV)
-E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
-E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 800, name = "Excitatory")
+E = SNN.Population(SNN.AdExParameter(; El = -70mV), synapse = SNN.DoubleExpSynapse(); N = 800, name = "Excitatory")
 
 I = SNN.Population(
     SNN.IFParameter(),
@@ -14,6 +12,15 @@ EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02))
 EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
+
+
+ext_variable = SNN.PoissonVariable(
+    variables = Dict(:rate => 0.0),
+    rate = (vars, t) -> vars[:rate]
+)
+ext_stimulus = SNN.Stimulus(ext_variable, E, :glu, conn = (μ = 15.0, p = 0.1))
+
+
 model = SNN.compose(; E, I, EE, EI, IE, II)
 
 SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
@@ -30,6 +37,7 @@ fr, r = SNN.firing_rate(model.pop.E, 0:4s, pop_average = true)
 
 plot(r, fr)
 SNN.raster(model.pop, 0:4s)
+##
 ssn = SNN.spiketimes(model.pop.E)[1:100]
 SNN.STTC(ssn, 50ms, 0:4s ) |> mean
 
