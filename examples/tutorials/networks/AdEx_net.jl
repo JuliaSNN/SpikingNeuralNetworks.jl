@@ -1,3 +1,4 @@
+
 ## AdEx neuron with fixed external current connections with multiple receptors
 E_uni = SNN.AdExParameter(; El = -50mV)
 E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
@@ -54,7 +55,7 @@ p1 = plot(
     leftmargin = 10Plots.mm,
     rightmargin = 10Plots.mm,
     frame = :none,
-    ylims = (-60, 20),
+    ylims = :auto,
     size = (800, 400),
 )
 plot!(
@@ -83,7 +84,8 @@ p = plot(
     SNN.raster(model.pop, [3.4s, 4s], yrotation = 90),
     SNN.vecplot(
         E,
-        [:synvars_ge, :synvars_gi],
+        [:ge, :gi],
+        variables = :synvars,
         neurons = 1,
         r = 3.8s:4s;
         legend = true,
@@ -107,3 +109,5 @@ p = plot(
 
 p = plot!(p, size = (800, 600))
 savefig(p, joinpath(SNN.DOCS_ASSETS_PATH, "AdEx_net.png"))
+
+p

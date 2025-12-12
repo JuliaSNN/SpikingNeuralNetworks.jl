@@ -105,7 +105,8 @@ p = plot(
     SNN.raster(model.pop, [3.4s, 4s], yrotation = 90),
     SNN.vecplot(
         E,
-        [:synvars_ge, :synvars_gi],
+        [:ge, :gi],
+        variables=:synvars,
         neurons = 1,
         r = 3.8s:4s;
         legend = true,

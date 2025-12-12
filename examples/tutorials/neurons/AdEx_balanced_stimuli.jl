@@ -33,15 +33,20 @@ stim_inh = SNN.Stimulus(poisson_inh, E, :gaba, name = "Inh Noise"; conn)
 
 # Create the model and run the simulation
 model = SNN.compose(; E = E, stim_exc, stim_inh)
-SNN.monitor!(E, [:v, :fire, :w, :glu, :gaba], sr = 2kHz)
-SNN.monitor!(E, [:ge, :gi], sr = 2kHz, variables = :synvars)
+SNN.monitor!(E, [:v, :fire, :w], sr = 2kHz)
+SNN.monitor!(E, [:ge], sr = 2kHz, variables = :synvars)
+SNN.monitor!(E, [:glu, :gaba], sr = 2kHz, variables = :receptors)
 SNN.monitor!(model.stim, [:fire])
 SNN.sim!(; model, duration = 1000ms)
 
 # Plot the results
 # gplot is a special function the plots the synaptic currents
 
-plot(SNN.record(model.pop.E, :glu)(1, 0s:1s))
+plot(SNN.record(model.pop.E, :glu, variables=:receptors_d1)(1, 0s:1s))
+gg = SNN.record(model.pop.E, :glu, variables=:receptors_d1)
+
+
+E.receptors_d1.glu
 
 
 # model.pop.E.synvars_ge
