@@ -17,8 +17,3 @@ Plots.default(frame=:box,
               guidefontsize=14, 
               legendfontsize=12, 
               margin=5Plots.mm, foreground_color_legend=:transparent, mscolor=:auto, lw=4)
-
-
-test= rand(1:1000, 100)
-plot(test, seriestype=:scatter, title="Test Plot", xlabel="Index", ylabel="Value", )
-plot!(test, title="Test Plot", xlabel="Index", ylabel="Value", )

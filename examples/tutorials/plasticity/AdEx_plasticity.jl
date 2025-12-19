@@ -8,28 +8,38 @@ using Statistics, Random, Plots
 
 
 ## AdEx neuron with fixed external current connections with multiple receptors
-E = SNN.AdEx(; N = 500, param = SNN.AdExParameter(; El = -50mV))
-I = SNN.IF(; N = 100, param = SNN.IFParameter())
+E = SNN.Population(SNN.AdExParameter(; El = -70mV); N=4000, name = "Excitatory", synapse= SNN.DoubleExpSynapse(), spike = SNN.PostSpike(τabs= 5ms))
+I = SNN.Population(SNN.AdExParameter(; El = -65mV); N=1000, name = "Excitatory", synapse= SNN.DoubleExpSynapse(), spike = SNN.PostSpike(τabs= 5ms))
 EE = SNN.SpikingSynapse(
     E,
     E,
-    :he;
-    conn = (μ = 5, σ = 0.2, p = 0.02),
+    :glu;
+    conn = (μ = 0.1, σ = 0.2, p = 0.02),
     LTPParam = SNN.vSTDPParameter(),
 )
-Norm = SNN.SynapseNormalization(E, [EE], param = SNN.AdditiveNorm(τ = 50ms))
-EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
-IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
-II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
-model = SNN.compose(; E, I, EE, EI, IE, II, Norm)
-
 W0 = copy(EE.W)
-##
-SNN.monitor!(EE, [:W], sr = 100Hz)
+stim = SNN.Stimulus(SNN.PoissonLayer(N=1000, 10Hz), E, :glu; conn=(μ = 10.0, p = 0.5))
+Norm = SNN.MetaPlasticity(SNN.AdditiveNorm(τ = 50ms), [EE])
+EI = SNN.SpikingSynapse(E, I, :glu; conn = (μ = 2., p = 0.05))
+IE = SNN.SpikingSynapse(I, E, :gaba; conn = (μ = 20, p = 0.2))
+II = SNN.SpikingSynapse(I, I, :gaba; conn = (μ = 20, p = 0.2))
+model = SNN.compose(; E, I, EE, EI, IE, II, Norm, stim)
 SNN.monitor!(model.pop, [:fire])
-SNN.train!(model = model; duration = 20second, pbar = true)
-
+@profview SNN.train!(model = model; duration = 4second, pbar = true)
+fr, r = SNN.firing_rate(model.pop, 1ms:10ms:SNN.get_time(model), pop_average=true) 
+plot(r,
+    fr;
+    xlabel = "Time (s)",
+    ylabel = "Firing rate (Hz)",
+    title = "Firing rate of Excitatory neurons",
+    figsize = (900, 300),
+)
+##
+raster(model.pop, 3s:4s, figsize = (900, 300), title = "Raster plot of Excitatory neurons")
 ## Plots
+
+raster(model.pop; figsize = (900, 300), title = "Raster plot of Excitatory neurons")
+##
 
 bins=0:0.1:10.0
 p1 = plot()
