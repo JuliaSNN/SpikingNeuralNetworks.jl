@@ -1,6 +1,10 @@
 using BenchmarkTools
+using Random 
+
+Random.seed!(1234)
 
 ## AdEx neuron with fixed external current connections with multiple receptors
+E_uni = SNN.AdExParameter(; El = -50mV)
 E_het = SNN.heterogeneous(E_uni, 3200; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
 E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 3200, name = "Excitatory")
 
@@ -11,23 +15,26 @@ I = SNN.Population(
     name = "Inhibitory",
     spike = SNN.PostSpike(),
 )
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02), STPParam = SNN.MarkramSTPParameter(U=0.5), delay_dist = Uniform(1.0f0,5.0f0))
-EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02), delay_dist = Uniform(0.5f0,3.0f0))
-IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02), delay_dist = Uniform(0.5f0,3.0f0))
-II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02), delay_dist = Uniform(1.0f0,4.0f0))
+
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 17, p = 0.02), STPParam = SNN.MarkramSTPParameter(U=0.5))
+EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
+IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
+II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
 model = SNN.compose(; E, I, EE, EI, IE, II)
 
 # SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
 # SNN.monitor!(E, (:v, 1:3))
 SNN.monitor!(model.pop, [:fire])
 # @btime 
-@btime SNN.train!(model = model; duration = 1second, pbar = true)
+SNN.train!(model = model; duration = 5second, pbar = true)
 ##
 
-fr, r = SNN.firing_rate(model.pop.E, 0:4s, pop_average = true)
-
-plot(r, fr)
-SNN.raster(model.pop, 0:1s)
+fr, r = SNN.firing_rate(model.pop.E, 0:20ms:4s, pop_average = true)
+plot(plot(r, fr),
+SNN.raster(model.pop, 4s:5s),
+layout = (2, 1),
+)
+##
 ssn = SNN.spiketimes(model.pop.E)[1:100]
 SNN.STTC(ssn, 50ms, 0:1s ) |> mean
 
