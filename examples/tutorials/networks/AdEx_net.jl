@@ -1,3 +1,4 @@
+
 ## AdEx neuron with fixed external current connections with multiple receptors
 E_uni = SNN.AdExParameter(; El = -50mV)
 E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
@@ -10,7 +11,7 @@ I = SNN.Population(
     name = "Inhibitory",
     spike = SNN.PostSpike(),
 )
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 2, p = 0.02))
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02), delay_dist = Normal(1.5ms, 0.5ms))
 EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
@@ -18,9 +19,22 @@ model = SNN.compose(; E, I, EE, EI, IE, II)
 
 SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
 SNN.monitor!(E, (:v, 1:3))
-
 SNN.monitor!(model.pop, [:fire])
+
+
+
+
+model.pop.E.records[:start_time]
 SNN.sim!(model = model; duration = 4second)
+
+fr, r = SNN.firing_rate(model.pop.E, 0:4s, pop_average = true)
+
+plot(r, fr)
+SNN.raster(model.pop, 0:4s)
+ssn = SNN.spiketimes(model.pop.E)[1:100]
+SNN.STTC(ssn, 50ms, 0:4s ) |> mean
+
+
 
 # default(palette = :okabe_ito)
 ## Plot
@@ -41,7 +55,7 @@ p1 = plot(
     leftmargin = 10Plots.mm,
     rightmargin = 10Plots.mm,
     frame = :none,
-    ylims = (-60, 20),
+    ylims = :auto,
     size = (800, 400),
 )
 plot!(
@@ -70,7 +84,8 @@ p = plot(
     SNN.raster(model.pop, [3.4s, 4s], yrotation = 90),
     SNN.vecplot(
         E,
-        [:synvars_ge, :synvars_gi],
+        [:ge, :gi],
+        variables = :synvars,
         neurons = 1,
         r = 3.8s:4s;
         legend = true,
@@ -94,3 +109,5 @@ p = plot(
 
 p = plot!(p, size = (800, 600))
 savefig(p, joinpath(SNN.DOCS_ASSETS_PATH, "AdEx_net.png"))
+
+p

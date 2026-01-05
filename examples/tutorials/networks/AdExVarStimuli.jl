@@ -1,7 +1,5 @@
 ## AdEx neuron with fixed external current connections with multiple receptors
-E_uni = SNN.AdExParameter(; El = -50mV)
-E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
-E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 800, name = "Excitatory")
+E = SNN.Population(SNN.AdExParameter(; El = -70mV), synapse = SNN.DoubleExpSynapse(); N = 800, name = "Excitatory")
 
 I = SNN.Population(
     SNN.IFParameter(),
@@ -10,56 +8,44 @@ I = SNN.Population(
     name = "Inhibitory",
     spike = SNN.PostSpike(),
 )
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 2, p = 0.02))
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02))
 EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
+
+
+ext_variable = SNN.PoissonVariable(
+    variables = Dict(:rate => 0.0),
+    rate = (vars, t) -> vars[:rate]
+)
+ext_stimulus = SNN.Stimulus(ext_variable, E, :glu, conn = (μ = 15.0, p = 0.1))
+
+
 model = SNN.compose(; E, I, EE, EI, IE, II)
 
 SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
 SNN.monitor!(E, (:v, 1:3))
-
 SNN.monitor!(model.pop, [:fire])
+
+
+
+
+model.pop.E.records[:start_time]
 SNN.sim!(model = model; duration = 4second)
 
-## Synaptic turnover
+fr, r = SNN.firing_rate(model.pop.E, 0:4s, pop_average = true)
 
-pre_tt = randn(size(EE.fireJ))
-post_tt = randn(size(EE.fireI))
-
-old = Int[]
-new = Int[]
-@unpack colptr, I, J, index, W, fireJ = EE
-for j in eachindex(fireJ)
-    for s = colptr[j]:(colptr[j+1]-1)
-        @show I[s], j
-        if pre_tt[J[index[s]]] + post_tt[I[s]] .< -2.5
-            I[s] = rand(1:model.pop.E.N)
-            # push!(old, s)
-            # push!(new, rand(1:model.pop.E.N))
-        end
-    end
-end
-
-
-
-EE.colptr = []
-
-
-SNN.postsynaptic(EE)[800]
-
-tt
-
-
-tt = rand(Uniform(0, 1), length(EE.W))
-β = 0.01
-findall(tt .< β)
-
-
+plot(r, fr)
+SNN.raster(model.pop, 0:4s)
 ##
+ssn = SNN.spiketimes(model.pop.E)[1:100]
+SNN.STTC(ssn, 50ms, 0:4s ) |> mean
+
+
+
 # default(palette = :okabe_ito)
 ## Plot
-xxp1 = plot(
+p1 = plot(
     [
         SNN.vecplot(
             E,
@@ -105,8 +91,7 @@ p = plot(
     SNN.raster(model.pop, [3.4s, 4s], yrotation = 90),
     SNN.vecplot(
         E,
-        [:ge, :gi],
-        variables=:synvars,
+        [:synvars_ge, :synvars_gi],
         neurons = 1,
         r = 3.8s:4s;
         legend = true,

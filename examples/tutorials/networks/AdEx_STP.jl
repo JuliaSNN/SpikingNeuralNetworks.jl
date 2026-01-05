@@ -1,65 +1,41 @@
+using BenchmarkTools
+
 ## AdEx neuron with fixed external current connections with multiple receptors
-E_uni = SNN.AdExParameter(; El = -50mV)
-E_het = SNN.heterogeneous(E_uni, 800; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
-E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 800, name = "Excitatory")
+E_het = SNN.heterogeneous(E_uni, 3200; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
+E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 3200, name = "Excitatory")
 
 I = SNN.Population(
     SNN.IFParameter(),
     synapse = SNN.SingleExpSynapse();
-    N = 200,
+    N = 800,
     name = "Inhibitory",
     spike = SNN.PostSpike(),
 )
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 2, p = 0.02))
-EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
-IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
-II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02), STPParam = SNN.MarkramSTPParameter(U=0.5), delay_dist = Uniform(1.0f0,5.0f0))
+EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02), delay_dist = Uniform(0.5f0,3.0f0))
+IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02), delay_dist = Uniform(0.5f0,3.0f0))
+II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02), delay_dist = Uniform(1.0f0,4.0f0))
 model = SNN.compose(; E, I, EE, EI, IE, II)
 
-SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
-SNN.monitor!(E, (:v, 1:3))
-
+# SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
+# SNN.monitor!(E, (:v, 1:3))
 SNN.monitor!(model.pop, [:fire])
-SNN.sim!(model = model; duration = 4second)
-
-## Synaptic turnover
-
-pre_tt = randn(size(EE.fireJ))
-post_tt = randn(size(EE.fireI))
-
-old = Int[]
-new = Int[]
-@unpack colptr, I, J, index, W, fireJ = EE
-for j in eachindex(fireJ)
-    for s = colptr[j]:(colptr[j+1]-1)
-        @show I[s], j
-        if pre_tt[J[index[s]]] + post_tt[I[s]] .< -2.5
-            I[s] = rand(1:model.pop.E.N)
-            # push!(old, s)
-            # push!(new, rand(1:model.pop.E.N))
-        end
-    end
-end
-
-
-
-EE.colptr = []
-
-
-SNN.postsynaptic(EE)[800]
-
-tt
-
-
-tt = rand(Uniform(0, 1), length(EE.W))
-β = 0.01
-findall(tt .< β)
-
-
+# @btime 
+@btime SNN.train!(model = model; duration = 1second, pbar = true)
 ##
+
+fr, r = SNN.firing_rate(model.pop.E, 0:4s, pop_average = true)
+
+plot(r, fr)
+SNN.raster(model.pop, 0:1s)
+ssn = SNN.spiketimes(model.pop.E)[1:100]
+SNN.STTC(ssn, 50ms, 0:1s ) |> mean
+
+
+
 # default(palette = :okabe_ito)
 ## Plot
-xxp1 = plot(
+p1 = plot(
     [
         SNN.vecplot(
             E,
@@ -76,7 +52,7 @@ xxp1 = plot(
     leftmargin = 10Plots.mm,
     rightmargin = 10Plots.mm,
     frame = :none,
-    ylims = (-60, 20),
+    ylims = :auto,
     size = (800, 400),
 )
 plot!(
@@ -106,7 +82,7 @@ p = plot(
     SNN.vecplot(
         E,
         [:ge, :gi],
-        variables=:synvars,
+        variables = :synvars,
         neurons = 1,
         r = 3.8s:4s;
         legend = true,
@@ -130,3 +106,5 @@ p = plot(
 
 p = plot!(p, size = (800, 600))
 savefig(p, joinpath(SNN.DOCS_ASSETS_PATH, "AdEx_net.png"))
+
+p

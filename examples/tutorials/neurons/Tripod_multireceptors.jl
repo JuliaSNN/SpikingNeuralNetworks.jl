@@ -33,28 +33,29 @@ receptors = SNN.Receptors(
 synapse = SNN.MultiReceptorSynapse(syn = receptors)
 
 E = SNN.Population(
-    SNN.AdExParameter(El = -55mV),
+    SNN.TripodParameter(),
+    adex = AdExParameter(El = -55mV),
     N = 1,
-    synapse = synapse,
+    dend_syn = synapse,
     spike = SNN.PostSpike(),
 )
-model = SNN.compose(E)
+model = SNN.compose(; E)
 SNN.sim!(model; duration = 0.5second)
 SNN.reset_time!(model)
 
 conn = (p = 1, μ = 1.0f0)
 st1 =
     SNN.SpikeTimeParameter([[0.1s]]) |>
-    x -> SNN.Stimulus(x, E, :gaba1, name = "stim1"; conn)
+    x -> SNN.Stimulus(x, E, :gaba1, :d1, name = "stim1"; conn)
 st2 =
     SNN.SpikeTimeParameter([[0.2s]]) |>
-    x -> SNN.Stimulus(x, E, :gaba2, name = "stim2"; conn)
+    x -> SNN.Stimulus(x, E, :gaba2, :d1, name = "stim2"; conn)
 st3 =
     SNN.SpikeTimeParameter([[0.3s]]) |>
-    x -> SNN.Stimulus(x, E, :gaba3, name = "stim3"; conn)
+    x -> SNN.Stimulus(x, E, :gaba3, :d1, name = "stim3"; conn)
 
 model = SNN.compose(; E, st1, st2, st3)
-SNN.monitor!(E, [:v, :fire])
+SNN.monitor!(E, [:v_d1, :fire])
 SNN.sim!(model; duration = 0.5second)
-p = SNN.vecplot!(plot(), E, :v, neurons = 1, r = 0.0s:0.5s, add_spikes = true)
+p = SNN.vecplot!(plot(), E, :v_d1, neurons = 1, r = 0.0s:0.5s, add_spikes = true)
 plot!(title = "AdEx Neuron with Multiple GABA Receptors", ylims = :auto)
