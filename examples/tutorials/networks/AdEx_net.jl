@@ -11,7 +11,7 @@ I = SNN.Population(
     name = "Inhibitory",
     spike = SNN.PostSpike(),
 )
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02))
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 7, p = 0.02), delay_dist = Normal(1.5ms, 0.5ms))
 EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))

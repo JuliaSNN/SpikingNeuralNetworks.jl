@@ -3,7 +3,7 @@ SNN.@load_units
 
 neuron = SNN.IF(; N = 1)
 input = SNN.Identity(; N = 1)
-stp_param = SNN.MarkramSTPParameterEvent(τD = 200ms, τF = 2000ms, U = 0.26)
+stp_param = SNN.MarkramSTPParameter(τD = 200ms, τF = 499ms, U = 0.5)
 syn = SNN.SpikingSynapse(input, neuron, :ge; conn=(μ = 1, p = 1), STPParam = stp_param)
 
 model = SNN.compose(; neuron, input, syn)
