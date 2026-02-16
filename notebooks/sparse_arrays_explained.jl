@@ -1,7 +1,7 @@
 using SpikingNeuralNetworks
 using Statistics
 ##
-w = SNN.sprand(100, 100, 0.2) # Construct a random sparse vector with length post.N, pre.N and density p
+w = SNN.SparseArrays.sprand(100, 100, 0.2) # Construct a random sparse vector with length post.N, pre.N and density p
 w[findall(w .!= 0)] .= 1
 rowptr, colptr, I, J, index, W = SNN.dsparse(w) # Get info about the existing connections
 

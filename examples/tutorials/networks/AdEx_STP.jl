@@ -5,7 +5,7 @@ Random.seed!(1234)
 
 ## AdEx neuron with fixed external current connections with multiple receptors
 E_uni = SNN.AdExParameter(; El = -50mV)
-E_het = SNN.heterogeneous(E_uni, 3200; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
+E_het = SNN.heterogeneous(E_uni, 3200; τm = Distributions.Normal(10.0f0, 2.0f0), b = Distributions.Normal(60.0f0, 4.0f0))
 E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 3200, name = "Excitatory")
 
 I = SNN.Population(
@@ -27,13 +27,13 @@ model = SNN.compose(; E, I, EE, EI, IE, II)
 SNN.monitor!(model.pop, [:fire])
 # @btime 
 SNN.train!(model = model; duration = 5second, pbar = true)
-##
+SNN.reset_time!(model)
+SNN.train!(model = model; duration = 5second, pbar = true)
+#
 
 fr, r = SNN.firing_rate(model.pop.E, 0:20ms:4s, pop_average = true)
-plot(plot(r, fr),
-SNN.raster(model.pop, 4s:5s),
-layout = (2, 1),
-)
+SNN.raster(model.pop, 4s:5s)
+
 ##
 ssn = SNN.spiketimes(model.pop.E)[1:100]
 SNN.STTC(ssn, 50ms, 0:1s ) |> mean

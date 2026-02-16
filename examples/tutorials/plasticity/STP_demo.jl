@@ -3,7 +3,7 @@ SNN.@load_units
 
 neuron = SNN.IF(; N = 1)
 input = SNN.Identity(; N = 1)
-stp_param = SNN.MarkramSTPParameter(τD = 200ms, τF = 499ms, U = 0.5)
+stp_param = SNN.MarkramSTPParameter(τD = 10ms, τF = 499ms, U = 0.5)
 syn = SNN.SpikingSynapse(input, neuron, :ge; conn=(μ = 1, p = 1), STPParam = stp_param)
 
 model = SNN.compose(; neuron, input, syn)
@@ -29,11 +29,13 @@ SNN.train!(model, duration = 13s)
 ge = SNN.record(neuron, :synvars_ge, interval = 9.8s:11s)
 x = SNN.record(syn, :STPVars_x, interval = 9.8s:11s)
 u = SNN.record(syn, :STPVars_u, interval = 9.8s:11s)
-SNN.vecplot(syn, :ρ ,interval=9.8s:11s)
-plot()
-plot!(x(1, 9.901s:10.9s), label = "x", color = :blue)
-plot!(u(1, 9.901s:10.9s), label = "u", color = :red)
-plot!(ge(1, 9.901s:10.9s), label = "ge", color = :green)
+fig, ax, plt = SNN.vecplot(syn, :ρ ,interval=9.8s:11s, color=:black)
+
+interval = 9.901s:10.9s
+lines!(ax, interval, x(1, interval), label = "x", color = :blue, alpha=0.7)
+lines!(ax, interval, u(1, interval), label = "u", color = :red, alpha=0.7)
+lines!(ax, interval, ge(1,interval), label = "ge", color = :green, linewidth=3)
+fig
 ##
 using SpikingNeuralNetworks
 
