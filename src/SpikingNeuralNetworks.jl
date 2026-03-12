@@ -27,7 +27,7 @@ module SpikingNeuralNetworks
     MarkramSTPParameter, MultiplicativeNorm, NMDAVoltageDependency, NoLTP, NoSTP, Poisson,
     PoissonParameter, Population, PostSpike, Receptor, ReceptorSynapse, ReceptorVoltage,
     Receptors, SingleExpSynapse, SpikeTimeParameter, SpikeTimeStimulus, SpikeTimeStimulusParameter, SpikingSynapse, SpikingSynapseParameter, TripodParameter, iSTDPPotential, iSTDPRate, vSTDPParameter,
-    PoissonLayer, Stimulus, SpikingSynapse, Population, SNNModel, Poisson, StimulusGroup, LTPParam, STPParam
+    PoissonLayer, Stimulus, SpikingSynapse, Population, SNNModel, Poisson, StimulusGroup, LTPParam, STPParam, MultiCompartmentStimulusGroup
 
     export MarkramSTPParameterHet, MarkramSTPParameter
 
