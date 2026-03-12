@@ -14,6 +14,7 @@ using SNNPlots
 using SNNUtils
 
 SNN.@load_units
-SNNPlots.@plots_default
+SNNPlots.@makie_default
 
-ASSET_PATH = joinpath(@__DIR__, "../..", "docs", "src", "assets", "examples")
+ASSET_PATH = joinpath(@__DIR__, "..", "docs", "src", "assets", "examples")
+@assert isdir(ASSET_PATH) "Asset path does not exist: $ASSET_PATH"

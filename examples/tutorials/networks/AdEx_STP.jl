@@ -16,7 +16,7 @@ I = SNN.Population(
     spike = SNN.PostSpike(),
 )
 
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 17, p = 0.02), STPParam = SNN.MarkramSTPParameter(U=0.5))
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 17, p = 0.02), STPParam = SNN.MarkramSTPParameterEvent(U=0.5))
 EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))

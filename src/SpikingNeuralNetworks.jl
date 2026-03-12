@@ -29,6 +29,8 @@ module SpikingNeuralNetworks
     Receptors, SingleExpSynapse, SpikeTimeParameter, SpikeTimeStimulus, SpikeTimeStimulusParameter, SpikingSynapse, SpikingSynapseParameter, TripodParameter, iSTDPPotential, iSTDPRate, vSTDPParameter,
     PoissonLayer, Stimulus, SpikingSynapse, Population, SNNModel, Poisson, StimulusGroup, LTPParam, STPParam
 
+    export MarkramSTPParameterHet, MarkramSTPParameter
+
     
     ## Functions from SNNModels
     export asynchronous_state, bin_spiketimes, clear_monitor!, clear_records!, compose, compute_connections, firing_rate, get_time,  load_model, matrix, monitor!, name, place_populations, record, record!, reset_time!, sample_inputs, save_model, set_plasticity!, str_name,     train!, update_spikes!, SNNload, SNNsave, compose, sim!,
