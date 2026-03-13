@@ -20,17 +20,25 @@ model = SNN.compose(; E, I, EE, EI, IE, II)
 SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
 SNN.monitor!(E, (:v, 1:3))
 SNN.monitor!(model.pop, [:fire])
-
-
-
-
-model.pop.E.records[:start_time]
 SNN.sim!(model = model; duration = 4second)
 
-fr, r = SNN.firing_rate(model.pop.E, 0:4s, pop_average = true)
+vecplot(
+    E,
+    :v;
+    neurons = 1:3,
+    r = 0:4s,
+    add_spikes = true,
+    lw = 2,
+    xlabel = "Time (s)",
+    ylabel = "Membrane potential (mV)",
+)
 
-plot(r, fr)
-SNN.raster(model.pop, 0:4s)
+
+
+
+fr, r, labels = SNN.firing_rate(model.pop, 0:4s, pop_average = true)
+f = SNN.raster(model.pop, 0:4s)
+f
 ssn = SNN.spiketimes(model.pop.E)[1:100]
 SNN.STTC(ssn, 50ms, 0:4s ) |> mean
 

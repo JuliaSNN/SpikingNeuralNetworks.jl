@@ -1,7 +1,7 @@
-
+import SNNModels: DeltaSynapse, IF
 function Mongillo2008(; n_assemblies = 1, n_neurons = 800)
     MongilloParam = (
-        Exc = IFCurrentDeltaParameter(
+        Exc = IFParameter(
             R = 1,
             τm = 15ms,
             Vt = 20mV,
@@ -9,37 +9,43 @@ function Mongillo2008(; n_assemblies = 1, n_neurons = 800)
             El = 0mV,
             τabs = 2ms,
         ),
-        Inh = IFCurrentDeltaParameter(
+        Inh = IFParameter(
             R = 1,
             τm = 10ms,
             Vt = 20mV,
             El = 0mV,
             Vr = 13mV,
+        ),
+        spike = (;
+            At = 0ms,
             τabs = 2ms,
         ),
-    )
+        synapse = DeltaSynapse(),
 
+    )
+    @unpack Exc, Inh, spike, synapse = MongilloParam
     pop = (
-        E = IFCurrent(N = 8000, param = MongilloParam.Exc),
-        I = IFCurrent(N = 2000, param = MongilloParam.Inh),
+        E = IF(;N = 8000, param = Exc, spike, synapse),
+        I = IF(;N = 2000, param = Inh, spike, synapse),
     )
 
-    μee = 0.10 * 8000/pop.E.N
-    μee_assembly = 0.48 * 8000/pop.E.N
-    μei = 0.135 * 8000/pop.E.N
-    μie = 0.25 * 2000/pop.I.N
-    μii = 0.20 * 2000/pop.I.N
+    connections = (;
+        EE = (p = 0.2, σ = 0, μ = 0.10 * 8000/pop.E.N),
+        EI = (p = 0.2, σ = 0, μ = 0.135 * 8000/pop.E.N),
+        IE = (p = 0.2, σ = 0, μ = 0.25 * 2000/pop.I.N),
+        II = (p = 0.2, σ = 0, μ = 0.20 * 2000/pop.I.N),
+    )
+
     input_exc = 19.8
     input_inh = 19.8
 
+    conn 
     syn = (
         EE = SpikingSynapse(
             pop.E,
             pop.E,
             :ge,
-            p = 0.2,
-            σ = 0,
-            μ = μee,
+            conn = connections.EE,
             param = SNN.STPParameter(),
             delay_dist = Uniform(1ms, 5ms),
         ),
@@ -47,27 +53,21 @@ function Mongillo2008(; n_assemblies = 1, n_neurons = 800)
             pop.E,
             pop.I,
             :ge,
-            p = 0.2,
-            σ = 0,
-            μ = μei,
+            conn = connections.EI,
             delay_dist = Uniform(1ms, 5ms),
         ),
         IE = SpikingSynapse(
             pop.I,
             pop.E,
             :gi,
-            p = 0.2,
-            σ = 0,
-            μ = μie,
+            conn = connections.IE,
             delay_dist = Uniform(1ms, 5ms),
         ),
         II = SpikingSynapse(
             pop.I,
             pop.I,
             :gi,
-            p = 0.2,
-            σ = 0,
-            μ = μii,
+            conn = connections.II,
             delay_dist = Uniform(1ms, 5ms),
         ),
     )
@@ -77,6 +77,7 @@ function Mongillo2008(; n_assemblies = 1, n_neurons = 800)
         I = SNN.CurrentStimulus(pop.I, I_dist = Normal(input_inh, 1.0), α = 1.0),
     )
 
+    μee_assembly = 0.48 * 8000/pop.E.N
     model = SNN.compose(pop, syn, stim)
     assemblies = map(1:n_assemblies) do x
         neurons = StatsBase.sample(1:pop.E.N, n_neurons, replace = false)
