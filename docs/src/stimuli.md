@@ -71,6 +71,14 @@ Order   = [:type]
 Filter = t -> t <: SNNModels.BalancedParameter
 ```
 
+## Stimulus Group
+
+```@autodocs
+Modules = [SpikingNeuralNetworks, SNN.SNNModels]
+Order   = [:type]
+Filter = t -> t <: SNNModels.AbstractStimulusGroup
+```
+
 ## Stimulus Parameter
 
 ```@autodocs
