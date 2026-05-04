@@ -8,16 +8,16 @@ neuron_param = SNN.IFParameter(;
                     El = -60mV,)
 
 spike = SNN.PostSpike(τabs=5ms, up=0ms, At = 0ms, AP_membrane=0mV,)
-synapse = SNN.SingleExpSynapse(τe = 5ms, τi = 10ms, E_e = 0mV, E_i = -80mV)
+synapse = SNN.SingleExpSynapse(τe = 25ms, τi = 2.5ms, E_e = 0mV, E_i = -80mV)
 
-E = SNN.Population(;param = neuron_param, synapse, spike, N = 8000, name = "Excitatory")
-I = SNN.Population(;param = neuron_param, synapse, spike, N = 2000, name = "Inhibitory")
+E = SNN.Population(;param = neuron_param, synapse, spike, N = 4000, name = "Excitatory")
+I = SNN.Population(;param = neuron_param, synapse, spike, N = 1000, name = "Inhibitory")
 E.I .= 150pA
 I.I .= 150pA
-EE = SNN.SpikingSynapse(E, E, :glu; conn = (μ = 60*0.27/10, p = 0.02, rule=:Bernoulli))
-EI = SNN.SpikingSynapse(E, I, :glu; conn = (μ = 60*0.27/10, p = 0.02, rule=:Bernoulli))
-II = SNN.SpikingSynapse(I, I, :gaba; conn = (μ = 20*4.5/10, p = 0.02, rule=:Bernoulli))
-IE = SNN.SpikingSynapse(I, E, :gaba; conn = (μ = 20*4.5/10, p = 0.02, rule=:Bernoulli))
+EE = SNN.SpikingSynapse(E, E, :glu; conn = (μ = 0.27/10, p = 0.02, rule=:Bernoulli))
+EI = SNN.SpikingSynapse(E, I, :glu; conn = (μ = 0.27/10, p = 0.02, rule=:Bernoulli))
+II = SNN.SpikingSynapse(I, I, :gaba; conn = (μ = 4.5/10, p = 0.02, rule=:Bernoulli))
+IE = SNN.SpikingSynapse(I, E, :gaba; conn = (μ = 4.5/10, p = 0.02, rule=:Bernoulli))
 model = SNN.compose(; E, I, EE, EI, IE, II)
 
 E.v .= neuron_param.Vr .+ rand(Float32, size(E.v)) .* (neuron_param.Vt - neuron_param.Vr)
@@ -26,21 +26,16 @@ SNN.monitor!(model.pop, [:fire], )
 # SNN.monitor!(I, [:ge, :gi], variables = :synvars)
 start = time()
 SNN.sim!(model = model; duration = 5second, dt = 0.125, pbar = true)
-stop = time()
-println("Simulation time: $(stop - start) seconds")
-E.I .= 0pA
-I.I .= 0pA
-SNN.sim!(model = model; duration = 5second, dt = 0.125, pbar = true)
-##
+# stop = time()
+# println("Simulation time: $(stop - start) seconds")
+# E.I .= 0pA
+# I.I .= 0pA
+# SNN.sim!(model = model; duration = 5second, dt = 0.125, pbar = true)
 fr, r =SNN.firing_rate(model.pop, 0:20ms:10s, pop_average = true) 
-plot(r,
-    fr[1],
-    xlabel = "Time (s)",
-    ylabel = "Firing rate (Hz)",
-    title = "Firing rate of Excitatory neurons",
-    label = "Excitatory",
-    c = :blue,
-)
+fig, ax, plt = raster(model.pop, 0:5s)
+ax = Axis(fig[2,1], xlabel = "Time (s)", ylabel = "Neurons", title = "Raster plot of the network")
+lines!(ax, r,    fr[1],)
+fig
 ##
 plot(
     histogram(
