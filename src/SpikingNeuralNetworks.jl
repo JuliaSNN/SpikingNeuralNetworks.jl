@@ -36,5 +36,9 @@ module SpikingNeuralNetworks
     export asynchronous_state, bin_spiketimes, clear_monitor!, clear_records!, compose, compute_connections, firing_rate, get_time,  load_model, matrix, monitor!, name, place_populations, record, record!, reset_time!, sample_inputs, save_model, set_plasticity!, str_name,     train!, update_spikes!, SNNload, SNNsave, compose, sim!,
     set_plasticity!, change_plasticity!, update_traces!, set_STP!, set_LTP!
 
+    ## Perturbation API from SNNModels
+    export make_copy, perturbation_test, perturbation_record,
+           clear_perturbation_records!, clear_perturbation_monitor!
+
     export @update, @update!, @load_units
 end
