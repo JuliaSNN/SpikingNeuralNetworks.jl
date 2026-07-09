@@ -48,6 +48,8 @@ SNN.sim!(model, 1second)            # settle into balanced activity
 # make_copy is shallow (state arrays aliased), so we deepcopy, clear records,
 # re-apply monitoring, then apply the condition for full state independence.
 
+fs = SNN.modelcopy(model)
+
 function make_checkpoint(model, condition!)
     fs = SNN.modelcopy(model)
     condition!(fs)
@@ -62,13 +64,13 @@ end
 duration = 1500ms
 
 
-fs_I = make_checkpoint(model, m -> (m.pop.I.I .= 0.2nA))   # inject into I
-fs_E = make_checkpoint(model, m -> (m.pop.E.I .= 0.2nA))   # inject into E
+fs_I = SNN.modelcopy(model)  # checkpoint for I perturbation
+fs_E = SNN.modelcopy(model)  # checkpoint for E perturbation
 
-fs_E.pop.E.records
-fs_E.pop.E.records[:sr][:v] = 0.01kHz
-perturbation_test(model, duration, identity; from_state = fs_I, add_records = "I_input")
-perturbation_test(model, duration, identity; from_state = fs_E, add_records = "E_input")
+
+# perturbation_test(model, duration; from_state = fs_I, add_records = "I_input", trigger! = m -> (m.pop.I.I .= 0.4nA))
+# perturbation_test(model, duration; from_state = fs_E, add_records = "E_input", trigger! = m -> (m.pop.E.I .= 0.4nA))
+
 SNN.sim!(model, duration)           # record baseline over the same 500 ms window
 
 size(fs_E.pop.E.records[:v])
@@ -83,8 +85,8 @@ SNN.sim!(model, duration)           # record baseline over the same 500 ms windo
 fs_I = make_checkpoint(model, m -> (m.pop.I.I .= 0.2nA))   # inject into I
 fs_E = make_checkpoint(model, m -> (m.pop.E.I .= 0.2nA))   # inject into E
 
-perturbation_test(model, duration, identity; from_state = fs_I, add_records = "I_input")
-perturbation_test(model, duration, identity; from_state = fs_E, add_records = "E_input")
+perturbation_test(model, duration; from_state = fs_I, add_records = "I_input")
+perturbation_test(model, duration; from_state = fs_E, add_records = "E_input")
 
 # ── Baseline ──────────────────────────────────────────────────────────────────
 
