@@ -70,7 +70,7 @@ function sim!(...)
     for c in connections
         c_type = getfield(c, :param)
         forward!(c, c_type)
-        ## if train!(...) 
+        ## only in train!(...), never in sim!(...):
             plasticity!(c, c.param, dt, T)
         record!(c, T)
     end
