@@ -24,7 +24,7 @@ SNN.sim!(model = model, duration = 10s)     # weights frozen
 !!! warning "Plasticity runs only under `train!`"
     `train!` calls `update_traces!` and `plasticity!` of every connection at each step; `sim!` never does. A synapse with an `LTPParam` or `STPParam` keeps its weights (and its STP variables) constant under `sim!`. Use `train!` to learn and `sim!` to test with frozen weights.
 
-!!! danger "Results obtained with `iSTDPRate` before SNNModels 1.9 are wrong"
+!!! danger "Results obtained with `iSTDPRate` before SNNModels 1.8.2 are wrong"
     See [Inhibitory STDP](@ref "Inhibitory STDP") and [Release notes](release_notes.md).
 
 ## Rules at a glance
@@ -71,7 +71,7 @@ and 0 if both spikes fall in the same step.
 - `STDPWeightDependent`: `η` and `α` are positive; LTD has the sign built into the update. `μ_plus = μ_minus = 0` is additive STDP with hard bounds, `1` multiplicative STDP.
 - Units: time in ms, weights in the units of `W` (pF for conductance-based synapses in the default parameters). Rescale the amplitudes to the weight scale of your network.
 
-!!! warning "`STDPGerstner` before SNNModels 1.9"
+!!! warning "`STDPGerstner` before SNNModels 1.8.2"
     The amplitudes were applied twice (effective ``A^2``, sign lost), so a negative `A_post` potentiated. Parameter sets tuned with older versions must be rescaled (old `A = 5e-2` is a new amplitude of `2.5e-3`). See [Release notes](release_notes.md).
 
 ## Rule reference
@@ -86,7 +86,7 @@ The weight-update kernels are validated against analytic kernels, Brian2 and Aur
 
 `iSTDPRate` and `iSTDPPotential` implement the inhibitory plasticity of Vogels et al. (2011) with Euler-integrated traces.
 
-!!! danger "Bug fixed in SNNModels 1.9: `iSTDPRate` potentiation hit the wrong synapses"
+!!! danger "Bug fixed in SNNModels 1.8.2: `iSTDPRate` potentiation hit the wrong synapses"
     In `iSTDPRate` (and the former `iSTDPTime`) the potentiation applied at a postsynaptic spike used a `@turbo` loop that reassigned its loop variable. LoopVectorization ignored the reassignment, so potentiation was applied to the synapses stored at positions `rowptr[i]:rowptr[i+1]-1` of the column-ordered arrays (synapses onto unrelated postsynaptic neurons) instead of the synapses onto the spiking neuron `i`. The depression branch was correct and `iSTDPPotential` was not affected.
 
     Affected: SpikingNeuralNetworks.jl from commit 680a30c (2025-01-06, v1.0.0) and SNNModels 1.5.0 to 1.8.1. Simulations that used `iSTDPRate` or `iSTDPTime` with those versions give different results and should be rerun.

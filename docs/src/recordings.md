@@ -121,7 +121,7 @@ SNN.train!(model = model; duration = 5second)
 ```
 
 !!! note "Plasticity needs `train!`"
-    The first simulation of this page used `SNN.sim!`, which never updates weights or STP variables. The call above uses `SNN.train!`, so `IE` (inhibitory STDP) and `EE` (STP) are plastic. If you ran this example with SNNModels 1.5.0 to 1.8.1 the `IE` weights were potentiated at the wrong synapses (see [Release notes](release_notes.md)); results differ from SNNModels 1.9 on.
+    The first simulation of this page used `SNN.sim!`, which never updates weights or STP variables. The call above uses `SNN.train!`, so `IE` (inhibitory STDP) and `EE` (STP) are plastic. If you ran this example with SNNModels 1.5.0 to 1.8.1 the `IE` weights were potentiated at the wrong synapses (see [Release notes](release_notes.md)); results differ from SNNModels 1.8.2 on.
 
 !!! warning
     Recording synaptic strength or efficacy can be memory-intensive in large networks. We recommend using a low sampling rate.

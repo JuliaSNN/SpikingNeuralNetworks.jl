@@ -1,8 +1,8 @@
 # Release notes
 
-## Changes in SNNModels 1.9
+## Changes in SNNModels 1.8.2
 
-SNNModels 1.9 (the `dev` branch at commit 76342e0 at the time of writing) rewrites the trace-based STDP rules, fixes a bug in the inhibitory STDP and replaces the connectivity generator. Two changes alter simulation results.
+SNNModels 1.8.2 (released 2026-10-05) rewrites the trace-based STDP rules, fixes a bug in the inhibitory STDP and replaces the connectivity generator. Two changes alter simulation results.
 
 !!! danger "Bug fix: `iSTDPRate` potentiated the wrong synapses (SNNModels 1.5.0 - 1.8.1)"
     In `iSTDPRate` (and the former `iSTDPTime`) the loop applying potentiation at a postsynaptic spike used `@turbo` and reassigned its loop variable (`st = index[st]`). LoopVectorization ignored the reassignment, so potentiation was applied to the synapses stored at positions `rowptr[i]:rowptr[i+1]-1` of the column-ordered arrays, that is to synapses onto unrelated postsynaptic neurons, instead of to the synapses onto the spiking neuron `i`. The depression branch was correct. `iSTDPPotential` was not affected.
