@@ -23,6 +23,16 @@ every public symbol. Several of them change simulation results.
     - New: `Vspike` (spike detection threshold, default -10 mV), dendritic `El` used, `Is`/`Id`
       of BallAndStick applied.
 
+!!! danger "Behaviour change: Tsodyks-Markram short-term plasticity"
+    `MarkramSTPParameter` (and the `Het` and `Timestep` variants) now follow Mongillo, Barak &
+    Tsodyks (2008): at a presynaptic spike ``u`` jumps first and the same ``u^+`` sets both the
+    transmitted efficacy ``u^+ x`` and the depletion of ``x``. Before, the efficacy used ``u``
+    before the jump while the depletion used ``u`` after it, which depressed more than either
+    published model. Efficacies are higher (first spike from rest ``U(2-U)`` instead of ``U``),
+    and for some parameters the character of the synapse changes: with ``U = 0.3``,
+    ``τ_F = 500`` ms, ``τ_D = 70`` ms a 20 Hz train facilitated before (0.30 -> 0.44) and
+    depresses now (0.51 -> 0.47).
+
 !!! warning "Other behaviour changes"
     - HH and MorrisLecar flag one spike per action potential (they flagged about 60 per action
       potential at `dt = 0.01ms`).
