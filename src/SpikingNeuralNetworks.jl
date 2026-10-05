@@ -1,3 +1,22 @@
+"""
+    SpikingNeuralNetworks
+
+Umbrella package of the JuliaSNN ecosystem. It loads and re-exports `SNNModels` (models,
+simulation, recording, analysis), `SNNPlots` (plotting) and `SNNUtils` (stimulation protocols,
+analysis and classifiers), defines the alias `SNN = SpikingNeuralNetworks`, applies the SNNPlots
+Makie theme (`@makie_default`) and loads the unit constants (`@load_units`) at load time.
+
+All exported SNNModels names are reachable as `SNN.<name>` (e.g. `SNN.IF`, `SNN.sim!`).
+
+# Example
+```julia
+using SpikingNeuralNetworks
+SNN.@load_units
+E = SNN.IF(N = 100)
+model = SNN.compose(; E, silent = true)
+SNN.sim!(model, 100ms)
+```
+"""
 module SpikingNeuralNetworks
 
     using SNNModels
@@ -9,6 +28,12 @@ module SpikingNeuralNetworks
     SNN = SpikingNeuralNetworks
     export SNN
 
+    """
+        DOCS_ASSETS_PATH
+
+    Absolute path of `docs/src/assets` in the SpikingNeuralNetworks package directory (figures
+    used by the documentation and the examples).
+    """
     DOCS_ASSETS_PATH =
         joinpath(dirname(dirname(pathof(SpikingNeuralNetworks))), "docs", "src", "assets")
     export DOCS_ASSETS_PATH

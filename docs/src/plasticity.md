@@ -4,7 +4,7 @@
 CurrentModule = SpikingNeuralNetworks
 ```
 
-Synapses (`SpikingSynapse`) can carry a long-term plasticity rule (`LTPParam`) and a short-term plasticity rule (`STPParam`):
+Synapses (`SpikingSynapse`) can carry a long-term plasticity rule (keyword `LTPParam`, acting on the weights `W`) and a short-term plasticity rule (keyword `STPParam`, acting on the efficacy `ρ`). The equations, parameters and defaults of every rule are in the catalogue page [Plasticity rules](catalogue/plasticity_rules.md); this page explains how plasticity is run.
 
 ```julia
 using SpikingNeuralNetworks
@@ -22,10 +22,16 @@ SNN.sim!(model = model, duration = 10s)     # weights frozen
 ```
 
 !!! warning "Plasticity runs only under `train!`"
-    `train!` calls `update_traces!` and `plasticity!` of every connection at each step; `sim!` never does. A synapse with an `LTPParam` or `STPParam` keeps its weights (and its STP variables) constant under `sim!`. Use `train!` to learn and `sim!` to test with frozen weights.
+    `train!` calls `update_traces!` (before `forward!`) and `plasticity!` (after `forward!`) of every connection at each step; `sim!` never does. A synapse with an `LTPParam` or `STPParam` keeps its weights (and its STP variables and efficacy `ρ`) constant under `sim!`. Use `train!` to learn and `sim!` to test with frozen weights.
+
+## Switching and replacing rules
+
+- `SNN.set_LTP!(syn, false)` / `SNN.set_STP!(syn, false)` deactivate the long-term / short-term rule of a synapse (they set the `active` flag of `syn.LTPVars` / `syn.STPVars`); `true` reactivates it. They are no-ops for connections that are not sparse synapses.
+- `SNN.change_plasticity!(syn; LTP = rule, STP = rule)` replaces a rule and re-creates its state (traces are reset).
+- The traces are fields of `syn.LTPVars` / `syn.STPVars` and can be recorded, e.g. `SNN.monitor!(syn, [:tpre, :tpost], :LTPVars)` for the STDP rules (see [Recordings](recordings.md)).
 
 !!! danger "Results obtained with `iSTDPRate` before SNNModels 1.8.2 are wrong"
-    See [Inhibitory STDP](@ref "Inhibitory STDP") and [Release notes](release_notes.md).
+    See [Inhibitory STDP](#Inhibitory-STDP) below and [Release notes](release_notes.md).
 
 ## Rules at a glance
 
@@ -35,17 +41,20 @@ SNN.sim!(model = model, duration = 10s)     # weights frozen
 | `STDPTriplet` | triplet, all-to-all | exact decay (4 traces) | Pfister and Gerstner 2006, Auryn `MinimalTriplet` |
 | `STDPWeightDependent` | pair, soft bounds | exact decay | Gütig et al. 2003, Auryn `STDPwd`; `η` is a relative rate |
 | `STDPConfavreux2025` | pair with rate terms | exact decay | |
-| `STDPMexicanHat` | zero-integral kernel | Euler | event-driven weight passes |
+| `STDPMexicanHat` | Mexican-hat kernel in Δt | Euler | event-driven weight passes; same-step spikes interact |
 | `STDPSymmetric`, `STDPAntiSymmetric` | structured inhibition (Festa et al. 2024) | Euler | |
-| `iSTDPRate`, `iSTDPPotential` | inhibitory (Vogels et al. 2011) | Euler | |
-| `vSTDPParameter` | voltage-based (Clopath et al. 2010) | Euler | |
+| `iSTDPRate`, `iSTDPPotential` | inhibitory (Vogels et al. 2011) | Euler | same-step pre and post spikes interact |
+| `iSTDPTime` | - | - | parameters only, no update defined |
+| `vSTDPParameter` | voltage-based (Clopath et al. 2010) | Euler | LTP applied every step |
+| `MarkramSTPParameter`, `MarkramSTPParameterHet` | short-term (Tsodyks-Markram) | exact, event-driven | updated in `update_traces!` |
+| `MarkramSTPParameterTimestep` | short-term (Tsodyks-Markram) | Euler | |
 
 ## Event-driven pair and triplet STDP
 
 `STDPGerstner`, `STDPConfavreux2025`, `STDPWeightDependent` and `STDPTriplet` share event-driven kernels that follow the ordering of Auryn (Zenke and Gerstner 2014). Per time step, with `fireJ` the presynaptic and `fireI` the postsynaptic spikes of this step:
 
-1. **Pre-spike pass.** For every presynaptic spike, walk its outgoing synapses: LTD, computed from the postsynaptic trace of the target neuron.
-2. **Post-spike pass.** For every postsynaptic spike, walk its incoming synapses: LTP, computed from the presynaptic trace of the source neuron.
+1. **Pre-spike pass.** For every presynaptic spike, walk its outgoing synapses and apply the post-before-pre term, computed from the postsynaptic trace of the target neuron (LTD with the default signs).
+2. **Post-spike pass.** For every postsynaptic spike, walk its incoming synapses and apply the pre-before-post term, computed from the presynaptic trace of the source neuron (LTP with the default signs).
 3. **Trace increment.** Every neuron that fired adds 1 to its trace(s).
 4. **Trace decay.** Every trace is multiplied by `exp(-dt/τ)` (exact decay, one precomputed factor per time constant).
 
@@ -53,6 +62,7 @@ Consequences:
 
 - Traces are read *before* the spikes of the current step are added: a trace holds ``\sum_{m<n} e^{-(t_n-t_m)/τ}`` over the *earlier* spikes of the neuron. A pre and a post spike in the same step do not interact with each other (the earlier history of each still does). This is the convention of Auryn and Brian2 (`w` updated before the trace increment).
 - Only the weights touched in the step (the synapses of neurons that fired) are updated and clamped to `[Wmin, Wmax]`. All weights are clamped once at the first step.
+- The trace decay is applied to every neuron at every step (not lazily at spikes).
 - Cost per step is O(N) multiplications plus O(spikes x fan-out); there is no scan of all synapses and no `exp` per neuron. The loops are serial (no threading).
 - The kernels agree with Brian2 (relative weight difference 2e-6), Auryn (2e-7) and the analytic pair kernels.
 
@@ -69,6 +79,7 @@ and 0 if both spikes fall in the same step.
 - `STDPGerstner` amplitudes are signed and applied once. `A_pre > 0` potentiates pre-before-post pairs; `A_post < 0` depresses post-before-pre pairs. The default is `A_pre = 1e-4`, `A_post = -1e-4`. Any sign combination is accepted (anti-Hebbian: `A_pre < 0 < A_post`).
 - `STDPTriplet` amplitudes are all positive; the sign is explicit in the update (LTD subtracts, LTP adds).
 - `STDPWeightDependent`: `η` and `α` are positive; LTD has the sign built into the update. `μ_plus = μ_minus = 0` is additive STDP with hard bounds, `1` multiplicative STDP.
+- `STDPConfavreux2025`: the signs are carried by `κ`, `γ`, `α`, `β`; with the defaults both pairings potentiate.
 - Units: time in ms, weights in the units of `W` (pF for conductance-based synapses in the default parameters). Rescale the amplitudes to the weight scale of your network.
 
 !!! warning "`STDPGerstner` before SNNModels 1.8.2"
@@ -76,9 +87,7 @@ and 0 if both spikes fall in the same step.
 
 ## Rule reference
 
-Docstrings of all rules and of their variable types are in the [API Reference](api_reference.md) (section
-"Plasticity rules and variables"): `STDPGerstner`, `STDPTriplet`, `STDPTripletVariables`,
-`STDPWeightDependent`, `STDPConfavreux2025`, `STDPMexicanHat`, `STDPVariables`.
+Equations, parameter tables, defaults and the API of all rules and of their variable types are in [Plasticity rules](catalogue/plasticity_rules.md).
 
 The weight-update kernels are validated against analytic kernels, Brian2 and Auryn in the umbrella repository (`papers/JuliaSNN_publication/validation/stdp`). The tutorial `examples/tutorials/STDP_kernel.jl` plots the kernels of all rules.
 
@@ -91,29 +100,12 @@ The weight-update kernels are validated against analytic kernels, Brian2 and Aur
 
     Affected: SpikingNeuralNetworks.jl from commit 680a30c (2025-01-06, v1.0.0) and SNNModels 1.5.0 to 1.8.1. Simulations that used `iSTDPRate` or `iSTDPTime` with those versions give different results and should be rerun.
 
-Docstrings: `iSTDPRate`, `iSTDPPotential`, `iSTDPTime`, `iSTDPVariables` in the [API Reference](api_reference.md).
+`iSTDPTime` holds parameters only: no update is defined for it, so it cannot be used as `LTPParam`. Equations and parameters: [Plasticity rules](catalogue/plasticity_rules.md).
 
-## Hebbian Synaptic Plasticity
+## Voltage-based and short-term plasticity
 
-See the rules above and the voltage-based `vSTDPParameter`. Short-term plasticity (`MarkramSTPParameter`, ...) acts on the efficacy `ρ` and is also updated only under `train!`.
+`vSTDPParameter` implements voltage-based STDP (Clopath et al. 2010). Short-term plasticity (`MarkramSTPParameter`, `MarkramSTPParameterHet`, `MarkramSTPParameterTimestep`) acts on the efficacy `ρ` of each synapse: a presynaptic spike adds `W[s] * ρ[s]` to the target. It is also updated only under `train!`; the event-driven variants update `ρ` in `update_traces!`, before the spike is transmitted. See [Plasticity rules](catalogue/plasticity_rules.md).
 
-## Heterosynaptic Plasticity
+## Heterosynaptic plasticity and metaplasticity
 
-```@autodocs
-Modules = [SpikingNeuralNetworks, SNN.SNNModels]
-Order   = [:type]
-Filter = t -> t <: SNN.SNNModels.AbstractMetaPlasticity 
-```
-
-```@autodocs
-Modules = [SpikingNeuralNetworks, SNN.SNNModels]
-Order   = [:type]
-Filter = t -> t <: SNN.SNNModels.MetaPlasticityParameter
-```
-
-
-```@autodocs
-Modules = [SpikingNeuralNetworks, SNN.SNNModels]
-Order   = [:type]
-Filter = t -> t <: SNN.SNNModels.AbstractSpikingSynapseParameter
-```
+Rules that act on whole connections rather than on single synapses (synaptic normalisation, aggregate scaling, synaptic turnover) are separate connection objects added to the model; they are described in [Metaplasticity](catalogue/metaplasticity.md).

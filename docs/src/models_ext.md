@@ -1,226 +1,216 @@
 # Model Extensions
 
-Users can define new concrete types of the three abstract models (`AbstractPopulation`, `AbstractStimulus`, and `AbstractSynapse`) to extend the functionality of the SpikingNeural Networks package.
+New populations, connections, stimuli and plasticity rules are added by defining new concrete
+subtypes of the abstract types of `SNNModels` and the methods that the simulation loop calls for
+them. Because `sim!` and `train!` dispatch on the type of each component and on the type of its
+`param` field, it is often enough to define a new *parameter* type and the method that specialises on
+it, without a new component type.
 
-New populations, stimuli, or synapses models can be added by users by defining new types.
+## The simulation loop
 
-## Adding a Population Model
+At every time step `sim!` and `train!` do the following (see `src/utils/main.jl` in SNNModels):
 
-To add a new population model, users need to define a new concrete type that inherits from `AbstractPopulation`. The new population model should include the following:
-
-1. **Parameters**: Define a new type for the parameters of the population model. This type should inherit from `AbstractPopulationParameter`.
-2. **State Variables**: Define the state variables of the population model. These variables should be included in the new type that inherits from `AbstractPopulation`.
-3. **Integration Function**: Define a `integrate(population::P, param::T, dt::Float32) where {P<:AbstractPopulation, T<:AbstractPopulationParameter}` function to integrate the population model. This function should update the state variables of the population model at each time step.
-
-### Current-based IF 
-
-
-```julia src/SpikingNeuralNetworks.jl/examples/tutorials/extensions/neuron_model.jl
-using SpikingNeuralNetworks
-using Distributions
-SNN.@load_units
-
-# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
-@eval SNN.SNNModels begin
-
-    """
-    Define the neuron model parameters.
-    Parameters are used at integration time to compute the equation update.
-    All parameters are optional. We strongly advise using SI units and default values.
-    """
-    NeuronParameter
-    @snn_kw struct NeuronParameter <: AbstractPopulationParameter
-        # adex parameters
-        R::Float32 = 1f0GΩ
-        El::Float32 = -70.6f0
-        Vt::Float32 = -50.4f0
-        up::Float32 = 0.1f0 * ms
-        τabs::Float32 = 0.1f0 * ms
-        τe::Float32 = 10f0ms
-        τi::Float32 = 10f0ms
-    end
-
-    """
-    Define the neuron model.
-    The neuron model holds the parameters and state variables of the neuron.
-    The state variables are used to compute the equation update at integration time and can be recorded.
-
-    The entries:
-     - `param::NeuronParameter`: The parameters of the neuron model.
-     - `N::Int64`: The number of neurons in the population.
-     - `name::String`: The name of the neuron population.
-     - `id::String`: A unique identifier for the neuron population.
-     - `records::Dict{Symbol, Any}`: A dictionary to store recorded variables.
-    are compulsory
-    """
-    Neuron
-
-    @snn_kw struct Neuron <: AbstractPopulation
-        param::NeuronParameter = NeuronParameter()
-        N::Int64 = 10
-        name::String= "Neuron"
-        id::String = randstring(12)
-        v::Vector{Float32} = ones(Float32, N)*-70.6f0  # Initial membrane potential
-        ge::Vector{Float32} = zeros(Float32, N)
-        gi::Vector{Float32} = zeros(Float32, N)
-        fire::Vector{Bool} = falses(N)
-        I::Vector{Float32} = zeros(Float32, N)
-        records::Dict{Symbol, Any} = Dict{Symbol, Any}()
-    end
-
-    """
-    Integrate the neuron model.
-    The function integrate!(p::Neuron, param::NeuronParameter, dt::Float32) is mandatory for the a Population model
-    and is used to update the state variables of the neuron model at each time step.
-
-    The function must only define the integration step, the recordings are handled by the simulation engine. 
-    The following present a good practice to implement the integration step:
-    - Use the `@unpack` macro to extract the state variables from the neuron model.
-    - Use the `@inbounds` macro to skip bounds checking for performance reasons.
-    - Update the state variables in a for loop over the number of neurons `N`.
-    - Update the state variables using the timestep `dt` and the parameters from `param`.
-
-    The macro `@inbounds` is used to skip bounds checking for performance reasons. It leads to segment faults if the indices are out of bounds.
-
-    The macro `@fastmath` is used to allow the compiler to use fast math operations, which may lead to slight inaccuracies but improves performance. We consider that in the context of biophysical networks this imprecisions are not critical.
-    """
-    integrate!
-
-    function integrate!(p::Neuron, param::NeuronParameter, dt::Float32)
-        @unpack N, v, ge, gi, fire, I = p
-        @inbounds @fastmath for i in 1:N
-            if fire[i]
-                v[i] = param.El
-                fire[i] = false
-            else
-                v[i] += dt*(param.El - v[i] +
-                        (ge[i] - gi[i]) * param.R +
-                        I[i] * param.R )
-            end
-            ge[i] -= ge[i] / param.τe * dt
-            gi[i] -= gi[i] / param.τi * dt
-            if v[i] >= param.Vt
-                fire[i] = true
-                v[i] = 20*mV  # Reset membrane potential after firing
-            end
-        end
-    end
-    export Neuron, NeuronParameter, integrate!
+<!-- norun -->
+```julia
+record_zero!(P, C, S, T)                  # only at t = 0: store the initial state in the records
+update_time!(T, dt)
+for s in S                                # stimuli
+    stimulate!(s, s.param, T, dt)
+    record!(s, T)
 end
-
-import SpikingNeuralNetworks: NeuronParameter, Neuron, CurrentNoiseParameter, CurrentStimulus, compose, sim!, monitor!, vecplot
-# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
-
-param = NeuronParameter()
-neuron = Neuron(param=param, N=1)
-# Create a withe noise input current
-current_param = CurrentNoiseParameter(neuron.N; I_base = 0pA, I_dist = Normal(-50pA, 100pA))
-current_stim = CurrentStimulus(neuron, :I, param = current_param)
-
-monitor!(neuron, [:v, :fire, :ge, :gi, :I], sr = 2kHz)
-model = compose(; neuron, current_stim)
-sim!(; model, duration = 1000ms, pbar=true)
-
-vecplot(
-    neuron,
-    :v,
-    add_spikes = true,
-    ylabel = "Membrane potential (mV)",
-    # ylims = (-80, 10),
-    c = :black,
-)
+for p in P                                # populations
+    update_traces!(p, p.param, dt, T)     # train! only
+    integrate!(p, p.param, dt)
+    plasticity!(p, p.param, dt, T)        # train! only
+    record!(p, T)
+end
+for c in C                                # connections
+    update_traces!(c, c.param, dt, T)     # train! only
+    forward!(c, c.param, dt, T)
+    plasticity!(c, c.param, dt, T)        # train! only
+    record!(c, T)
+end
 ```
 
-## Adding a Stimulus Model
+`sim!` never calls `update_traces!` or `plasticity!`: the weights and the short-term plasticity
+variables of a model stay fixed under `sim!`, even if its synapses carry plasticity rules.
 
-Thanks to the multidispatching the simulation loop will call the function that matches the `population`, `stimulus`, or `connection` type and its parameter. Thus we don't need to always define a new type, defining a new parameter and a function that specializes for it is sufficient to introduce a new behaviour.
+## Interface of each component
 
-Here we extend the `PoissonStimulus<:AbstractStimulus` adding a new `PoissonRefractoryParameter<:AbstractStimulusParameter`. We use the function `PoissonLayer` to create an input layer that stimulate the postsynaptic population with Poisson distributed spikes with a ΔT absolute refractory period. 
+**Populations** (`<: AbstractPopulation`, parameter `<: AbstractPopulationParameter`)
 
-### Poisson Stimulus with refractory time
+- Required fields: `N`, `param`, `id`, `name`, `records::Dict` (checked by
+  `validate_population_model`; `monitor!` and `record!` store the recordings in `records`).
+  A field `fire::Vector{Bool}` is needed to record spikes (`monitor!(p, [:fire])`) and to be the
+  presynaptic population of a `SpikingSynapse`. Any other field (`v`, `I`, ...) can be recorded
+  with `monitor!`.
+- `integrate!(p, param, dt::Float32)`: advance the state by one step.
+- `synaptic_target(targets::Dict, post, sym::Symbol, target)`: return `(g, v_post)`, the vector
+  into which connections and stimuli add their input and the membrane potential used by
+  voltage-dependent plasticity. Needed only if the population receives `SpikingSynapse`s or spiking
+  stimuli; there is no generic fallback. Stimuli that write a current (`CurrentStimulus`) read the
+  field `sym` directly.
+- Optional: `Population(param::MyParameter; kwargs...)` so that `SNN.Population(; param, ...)`
+  builds the new type, and `plasticity!`/`update_traces!` methods; the generic fallbacks for
+  `AbstractPopulationParameter` do nothing.
+
+**Connections** (`<: AbstractConnection`, parameter `<: AbstractConnectionParameter`)
+
+- Required fields: `param`, `id`, `name`, `records::Dict` (checked by `validate_synapse_model`).
+- `forward!(c, param, dt, T)` or the two-argument form `forward!(c, param)`: the generic
+  four-argument method calls the two-argument one. This generic method, and the no-op
+  `update_traces!` fallback, exist only for parameters that are subtypes of
+  `AbstractConnectionParameter`; with any other parameter type `sim!` and `train!` fail with a
+  `MethodError`.
+- `plasticity!(c, param, dt::Float32, T::Time)`: called by `train!` for every connection; there is
+  no generic fallback, so define it (it can return `nothing`) if the model is ever run with `train!`.
+  `update_traces!` has a no-op fallback.
+
+**Stimuli** (`<: AbstractStimulus`, parameter `<: AbstractStimulusParameter`)
+
+- Required fields: `param`, `id`, `name`, `records::Dict` (checked by `validate_stimulus_model`).
+- `stimulate!(s, param, T::Time, dt::Float32)`.
+- Optional: a `Stimulus(param::MyParameter, post, sym; kwargs...)` method.
+
+**Plasticity rules** for `SpikingSynapse` (`<: LTPParameter` or `<: STPParameter`)
+
+- `plasticityvariables(param, Npre, Npost)`: return the state of the rule, a subtype of
+  `PlasticityVariables` with an `active::Vector{Bool}` field (the rule runs only if
+  `any(active)`).
+- `plasticity!(c, param, vars, dt, T)` (applied after `forward!`) and, if the rule needs it,
+  `update_traces!(c, param, vars, dt, T)` (applied before `forward!`). Long-term rules modify
+  `c.W`, short-term rules the efficacy `c.ρ`.
+
+The existing types in SNNModels are the best templates: see the [Model catalogue](catalogue/index.md).
+
+## Adding a population model: current-based IF
+
+The new types are defined inside `SNNModels` with `@eval`, which is equivalent to adding a file to
+`SNNModels.jl/src/populations` and gives access to the internal macros (`@snn_kw`) and types.
+
+A docstring cannot be attached directly to an `@snn_kw struct`; write the docstring above the bare
+name of the type and define the struct after it, as below. `@snn_kw` generates a keyword constructor whose defaults may refer to earlier fields. Field types
+must be plain names: a parametric type written in place, such as `Vector{Float32}`, is not accepted
+by the macro (it fails with `Cannot convert an object of type Expr to an object of type Symbol`).
+Declare vector types as type parameters with a default (`Neuron{VFT = Vector{Float32}}`), as the
+library models do, or use the aliases `VBT = Vector{Bool}` and `VIT = Vector{Int}` defined in
+SNNModels.
 
 ```julia
 using SpikingNeuralNetworks
 using Distributions
 SNN.@load_units
-using ProtoStructs
 
-# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
 @eval SNN.SNNModels begin
-
     """
-    Define the Poisson refractory stimulus parameters.
-    Parameters are used at integration time to compute the equation update.
-    All parameters are optional. 
-    """
-    PoissonRefractoryParameter
+        NeuronParameter
 
-    @snn_kw struct PoissonRefractoryParameter <: PoissonStimulusParameter #{R} where {R<:Float32}
-    # @proto struct PoissonRefractoryParameter{R = Float32} 
-        ΔT::Float32 = 2f0ms  # Absolute refractory period
-        N::Int = 100  # Number of neurons
-        rate::Float32 = 10Hz
-        last_spike::Vector{Float32} = zeros(Float32, N)  # Last spike time for each neuron
-        rates::Vector{Float32} = fill(rate, N)  # Firing rate for each neuron
-        p::Float32 = 0.1f0  # Fraction of neurons receiving the stimulus
-        μ::Float32 = 1f0  # Mean of the weight distribution
-        σ::Float32 = 0f0  # Standard deviation of the weight distribution
-        active::Vector{Bool} = [true]  # Active neurons
+    Parameters of a current-based leaky integrate-and-fire neuron.
+    """
+    NeuronParameter
+
+    @snn_kw struct NeuronParameter <: AbstractPopulationParameter
+        R::Float32 = 1GΩ
+        El::Float32 = -70.6mV
+        Vt::Float32 = -50.4mV
+        Vr::Float32 = -70.6mV
+        τm::Float32 = 20ms
+        τe::Float32 = 10ms
+        τi::Float32 = 10ms
     end
 
     """
-    Generate a Poisson stimulus with an absolute refractory period for a postsynaptic population.
+        Neuron
+
+    Population of current-based leaky integrate-and-fire neurons. `N`, `param`, `name`, `id`
+    and `records` are compulsory; `fire` is needed to record spikes and to project spikes.
     """
-    function stimulate!(
-        p::PoissonStimulus,
-        param::PoissonRefractoryParameter,
-        time::Time,
-        dt::Float32,
-    )
-        @unpack N, randcache, fire, neurons, colptr, W, I, g = p
-        @unpack rates, ΔT, last_spike = param
-        current_time = get_time(time)
-        rand!(randcache)
-        @inbounds @simd for j = 1:N
-            if (current_time - last_spike[j]) > ΔT && randcache[j] < rates[j] * dt
-                fire[j] = true
-                last_spike[j] = current_time
-                @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g[I[s]] += W[s]
-                end
-            else
-                fire[j] = false
+    Neuron
+
+    @snn_kw struct Neuron{VFT = Vector{Float32}} <: AbstractPopulation
+        param::NeuronParameter = NeuronParameter()
+        N::Int = 10
+        name::String = "Neuron"
+        id::String = randstring(12)
+        v::VFT = fill(param.El, N)
+        ge::VFT = zeros(Float32, N)
+        gi::VFT = zeros(Float32, N)
+        fire::VBT = zeros(Bool, N)
+        I::VFT = zeros(Float32, N)
+        records::Dict = Dict()
+    end
+
+    # one forward Euler step; recordings are handled by the simulation loop
+    function integrate!(p::Neuron, param::NeuronParameter, dt::Float32)
+        @unpack N, v, ge, gi, fire, I = p
+        @unpack R, El, Vt, Vr, τm, τe, τi = param
+        @inbounds for i in 1:N
+            v[i] += dt / τm * (El - v[i] + R * (ge[i] - gi[i] + I[i]))
+            ge[i] -= dt * ge[i] / τe
+            gi[i] -= dt * gi[i] / τi
+            fire[i] = v[i] >= Vt
+            fire[i] && (v[i] = Vr)
+        end
+    end
+
+    # where SpikingSynapse and spiking stimuli deliver their input
+    function synaptic_target(targets::Dict, post::Neuron, sym::Symbol, target = nothing)
+        push!(targets, :sym => sym)
+        return getfield(post, sym), post.v
+    end
+end
+
+neuron = SNN.SNNModels.Neuron(N = 1)
+current_param = SNN.CurrentNoise(neuron.N; I_base = 20pA, I_dist = Normal(0pA, 20pA))
+current_stim = SNN.Stimulus(current_param, neuron, :I)
+input = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 100), neuron, :ge; conn = (p = 1, μ = 1pA))
+
+SNN.monitor!(neuron, [:v, :fire, :ge, :I], sr = 2kHz)
+model = SNN.compose(; neuron, current_stim, input, silent = true)
+SNN.sim!(; model, duration = 1000ms)
+SNN.spiketimes(neuron)
+```
+
+## Adding a stimulus model: Poisson input with refractory period
+
+Here a new parameter type, subtype of `PoissonStimulusParameter`, is enough: the existing
+`PoissonStimulus` container and its `Stimulus` constructor are reused, and only a `stimulate!`
+method for the new parameter is added. The stimulus adds `μ` to the target of each neuron when
+the neuron's Poisson source emits a spike, with an absolute refractory period `ΔT` between
+spikes.
+
+```julia
+using SpikingNeuralNetworks
+SNN.@load_units
+
+@eval SNN.SNNModels begin
+    @snn_kw struct PoissonRefractory{VFT = Vector{Float32}} <: PoissonStimulusParameter
+        rate::Float32 = 10Hz
+        ΔT::Float32 = 2ms                       # absolute refractory period
+        μ::Float32 = 1.0f0                      # increment per spike
+        N::Int = 100                            # size of the target population
+        last_spike::VFT = fill(-Inf32, N)
+        active::VBT = [true]
+    end
+
+    function stimulate!(p::PoissonStimulus, param::PoissonRefractory, time::Time, dt::Float32)
+        param.active[1] || return
+        @unpack rate, ΔT, μ, last_spike = param
+        t = get_time(time)
+        @inbounds for n in p.neurons
+            if t - last_spike[n] > ΔT && rand() < rate * dt
+                p.g[n] += μ
+                last_spike[n] = t
             end
         end
     end
-    export PoissonRefractoryParameter, stimulate!
 end
 
-import SpikingNeuralNetworks: PoissonLayer, PoissonRefractoryParameter, compose, sim!, monitor!, vecplot
-# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
-
-neuron_param = SNN.IdentityParam()
-neuron = SNN.Identity(; param = neuron_param, N = 1, name = "Identity Neuron")
-
-# Create a withe noise input current
-stim_param = PoissonRefractoryParameter(N=1, ΔT = 20ms, p=1)
-stim = PoissonLayer(neuron, :g; param=stim_param)
-
-monitor!(neuron, [:g, :fire], sr = 2kHz)
-model = compose(; neuron, stim)
-sim!(; model, duration = 100000ms, pbar=true)
-
-vecplot(
-    neuron,
-    :g,
-    neurons=1,
-    add_spikes = true,
-    ylabel = "Membrane potential (mV)",
-    xlims = (0, 1000ms),
-    # ylims = (-80, 10),
-    c = :black,
-)
-
-st = SNN.spiketimes(neuron)[1]
-diff(st) |> x-> SNNPlots.histogram(x, bins=100)
+neuron = SNN.Identity(N = 1, name = "Identity Neuron")
+stim = SNN.Stimulus(SNN.SNNModels.PoissonRefractory(N = 1, rate = 100Hz, ΔT = 20ms), neuron, :g)
+SNN.monitor!(neuron, [:fire])
+model = SNN.compose(; neuron, stim, silent = true)
+SNN.sim!(; model, duration = 2000ms)
+isi = diff(SNN.spiketimes(neuron)[1])
+@assert minimum(isi) > 20ms
 ```

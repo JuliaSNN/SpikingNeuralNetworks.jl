@@ -1,46 +1,57 @@
 # Tutorial
 
-In the following we will guide the user in running models with _SpikingNeuralNetworks.jl_. The tutorial aims to showcase the basic functionalities of the library, much more can be obtained by composing together the basic building blocks.
+This tutorial shows how to build and run models with _SpikingNeuralNetworks.jl_. Each section is a
+self-contained script: it can be pasted in a Julia session in which `SpikingNeuralNetworks` (and
+`CairoMakie`, for the figures) is installed. The library offers many more models than the ones used
+here; they are described in the [Model catalogue](catalogue/index.md).
 
-The scripts for the tutorials can be found in the [examples](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/tree/main/examples) folder of the package.
+Longer scripts, including the ones that produced the figures in this page, are in the
+[examples](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/tree/main/examples) folder of the
+package. Some of those scripts still use the old `Plots` interface of `SNNPlots`; since SNNPlots 0.2
+the plotting functions (`vecplot`, `raster`, ...) use `Makie`, as in the snippets below.
 
-We assume the user has the environment manager [DrWatson](https://juliadynamics.github.io/DrWatson.jl/dev/) installed.  
-
-All scripts assume the following code being loaded. The script are plot with the `Plots` package in `SNNPlots`. Future versions will move to `Makie`. 
+Every script starts by loading the library and the unit constants:
 
 ```julia
-using DrWatson
-findproject(@__DIR__) |> quickactivate
-projectdir() 
-using SpikingNeuralNetworks
-using SNNPlots
-import SNNPlots: vecplot, plot, Plots
-SNN.@load_units
+using SpikingNeuralNetworks   # exports SNN, an alias of the module
+SNN.@load_units               # defines ms, mV, pA, nS, Hz, ... in the current scope
+using CairoMakie              # Makie backend used to render and save the figures
 ```
 
+The unit system is: time in ms, voltage in mV, current in pA, capacitance in pF, conductance in nS,
+resistance in GΩ, rates in kHz (`Hz = 1e-3`). Writing `20ms` or `5nS` therefore only documents the unit;
+the stored number is `20f0` or `5f0`.
 
-## AdEx neuron 
+## AdEx neuron
 
-The AdEx model can reproduce several firing patterns observed in real neurons under direct current injections in the soma ([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html), [Adaptive exponential integrate-and-fire model as an effective description of neuronal activity](https://pubmed.ncbi.nlm.nih.gov/16014787/)). 
-The model has two equations and two variables, one for the membrane and one for the adaptive current:
+The adaptive exponential integrate-and-fire (AdEx) model ([Brette and Gerstner, 2005](https://pubmed.ncbi.nlm.nih.gov/16014787/))
+reproduces several firing patterns observed under direct current injection
+([AdEx firing patterns](https://neuronaldynamics.epfl.ch/online/Ch6.S2.html)). The model has a
+membrane potential ``V`` and an adaptation current ``w``:
 
 ```math
 \begin{align}
-    \frac{dV}{dt} &= - \frac{(V - E_l)}{\tau_m} + \Delta T \exp{\frac{V - \theta}{\Delta T}} + R (-w + I - I_{syn}) \\ \\
-    \frac{dw}{dt} &= \frac{(a (V - E_l) - w)}{\tau_w}
+    \tau_m \frac{dV}{dt} &= -(V - E_l) + \Delta_T \exp\left(\frac{V - \theta}{\Delta_T}\right) + R\,(I - w - I_{syn}) \\
+    \tau_w \frac{dw}{dt} &= a (V - E_l) - w
 \end{align}
 ```
 
-The `AdEx` is a concrete type of the `AbstractGeneralizedIFParameter` (GIF) class. Populations of this type are widely used in biophysical models. `JuliaSNN` offers extended support for this type, the methods are documented in [Generalized Integrate and Fire models](@ref)
+The threshold ``\theta`` relaxes to ``V_t`` with time constant ``\tau_A`` and is increased by
+``A_t`` after each spike (both from `PostSpike`; with the default `At = 0` it stays at ``V_t``).
+A spike is emitted when ``V \geq 0`` mV: ``V`` is set to 20 mV for that step, then reset to
+``V_r`` and held during the refractory period `τabs`; ``w`` is incremented by ``b``. `AdExParameter` is a subtype of `AbstractGeneralizedIFParameter`: the population `AdEx` can be
+combined with any synapse model (see [Neuron models: integrate-and-fire family](catalogue/neurons_if.md)).
 
-Changing the parameters of the reset voltage, the membrane timescale and current timescales, and the adaptive current parameters we obtain different firing patterns.
-
+Changing the membrane time constant, the reset potential and the adaptation parameters gives
+different firing patterns:
 
 ```julia
-using DataFrames
+using SpikingNeuralNetworks
+SNN.@load_units
+using CairoMakie
 
-# Define the data
-data = [
+# (pattern, τm (ms), a (nS), τw (ms), b (pA), Vr (mV), I (pA))
+patterns = [
     ("Tonic", 20, 0.0, 30.0, 60.0, -55.0, 65),
     ("Adapting", 20, 0.0, 100.0, 5.0, -55.0, 65),
     ("Init. burst", 5.0, 0.5, 100.0, 7.0, -51.0, 65),
@@ -49,507 +60,329 @@ data = [
     ("Delayed", 5.0, -1.0, 100.0, 10.0, -60.0, 25),
 ]
 
-# Create the DataFrame
-df = DataFrame(
-    Type = [row[1] for row in data],
-    τm = [row[2] for row in data],
-    a = [row[3] for row in data],
-    τw = [row[4] for row in data],
-    b = [row[5] for row in data],
-    ur = [row[6] for row in data],
-    i = [row[7] for row in data],
-)
-
-# Display the DataFrame
-println(df)
-
-plots = map(eachrow(df)) do row
+fig = Figure(size = (900, 700))
+for (n, (name, τm, a, τw, b, Vr, I)) in enumerate(patterns)
     param = SNN.AdExParameter(
-        R = 0.5GΩ,
+        R = 0.5GΩ,
         Vt = -50mV,
         ΔT = 2mV,
         El = -70mV,
-        # τabs=0,
-        τm = row.τm * ms,
-        Vr = row.ur * mV,
-        a = row.a * nS,
-        b = row.b * pA,
-        τw = row.τw * ms,
+        τm = τm * ms,
+        Vr = Vr * mV,
+        a = a * nS,
+        b = b * pA,
+        τw = τw * ms,
     )
-
-
     E = SNN.AdEx(; N = 1, param)
     SNN.monitor!(E, [:v, :fire, :w], sr = 8kHz)
-    model = SNN.compose(; E = E, silent = true)
+    model = SNN.compose(; E, silent = true)
 
-    E.I .= Float32(05pA)
+    E.I .= 5pA                      # weak current for 30 ms
     SNN.sim!(; model, duration = 30ms)
-    E.I .= Float32(row.i)
-    # E.I .= row.i, # Current step
+    E.I .= I * pA                   # current step
     SNN.sim!(; model, duration = 300ms)
 
-    Plots.default(color = :black)
-    p1 = plot(
-        vecplot(
-            E,
-            :v,
-            add_spikes = true,
-            ylabel = "Membrane potential (mV)",
-            ylims = (-80, 10),
-        ),
-        vecplot(E, :w, ylabel = "Adapt. current (nA)", c = :grey, margin = 10Plots.mm),
-        plot_title = row.Type,
-        layout = (1, 2),
-        legend = false,
-        size = (600, 800),
-        topmargin = 1Plots.mm,
-    )
+    ax = Axis(fig[(n - 1) ÷ 2 + 1, (n - 1) % 2 + 1], title = name, ylabel = "V (mV)")
+    SNN.vecplot!(ax, E, :v, add_spikes = true, color = :black)
 end
-
-p = plot(
-    plots...,
-    layout = (3, 2),
-    size = (1600, 1000),
-    xlabel = "Time (ms)",
-    leftmargin = 10Plots.mm,
-)
-
-savefig(p, ASSET_PATH * "/AdEx_neuron_types.png")
-# Display the DataFrame
+save(joinpath(mktempdir(), "AdEx_neuron_types.png"), fig)
 ```
-
-| Row | Type         | τm  | a    | τw  | b    | ur   | i   |
-|-----|--------------|-----|------|-----|------|------|-----|
-| 1   | Tonic        | 20  | 0.0  | 30.0| 60.0 | -55.0| 65  |
-| 2   | Adapting     | 20  | 0.0  | 100.0| 5.0  | -55.0| 65  |
-| 3   | Init. burst  | 5.0 | 0.5  | 100.0| 7.0  | -51.0| 65  |
-| 4   | Bursting     | 5.0 | -0.5 | 100.0| 7.0  | -46.0| 65  |
-| 6   | Transient    | 10  | 1.0  | 100  | 10.0 | -60.0| 65  |
-| 7   | Delayed      | 5.0 | -1.0 | 100.0| 10.0 | -60.0| 25  |
-
 
 ![Firing patterns of AdEx neuron](assets/examples/AdEx.png)
 
 ## Noise input current
 
-In 'in vivo' experiments neurons are driven with noisy inputs that can be modeled by splitting the input current in two components
-``I = I^{det}(t) + I^{noise}(t)``.
-
-the neuronal dynamics is then determined (for a generalized Leaky and Integrate model) by the equation:
+In vivo, neurons are driven by noisy inputs. A simple description splits the input current in a
+deterministic and a stochastic component, ``I = I^{det}(t) + I^{noise}(t)``, and the membrane
+dynamics of a generalized integrate-and-fire neuron reads
 
 ```math
 \tau_{m} \frac{d u}{ d t} = f(u) + R I^{det}(t) + R I^{noise}(t)
 ```
 
-In this description the ``I^{noise}(t)`` is the stochastic component of the external current, which is normally assumed to be a white noise.  Under white noise, the average value of the external current is ``\langle I_{noise} \rangle = 0`` and the autocorrelation is determined by the neuronal timescale and the noise variance, ``\langle I^{noise}(t) I^{noise}(t') \rangle = \tau_m \sigma \delta (t-t')``.
+`CurrentNoise` implements such an input: at every time step it sets the target variable to
+`I_base` plus a fresh sample ``\xi`` of the distribution `I_dist`. With `α > 0` the new value is
+mixed with the previous one, ``I \leftarrow (1-\alpha)(I_{base} + \xi) + \alpha I``, which makes the
+noise temporally correlated (see [Stimuli](catalogue/stimuli.md)). In the following example we:
 
-To introduce white noise in the model we can use the `CurrentNoiseParameter` type. In the following example:
-
-1. define a Leaky Integrate-and-Fire neuron ;
-2. define a `CurrentNoiseParameter`, it accepts a I_base value (the deterministic current) and a distribution, which we set to be a Normal distribution with zero average and `100pA` variance;
-3. `CurrentStimulus` attaches an `<: AbstraactStimulus` to the `:I` variable of the population `E`;
-4. record the variables, simulate and plot the results.
-
+1. define a leaky integrate-and-fire neuron with `Population`, which dispatches on the type of `param`;
+2. define a `CurrentNoise` with a deterministic current of 30 pA and Gaussian fluctuations with
+   standard deviation 100 pA;
+3. attach it to the `:I` variable of the population with `Stimulus` (it returns a `CurrentStimulus`);
+4. record, simulate and plot.
 
 ```julia
-
+using SpikingNeuralNetworks
+SNN.@load_units
+using CairoMakie
 using Distributions
 
-SNN.PostSpike()
-if_neuron =(  
-    param = SNN.IFParameter(R = 0.5GΩ, Vt = -50mV, ΔT = 2mV, El = -70mV, τm = 20ms, Vr = -55mV),
+if_neuron = (
+    param = SNN.IFParameter(R = 0.5GΩ, Vt = -50mV, El = -70mV, τm = 20ms, Vr = -55mV),
     spike = SNN.PostSpike(),
     synapse = SNN.SingleExpSynapse(),
-    )
+)
+E = SNN.Population(; N = 1, if_neuron...)
+SNN.monitor!(E, [:v, :fire, :I], sr = 2kHz)
 
-
-# Create the IF neuron with tonic firing parameters
-E = SNN.Population(;N = 1, if_neuron...)
-SNN.monitor!(E, [:v, :fire, :w, :I], sr = 2kHz)
-
-# Create a withe noise input current 
-current_param = SNN.CurrentNoise(E.N; I_base = 30pA, I_dist = Normal(00pA, 100pA))
+# white-noise input current
+current_param = SNN.CurrentNoise(E.N; I_base = 30pA, I_dist = Normal(0pA, 100pA))
 current_stim = SNN.Stimulus(current_param, E, :I)
-model = SNN.compose(; E = E, I = current_stim)
-SNN.clear_records!(model)
-SNN.sim!(; model, duration = 2000ms)
+model = SNN.compose(; E, I = current_stim, silent = true)
+SNN.sim!(; model, duration = 1000ms)
 
-p = plot(
-    vecplot(
-        E,
-        :v,
-        add_spikes = true,
-        ylabel = "Membrane potential (mV)",
-        ylims = (-80, 10),
-        c = :black,
-    ),
-    vecplot(E, :I, ylabel = "External current (pA)", c = :gray, lw = 0.4, alpha = 0.6),
-    layout = (2, 1),
-    size = (600, 500),
-    xlabel = "Time (s)",
-    leftmargin = 10Plots.mm,
-)
-
-savefig(
-    p,
-    joinpath(ASSET_PATH, "noise_current.png"),
-)
-
+fig = Figure(size = (600, 500))
+ax1 = Axis(fig[1, 1], ylabel = "Membrane potential (mV)")
+SNN.vecplot!(ax1, E, :v, add_spikes = true, color = :black)
+ax2 = Axis(fig[2, 1], ylabel = "External current (pA)", xlabel = "Time (s)")
+SNN.vecplot!(ax2, E, :I, color = :gray, lw = 0.5)
+save(joinpath(mktempdir(), "noise_current.png"), fig)
 ```
 
 ![Noise input current](assets/examples/noise_current.png)
 
 ## Balanced input spikes
 
-In biophysical networks, and in the brain, neurons' membrane potential is not driven by external currents but by the opening and closing of ionic channels following a pre-synaptic spike. Spikes cause the release of neurotransmitter vescicles in the synaptic cleft that bind to the ionic channels on the post-synaptic neuron's membrane. This process is modeled with [synaptic models](https://neuronaldynamics.epfl.ch/online/Ch3.S1.html). `JuliaSNN` offers the classical synaptic models for populations in the GIF family. 
+In the brain, the membrane potential is driven by the opening of ion channels after presynaptic
+spikes rather than by injected currents. Populations of the generalized integrate-and-fire family
+accept any of the synapse models listed in [Synapse and receptor models](catalogue/synapses.md); the
+excitatory and inhibitory inputs are delivered to the receptor fields `:glu` and `:gaba`
+(the aliases `:ge`/`:he` and `:gi`/`:hi` map to the same fields).
 
-The opening of ionic channel can lead to a depolarizing or hyperpolarizing current, dependently on its reversal potential. 
+Here two Poisson spike trains, one excitatory and one inhibitory, drive an AdEx neuron above
+threshold. The large number of input spikes increases the synaptic conductance until it dominates
+the leak conductance: the neuron is in the so-called high-conductance state.
 
-In this example we use two spike trains, an excitatory and an inhibitory one, to stimulate a Leaky Integrate-and-Fire neuron above the spike-threshold. The large number of spikes received increases the synaptic conductance of the cell, to the point that it dominates over the leakage conductance term. In this condition, the neurons membrane dynamics is dominated by the external inputs, and the neuron is in the so-called "High-conductance state". 
+`PoissonLayer` defines a layer of `N` independent Poisson sources; `Stimulus(param, population, sym;
+conn)` connects it to the population with the connectivity `conn` (connection probability `p` and
+mean weight `μ`, see `sparse_matrix`).
 
 ```julia
-neuron_parameter =(
-    param = SNN.AdExParameter(
-        R=0.5GΩ,
-        Vt = -50mV,
-        ΔT = 2mV,
-        El = -70mV,
-        τm = 20ms,
-        Vr = -55mV,),
+using SpikingNeuralNetworks
+SNN.@load_units
+using CairoMakie
+
+neuron_parameter = (
+    param = SNN.AdExParameter(R = 0.5GΩ, Vt = -50mV, ΔT = 2mV, El = -70mV, τm = 20ms, Vr = -55mV),
     synapse = SNN.DoubleExpSynapse(),
-    spike = SNN.PostSpike(τabs= 5ms)
+    spike = SNN.PostSpike(τabs = 5ms),
 )
+E = SNN.Population(; neuron_parameter..., N = 1)
 
-# Create the IF neuron
-E = SNN.Population(;neuron_parameter..., N = 1)
+poisson_exc = SNN.PoissonLayer(rate = 1Hz, N = 1000)
+poisson_inh = SNN.PoissonLayer(rate = 10Hz, N = 1000)
+conn = (p = 1, μ = 5nS)
+stim_exc = SNN.Stimulus(poisson_exc, E, :glu; conn, name = "Exc Noise")
+stim_inh = SNN.Stimulus(poisson_inh, E, :gaba; conn, name = "Inh Noise")
 
-# Create an excitatory and inhibitory spike trains
-
-# Define the Poisson stimulus parameters 
-poisson_exc = SNN.PoissonLayer(
-    rate=1Hz,    # Mean firing rate (Hz) 
-    N = 1000, # Neurons in the Poisson Layer
-)
-poisson_inh = SNN.PoissonLayer(
-    rate = 10Hz,       # Mean firing rate (Hz)
-    N = 1000,  # Neurons in the Poisson Layer
-)
-conn = (
-    p = 1,
-    μ = 5nS
-)
-
-# Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = SNN.Stimulus(poisson_exc, E, :ge, name = "Exc Noise"; conn)
-stim_inh = SNN.Stimulus(poisson_inh, E, :gi, name = "Inh Noise"; conn)
-
-# Create the model and run the simulation
-model = SNN.compose(; E = E, stim_exc, stim_inh)
-SNN.monitor!(E, [:v, :fire, :w, :ge, :gi], sr = 2kHz)
+model = SNN.compose(; E, stim_exc, stim_inh, silent = true)
+SNN.monitor!(E, [:v, :fire], sr = 2kHz)
+SNN.monitor!(E, [:glu, :gaba], sr = 2kHz, variables = :receptors) # receptor conductances
 SNN.monitor!(model.stim, [:fire])
 SNN.sim!(; model, duration = 1000ms)
 
-# Plot the results
-# gplot is a special function the plots the synaptic currents
-
-Plots.default(palette = :okabe_ito)
-p = plot(
-    SNN.raster(model.stim),
-    SNN.gplot(
-        E,
-        v_sym = :v,
-        ge_sym = :ge,
-        gi_sym = :gi,
-        Ee_rev = 0mV,
-        Ei_rev = -75mV,
-        r = 0ms:2.5ms:1000ms,
-        ylabel = "Synaptic current (μA)",
-    ),
-    SNN.vecplot(
-        E,
-        :v,
-        add_spikes = true,
-        ylabel = "Membrane potential (mV)",
-        ylims = (-80, 10),
-        c = :black,
-    ),
-    layout = (3, 1),
-    fgcolorlegend = :transparent,
-    size = (800, 900),
-    xlabel = "Time (s)",
-    leftmargin = 10Plots.mm,
-)
-
+fig = Figure(size = (800, 800))
+ax1 = Axis(fig[1, 1], ylabel = "Input neuron")
+SNNPlots.raster!(ax1, model.stim)
+ax2 = Axis(fig[2, 1], ylabel = "Conductance (nS)")
+SNN.vecplot!(ax2, E, :glu, variables = :receptors, label = "glu")
+SNN.vecplot!(ax2, E, :gaba, variables = :receptors, label = "gaba")
+ax3 = Axis(fig[3, 1], ylabel = "Membrane potential (mV)", xlabel = "Time (s)")
+SNN.vecplot!(ax3, E, :v, add_spikes = true, color = :black)
+save(joinpath(mktempdir(), "balanced_stimuli.png"), fig)
 ```
 
 ![Poisson input](assets/examples/balanced_stimuli.png)
 
-## Ball and Stick neuron
+## Ball-and-stick neuron
 
-We can also implement more complex cellular models. A classical extension of the single-compartment cell, or point-neuron, is the ball-and-stick neuron. This model has a passive dendritic compartment and an active, non-linear soma. 
-In our case, the dendritic compartment can be endowed with synaptic non-linearities, such as the NMDA receptor voltage-dependence. The following example implements a ball and stick model with a steep dendritic non-linearity. The cell is stimulated with balanced excitatory-inhibitory inputs on the denrite.
+A classical extension of the point neuron is the ball-and-stick neuron: a passive dendritic
+compartment coupled to an active AdEx soma. The dendrite can host voltage-dependent NMDA receptors,
+which make its response to synaptic input non-linear. See [Multicompartment neuron models](catalogue/multicompartment.md)
+for the equations and for the `Tripod` (two dendrites) variant.
+
+The somatic parameters are given by `adex`, the dendrite geometry by `BallAndStickParameter`
+(dendrite length, here a fixed 160 μm, and passive physiology), and the receptors of each
+compartment by `soma_syn` and `dend_syn` (defaults: `TripodSomaSynapse` with AMPA and GABA-A,
+`TripodDendSynapse` with AMPA, NMDA, GABA-A and GABA-B). Stimuli and synapses target a compartment
+with the extra positional argument `:s` (soma) or `:d` (dendrite).
 
 ```julia
 using SpikingNeuralNetworks
-using Plots
-using Random
 SNN.@load_units
-import SpikingNeuralNetworks: Receptors, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray, get_time
+using CairoMakie
 
-using BenchmarkTools
+adex = SNN.AdExParameter(C = 281pF, gl = 40nS, Vr = -55.6mV, El = -70.6mV, ΔT = 2mV,
+                         Vt = -50.4mV, a = 4nS, b = 80.5pA, τw = 144ms)
+E = SNN.BallAndStick(N = 1, adex = adex,
+                     param = SNN.BallAndStickParameter(ds = [(160um, 160um)]))
 
-Random.seed!(1234)
-## Define the neuron model parameters
-# Define the synaptic properties for the soma and dendrites
-SomaSynapse = Receptors(
-    AMPA = Receptor(E_rev = 0.0, 
-                    τr = 0.26, 
-                    τd = 2.0, 
-                    g0 = 0.73),
-    GABAa = Receptor(E_rev = -70.0, 
-                     τr = 0.1, 
-                     τd = 15.0, 
-                     g0 = 0.38)
-    # SomaSynapse has not NMDA and GABAb receptors, 
-    # they are assigned to a NullReceptor and skipped at simulation time
-)
+stim_exc = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 1000), E, :glu, :d;
+                        conn = (p = 1, μ = 1nS), name = "noiseE")
+stim_inh = SNN.Stimulus(SNN.PoissonLayer(rate = 3Hz, N = 1000), E, :gaba, :d;
+                        conn = (p = 1, μ = 4nS), name = "noiseI")
 
-DendSynapse = Receptors(
-    AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
-    NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
-    GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
-    GABAb = Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006), 
-)
+model = SNN.compose(; E, stim_exc, stim_inh, silent = true)
+SNN.monitor!(E, [:v_s, :v_d, :fire], sr = 1kHz)
+SNN.sim!(; model, duration = 1s)
 
-NMDA = let
-    Mg_mM = 1.0mM
-    nmda_b = 3.36   # voltage dependence of nmda channels
-    nmda_k = -0.077     # Eyal 2018
-    SNN.NMDAVoltageDependency(mg = Mg_mM/mM, b = nmda_b, k = nmda_k)
-end
-
-# We then define the dendritic neuron model. The dendritic neuron holds has the soma and dendritic compartments parameters, and the synaptic properties for both compartments. 
-dend_neuron = DendNeuronParameter(
-    # adex parameters
-    C = 281pF,
-    gl = 40nS,
-    Vr = -55.6,
-    El = -70.6,
-    ΔT = 2,
-    Vt = -50.4,
-    a = 4,
-    b = 80.5pA,
-    τw = 144,
-    up = 0.1ms,
-    τabs = 0.1ms,
-
-    # post-spike adaptation
-    postspike = SNN.PostSpike(A= 10.0, τA= 30.0), 
-
-    # synaptic properties
-    soma_syn = SomaSynapse,
-    dend_syn = DendSynapse,
-    NMDA = NMDA,
-
-    # dendrite
-    ds = [160um],
-    physiology = SNN.human_dend,
-)
-
-E = SNN.SNNModels.BallAndStick(N=1, param = dend_neuron)
-
-poisson_exc = SNN.PoissonLayerParameter(
-    10.2Hz,    # Mean firing rate (Hz) 
-    p = 1f0,  # Probability of connecting to a neuron
-    μ = 1.0,  # Synaptic strength (nS)
-    N = 1000, # Neurons in the Poisson Layer
-)
-
-poisson_inh = SNN.PoissonLayerParameter(
-    3Hz,       # Mean firing rate (Hz)
-    p = 1f0,   # Probability of connecting to a neuron
-    μ = 4.0,   # Synaptic strength (nS)
-    N = 1000,  # Neurons in the Poisson Layer
-)
-
-# Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = SNN.PoissonLayer(E, :glu, :d, param=poisson_exc, name="noiseE")
-stim_inh = SNN.PoissonLayer(E, :gaba, :d, param=poisson_inh, name="noiseI")
-
-model = SNN.compose(;E, stim_exc, stim_inh)
-SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr=1000Hz)
-
-#
-Plots.default(palette = :okabe_ito)
-SNN.sim!(model, 3s)
-p = SNN.vecplot(E, :v_d, sym_id=1, interval=1:2ms:get_time(model), neurons=1, label="Dendritic Compartment")
-SNN.vecplot!(p, E, :v_s, sym_id=2, interval=1:2ms:get_time(model), neurons=1, add_spikes=true, label="Soma Compartment")
-plot!(ylims=:auto, legend=:outertop, legendfontsize=12, xlabel="Time (s)", ylabel="Voltage (mV)", title="Ball and Stick Neuron Model")
+fig = Figure()
+ax = Axis(fig[1, 1], xlabel = "Time (s)", ylabel = "Voltage (mV)", title = "Ball-and-stick neuron")
+SNN.vecplot!(ax, E, :v_d, label = "Dendrite")
+SNN.vecplot!(ax, E, :v_s, add_spikes = true, label = "Soma")
+axislegend(ax)
+save(joinpath(mktempdir(), "ballandstick_neuron.png"), fig)
 ```
 
 ![Ball-and-Stick](assets/examples/ballandstick_neuron.png)
 
 ## Recurrent EI network
 
+A conductance-based network of excitatory and inhibitory integrate-and-fire neurons driven by
+Poisson afferents (parameters in the spirit of the Zerlaut et al. 2019 mean-field network).
+The configuration is a nested `NamedTuple`; `@update` returns a modified copy, which is convenient
+for parameter sweeps. `compose` collects populations, synapses and stimuli into a model.
 
+The network below is reduced (1000 neurons, 1 s) so that it runs in a few seconds; the figure was
+produced with 10000 neurons and 10 s.
 
 ```julia
-using DrWatson
-using Plots
-using UnPack
 using SpikingNeuralNetworks
 SNN.@load_units
-##
+using CairoMakie
 
-Zerlaut2019_network = (Npop = (E=8000, I=2000),
-    exc = IFSinExpParameter(
-                τm = 200pF / 10nS, 
-                El = -70mV, 
-                Vt = -50.0mV, 
-                Vr = -70.0f0mV,
-                R  = 1/10nS, 
-                τabs = 2ms,       
-                τi=5ms,
-                τe=5ms,
-                E_i = -80mV,
-                E_e = 0mV,
-                ),
-
-    inh = IFSinExpParameter(
-                τm = 200pF / 10nS, 
-                El = -70mV, 
-                Vt = -53.0mV, 
-                Vr = -70.0f0mV,
-                R  = 1/10nS, 
-                τabs = 2ms,       
-                τi=5ms,
-                τe=5ms,
-                E_i = -80mV,
-                E_e = 0mV,
-                ),
-
+config = (
+    Npop = (E = 800, I = 200),
+    exc = SNN.IFParameter(C = 200pF, gl = 10nS, El = -70mV, Vt = -50mV, Vr = -70mV),
+    inh = SNN.IFParameter(C = 200pF, gl = 10nS, El = -70mV, Vt = -53mV, Vr = -70mV),
+    synapse = SNN.SingleExpSynapse(τe = 5ms, τi = 5ms, E_e = 0mV, E_i = -80mV),
+    spike = SNN.PostSpike(τabs = 2ms),
     connections = (
         E_to_E = (p = 0.05, μ = 2nS),
         E_to_I = (p = 0.05, μ = 2nS),
         I_to_E = (p = 0.05, μ = 10nS),
         I_to_I = (p = 0.05, μ = 10nS),
-        ),
-    
-    afferents = (
-        N = 100,
-        p = 0.1f0,
-        rate = 20Hz,
-        μ = 4.0,
-        ), 
+    ),
+    afferents = (N = 100, p = 0.1, rate = 20Hz, μ = 4nS),
 )
 
 function network(config)
-    @unpack afferents, connections, Npop = config
-    E = IF(N=Npop.E, param=config.exc, name="E")
-    I = IF(N=Npop.I, param=config.inh, name="I")
+    (; Npop, exc, inh, synapse, spike, connections, afferents) = config
+    E = SNN.IF(; N = Npop.E, param = exc, synapse, spike, name = "E")
+    I = SNN.IF(; N = Npop.I, param = inh, synapse, spike, name = "I")
 
-    AfferentParam = PoissonLayerParameter(afferents.rate; afferents...)
-    afferentE = PoissonLayer(E, :ge, param=AfferentParam, name="noiseE")
-    afferentI = PoissonLayer(I, :ge, param=AfferentParam, name="noiseI")
+    afferent = SNN.PoissonLayer(rate = afferents.rate, N = afferents.N)
+    aff_conn = (p = afferents.p, μ = afferents.μ)
+    afferentE = SNN.Stimulus(afferent, E, :glu; conn = aff_conn, name = "noiseE")
+    afferentI = SNN.Stimulus(afferent, I, :glu; conn = aff_conn, name = "noiseI")
 
     synapses = (
-        E_to_E = SpikingSynapse(E, E, :ge, p=connections.E_to_E.p, μ=connections.E_to_E.μ, name="E_to_E"),
-        E_to_I = SpikingSynapse(E, I, :ge, p=connections.E_to_I.p, μ=connections.E_to_I.μ, name="E_to_I"),
-        I_to_E = SpikingSynapse(I, E, :gi, p=connections.I_to_E.p, μ=connections.I_to_E.μ, name="I_to_E"),
-        I_to_I = SpikingSynapse(I, I, :gi, p=connections.I_to_I.p, μ=connections.I_to_I.μ, name="I_to_I"),
+        E_to_E = SNN.SpikingSynapse(E, E, :glu; conn = connections.E_to_E, name = "E_to_E"),
+        E_to_I = SNN.SpikingSynapse(E, I, :glu; conn = connections.E_to_I, name = "E_to_I"),
+        I_to_E = SNN.SpikingSynapse(I, E, :gaba; conn = connections.I_to_E, name = "I_to_E"),
+        I_to_I = SNN.SpikingSynapse(I, I, :gaba; conn = connections.I_to_I, name = "I_to_I"),
     )
-    model = compose(;E,I, afferentE, afferentI, synapses..., silent=true, name="Balanced network") 
-    monitor!(model.pop, [:fire])
-    monitor!(model.stim, [:fire])
-    # monitor!(model.pop, [:v], sr=200Hz)
-    return compose(;model..., silent=true)
+    model = SNN.compose(; E, I, afferentE, afferentI, synapses...,
+                        silent = true, name = "Balanced network")
+    SNN.monitor!(model.pop, [:fire])
+    return model
 end
 
+fig = Figure(size = (1000, 600))
+for (n, input_rate) in enumerate([4, 10])
+    cfg = SNN.@update config begin
+        afferents.rate = input_rate * Hz
+    end
+    model = network(cfg)
+    SNN.sim!(; model, duration = 1s)
 
-##
-plots = map([4, 10]) do input_rate
-    config = @update Zerlaut2019_network begin
-        afferents.rate = input_rate*Hz
-    end 
-    model = network(config)
-    sim!(;model, duration=10_000ms,  pbar=true)
-    pr= raster(model.pop, every=40)
-
-    # Firing rate of the network with a fixed afferent rate
-    frE, r = firing_rate(model.pop.E, interval=3s:10s, pop_average=true)
-    frI, r = firing_rate(model.pop.I, interval=3s:10s, pop_average=true)
-    pf = plot(r, [frE, frI], labels=["E" "I"],
-        xlabel="Time (s)", ylabel="Firing rate (Hz)", 
-        title="Afferent rate: $input_rate Hz",
-        size=(600, 400), lw=2)
-
-    # Plot the raster plot of the network
-    plot(pf, pr, layout=(2, 1))
+    frE, r = SNN.firing_rate(model.pop.E, interval = 200ms:10ms:1s, pop_average = true)
+    frI, r = SNN.firing_rate(model.pop.I, interval = 200ms:10ms:1s, pop_average = true)
+    ax = Axis(fig[1, n], title = "Afferent rate: $input_rate Hz", ylabel = "Firing rate (Hz)")
+    lines!(ax, r ./ 1000, frE, label = "E")
+    lines!(ax, r ./ 1000, frI, label = "I")
+    ax2 = Axis(fig[2, n], xlabel = "Time (s)")
+    SNNPlots.raster!(ax2, model.pop, every = 5)
 end
-
-plot(plots..., layout=(1,2), size=(1200, 600), xlabel="Time (s)", leftmargin=10Plots.mm)
-##
+save(joinpath(mktempdir(), "recurrent_network.png"), fig)
 ```
-
 
 ![Recurrent network](assets/examples/recurrent_network.png)
 
+## Synaptic plasticity
 
+Long-term plasticity is attached to a `SpikingSynapse` with the keyword `LTPParam`, short-term
+plasticity with `STPParam`. Plasticity is applied only when the model is run with `train!`; `sim!`
+propagates spikes but never changes the weights or the short-term variables. The available rules
+are described in [Plasticity](plasticity.md) and [Plasticity rules](catalogue/plasticity_rules.md).
+
+```julia
+using SpikingNeuralNetworks
+SNN.@load_units
+
+E = SNN.IF(N = 200, name = "E")
+input = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 200), E, :glu;
+                     conn = (p = 0.1, μ = 3nS), name = "input")
+EE = SNN.SpikingSynapse(E, E, :glu; conn = (p = 0.1, μ = 1nS),
+                        LTPParam = SNN.STDPGerstner(), name = "EE")
+model = SNN.compose(; E, input, EE, silent = true)
+
+w0 = copy(EE.W)
+SNN.sim!(; model, duration = 500ms)     # no weight change
+@assert EE.W == w0
+SNN.train!(; model, duration = 500ms)   # STDP is applied
+println("mean |Δw| = ", sum(abs.(EE.W .- w0)) / length(w0))
+```
 
 ## FORCE learning
 
-An example of a rate-based spiking neural network (SNN) that implements the force learning algorithm described  ["Generating Coherent Patterns of Activity from Chaotic Neural Networks"](https://www.sciencedirect.com/science/article/pii/S0896627309005479?via%3Dihub) by D. Sussillo and L.F. Abbott (2009). The network consists of a 200 rate units with force learning synapses. The network is trained on a sinusoidal input signal for a certain duration, and then tested on the same signal. The plot shows the input signal and the network's prediction.
+A rate network trained with the FORCE algorithm described in
+["Generating Coherent Patterns of Activity from Chaotic Neural Networks"](https://www.sciencedirect.com/science/article/pii/S0896627309005479)
+(Sussillo and Abbott, 2009). The network has 200 rate units (`Rate`) connected by an `FLSynapse`,
+whose readout `z` is trained online, with recursive least squares, to follow the target signal `f`.
+The readout weights are updated only during `train!` (training phase); `sim!` is used for the test
+phase. The script below trains for 1 s; the figure was obtained with 2.44 s of training.
 
+!!! warning "Not runnable with SNNModels 1.8.4"
+    The parameter types of `FLSynapse` and `PINningSynapse` (`FLSynapseParameter`,
+    `PINningSynapseParameter`) are not subtypes of `AbstractConnectionParameter`, so the generic
+    `forward!(c, param, dt, T)` and `update_traces!` methods used by the simulation loop do not apply
+    to them: in SNNModels 1.8.4 both `sim!` and `train!` stop with a `MethodError` on these
+    connections. The script is kept as a reference for the API and the figure was produced with an
+    earlier version.
+
+<!-- norun -->
 ```julia
-
 using SpikingNeuralNetworks
 SNN.@load_units
-using Plots
+using CairoMakie
 
 S = SNN.Rate(; N = 200)
 SS = SNN.FLSynapse(S, S; μ = 1.5, p = 1.0)
-model = SNN.compose(; S, SS)
-
+model = SNN.compose(; S, SS, silent = true)
 SNN.monitor!(SS, [:f, :z], sr = 1000Hz)
 
-A = 1.3 / 1.5;
-fr = 1 / 60ms;
-f(t) =
-    (A / 1.0) * sin(1π * fr * t) +
-    (A / 2.0) * sin(2π * fr * t) +
-    (A / 6.0) * sin(3π * fr * t) +
-(A / 3.0) * sin(4π * fr * t)
+A = 1.3 / 1.5
+fr = 1 / 60ms
+f(t) = (A / 1.0) * sin(1π * fr * t) + (A / 2.0) * sin(2π * fr * t) +
+       (A / 6.0) * sin(3π * fr * t) + (A / 3.0) * sin(4π * fr * t)
 
-
-for t = 0:0.125ms:2440ms
+for t = 0:0.125ms:1000ms        # training phase
     SS.f = f(t)
-    SNN.train!(; model, duration = 0.125f0)
+    SNN.train!(; model, duration = 0.125ms)
+end
+for t = 1000ms:0.125ms:1500ms   # test phase
+    SS.f = f(t)
+    SNN.sim!(; model, duration = 0.125ms)
 end
 
-for t = 2440ms:0.125ms:3500ms
-    SS.f = f(t)
-    SNN.sim!(; model, duration = 0.125f0)
-end
-
-#
-p = plot([SNN.getrecord(SS, :f) SNN.getrecord(SS, :z)], label = ["Signal" "Prediction"], lw = 3);
-plot!(p, xlabel = "Time (ms)", ylabel = "Signal", title = "Force Learning Network",
-      legend = :outerright, size = (800, 400), grid = false, ylims = (-1.8, 1.5), xlims =(2000, 3000), 
-      fg_legend=:transparent, legendfontsize=14)
-annotate!(p, [(2240ms, -1.5, "Training phase")], textsize = 10, color = :black)
-annotate!(p, [(2650ms, -1.5, "Testing phase")], textsize = 10, color = :black)
-
-SS.records
-
-SS.records[:f]
-
-vline!([2440ms], color = :black, label = "", lw=3)
+fig = Figure(size = (800, 400))
+ax = Axis(fig[1, 1], xlabel = "Time (ms)", ylabel = "Signal", title = "FORCE learning")
+lines!(ax, SNN.getrecord(SS, :f), label = "Signal")
+lines!(ax, SNN.getrecord(SS, :z), label = "Prediction")
+vlines!(ax, [1000], color = :black)
+axislegend(ax)
+save(joinpath(mktempdir(), "force_learning.png"), fig)
 ```
 
 ![Force Learning](assets/examples/force_learning.png)
-
-## STDP with homeostatic plasticity
-
-## Recurrent network with dendrites
-
-## Working memory with synaptic plasticity
