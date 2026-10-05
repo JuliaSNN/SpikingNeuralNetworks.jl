@@ -1,196 +1,122 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Models Extension · SpikingNeuralNetworks.jl</title><meta name="title" content="Models Extension · SpikingNeuralNetworks.jl"/><meta property="og:title" content="Models Extension · SpikingNeuralNetworks.jl"/><meta property="twitter:title" content="Models Extension · SpikingNeuralNetworks.jl"/><meta name="description" content="Documentation for SpikingNeuralNetworks.jl."/><meta property="og:description" content="Documentation for SpikingNeuralNetworks.jl."/><meta property="twitter:description" content="Documentation for SpikingNeuralNetworks.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="SpikingNeuralNetworks.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">SpikingNeuralNetworks.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../examples/">Tutorial</a></li><li><a class="tocitem" href="../populations/">Populations</a></li><li><a class="tocitem" href="../stimuli/">Stimuli</a></li><li><a class="tocitem" href="../recordings/">Recordings</a></li><li><a class="tocitem" href="../plasticity/">Plasticity</a></li><li><a class="tocitem" href="../api_reference/">API Reference</a></li><li class="is-active"><a class="tocitem" href>Models Extension</a><ul class="internal"><li><a class="tocitem" href="#Adding-a-Population-Model"><span>Adding a Population Model</span></a></li><li><a class="tocitem" href="#Adding-a-Stimulus-Model"><span>Adding a Stimulus Model</span></a></li></ul></li><li><a class="tocitem" href="../release_notes/">Release notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Models Extension</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Models Extension</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/docs/src/models_ext.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Model-Extensions"><a class="docs-heading-anchor" href="#Model-Extensions">Model Extensions</a><a id="Model-Extensions-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Extensions" title="Permalink"></a></h1><p>Users can define new concrete types of the three abstract models (<code>AbstractPopulation</code>, <code>AbstractStimulus</code>, and <code>AbstractSynapse</code>) to extend the functionality of the SpikingNeural Networks package.</p><p>New populations, stimuli, or synapses models can be added by users by defining new types.</p><h2 id="Adding-a-Population-Model"><a class="docs-heading-anchor" href="#Adding-a-Population-Model">Adding a Population Model</a><a id="Adding-a-Population-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-Population-Model" title="Permalink"></a></h2><p>To add a new population model, users need to define a new concrete type that inherits from <code>AbstractPopulation</code>. The new population model should include the following:</p><ol><li><strong>Parameters</strong>: Define a new type for the parameters of the population model. This type should inherit from <code>AbstractPopulationParameter</code>.</li><li><strong>State Variables</strong>: Define the state variables of the population model. These variables should be included in the new type that inherits from <code>AbstractPopulation</code>.</li><li><strong>Integration Function</strong>: Define a <code>integrate(population::P, param::T, dt::Float32) where {P&lt;:AbstractPopulation, T&lt;:AbstractPopulationParameter}</code> function to integrate the population model. This function should update the state variables of the population model at each time step.</li></ol><h3 id="Current-based-IF"><a class="docs-heading-anchor" href="#Current-based-IF">Current-based IF</a><a id="Current-based-IF-1"></a><a class="docs-heading-anchor-permalink" href="#Current-based-IF" title="Permalink"></a></h3><pre><code class="language-julia hljs">using SpikingNeuralNetworks
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Models Extension · SpikingNeuralNetworks.jl</title><meta name="title" content="Models Extension · SpikingNeuralNetworks.jl"/><meta property="og:title" content="Models Extension · SpikingNeuralNetworks.jl"/><meta property="twitter:title" content="Models Extension · SpikingNeuralNetworks.jl"/><meta name="description" content="Documentation for SpikingNeuralNetworks.jl."/><meta property="og:description" content="Documentation for SpikingNeuralNetworks.jl."/><meta property="twitter:description" content="Documentation for SpikingNeuralNetworks.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="SpikingNeuralNetworks.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">SpikingNeuralNetworks.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../examples/">Tutorial</a></li><li><span class="tocitem">User guide</span><ul><li><a class="tocitem" href="../populations/">Populations</a></li><li><a class="tocitem" href="../stimuli/">Stimuli</a></li><li><a class="tocitem" href="../recordings/">Recordings</a></li><li><a class="tocitem" href="../plasticity/">Plasticity</a></li><li><a class="tocitem" href="../visualization/">Visualization (SNNPlots)</a></li></ul></li><li><span class="tocitem">Model catalogue</span><ul><li><a class="tocitem" href="../catalogue/">Overview</a></li><li><a class="tocitem" href="../catalogue/neurons_if/">Integrate-and-fire neurons</a></li><li><a class="tocitem" href="../catalogue/neurons_other/">Izhikevich, Hodgkin-Huxley, Morris-Lecar</a></li><li><a class="tocitem" href="../catalogue/rate_models/">Rate models</a></li><li><a class="tocitem" href="../catalogue/sources/">Spike sources</a></li><li><a class="tocitem" href="../catalogue/multicompartment/">Multicompartment neurons</a></li><li><a class="tocitem" href="../catalogue/synapses/">Synapse and receptor models</a></li><li><a class="tocitem" href="../catalogue/connections/">Connections</a></li><li><a class="tocitem" href="../catalogue/plasticity_rules/">Plasticity rules</a></li><li><a class="tocitem" href="../catalogue/metaplasticity/">Metaplasticity</a></li><li><a class="tocitem" href="../catalogue/stimuli/">Stimuli</a></li><li><a class="tocitem" href="../catalogue/snnutils_models/">SNNUtils models</a></li><li><a class="tocitem" href="../catalogue/snnutils/">SNNUtils tools</a></li></ul></li><li><a class="tocitem" href="../api_reference/">API Reference</a></li><li class="is-active"><a class="tocitem" href>Models Extension</a><ul class="internal"><li><a class="tocitem" href="#The-simulation-loop"><span>The simulation loop</span></a></li><li><a class="tocitem" href="#Interface-of-each-component"><span>Interface of each component</span></a></li><li><a class="tocitem" href="#Adding-a-population-model:-current-based-IF"><span>Adding a population model: current-based IF</span></a></li><li><a class="tocitem" href="#Adding-a-stimulus-model:-Poisson-input-with-refractory-period"><span>Adding a stimulus model: Poisson input with refractory period</span></a></li></ul></li><li><a class="tocitem" href="../contributing/">Contributing</a></li><li><a class="tocitem" href="../release_notes/">Release notes</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Models Extension</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Models Extension</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/docs/src/models_ext.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Model-Extensions"><a class="docs-heading-anchor" href="#Model-Extensions">Model Extensions</a><a id="Model-Extensions-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Extensions" title="Permalink"></a></h1><p>New populations, connections, stimuli and plasticity rules are added by defining new concrete subtypes of the abstract types of <code>SNNModels</code> and the methods that the simulation loop calls for them. Because <code>sim!</code> and <code>train!</code> dispatch on the type of each component and on the type of its <code>param</code> field, it is often enough to define a new <em>parameter</em> type and the method that specialises on it, without a new component type.</p><h2 id="The-simulation-loop"><a class="docs-heading-anchor" href="#The-simulation-loop">The simulation loop</a><a id="The-simulation-loop-1"></a><a class="docs-heading-anchor-permalink" href="#The-simulation-loop" title="Permalink"></a></h2><p>At every time step <code>sim!</code> and <code>train!</code> do the following (see <code>src/utils/main.jl</code> in SNNModels):</p><p>&lt;!– norun –&gt;</p><pre><code class="language-julia hljs">record_zero!(P, C, S, T)                  # only at t = 0: store the initial state in the records
+update_time!(T, dt)
+for s in S                                # stimuli
+    stimulate!(s, s.param, T, dt)
+    record!(s, T)
+end
+for p in P                                # populations
+    update_traces!(p, p.param, dt, T)     # train! only
+    integrate!(p, p.param, dt)
+    plasticity!(p, p.param, dt, T)        # train! only
+    record!(p, T)
+end
+for c in C                                # connections
+    update_traces!(c, c.param, dt, T)     # train! only
+    forward!(c, c.param, dt, T)
+    plasticity!(c, c.param, dt, T)        # train! only
+    record!(c, T)
+end</code></pre><p><code>sim!</code> never calls <code>update_traces!</code> or <code>plasticity!</code>: the weights and the short-term plasticity variables of a model stay fixed under <code>sim!</code>, even if its synapses carry plasticity rules.</p><h2 id="Interface-of-each-component"><a class="docs-heading-anchor" href="#Interface-of-each-component">Interface of each component</a><a id="Interface-of-each-component-1"></a><a class="docs-heading-anchor-permalink" href="#Interface-of-each-component" title="Permalink"></a></h2><p><strong>Populations</strong> (<code>&lt;: AbstractPopulation</code>, parameter <code>&lt;: AbstractPopulationParameter</code>)</p><ul><li>Required fields: <code>N</code>, <code>param</code>, <code>id</code>, <code>name</code>, <code>records::Dict</code> (checked by <code>validate_population_model</code>; <code>monitor!</code> and <code>record!</code> store the recordings in <code>records</code>). A field <code>fire::Vector{Bool}</code> is needed to record spikes (<code>monitor!(p, [:fire])</code>) and to be the presynaptic population of a <code>SpikingSynapse</code>. Any other field (<code>v</code>, <code>I</code>, ...) can be recorded with <code>monitor!</code>.</li><li><code>integrate!(p, param, dt::Float32)</code>: advance the state by one step.</li><li><code>synaptic_target(targets::Dict, post, sym::Symbol, target)</code>: return <code>(g, v_post)</code>, the vector into which connections and stimuli add their input and the membrane potential used by voltage-dependent plasticity. Needed only if the population receives <code>SpikingSynapse</code>s or spiking stimuli; there is no generic fallback. Stimuli that write a current (<code>CurrentStimulus</code>) read the field <code>sym</code> directly.</li><li>Optional: <code>Population(param::MyParameter; kwargs...)</code> so that <code>SNN.Population(; param, ...)</code> builds the new type, and <code>plasticity!</code>/<code>update_traces!</code> methods; the generic fallbacks for <code>AbstractPopulationParameter</code> do nothing.</li></ul><p><strong>Connections</strong> (<code>&lt;: AbstractConnection</code>, parameter <code>&lt;: AbstractConnectionParameter</code>)</p><ul><li>Required fields: <code>param</code>, <code>id</code>, <code>name</code>, <code>records::Dict</code> (checked by <code>validate_synapse_model</code>).</li><li><code>forward!(c, param, dt, T)</code> or the two-argument form <code>forward!(c, param)</code>: the generic four-argument method calls the two-argument one. This generic method, and the no-op <code>update_traces!</code> fallback, exist only for parameters that are subtypes of <code>AbstractConnectionParameter</code>; with any other parameter type <code>sim!</code> and <code>train!</code> fail with a <code>MethodError</code>, so always subtype it (all SNNModels connection parameters are subtypes after 1.8.4).</li><li><code>plasticity!(c, param, dt::Float32, T::Time)</code>: called by <code>train!</code> for every connection; there is no generic fallback, so define it (it can return <code>nothing</code>) if the model is ever run with <code>train!</code>. <code>update_traces!</code> has a no-op fallback.</li></ul><p><strong>Stimuli</strong> (<code>&lt;: AbstractStimulus</code>, parameter <code>&lt;: AbstractStimulusParameter</code>)</p><ul><li>Required fields: <code>param</code>, <code>id</code>, <code>name</code>, <code>records::Dict</code> (checked by <code>validate_stimulus_model</code>).</li><li><code>stimulate!(s, param, T::Time, dt::Float32)</code>.</li><li>Optional: a <code>Stimulus(param::MyParameter, post, sym; kwargs...)</code> method.</li></ul><p><strong>Plasticity rules</strong> for <code>SpikingSynapse</code> (<code>&lt;: LTPParameter</code> or <code>&lt;: STPParameter</code>)</p><ul><li><code>plasticityvariables(param, Npre, Npost)</code>: return the state of the rule, a subtype of <code>PlasticityVariables</code> with an <code>active::Vector{Bool}</code> field (the rule runs only if <code>any(active)</code>).</li><li><code>plasticity!(c, param, vars, dt, T)</code> (applied after <code>forward!</code>) and, if the rule needs it, <code>update_traces!(c, param, vars, dt, T)</code> (applied before <code>forward!</code>). Long-term rules modify <code>c.W</code>, short-term rules the efficacy <code>c.ρ</code>.</li></ul><p>The existing types in SNNModels are the best templates: see the <a href="../catalogue/">Model catalogue</a>.</p><h2 id="Adding-a-population-model:-current-based-IF"><a class="docs-heading-anchor" href="#Adding-a-population-model:-current-based-IF">Adding a population model: current-based IF</a><a id="Adding-a-population-model:-current-based-IF-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-population-model:-current-based-IF" title="Permalink"></a></h2><p>The new types are defined inside <code>SNNModels</code> with <code>@eval</code>, which is equivalent to adding a file to <code>SNNModels.jl/src/populations</code> and gives access to the internal macros (<code>@snn_kw</code>) and types.</p><p>A docstring cannot be attached directly to an <code>@snn_kw struct</code>; write the docstring above the bare name of the type and define the struct after it, as below. <code>@snn_kw</code> generates a keyword constructor whose defaults may refer to earlier fields. Field types must be plain names: a parametric type written in place, such as <code>Vector{Float32}</code>, is not accepted by the macro (it fails with <code>Cannot convert an object of type Expr to an object of type Symbol</code>). Declare vector types as type parameters with a default (<code>Neuron{VFT = Vector{Float32}}</code>), as the library models do, or use the aliases <code>VBT = Vector{Bool}</code> and <code>VIT = Vector{Int}</code> defined in SNNModels.</p><pre><code class="language-julia hljs">using SpikingNeuralNetworks
 using Distributions
 SNN.@load_units
 
-# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
 @eval SNN.SNNModels begin
-
     &quot;&quot;&quot;
-    Define the neuron model parameters.
-    Parameters are used at integration time to compute the equation update.
-    All parameters are optional. We strongly advise using SI units and default values.
+        NeuronParameter
+
+    Parameters of a current-based leaky integrate-and-fire neuron.
     &quot;&quot;&quot;
     NeuronParameter
+
     @snn_kw struct NeuronParameter &lt;: AbstractPopulationParameter
-        # adex parameters
-        R::Float32 = 1f0GΩ
-        El::Float32 = -70.6f0
-        Vt::Float32 = -50.4f0
-        up::Float32 = 0.1f0 * ms
-        τabs::Float32 = 0.1f0 * ms
-        τe::Float32 = 10f0ms
-        τi::Float32 = 10f0ms
+        R::Float32 = 1GΩ
+        El::Float32 = -70.6mV
+        Vt::Float32 = -50.4mV
+        Vr::Float32 = -70.6mV
+        τm::Float32 = 20ms
+        τe::Float32 = 10ms
+        τi::Float32 = 10ms
     end
 
     &quot;&quot;&quot;
-    Define the neuron model.
-    The neuron model holds the parameters and state variables of the neuron.
-    The state variables are used to compute the equation update at integration time and can be recorded.
+        Neuron
 
-    The entries:
-     - `param::NeuronParameter`: The parameters of the neuron model.
-     - `N::Int64`: The number of neurons in the population.
-     - `name::String`: The name of the neuron population.
-     - `id::String`: A unique identifier for the neuron population.
-     - `records::Dict{Symbol, Any}`: A dictionary to store recorded variables.
-    are compulsory
+    Population of current-based leaky integrate-and-fire neurons. `N`, `param`, `name`, `id`
+    and `records` are compulsory; `fire` is needed to record spikes and to project spikes.
     &quot;&quot;&quot;
     Neuron
 
-    @snn_kw struct Neuron &lt;: AbstractPopulation
+    @snn_kw struct Neuron{VFT = Vector{Float32}} &lt;: AbstractPopulation
         param::NeuronParameter = NeuronParameter()
-        N::Int64 = 10
-        name::String= &quot;Neuron&quot;
+        N::Int = 10
+        name::String = &quot;Neuron&quot;
         id::String = randstring(12)
-        v::Vector{Float32} = ones(Float32, N)*-70.6f0  # Initial membrane potential
-        ge::Vector{Float32} = zeros(Float32, N)
-        gi::Vector{Float32} = zeros(Float32, N)
-        fire::Vector{Bool} = falses(N)
-        I::Vector{Float32} = zeros(Float32, N)
-        records::Dict{Symbol, Any} = Dict{Symbol, Any}()
+        v::VFT = fill(param.El, N)
+        ge::VFT = zeros(Float32, N)
+        gi::VFT = zeros(Float32, N)
+        fire::VBT = zeros(Bool, N)
+        I::VFT = zeros(Float32, N)
+        records::Dict = Dict()
     end
 
-    &quot;&quot;&quot;
-    Integrate the neuron model.
-    The function integrate!(p::Neuron, param::NeuronParameter, dt::Float32) is mandatory for the a Population model
-    and is used to update the state variables of the neuron model at each time step.
-
-    The function must only define the integration step, the recordings are handled by the simulation engine. 
-    The following present a good practice to implement the integration step:
-    - Use the `@unpack` macro to extract the state variables from the neuron model.
-    - Use the `@inbounds` macro to skip bounds checking for performance reasons.
-    - Update the state variables in a for loop over the number of neurons `N`.
-    - Update the state variables using the timestep `dt` and the parameters from `param`.
-
-    The macro `@inbounds` is used to skip bounds checking for performance reasons. It leads to segment faults if the indices are out of bounds.
-
-    The macro `@fastmath` is used to allow the compiler to use fast math operations, which may lead to slight inaccuracies but improves performance. We consider that in the context of biophysical networks this imprecisions are not critical.
-    &quot;&quot;&quot;
-    integrate!
-
+    # one forward Euler step; recordings are handled by the simulation loop
     function integrate!(p::Neuron, param::NeuronParameter, dt::Float32)
         @unpack N, v, ge, gi, fire, I = p
-        @inbounds @fastmath for i in 1:N
-            if fire[i]
-                v[i] = param.El
-                fire[i] = false
-            else
-                v[i] += dt*(param.El - v[i] +
-                        (ge[i] - gi[i]) * param.R +
-                        I[i] * param.R )
-            end
-            ge[i] -= ge[i] / param.τe * dt
-            gi[i] -= gi[i] / param.τi * dt
-            if v[i] &gt;= param.Vt
-                fire[i] = true
-                v[i] = 20*mV  # Reset membrane potential after firing
-            end
+        @unpack R, El, Vt, Vr, τm, τe, τi = param
+        @inbounds for i in 1:N
+            v[i] += dt / τm * (El - v[i] + R * (ge[i] - gi[i] + I[i]))
+            ge[i] -= dt * ge[i] / τe
+            gi[i] -= dt * gi[i] / τi
+            fire[i] = v[i] &gt;= Vt
+            fire[i] &amp;&amp; (v[i] = Vr)
         end
     end
-    export Neuron, NeuronParameter, integrate!
+
+    # where SpikingSynapse and spiking stimuli deliver their input
+    function synaptic_target(targets::Dict, post::Neuron, sym::Symbol, target = nothing)
+        push!(targets, :sym =&gt; sym)
+        return getfield(post, sym), post.v
+    end
 end
 
-import SpikingNeuralNetworks: NeuronParameter, Neuron, CurrentNoiseParameter, CurrentStimulus, compose, sim!, monitor!, vecplot
-# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
+neuron = SNN.SNNModels.Neuron(N = 1)
+current_param = SNN.CurrentNoise(neuron.N; I_base = 20pA, I_dist = Normal(0pA, 20pA))
+current_stim = SNN.Stimulus(current_param, neuron, :I)
+input = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 100), neuron, :ge; conn = (p = 1, μ = 1pA))
 
-param = NeuronParameter()
-neuron = Neuron(param=param, N=1)
-# Create a withe noise input current
-current_param = CurrentNoiseParameter(neuron.N; I_base = 0pA, I_dist = Normal(-50pA, 100pA))
-current_stim = CurrentStimulus(neuron, :I, param = current_param)
-
-monitor!(neuron, [:v, :fire, :ge, :gi, :I], sr = 2kHz)
-model = compose(; neuron, current_stim)
-sim!(; model, duration = 1000ms, pbar=true)
-
-vecplot(
-    neuron,
-    :v,
-    add_spikes = true,
-    ylabel = &quot;Membrane potential (mV)&quot;,
-    # ylims = (-80, 10),
-    c = :black,
-)</code></pre><h2 id="Adding-a-Stimulus-Model"><a class="docs-heading-anchor" href="#Adding-a-Stimulus-Model">Adding a Stimulus Model</a><a id="Adding-a-Stimulus-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-Stimulus-Model" title="Permalink"></a></h2><p>Thanks to the multidispatching the simulation loop will call the function that matches the <code>population</code>, <code>stimulus</code>, or <code>connection</code> type and its parameter. Thus we don&#39;t need to always define a new type, defining a new parameter and a function that specializes for it is sufficient to introduce a new behaviour.</p><p>Here we extend the <code>PoissonStimulus&lt;:AbstractStimulus</code> adding a new <code>PoissonRefractoryParameter&lt;:AbstractStimulusParameter</code>. We use the function <code>PoissonLayer</code> to create an input layer that stimulate the postsynaptic population with Poisson distributed spikes with a ΔT absolute refractory period. </p><h3 id="Poisson-Stimulus-with-refractory-time"><a class="docs-heading-anchor" href="#Poisson-Stimulus-with-refractory-time">Poisson Stimulus with refractory time</a><a id="Poisson-Stimulus-with-refractory-time-1"></a><a class="docs-heading-anchor-permalink" href="#Poisson-Stimulus-with-refractory-time" title="Permalink"></a></h3><pre><code class="language-julia hljs">using SpikingNeuralNetworks
-using Distributions
+SNN.monitor!(neuron, [:v, :fire, :ge, :I], sr = 2kHz)
+model = SNN.compose(; neuron, current_stim, input, silent = true)
+SNN.sim!(; model, duration = 1000ms)
+SNN.spiketimes(neuron)</code></pre><h2 id="Adding-a-stimulus-model:-Poisson-input-with-refractory-period"><a class="docs-heading-anchor" href="#Adding-a-stimulus-model:-Poisson-input-with-refractory-period">Adding a stimulus model: Poisson input with refractory period</a><a id="Adding-a-stimulus-model:-Poisson-input-with-refractory-period-1"></a><a class="docs-heading-anchor-permalink" href="#Adding-a-stimulus-model:-Poisson-input-with-refractory-period" title="Permalink"></a></h2><p>Here a new parameter type, subtype of <code>PoissonStimulusParameter</code>, is enough: the existing <code>PoissonStimulus</code> container and its <code>Stimulus</code> constructor are reused, and only a <code>stimulate!</code> method for the new parameter is added. The stimulus adds <code>μ</code> to the target of each neuron when the neuron&#39;s Poisson source emits a spike, with an absolute refractory period <code>ΔT</code> between spikes.</p><pre><code class="language-julia hljs">using SpikingNeuralNetworks
 SNN.@load_units
-using ProtoStructs
 
-# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
 @eval SNN.SNNModels begin
-
-    &quot;&quot;&quot;
-    Define the Poisson refractory stimulus parameters.
-    Parameters are used at integration time to compute the equation update.
-    All parameters are optional. 
-    &quot;&quot;&quot;
-    PoissonRefractoryParameter
-
-    @snn_kw struct PoissonRefractoryParameter &lt;: PoissonStimulusParameter #{R} where {R&lt;:Float32}
-    # @proto struct PoissonRefractoryParameter{R = Float32} 
-        ΔT::Float32 = 2f0ms  # Absolute refractory period
-        N::Int = 100  # Number of neurons
+    @snn_kw struct PoissonRefractory{VFT = Vector{Float32}} &lt;: PoissonStimulusParameter
         rate::Float32 = 10Hz
-        last_spike::Vector{Float32} = zeros(Float32, N)  # Last spike time for each neuron
-        rates::Vector{Float32} = fill(rate, N)  # Firing rate for each neuron
-        p::Float32 = 0.1f0  # Fraction of neurons receiving the stimulus
-        μ::Float32 = 1f0  # Mean of the weight distribution
-        σ::Float32 = 0f0  # Standard deviation of the weight distribution
-        active::Vector{Bool} = [true]  # Active neurons
+        ΔT::Float32 = 2ms                       # absolute refractory period
+        μ::Float32 = 1.0f0                      # increment per spike
+        N::Int = 100                            # size of the target population
+        last_spike::VFT = fill(-Inf32, N)
+        active::VBT = [true]
     end
 
-    &quot;&quot;&quot;
-    Generate a Poisson stimulus with an absolute refractory period for a postsynaptic population.
-    &quot;&quot;&quot;
-    function stimulate!(
-        p::PoissonStimulus,
-        param::PoissonRefractoryParameter,
-        time::Time,
-        dt::Float32,
-    )
-        @unpack N, randcache, fire, neurons, colptr, W, I, g = p
-        @unpack rates, ΔT, last_spike = param
-        current_time = get_time(time)
-        rand!(randcache)
-        @inbounds @simd for j = 1:N
-            if (current_time - last_spike[j]) &gt; ΔT &amp;&amp; randcache[j] &lt; rates[j] * dt
-                fire[j] = true
-                last_spike[j] = current_time
-                @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g[I[s]] += W[s]
-                end
-            else
-                fire[j] = false
+    function stimulate!(p::PoissonStimulus, param::PoissonRefractory, time::Time, dt::Float32)
+        param.active[1] || return
+        @unpack rate, ΔT, μ, last_spike = param
+        t = get_time(time)
+        @inbounds for n in p.neurons
+            if t - last_spike[n] &gt; ΔT &amp;&amp; rand() &lt; rate * dt
+                p.g[n] += μ
+                last_spike[n] = t
             end
         end
     end
-    export PoissonRefractoryParameter, stimulate!
 end
 
-import SpikingNeuralNetworks: PoissonLayer, PoissonRefractoryParameter, compose, sim!, monitor!, vecplot
-# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
-
-neuron_param = SNN.IdentityParam()
-neuron = SNN.Identity(; param = neuron_param, N = 1, name = &quot;Identity Neuron&quot;)
-
-# Create a withe noise input current
-stim_param = PoissonRefractoryParameter(N=1, ΔT = 20ms, p=1)
-stim = PoissonLayer(neuron, :g; param=stim_param)
-
-monitor!(neuron, [:g, :fire], sr = 2kHz)
-model = compose(; neuron, stim)
-sim!(; model, duration = 100000ms, pbar=true)
-
-vecplot(
-    neuron,
-    :g,
-    neurons=1,
-    add_spikes = true,
-    ylabel = &quot;Membrane potential (mV)&quot;,
-    xlims = (0, 1000ms),
-    # ylims = (-80, 10),
-    c = :black,
-)
-
-st = SNN.spiketimes(neuron)[1]
-diff(st) |&gt; x-&gt; SNNPlots.histogram(x, bins=100)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../api_reference/">« API Reference</a><a class="docs-footer-nextpage" href="../release_notes/">Release notes »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Monday 5 October 2026 07:22">Monday 5 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+neuron = SNN.Identity(N = 1, name = &quot;Identity Neuron&quot;)
+stim = SNN.Stimulus(SNN.SNNModels.PoissonRefractory(N = 1, rate = 100Hz, ΔT = 20ms), neuron, :g)
+SNN.monitor!(neuron, [:fire])
+model = SNN.compose(; neuron, stim, silent = true)
+SNN.sim!(; model, duration = 2000ms)
+isi = diff(SNN.spiketimes(neuron)[1])
+@assert minimum(isi) &gt; 20ms</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../api_reference/">« API Reference</a><a class="docs-footer-nextpage" href="../contributing/">Contributing »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Monday 5 October 2026 15:27">Monday 5 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
