@@ -5,6 +5,23 @@
 Bug fixes in SNNModels, SNNPlots, SNNUtils and SpikingNeuralNetworks found while documenting
 every public symbol. Several of them change simulation results.
 
+### Breaking changes
+
+These are released as a minor version (1.9.0), but code that ran with 1.8.x can fail or
+give different results. Check this list before upgrading.
+
+| Change | Code affected | Migration |
+|---|---|---|
+| `AdExParameter`/`IFParameter`: one membrane value alone (`C`, `gl`, `R` or `τm`) is an `ArgumentError` | `IFParameter(τm = 20ms)`, `AdExParameter(C = 200pF)` | give a pair; to keep the 1.8 neuron: `IFParameter(τm = x, R = 0.06)`, `AdExParameter(C = x, gl = 40nS)` |
+| More than two membrane values must agree within 0.1 % (`τm = C/gl`, `R = 1nS/gl`) | e.g. `IFParameter(C = 281, gl = 40, τm = 20, R = 0.1)` | keep the pair the model integrates with: `τm, R` for `IF`/`AdEx`, `C, gl` for `Tripod`/`BallAndStick` |
+| Changing one membrane value updates the others (`@update!`, `p.τm = x`, `make_heterogeneous`) | `@update! cfg.adex.τm = x` on a Tripod or BallAndStick (no effect before, now `C = τm gl`); `p.C = x` on an `AdExParameter` (now also changes `τm`) | intended in most cases; to change two values at once use `with_membrane(p; τm = …, C = …)` |
+| A Tripod or BallAndStick built with `AdExParameter(gl = …, τm = …)` now uses `C = τm gl` | e.g. `gl = 40nS, τm = 20ms`: C 281 → 800 pF | give `C, gl` explicitly to keep the 1.8 neuron |
+| Tsodyks-Markram STP update order (Mongillo 2008) | every model with `MarkramSTPParameter*` | none in code; parameters tuned with ≤ 1.8.4 are not equivalent (see below) |
+| Tripod/BallAndStick somatic equation, Heun step and refractoriness | every Tripod/BallAndStick model | none in code; results change (see below) |
+| Exported names that were never defined are no longer exported | SNNModels: `HUMAN`, `MOUSE`, `MultiRecetorSynapse`, `NMDA_CANAHP`, `PSParam`, `BSParam`, `SpikeTime`, `SpikingSynapseDelay`, `Synapse_CANAHP`, `autocorrelogram`, `filter_populations`, `gcamp6_kernel`, `get_path`, `get_synapse_symbols`, `isi_cv`, `no_PlasticityVariables`, `no_STDPParameter`, `record_plast!`, `synapsearray`; SNNPlots: `default_colors`, `nature_figure`, `plot_model`, `plot_stimulus`, `plot_connections` | these names could not be used before either; remove them from `using … :` lists |
+| SNNPlots `stdp_test`/`stdp_kernel` measure a single pre/post pair | kernels computed with SNNPlots ≤ 0.2.10 | recompute; the old kernel included an extra causal pairing |
+| SNNUtils `quaresima2022_nar` returns Tripod keyword arguments (it used the removed `AdExSoma`) | code that called it (it threw before) | pass the result to `Tripod(; …)` |
+
 !!! danger "Behaviour change: Tripod and BallAndStick"
     - The somatic exponential term is now ``g_L \Delta_T e^{(V-\theta)/\Delta_T}``, as in the AdEx
       model and in the published Tripod model (Quaresima et al. 2023, Eq. 1, and its code); it
