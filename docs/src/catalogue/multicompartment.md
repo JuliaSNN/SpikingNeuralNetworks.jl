@@ -47,9 +47,9 @@ parameters from `adex` and spike parameters from `spike`:
 
 ```math
 \begin{aligned}
-C \frac{dV_s}{dt} &= g_L (E_L - V_s) + \Delta_T\, e^{(V_s - \theta)/\Delta_T} - w_s
+C \frac{dV_s}{dt} &= g_L (E_L - V_s) + g_L \Delta_T\, e^{(V_s - \theta)/\Delta_T} - w_s
     - I_{syn,s} - \sum_k g_{ax,k}\,(V_s - V_{d,k}) + I \\
-C_{d,k} \frac{dV_{d,k}}{dt} &= g_{m,k} (E_L - V_{d,k}) - I_{syn,d,k}
+C_{d,k} \frac{dV_{d,k}}{dt} &= g_{m,k} (E_{L,k} - V_{d,k}) - I_{syn,d,k}
     + g_{ax,k}\,(V_s - V_{d,k}) + I_d \\
 \tau_w \frac{dw_s}{dt} &= a (V_s - E_L) - w_s \\
 \tau_A \frac{d\theta}{dt} &= V_t - \theta
@@ -57,21 +57,33 @@ C_{d,k} \frac{dV_{d,k}}{dt} &= g_{m,k} (E_L - V_{d,k}) - I_{syn,d,k}
 ```
 
 - ``I_{syn,s}``, ``I_{syn,d,k}`` are the currents of the somatic and dendritic synapse models,
-  computed once per step with the potentials at the beginning of the step and clamped to
+  evaluated at the compartment potentials of each Heun stage and clamped to
   ``\pm 1500`` pA (`Tripod`) or ``\pm 1000`` pA (`BallAndStick`). With the default
   `ReceptorSynapse` they include AMPA, NMDA (with magnesium block
   ``B(V) = 1/(1 + [\mathrm{Mg}]/b\; e^{kV})``), GABAa and GABAb conductances.
 - ``C_{d,k}``, ``g_{m,k}``, ``g_{ax,k}`` are the capacitance, leak and axial conductance of the
-  dendrite (from `create_dendrite`); the dendritic leak reversal is the somatic ``E_L``.
+  dendrite (from `create_dendrite`); ``E_{L,k}`` is the leak reversal `El` of the dendrite,
+  which `Tripod`/`BallAndStick` set to the somatic ``E_L`` by default.
 - ``I`` (`Tripod.I`) and ``I_d`` (`Tripod.I_d`, the same current injected in both dendrites) are
-  external currents. In `BallAndStick` the fields `Is` and `Id` exist but are not used by the
-  equations.
-- As implemented, the exponential term is not multiplied by ``g_L`` (the standard AdEx term is
-  ``g_L \Delta_T e^{(V-\theta)/\Delta_T}``), and ``\theta`` is a dynamic threshold of the
+  external currents; in `BallAndStick` they are `Is` (soma) and `Id` (dendrite).
+- The exponential term is multiplied by ``g_L``, as in the AdEx model and in the published
+  Tripod model (Quaresima et al. 2023, Eq. 1, and its code TripodNeuron.jl:
+  `gl * (-v + Er + ΔT * exp((v - θ)/ΔT))`); ``\theta`` is a dynamic threshold of the
   exponential term only.
 
+!!! note "Changed after SNNModels 1.8.4"
+    In SNNModels 1.8.4 the exponential term was ``\Delta_T e^{(V_s-\theta)/\Delta_T}``
+    without ``g_L`` (40 times smaller at the default `gl = 40nS`), the Heun stage of ``w_s``
+    lacked the factor `dt` (results depended on `dt`), the synaptic currents were not
+    evaluated at the Heun stage, the dendritic leak used the somatic ``E_L``, and
+    `BallAndStick` ignored `Is`/`Id`. The effect on spiking (rheobase, f-I curve, spike
+    times, network rates) is quantified in the validation of the fix (see the release
+    notes).
+
 **Spike and refractoriness.** A spike is emitted when the predicted somatic potential
-``V_s + dt\,\dot V_s`` reaches ``-10`` mV (hard-coded). Then ``V_s`` is set to `AP_membrane`,
+``V_s + dt\,\dot V_s`` reaches `Vspike` (population field, default ``-10`` mV; the published
+TripodNeuron.jl code detects spikes at ``V_s \ge V_T``, obtained with `Vspike = adex.Vt`). Then
+``V_s`` is set to `AP_membrane`,
 ``w_s \mathrel{+}= b``, ``\theta \mathrel{+}= A_t`` (`spike.At`), and a refractory counter is set to
 `round((up + τabs)/dt)` steps. During the first `up` ms the soma is held at `AP_membrane`
 (back-propagating action potential), during the next `τabs` ms at `adex.Vr`. In both periods
@@ -82,11 +94,11 @@ frozen. ``\theta`` relaxes to `adex.Vt` with time constant `spike.τA` at every 
 
 1. `update_synapses!` advances the synaptic state of every compartment (scheme of the synapse
    model; exponential Euler for `ReceptorSynapse`).
-2. Heun (explicit trapezoidal) method for ``(V_s, V_{d,k}, w_s)``: the derivatives are evaluated
-   at the current state and at the Euler-predicted state, and the state is advanced by
-   ``\frac{dt}{2}(k_1 + k_2)``. In the predicted adaptation derivative the code uses
-   `v_s + Δv` and `w_s + Δv` without the factor `dt`, whereas the voltage equations use
-   `v + Δv dt`.
+2. Heun (explicit trapezoidal) method for ``x = (V_s, V_{d,k}, w_s)``: ``k_1 = f(x_n)``,
+   ``k_2 = f(x_n + dt\,k_1)``, with every term of ``f`` (synaptic, axial and adaptation
+   currents) evaluated at the stage state, and ``x_{n+1} = x_n + \frac{dt}{2}(k_1 + k_2)``.
+   Between spikes the scheme is second order; spike times are first order in `dt` because
+   spikes are detected on the time grid.
 3. Spike detection, reset and refractoriness as described above; ``\theta`` by forward Euler.
 
 ## Parameters
@@ -129,8 +141,8 @@ C = C_d\, \pi d l \;(\texttt{C\_mem}).
 
 `create_dendrite(l; d = 4um, physiology = human_dend)` returns `(gm, gax, C, l, d)` for one
 dendrite (lengths above 500 μm raise an error; `l <= 0` gives a disconnected compartment with
-`gax = 0`), and `create_dendrite(N, l; ...)` returns a `Dendrite` with vectors of `N` values and
-`El = -70.6mV`.
+`gax = 0`), and `create_dendrite(N, l; El = -70.6mV, ...)` returns a `Dendrite` with vectors of
+`N` values and leak reversal `El`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -145,7 +157,8 @@ d.C[1], d.gm[1], d.gax[1]
 `C` (pF), `gl` (nS), `El` (mV), `ΔT` (mV), `Vt` (mV, resting value of ``\theta``), `Vr` (mV,
 reset during the refractory period), `a` (nS), `b` (pA), `τw` (ms). The defaults of
 `AdExParameter` are `C = 281pF`, `gl = 40nS`, `El = -70.6mV`, `ΔT = 2mV`, `Vt = -50mV`,
-`Vr = -70.6mV`, `a = 4nS`, `b = 80.5pA`, `τw = 144ms`. `Vt` is not the spike threshold.
+`Vr = -70.6mV`, `a = 4nS`, `b = 80.5pA`, `τw = 144ms`. `Vt` is not the spike threshold (see
+`Vspike`).
 
 ### Spike: `PostSpike` fields used
 
@@ -162,12 +175,13 @@ reset during the refractory period), `a` (nS), `b` (pA), `τw` (ms). The default
 Defaults: `soma_syn = TripodSomaSynapse` (AMPA + GABAa), `dend_syn = TripodDendSynapse`
 (AMPA + NMDA + GABAa + GABAb); see [Synapse and receptor models](synapses.md) for the
 receptor values. Any synapse model with a five-argument `synaptic_current!` method can be
-used; `DeltaSynapse` cannot.
+used; `DeltaSynapse` cannot (it raises an `ArgumentError` at the first step).
 
 ## Tripod
 
 State variables: `v_s`, `v_d1`, `v_d2` (mV, initialised uniformly between `Vr` and `Vt`),
-`w_s` (pA), `θ` (mV), `fire`, `tabs`, external currents `I`, `I_d` (pA); synaptic variables
+`w_s` (pA), `θ` (mV), `fire`, `tabs`, external currents `I`, `I_d` (pA), spike threshold
+`Vspike` (mV); synaptic variables
 `synvars_s`, `synvars_d1`, `synvars_d2` and input buffers `receptors_s`, `receptors_d1`,
 `receptors_d2`.
 
@@ -191,8 +205,9 @@ Pages   = ["multicompartment/tripod.jl"]
 
 ## BallAndStick
 
-State variables: `v_s`, `v_d` (mV), `w_s` (pA), `θ` (mV), `fire`, `tabs`; `synvars_s`,
-`synvars_d`, `receptors_s`, `receptors_d`.
+State variables: `v_s`, `v_d` (mV), `w_s` (pA), `θ` (mV), `fire`, `tabs`, external currents
+`Is`, `Id` (pA), spike threshold `Vspike` (mV); `synvars_s`, `synvars_d`, `receptors_s`,
+`receptors_d`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -218,9 +233,10 @@ Pages   = ["multicompartment/dendrite.jl", "multicompartment/dendneuron_paramete
 
 ## Multipod (not loaded)
 
-`src/populations/multicompartment/multipod.jl` is present in the source tree but not loaded by
-SNNModels 1.8.4 (its `include` is commented out). It implements an AdEx soma coupled to an
-arbitrary number `Nd` of passive dendrites with receptor-based synapses, integrated with the
-Heun method, but it depends on names that no longer exist in the loaded code (`AdExSoma`,
-`synapsearray`), so it cannot be used. The exported name `MultipodNeurons` of that file is
-therefore not available either.
+`src/populations/multicompartment/multipod.jl` is present in the source tree but not loaded (its
+`include` is commented out). It implements an AdEx soma coupled to an arbitrary number `Nd` of
+passive dendrites with receptor-based synapses, integrated with the Heun method, but it depends
+on names that no longer exist in the loaded code (`AdExSoma`, `synapsearray`); re-enabling it
+requires porting it to the current API. Its names (`Multipod`, `MultipodNeurons`) are not
+exported. (A sign error in the predicted-state leak term of that file was corrected after
+SNNModels 1.8.4.)

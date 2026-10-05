@@ -64,8 +64,9 @@ SpikingSynapse(pre, post, sym, comp = nothing; conn, delay_dist = nothing,
 | `dt` | `0.125f0` | unused |
 
 `LTPParam` and `STPParam` are keyword and field names; the abstract types of the rules are
-`LTPParameter` and `STPParameter`. The names `LTPParam`, `STPParam` and `SpikingSynapseDelay`
-appear in export lists of SpikingNeuralNetworks and SNNModels but are not defined.
+`LTPParameter` and `STPParameter`. (The undefined names `LTPParam`, `STPParam` and
+`SpikingSynapseDelay` were removed from the export lists of SpikingNeuralNetworks and SNNModels
+after 1.8.4.)
 
 When `pre === post`, autapses are removed structurally after the matrix has been drawn, so no
 zero-weight self-synapse can be grown by plasticity.
@@ -93,7 +94,8 @@ matrix directly (no dense `N_post x N_pre` array; since SNNModels 1.8.2):
 
 One weight is drawn per connection; draws ``\le 0`` are not synapses and are removed (so with
 `σ > 0` realised degrees can be lower than ``K``), and a negative `μ` makes all weights
-negative (with a warning). Unknown keys are ignored silently.
+negative (with a warning). `dist` may be a Distributions type (`Normal`) or its `Symbol`
+(`:Normal`). Unknown keys are ignored with a warning (silently in SNNModels 1.8.4).
 
 A matrix `conn` (dense or sparse, any element type) of size `N_post x N_pre` is used as given,
 converted to `SparseMatrixCSC{Float32,Int}`.
@@ -112,8 +114,8 @@ The rule given with `LTPParam` modifies `W`, the rule given with `STPParam` modi
 only under `train!`. `set_LTP!(c, state)`, `set_STP!(c, state)` and
 `set_plasticity!(c, c.LTPParam, state)` switch a rule on or off, and
 `update_plasticity!(c; LTP, STP)` replaces it. The two-argument `set_plasticity!(c, state)`
-and `has_plasticity(c)` read `c.param.active`, which `SpikingSynapseParameter` does not have:
-they raise an error for a `SpikingSynapse`.
+switches both rules of a `SpikingSynapse`, and `has_plasticity(c)` tells whether a rule is
+present and active (in SNNModels 1.8.4 both raised a `FieldError` for `SpikingSynapse`).
 
 ### Example
 
@@ -160,9 +162,11 @@ The weights onto neuron `i` are therefore `W[index[rowptr[i]:rowptr[i+1]-1]]`.
 | `connect!(c, j, i, μ)` | set or create the synapse `j -> i` and rebuild the storage |
 | `update_sparse_matrix!(c[, W])` | rebuild the storage from `W` or from `c.I`, `c.J`, `c.W` |
 
-`connect!` and `update_sparse_matrix!` do not resize or reorder `ρ`, delays or plasticity
-variables; use them only on connections without short-term plasticity and before creating
-plasticity variables, or rebuild the connection.
+`connect!` and `update_sparse_matrix!` resize and reorder the per-synapse arrays with the
+synapses: existing synapses keep their efficacy `ρ` and delay, a new synapse gets `ρ = 1` and
+the mean delay; the plasticity variables are per neuron and are not affected. (In SNNModels
+1.8.4 `ρ` and the delays were neither resized nor reordered, and `forward!` read out of bounds
+after a synapse was created.)
 
 ```julia
 using SpikingNeuralNetworks
@@ -198,7 +202,7 @@ No reference is given in the code for this rule.
 | Keyword | Default | Meaning |
 |:--------|:--------|:--------|
 | `μ` | `0.0` | weight scale |
-| `p` | `0.0` | density; must be positive (with `p = 0` every weight is `NaN`) |
+| `p` | `0.0` | density, must be in `(0, 1]` (an `ArgumentError` is raised otherwise; in 1.8.4 `p = 0` gave a matrix of `NaN`) |
 | `param` | `RateSynapseParameter(lr = 1e-3)` | learning rate |
 
 ```julia
@@ -230,19 +234,19 @@ P \leftarrow P - C\, q\, q^\top
 The target `f` is the scalar field `c.f` (default 0), to be set by the user. The readout
 weights start as ``\mathcal{U}(-1,1)/\sqrt{N}``, the feedback weights as ``\mathcal{U}(-1,1)``.
 
-In SNNModels 1.8.4 `FLSynapseParameter` is not a subtype of `AbstractConnectionParameter`, so
-`sim!` and `train!` fail with a `MethodError` on this connection; `forward!(c, c.param)` and
-`plasticity!(c, c.param, dt, T)` can be called directly:
+`sim!` applies `forward!` and `train!` also the RLS update. Set the target `c.f` at every step,
+for example by running `train!` one step at a time. (In SNNModels 1.8.4 `FLSynapseParameter` was
+not a subtype of `AbstractConnectionParameter` and `sim!`/`train!` failed with a `MethodError`.)
 
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units
 R = SNN.Rate(N = 100)
 F = SNN.FLSynapse(R, R; μ = 1.5)
-F.f = 0.5f0
-for _ in 1:10
-    SNN.SNNModels.forward!(F, F.param)
-    SNN.SNNModels.plasticity!(F, F.param, 0.125f0, SNN.SNNModels.Time())
+T = SNN.SNNModels.Time()
+for k in 1:800                          # 100 ms at dt = 0.125 ms
+    F.f = sin(2π * k * 0.125 / 20)      # target: 50 Hz sine
+    SNN.train!([R], [F], SNN.SNNModels.AbstractStimulus[], 0.125f0, T)
 end
 ```
 
@@ -258,8 +262,8 @@ W \leftarrow W + C (f - g)\, q^\top, \qquad P \leftarrow P - C\, q\, q^\top
 ```
 
 Keywords and initialisation as `FLSynapse` (`μ = 1.5`, `α = 1`, `p` unused); `c.f` is a
-vector of length `N_post`. The same restriction applies: `sim!`/`train!` do not dispatch on
-`PINningSynapseParameter` in SNNModels 1.8.4.
+vector of length `N_post`. It runs under `sim!` and `train!` (in SNNModels 1.8.4 they did not
+dispatch on `PINningSynapseParameter`).
 
 ```julia
 using SpikingNeuralNetworks
@@ -267,22 +271,22 @@ SNN.@load_units
 R = SNN.Rate(N = 100)
 P = SNN.PINningSynapse(R, R; μ = 1.5)
 P.f .= 0.1f0
-SNN.SNNModels.forward!(P, P.param)
-SNN.SNNModels.plasticity!(P, P.param, 0.125f0, SNN.SNNModels.Time())
+SNN.train!([R], [P]; duration = 10ms)
 ```
 
 ## Non-exported connection types
 
-| Type | Status in SNNModels 1.8.4 |
-|:-----|:--------------------------|
-| `FLSparseSynapse` | sparse FORCE learning; the constructor fails (vector minus scalar) and `forward!` uses an undefined `colptr` |
-| `PINningSparseSynapse` | sparse PINning; constructor, `forward!` and `plasticity!` work when called directly, but `sim!`/`train!` do not dispatch on its parameter |
-| `SpikeRateSynapse` | spikes of a spiking population added to `post.g` of a rate population; `sim!` works, `plasticity!` reads a missing field `rJ` |
+| Type | Description |
+|:-----|:------------|
+| `FLSparseSynapse` | sparse FORCE learning (`p` in `(0, 1]`); runs under `sim!`/`train!` (in 1.8.4 the constructor failed and `forward!` used an undefined `colptr`) |
+| `PINningSparseSynapse` | sparse PINning (`p` in `(0, 1]`); runs under `sim!`/`train!` (in 1.8.4 they did not dispatch on its parameter) |
+| `SpikeRateSynapse` | spikes of a spiking population as delta inputs to `post.g` of a rate population (`x` jumps by `W`); no learning rule (in 1.8.4 `plasticity!` read a missing field `rJ`, and `g` accumulated all past spikes) |
 
 ## EmptySynapse
 
-A connection whose `forward!` does nothing. `sim!` and `train!` use `[EmptySynapse()]` as the
-default connection list.
+A connection whose `forward!`, `update_traces!` and `plasticity!` do nothing. `sim!` and
+`train!` use `[EmptySynapse()]` as the default connection list (in SNNModels 1.8.4 `train!`
+failed with it).
 
 ```julia
 using SpikingNeuralNetworks

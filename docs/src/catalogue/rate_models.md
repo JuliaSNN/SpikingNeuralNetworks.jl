@@ -4,8 +4,8 @@
 CurrentModule = SNNModels
 ```
 
-SNNModels provides two firing-rate populations, `Rate` and `WilsonCowan`, which in version
-1.8.4 have identical dynamics, and `HetRec`, a stochastically spiking population with
+SNNModels provides two firing-rate populations, `Rate` and `WilsonCowan`, which have identical
+dynamics, and `HetRec`, a stochastically spiking population with
 heterogeneous dendritic time constants whose firing probability is a sigmoid of a filtered
 somatic variable.
 
@@ -20,9 +20,10 @@ somatic variable.
 (``g_i \mathrel{+}= \sum_j W_{ij} r_j`` at every step, see [Connections](connections.md)),
 ``I`` an external input. Integration: forward Euler, `x += dt * (-x + g + I)`, `r = tanh(x)`.
 
-Neither `Rate` nor `RateSynapse` resets ``g`` between steps: with a `RateSynapse` the input
-``g`` is the running sum of all past inputs ``W r``. `Rate` has no `fire` field; record `:x`,
-`:r` or `:g`.
+`Rate` resets ``g`` to zero after each integration step, so ``g`` is the input of the current
+step (written by the connections after the population update); use `I` for a constant input.
+(In SNNModels 1.8.4 ``g`` was never reset: with a `RateSynapse` it was the running sum of all
+past inputs ``W r``.) `Rate` has no `fire` field; record `:x`, `:r` or `:g`.
 
 | Field | Default | Meaning |
 |:------|:--------|:--------|
@@ -52,8 +53,9 @@ Pages   = ["populations/rate.jl"]
 Despite its name, `WilsonCowan` implements the same single-variable dynamics as `Rate`
 (``dx/dt = -x + g + I``, ``r = \tanh x``, forward Euler, 1 ms time constant); it does not
 implement the coupled excitatory-inhibitory equations of Wilson and Cowan (1972). Its
-parameter type `WCParameter` has no fields, and no `synaptic_target` method is defined, so
-`RateSynapse` cannot target it in SNNModels 1.8.4.
+parameter type `WCParameter` has no fields. Connections target `g` as for `Rate`, and `g` is
+reset after each step (in SNNModels 1.8.4 there was no `synaptic_target` method for
+`WilsonCowan`).
 
 ```julia
 using SpikingNeuralNetworks
@@ -81,22 +83,24 @@ neuron. Input connections target the dendrites through the receptors `:glu` and 
 ```math
 \begin{aligned}
 \tau_d\, \frac{dv_d}{dt} &= -v_d + g_E - g_I \\
-\tau_m\, \frac{dv_s^i}{dt} &\approx \sum_{d \in \mathcal{D}_i} \left(v_d - v_s^i\right) \\
+\tau_m\, \frac{dv_s^i}{dt} &= \sum_{d \in \mathcal{D}_i} \left(v_d - v_s^i\right) \\
 P(\text{spike of } i \text{ in } dt) &= r_i\, \sigma\!\left(k\, (v_s^i - a_i)\right) dt,
 \qquad \sigma(x) = \frac{1}{1 + e^{-x}}
 \end{aligned}
 ```
 
 ``r_i`` (sampled from `rate`, in spikes per ms) is the maximal rate, ``k`` = `steepness`, and
-``a_i`` (`trace`) is an adaptive baseline: it decays with `τrate`, relaxes towards ``v_s`` by
-`(v_s - trace) / τrate` per non-refractory step (no `dt` factor in the code), and increases by
-1 at each spike.
+``a_i`` (`trace`) is an adaptive baseline: it decays with `τrate`, relaxes towards ``v_s`` with
+`dt * (v_s - trace) / τrate` per non-refractory step, and increases by 1 at each spike.
 
 Integration per step: synapse update, Euler step of the dendrites, then for each neuron one
-sequential relaxation step `v_s += (v_d - v_s) * dt / τm` per connected dendrite (with ``k``
-connected dendrites the effective time constant is about ``τ_m / k``), refractory counter,
-baseline update, Bernoulli spike draw; a spike sets the refractory counter to
-`round(Int, τabs / dt)`.
+Euler step `v_s += dt / τm * Σ_d (v_d - v_s)` (with ``k`` connected dendrites the soma relaxes to
+their mean with time constant ``τ_m / k``), refractory counter, baseline update, Bernoulli spike
+draw; a spike sets the refractory counter to `round(Int, τabs / dt)`.
+
+!!! note "Changed after SNNModels 1.8.4"
+    In SNNModels 1.8.4 the baseline relaxation had no `dt` factor (results depended on `dt`) and
+    the soma was relaxed sequentially once per dendrite (order-dependent).
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|

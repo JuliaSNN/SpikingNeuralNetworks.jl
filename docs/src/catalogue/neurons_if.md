@@ -218,8 +218,9 @@ of `PostSpike`). Integration: forward Euler, conductances first, then the membra
 | `τabs` | `5ms` | ms | absolute refractory period |
 | `α` | `0` | 1/nS | excitation-SST interaction strength |
 
-No `synaptic_target` method exists for `ExtendedIF` in SNNModels 1.8.4, so it cannot be the
-postsynaptic population of a `SpikingSynapse`; the conductances can be written directly.
+Connections target one of the three conductances: `SpikingSynapse(pre, E, :g_Exc; conn)` (also
+`:g_PV`, `:g_SST`; `:ge`/`:glu` map to `:g_Exc` and `:gi`/`:gaba` to `:g_PV`). (In SNNModels 1.8.4
+there was no `synaptic_target` method for `ExtendedIF`.)
 
 ```julia
 using SpikingNeuralNetworks

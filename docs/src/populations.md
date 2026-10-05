@@ -77,9 +77,10 @@ populations the spikes go to the `receptors` buffers of the synapse model:
 Multicompartment models additionally take the compartment index or name as fourth argument
 (see [Multicompartment neurons](catalogue/multicompartment.md)). Other models expose their
 conductances directly: `IZ` and `HH` use `:ge` and `:gi`; `Rate` maps every target to `g`;
-`Identity` maps every target to `g`; `HetRec` uses `:glu` and `:gaba` on its dendrites.
-`MorrisLecar`, `ExtendedIF` and `WilsonCowan` have no `synaptic_target` method in SNNModels
-1.8.4 and cannot be the postsynaptic population of a connection.
+`Identity` maps every target to `g`; `HetRec` uses `:glu` and `:gaba` on its dendrites;
+`MorrisLecar` uses `:ge`, `:gi`; `ExtendedIF` uses `:g_Exc`, `:g_PV`, `:g_SST`; `WilsonCowan`
+maps every target to `g`. (In SNNModels 1.8.4 `MorrisLecar`, `ExtendedIF` and `WilsonCowan`
+could not receive connections.)
 
 ## Choosing a model
 
@@ -96,9 +97,8 @@ conductances directly: `IZ` and `HH` use `:ge` and `:gi`; `Rate` maps every targ
 | background or input spike trains | `Poisson`, `VariablePoisson`, `InhomogeneousPoisson` | [Spike sources](catalogue/sources.md) |
 | relaying spikes | `Identity` | [Spike sources](catalogue/sources.md) |
 
-Plasticity of the connections is applied only by `train!`. In SNNModels 1.8.4 `IZ`, `HH` and
-`MorrisLecar` cannot be run with `train!` (their parameter types lack the `update_traces!`
-fallback); use `sim!` for them.
+Plasticity of the connections is applied only by `train!`. Every population type runs under both
+`sim!` and `train!` (in SNNModels 1.8.4 `IZ`, `HH` and `MorrisLecar` failed under `train!`).
 
 New population models can be added by defining a parameter type, a population struct and an
 `integrate!` method, see [Model Extensions](models_ext.md).

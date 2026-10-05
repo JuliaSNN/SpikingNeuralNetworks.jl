@@ -343,15 +343,11 @@ whose readout `z` is trained online, with recursive least squares, to follow the
 The readout weights are updated only during `train!` (training phase); `sim!` is used for the test
 phase. The script below trains for 1 s; the figure was obtained with 2.44 s of training.
 
-!!! warning "Not runnable with SNNModels 1.8.4"
-    The parameter types of `FLSynapse` and `PINningSynapse` (`FLSynapseParameter`,
-    `PINningSynapseParameter`) are not subtypes of `AbstractConnectionParameter`, so the generic
-    `forward!(c, param, dt, T)` and `update_traces!` methods used by the simulation loop do not apply
-    to them: in SNNModels 1.8.4 both `sim!` and `train!` stop with a `MethodError` on these
-    connections. The script is kept as a reference for the API and the figure was produced with an
-    earlier version.
+!!! note "Changed after SNNModels 1.8.4"
+    In SNNModels 1.8.4 this script did not run: the parameter types of `FLSynapse` and
+    `PINningSynapse` were not subtypes of `AbstractConnectionParameter`, so `sim!` and `train!`
+    stopped with a `MethodError`. The figure below was produced with an earlier version.
 
-<!-- norun -->
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units

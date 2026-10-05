@@ -42,8 +42,9 @@ sequence_end(seq)                                      # total duration in ms
 [`step_input`](@ref) creates one Poisson `MultiCompartmentStimulusGroup` per symbol, projecting
 onto a random fraction of a dendritic population; [`update_stimuli!`](@ref) copies the intervals of
 the sequence into the stimuli, and [`set_stimuli!`](@ref) switches word or phoneme stimuli on and
-off. `step_input` requires explicit compartment targets (the default `targets = [nothing]` raises
-a `MethodError`).
+off. With the default `targets = [nothing]` the input targets a point-neuron population; pass the
+compartments for dendritic neurons (with SNNUtils 0.2.9 and SNNModels 1.8.4 the default raised a
+`MethodError`).
 
 ```julia
 using SpikingNeuralNetworks, SNNUtils
@@ -71,8 +72,9 @@ Pages   = ["SNNUtils.jl", "stimuli/sequence/stimuli.jl", "stimuli/sequence/seque
 
 [`compute_kei`](@ref), [`residual_current`](@ref) and [`optimal_kei`](@ref) compute the ratio of
 inhibitory to excitatory input rate that cancels the net dendritic current of a dendritic neuron
-with the soma held at a given potential; [`get_model`](@ref) builds the neuron. In SNNUtils 0.2.9
-these functions do not run with SNNModels 1.8.4 (see the *Status* section of their docstrings).
+with the soma held at a given potential; [`get_model`](@ref) computes the passive properties of
+the neuron. `residual_current` is zero at the ratio returned by `compute_kei`. (In SNNUtils 0.2.9
+these functions always threw, and the leak term of `residual_current` had the opposite sign.)
 The non-exported helpers `SNNUtils.critical_window` and `SNNUtils.all_windows` estimate the
 bimodality of membrane-potential distributions with the kernel-density method of Silverman
 (1981).
@@ -89,8 +91,9 @@ for external analysis: [`import_bioseq_tasks`](@ref), [`bioseq_epochs`](@ref),
 [`bioseq_lexicon`](@ref), [`seq_bioseq`](@ref), and the writers [`root_path`](@ref),
 [`store_experiment_data`](@ref), [`store_target_pops`](@ref), [`store_labels`](@ref),
 [`store_activity_data`](@ref) (HDF5 through DrWatson, NPZ for membrane traces). These functions
-expect populations named `E`, `I1`, `I2` and specific JSON fields; see their docstrings for
-known problems.
+expect populations named `E`, `I1`, `I2` and specific JSON fields. (In SNNUtils 0.2.9
+`import_bioseq_tasks` read the files from swapped folders, the inhibitory neuron ranges of
+`store_experiment_data` were labelled in the wrong order, and `store_activity_data` threw.)
 
 ```@autodocs
 Modules = [SNNUtils]
@@ -104,10 +107,11 @@ Pages   = ["stimuli/bioseq/import_bioseq.jl"]
   spike counts or recorded variables.
 - [`SVCtrain`](@ref) (linear SVM) and `SNNUtils.LogRegtrain` (multinomial logistic regression):
   train/test a decoder, return Cohen's kappa and the confusion matrix.
-  [`MultinomialLogisticRegression`](@ref) does not run in 0.2.9 (it calls an undefined function).
+  [`MultinomialLogisticRegression`](@ref): random train/test split, returns the test accuracy
+  (it always threw in 0.2.9).
 - [`score_spikes`](@ref): decode the presented word from the activity of the word assemblies.
 - [`trial_average`](@ref), [`trial_sort`](@ref), [`symbols_to_int`](@ref), [`standardize`](@ref),
-  [`do_pca`](@ref): helpers. The exported name `pca` is not defined.
+  [`do_pca`](@ref): helpers. (The undefined `pca` was exported up to 0.2.9.)
 
 ```julia
 using SpikingNeuralNetworks, SNNUtils

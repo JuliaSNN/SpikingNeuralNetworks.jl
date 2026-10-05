@@ -9,13 +9,11 @@ they have no `synapse` or `spike` field. Each carries two conductance-based syna
 `ge` and `gi`, that decay exponentially and are incremented by the connections (target symbols
 `:ge`, `:gi`).
 
-Two limitations hold for all three in SNNModels 1.8.4:
-
-- their parameter types (`IZParameter`, `HHParameter`, `MorrisLecarParameter`) are not subtypes
-  of `AbstractPopulationParameter`, so there is no `update_traces!` method for them and `train!`
-  raises a `MethodError`; use `sim!` (plastic synapses onto these models cannot be trained);
-- `MorrisLecar` has no `synaptic_target` method, so it cannot be the postsynaptic population of
-  a `SpikingSynapse`; `IZ` and `HH` can.
+All three run under `sim!` and `train!` and can be the postsynaptic population of a
+`SpikingSynapse` (target `:ge` or `:gi`; for `MorrisLecar` also `:glu` -> `:ge`,
+`:gaba` -> `:gi`). In SNNModels 1.8.4 their parameter types were not subtypes of
+`AbstractPopulationParameter` (so `train!` raised a `MethodError`) and `MorrisLecar` had no
+`synaptic_target` method.
 
 ## Izhikevich model: `IZ`
 
@@ -89,9 +87,10 @@ with ``u = v - V_t`` (mV) and rates in 1/ms:
 ```
 
 Integration: forward Euler, sequential (gating variables, then ``v`` with the new gates, then
-the conductance decay). `fire = v > -20mV` is a level test evaluated every step: one action
-potential produces several consecutive `true` steps, so spike counts from `fire` overestimate
-the number of action potentials. No reset, no refractory period. Use a small `dt`
+the conductance decay). A spike is flagged in the step in which ``v`` crosses -20 mV upwards,
+one flag per action potential. No reset, no refractory period. (In SNNModels 1.8.4 `fire` was the
+level test `v > -20mV`: one action potential produced several consecutive flags and spike counts
+were inflated.) Use a small `dt`
 (0.01-0.05 ms).
 
 | Field | Default | Value | Meaning |
@@ -143,8 +142,10 @@ w_\infty(v) = \tfrac12 \left(1 + \tanh\frac{v - V_3}{V_4}\right), \quad
 ```
 
 Integration: forward Euler, sequential (``v`` with the intrinsic currents and the old ``w``;
-``w`` with the new ``v``; synaptic term; conductance decay). `fire = v > 20mV` is a level test;
-no reset.
+``w`` with the new ``v``; synaptic term; conductance decay). A spike is flagged at the upward
+crossing of 20 mV (one flag per action potential; a level test `v > 20mV` up to SNNModels 1.8.4);
+no reset. With the default parameters a constant suprathreshold current gives one action
+potential followed by a depolarised plateau.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|

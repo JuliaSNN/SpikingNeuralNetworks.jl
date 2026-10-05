@@ -60,7 +60,8 @@ effect comes from the receptor.
 | `Confavreux2025Synapse` | conductance, AMPA + filtered NMDA + GABA | `gAMPA`, `gNMDA`, `gGABA` | forward Euler | all |
 
 "Point neurons" are the generalized integrate-and-fire populations; `DeltaSynapse` lacks the
-five-argument `synaptic_current!` method used by `Tripod` and `BallAndStick` and fails there.
+five-argument `synaptic_current!` method used by `Tripod` and `BallAndStick` and raises an
+`ArgumentError` there.
 
 ## Delta synapse
 
@@ -328,8 +329,8 @@ doi:10.3389/fncel.2018.00181, and the GABA values to Miles et al. (1996), Neuron
 (references as cited in `SNNUtils/src/models/quaresima2022.jl`); the somatic AMPA values are
 labelled "Duarte" in the code without a reference.
 
-`SNNModels` also exports `NMDA_CANAHP` and `Synapse_CANAHP`, but their definitions are commented
-out, so these names are not defined in 1.8.4.
+`NMDA_CANAHP` and `Synapse_CANAHP` have commented-out definitions; SNNModels 1.8.4 exported
+them although they were not defined (removed from the exports afterwards).
 
 ```julia
 using SpikingNeuralNetworks
@@ -351,8 +352,8 @@ AMPA, NMDA and GABA conductances; the NMDA conductance is a low-pass filtered co
 conductance and the excitatory current mixes the two with weight ``\alpha``. No magnesium block.
 
 ```math
-\frac{dg_{AMPA}}{dt} = -\frac{g_{AMPA}}{\tau_{AMPA}} + x_{glu}, \qquad
-\frac{dg_{GABA}}{dt} = -\frac{g_{GABA}}{\tau_{GABA}} + x_{gaba}, \qquad
+\frac{dg_{AMPA}}{dt} = -\frac{g_{AMPA}}{\tau_{AMPA}} + \sum_k w_k \delta(t - t_k), \qquad
+\frac{dg_{GABA}}{dt} = -\frac{g_{GABA}}{\tau_{GABA}} + \sum_k w_k \delta(t - t_k), \qquad
 \tau_{NMDA}\frac{dg_{NMDA}}{dt} = g_{AMPA} - g_{NMDA}
 ```
 ```math
@@ -368,9 +369,10 @@ I_{syn} = \left(\alpha\, g_{AMPA} + (1-\alpha)\, g_{NMDA}\right)(V - E_e) + g_{G
 | `E_e` | `0mV` | mV | excitatory reversal potential |
 | `α` | `0.23` | - | AMPA fraction of the excitatory conductance |
 
-Integration: forward Euler (`gAMPA`, then `gGABA`, then `gNMDA` with the updated `gAMPA`). The
-input ``x`` enters the Euler step multiplied by `dt`, so a spike of weight ``w`` increments
-`gAMPA` by ``w\,dt``, unlike the other models where the increment is ``w``. The model is named
+Integration: forward Euler (`gAMPA`, then `gGABA`, then `gNMDA` with the updated `gAMPA`); a
+spike of weight ``w`` increments the conductance by ``w``, as in the other models. (In SNNModels
+1.8.4 the input entered the Euler step multiplied by `dt`, so the increment was ``w\,dt``, 8
+times smaller at `dt = 0.125ms`.) The model is named
 after Confavreux et al. (2025); the full reference is not given in the code.
 
 ```julia

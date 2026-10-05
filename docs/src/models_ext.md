@@ -61,7 +61,8 @@ variables of a model stay fixed under `sim!`, even if its synapses carry plastic
   four-argument method calls the two-argument one. This generic method, and the no-op
   `update_traces!` fallback, exist only for parameters that are subtypes of
   `AbstractConnectionParameter`; with any other parameter type `sim!` and `train!` fail with a
-  `MethodError`.
+  `MethodError`, so always subtype it (all SNNModels connection parameters are subtypes after
+  1.8.4).
 - `plasticity!(c, param, dt::Float32, T::Time)`: called by `train!` for every connection; there is
   no generic fallback, so define it (it can return `nothing`) if the model is ever run with `train!`.
   `update_traces!` has a no-op fallback.

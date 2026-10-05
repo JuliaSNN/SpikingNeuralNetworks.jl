@@ -11,9 +11,9 @@ to display or save figures: `using CairoMakie` (static figures, also on headless
 `using GLMakie` (interactive windows). Figures can be built without a backend; `save` and the
 display need one.
 
-`SpikingNeuralNetworks` re-exports `raster`, `vecplot`, `vecplot!`, `@makie_default` and
-`okabe_ito_10`. The other SNNPlots functions are reachable as `SNN.stdp_kernel`, `SNNPlots.raster!`,
-and so on (`raster!` is not exported by SNNPlots, so it must be qualified with `SNNPlots.`).
+`SpikingNeuralNetworks` re-exports `raster`, `raster!`, `vecplot`, `vecplot!`, `@makie_default` and
+`okabe_ito_10`. The other SNNPlots functions are reachable as `SNN.stdp_kernel`, and so on.
+(`raster!` was not exported by SNNPlots 0.2.10, so `SNN.raster!` was undefined.)
 
 ## Theme
 
@@ -41,8 +41,11 @@ end
 population (or stimulus), a `NamedTuple` of populations such as `model.pop` (stacked vertically,
 separated by dashed lines and labelled by population name), or a `Spiketimes` vector. The
 populations must record spikes, which is enabled with `monitor!(pop, [:fire])`. The time window
-is given in ms (`0:1s`, `[0, 500ms]`); with populations the time axis is shown in seconds. At most
-200 000 spikes are drawn; larger sets are randomly subsampled with a warning.
+is given in ms (`0:1s`, `[0, 500ms]`); with populations the time axis is shown in seconds, with a
+`Spiketimes` vector in ms (labelled "Time (ms)"; the label wrongly read "Time (s)" in SNNPlots
+0.2.10). `names` relabels the populations, extra keyword arguments go to `scatter!`, and the
+y-limits are set on the axis given to `raster!`. At most 200 000 spikes are drawn; larger sets
+are randomly subsampled with a warning.
 
 ```julia
 using SpikingNeuralNetworks, CairoMakie
@@ -62,7 +65,7 @@ fig, ax, plt = SNN.raster(model.pop, 0:1s)        # all populations, new figure
 
 fig2 = Figure()
 ax2 = Axis(fig2[1, 1], xlabel = "Time (s)", ylabel = "Neuron")
-SNNPlots.raster!(ax2, model.pop.E, 0:500ms)      # one population into an existing axis
+SNN.raster!(ax2, model.pop.E, 0:500ms)           # one population into an existing axis
 ```
 
 ## Recorded variables
@@ -90,17 +93,22 @@ ax2 = Axis(fig2[1, 1], ylabel = "V (mV)")
 SNN.vecplot!(ax2, E, :v; pop_average = true, ribbon = true)
 ```
 
-The methods `vecplot(P::Array, sym)` and `vecplot(P, syms::Array)`, which arrange one panel per
-population or per variable, still call the Plots.jl `layout` API and do not work with Makie.
+`vecplot(P::Array, sym)` (one panel per population) and `vecplot(p, Any[:v, :w])` (one panel per
+variable) return a `Figure` with stacked panels; `vecplot(p, [:v, :w])` draws all variables in
+one axis with their names as legend labels. `factor` multiplies the trace by a number, by
+another recorded variable (`factor = :g`) or by a `neurons x time` matrix. (In SNNPlots 0.2.10
+the multi-panel methods called the Plots.jl API, the legend labels were `"nothing"`, and the
+`Symbol`/`Matrix` forms of `factor` threw.)
 
 ## STDP kernels
 
 [`stdp_kernel`](@ref) (new figure) and [`stdp_kernel!`](@ref) (existing axis) plot the weight change
 of a long-term plasticity rule as a function of the spike-time difference
 ``\Delta t = t_{post} - t_{pre}``. Each point is a separate two-neuron `train!` run of 400 ms
-([`stdp_test`](@ref)); the default grid has 40 points, so reduce `ΔTs` for a quick look. The
-measured change also contains an extra causal pairing at ``\Delta t \approx 0.1`` ms, because the
-postsynaptic `Identity` neuron of the test is driven by the synapse (see [`stdp_test`](@ref)).
+([`stdp_test`](@ref)); the default grid has 40 points, so reduce `ΔTs` for a quick look. Each run
+measures exactly one pre/post pair. (In SNNPlots 0.2.10 the measured synapse also drove the
+postsynaptic `Identity` neuron, which added a causal pairing at ``\Delta t \approx 0.1`` ms to
+every point: for `STDPGerstner()` the kernel was positive at ``\Delta t = -10`` ms.)
 
 ```julia
 using SpikingNeuralNetworks, CairoMakie
@@ -117,12 +125,12 @@ distance dependence of spatially embedded networks with three populations named 
 workflow (fields `points`, `links`, `network`, `spatial`, or distance histograms `ds`, `rs`); see
 their docstrings for the expected layout. They are not generic plots of an SNNModels model.
 
-## Exported names that are not defined
+## Exported names
 
-The export lists of SNNPlots 0.2.10 contain names that are not defined in the package:
-`plot_model`, `plot_stimulus`, `plot_connections`, `stp_plot`, `plot_weights`, `plot_activity`,
-`dendrite_gplot`, `soma_gplot`, `stdp_weight_decorrelated`, `default_colors`, `nature_figure`.
-Using them raises an `UndefVarError`. `plot` and `plot!` are Makie's; `save_model` and
+The export lists of SNNPlots 0.2.10 contained names that were not defined in the package
+(`plot_model`, `plot_stimulus`, `plot_connections`, `stp_plot`, `plot_weights`, `plot_activity`,
+`dendrite_gplot`, `soma_gplot`, `stdp_weight_decorrelated`, `default_colors`, `nature_figure`);
+they were removed. `plot` and `plot!` are Makie's; `save_model` and
 `load_model` are the SNNModels functions; `inch` and `pt` are `Measures` lengths, while `cm` is the
 SNNModels length unit (`cm == 1.0f0`). The files `backend/plots.jl`, `other_plots.jl`,
 `extra_plots.jl` and `old_plot.jl` of the source tree belong to the former Plots.jl interface and

@@ -315,7 +315,8 @@ by 1 at a spike.
 `iSTDPPotential` replaces the postsynaptic spike trace by a low-pass filter of the membrane
 potential, ``τ_y\, dy_i/dt = V_i - y_i``, and the target by a reference potential ``v_0``:
 ``Δw_{ij} = η (y_i - v_0)`` at a presynaptic spike, ``Δw_{ij} = η x_j`` at a postsynaptic spike.
-The trace starts at 0 mV.
+At the first `plasticity!` call the trace is set to the membrane potential (it started at 0 mV
+in SNNModels 1.8.4, which potentiated inhibition at the start of every simulation).
 
 Update order per step: presynaptic pass (Euler decay of ``x_j``, +1 if ``j`` fired, then the
 pre-spike update of its outgoing synapses), then postsynaptic pass (Euler update of ``y_i``, +1
@@ -359,17 +360,23 @@ presynaptic trace and ``[z]_+ = \max(z, 0)``:
 
 ```math
 \begin{aligned}
-τ_x \frac{dx_j}{dt} &= -x_j + S_j, \qquad τ_u \frac{du_i}{dt} = V_i - u_i, \qquad τ_v \frac{dv_i}{dt} = V_i - v_i \\
+τ_x \frac{dx_j}{dt} &= -x_j + \sum_k δ(t - t_j^k), \qquad τ_u \frac{du_i}{dt} = V_i - u_i, \qquad τ_v \frac{dv_i}{dt} = V_i - v_i \\
 Δw_{ij} &= -A_{LTD}\,[u_i - θ_{LTD}]_+ \quad \text{at each presynaptic spike} \\
-Δw_{ij} &= A_{LTP}\, x_j\,[v_i - θ_{LTD}]_+\,[V_i - θ_{LTP}]_+ \quad \text{at every step}
+\frac{dw_{ij}}{dt} &= A_{LTP}\, x_j\,[v_i - θ_{LTD}]_+\,[V_i - θ_{LTP}]_+
 \end{aligned}
 ```
 
-``S_j`` is 1 in the step in which ``j`` fires, so a spike increases ``x_j`` by ``dt/τ_x``. Update
-order per step: Euler update of ``x``, then of ``u`` and ``v``; for each presynaptic neuron
-(threaded over chunks), LTD if it fired with clamping at `Wmin`, then the LTP term on all its
-outgoing synapses with clamping at `Wmax`. The LTP increment is added once per step (it is not
-multiplied by `dt`) and the traces start at 0 mV.
+A presynaptic spike increases ``x_j`` by ``1/τ_x``; potentiation is a rate, integrated with `dt`,
+so the rule does not depend on `dt`. Update order per step: Euler update of ``x``, then of ``u``
+and ``v``; for each presynaptic neuron (threaded over chunks), LTD if it fired with clamping at
+`Wmin`, then the LTP increment `dt * A_LTP * x * ...` on all its outgoing synapses with clamping
+at `Wmax`. At the first call ``u`` and ``v`` are set to the membrane potential.
+
+!!! note "Changed after SNNModels 1.8.4"
+    In SNNModels 1.8.4 a spike increased ``x_j`` by ``dt/τ_x`` and the LTP increment was added per
+    step without `dt`; the two factors cancel, so the weights are the same (up to rounding),
+    only the recorded `x` differs (it was proportional to `dt`). The traces ``u``, ``v`` started at
+    0 mV, which produced spurious depression during the first ``τ_u``.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|

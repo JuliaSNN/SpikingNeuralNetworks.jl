@@ -73,14 +73,16 @@ current = SNN.Stimulus(SNN.CurrentNoise(E; I_base = 200pA), E; neurons = [1, 2, 
 Stimuli can be modified between `sim!` calls (or from a `perturbation!` function):
 
 - `set_active!(stim, false)` / `set_active!(stim, true)` switches a `PoissonStimulus` off
-  and on. (`PoissonStimulusLayer` ignores the flag in SNNModels 1.8.4.)
+  and on; it also works for `PoissonStimulusLayer` (ignored in SNNModels 1.8.4).
 - `set_intervals!(stim, [[t1, t2], ...])` replaces the activity intervals of a
   `PoissonInterval` stimulus.
 - `set_variable!(stim, key, value)` sets `param.variables[key]` of a `PoissonVariable`
-  stimulus, or broadcasts `value` into an array field of the parameter (e.g. `:rates` of
-  `PoissonLayerHet`, `:I_base` of `CurrentNoise`).
-- `update_spikes!(stim, spikes, start_time)` and `shift_spikes!(stim, delay)` replace or
-  shift the spike list of a `SpikeTimeStimulus`.
+  stimulus, broadcasts `value` into an array field of the parameter (e.g. `:rates` of
+  `PoissonLayerHet`, `:I_base` of `CurrentNoise`), or replaces a scalar field of a mutable
+  parameter (e.g. `:rate` of `PoissonFixed`, `PoissonInterval`, `PoissonLayer`; this failed in
+  SNNModels 1.8.4).
+- `update_spikes!(stim, spikes, start_time)` and `shift_spikes!(stim, delay)` replace (sorted
+  by time) or shift the spike list of a `SpikeTimeStimulus`; empty lists are allowed.
 
 All of them also accept a `StimulusGroup` and are then applied to every element.
 

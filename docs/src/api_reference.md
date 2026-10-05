@@ -89,10 +89,10 @@ Pages   = ["src/SNNModels.jl"]
 
 ## Umbrella package
 
-`SpikingNeuralNetworks` re-exports `SNNModels`, `SNNPlots` and `SNNUtils`. Its export list also
-contains names that are not defined in the current versions (`LTPParam`, `STPParam`,
-`SNNModel`, `make_copy`, `raster!`); they cannot be used as values. (`LTPParam` and
-`STPParam` are valid as keyword arguments and field names of `SpikingSynapse`.)
+`SpikingNeuralNetworks` re-exports `SNNModels`, `SNNPlots` and `SNNUtils`, and every exported
+name is defined. (Up to SpikingNeuralNetworks 1.2.1 the export list contained the undefined
+`LTPParam`, `STPParam`, `SNNModel`, `make_copy` and `raster!`. `LTPParam` and `STPParam` are
+keyword arguments and field names of `SpikingSynapse`; the model copy function is `modelcopy`.)
 
 ```@meta
 CurrentModule = SpikingNeuralNetworks

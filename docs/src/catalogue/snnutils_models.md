@@ -20,7 +20,7 @@ table summarises the status, tested with SNNModels 1.8.4 and SNNUtils 0.2.9.
 | :--- | :--- | :--- | :--- | :--- |
 | `stp_het.jl` | short-term-plasticity parameters sampled from experimental fits | see below | yes | yes |
 | `quaresima2022.jl` | receptor sets of the Tripod neuron (`quaresima2022`, `EyalGluDend`, `MilesGabaDend`, ...) | receptor references cited in the file | no | yes, with `include` |
-| `quaresima_2024_updown.jl` | dendritic glutamatergic receptors with variable NMDA/AMPA ratio | reference not given in the code | no | partly (needs `quaresima2022.jl`; `quaresima2022_nar` fails) |
+| `quaresima_2024_updown.jl` | dendritic glutamatergic receptors with variable NMDA/AMPA ratio | reference not given in the code | no | yes, with `include` (needs `quaresima2022.jl`) |
 | `quaresima2023.jl` | iSTDP, vSTDP and connectivity parameters | reference not given in the code | no | plasticity: yes; connectivity: see note (1) |
 | `duarte2019.jl` | PV, SST and AdEx cell parameters | Duarte & Morrison (2019), inferred from the name | no | no (`IFParameterGsyn`, `AdExParameterGsyn` undefined) |
 | `lkd2014.jl` | AdEx E and IF PV parameters | Litwin-Kumar & Doiron (2014), cited in the file | no | no (keywords and types removed) |
@@ -30,11 +30,10 @@ table summarises the status, tested with SNNModels 1.8.4 and SNNUtils 0.2.9.
 | `learning/structs.jl` | legacy plasticity parameter structs | Clopath 2010, Vogels 2011, Gütig 2003 named in comments | no | definitions load, not used by SNNModels |
 | `models.jl` | includes the first six files above | - | no | no (fails at `duarte2019.jl`) |
 
-(1) The connection rules store the distribution as a type (`dist = Normal`, `dist = LogNormal`),
-while `SpikingSynapse(...; conn = rule)` in SNNModels 1.8.4 expects its name as a `Symbol`
-(`dist = :Normal`); passing these rules unchanged raises a `TypeError`. Rules without `dist` (for
-example `lkd2014_dend.If_to_E`) work; for the others, replace the field, e.g.
-`merge(rule, (dist = nameof(rule.dist),))`.
+(1) The connection rules store the distribution as a type (`dist = Normal`, `dist = LogNormal`).
+SNNModels after 1.8.4 accepts a type as well as a `Symbol` in `conn`; with SNNModels 1.8.4, which
+expects a `Symbol` (`dist = :Normal`), passing these rules unchanged raises a `TypeError` (replace
+the field, e.g. `merge(rule, (dist = nameof(rule.dist),))`).
 
 ## How to use the files that are not loaded
 
@@ -128,9 +127,11 @@ Requires the definitions of `quaresima2022.jl`.
   ``g_0 = 0.73\,(1 + \mathrm{NAR}_0 - \mathrm{NAR})`` (``\mathrm{NAR}_0 = 1.31/0.73``), rise 0.25 ms,
   decay 2 ms, and NMDA ``g_0 = 0.73\,\mathrm{NAR}``, rise 8 ms, decay `τd`.
 - `EyalEquivalentNAR(NAR, τd = 35)`: `Receptors(EyalGluNAR(NAR, τd), MilesGabaDend)`.
-- `quaresima2022_nar(nar, τ = 35ms)`: Tripod configuration with these receptors; it uses the
-  removed type `AdExSoma` and fails with SNNModels 1.8.4.
-- `quaresima2022_nonmda` is exported but not defined.
+- `quaresima2022_nar(nar, τ = 35ms)`: keyword arguments of `Tripod` with these receptors
+  (`Tripod(; N = 100, quaresima2022_nar(1.8)...)`): dendrites of 150-400 µm, somatic
+  `DuarteGluSoma`/`MilesGabaSoma`, `adex = AdExParameter(Vr = -55mV, Vt = -50mV)`. (In SNNUtils
+  0.2.9 it used the removed type `AdExSoma` and failed, and the undefined `quaresima2022_nonmda`
+  was exported.)
 
 Reference not given in the code.
 
@@ -147,8 +148,8 @@ population (`E`, dendrites `Ed`) and two inhibitory populations (`If`, `Is`), al
 ``p = 0.2``: `E_to_Ed` (Normal, ``\mu = 10.78``, ``\sigma = 1``) and log-normal rules with
 ``\mu = \log(\cdot)`` of 16.0 (`E_to_If`, `E_to_Is`, `Is_to_Ed`), 16.8 (`If_to_E`), 5.83
 (`If_to_Is`), 16.2 (`If_to_If`, `Is_to_Is`), 5.47 (`Is_to_If`), with ``\sigma = 0``.
-`ballstick_network` is exported but not defined. Reference not given in the code. The connectivity
-rules need the conversion of note (1).
+Reference not given in the code. The connectivity rules work with SNNModels after 1.8.4; see note
+(1). (The undefined `ballstick_network` was exported up to SNNUtils 0.2.9.)
 
 ## `duarte2019.jl`: PV, SST and AdEx cells
 

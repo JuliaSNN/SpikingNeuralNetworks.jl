@@ -54,7 +54,9 @@ the buffer grows automatically (with a one-time warning). For spikes, `monitor_r
 (default 20 Hz) sets the expected maximum firing rate used for the initial allocation.
 
 A tuple `(key, indices)` restricts the recording of a vector field to some neurons, e.g.
-`SNN.monitor!(E, [(:v, 1:10)])`. (In SNNModels 1.8.4 the indices are ignored for `:fire`.)
+`SNN.monitor!(E, [(:v, 1:10)])`. For `:fire` only the spikes of the listed neurons are
+recorded, with their original indices. (In SNNModels 1.8.4 the indices were ignored for
+`:fire`.)
 
 !!! note
     It is not possible to pause a recording while keeping the variable monitored. To start
@@ -72,14 +74,16 @@ it is evaluated with call syntax, `v(i, t)`, at any time `t` (in ms) within the 
 range (`i` and `t` can be ranges), and `record(obj, key, range = true)` also returns the
 time axis `r`.
 
-!!! warning "Time axis of interpolated records"
-    `r` is built as evenly spaced points from the first to the last simulated step of the
-    monitored period, while samples are taken at global steps that are multiples of the
-    sampling period. It is exact when monitoring starts at `t = 0` and the duration is a
-    multiple of `1/sr`. When a variable is monitored from a later time (as `:W` below,
-    monitored from 2 s on) or the duration is not a multiple of `1/sr`, `r` can be off by
-    up to one sampling period. Use `getvariable` and compute the sample times yourself when
-    exact timing matters.
+Samples are taken at the global steps that are multiples of the sampling period
+(`round(1/(sr*dt))` steps), and `r` runs from the first to the last sample actually taken, so it
+is the exact sample-time axis also when a variable is monitored from a later time (as `:W`
+below, monitored from 2 s on: samples at 2.1, 2.2, ..., 4 s at 10 Hz).
+
+!!! note "Changed after SNNModels 1.8.4"
+    In SNNModels 1.8.4 `r` ran from the first to the last simulated step of the monitored
+    period, so it was shifted or stretched by up to one sampling period when monitoring
+    started after `t = 0` or the duration was not a multiple of `1/sr`; the period was
+    rounded down (10 Hz sampled every 99.875 ms at `dt = 0.125ms`).
 
 ```julia
 v = SNN.getvariable(E, :v)                    # 800 x 401 samples (2 s at 200 Hz, plus t = 0)
