@@ -19,7 +19,7 @@ II = SNN.SpikingSynapse(I, I, :gi; μ = 10, p = 0.02)
 model = SNN.compose(; E, I, EE, EI, IE, II)
 ```
 
-To monitor any model variable, use the [`monitor!`](@ref SNN.SNNModels.monitor!) function. This function takes the component instance (e.g., `E`) and the symbol (or list of symbols) you want to record. Optionally, you can specify the sampling rate (`sr`, default: 1kHz) for the recording.
+To monitor any model variable, use the `monitor!` function. This function takes the component instance (e.g., `E`) and the symbol (or list of symbols) you want to record. Optionally, you can specify the sampling rate (`sr`, default: 1kHz) for the recording.
 
 ---
 
@@ -119,6 +119,9 @@ SNN.monitor!(IE, [:tpost]; sr=10Hz, variables=:LTPVars)
 SNN.monitor!(EE, [:x, :u], :STPVars; sr=10Hz)
 SNN.train!(model = model; duration = 5second)
 ```
+
+!!! note "Plasticity needs `train!`"
+    The first simulation of this page used `SNN.sim!`, which never updates weights or STP variables. The call above uses `SNN.train!`, so `IE` (inhibitory STDP) and `EE` (STP) are plastic. If you ran this example with SNNModels 1.5.0 to 1.8.1 the `IE` weights were potentiated at the wrong synapses (see [Release notes](release_notes.md)); results differ from SNNModels 1.8.2 on.
 
 !!! warning
     Recording synaptic strength or efficacy can be memory-intensive in large networks. We recommend using a low sampling rate.

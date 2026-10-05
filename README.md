@@ -48,3 +48,13 @@ and future contributions of the JuliaSNN ecosystem.
 **Documentation** is [here](https://juliasnn.github.io/SpikingNeuralNetworks.jl/dev/).
 
 
+
+## Important: results with inhibitory STDP (`iSTDPRate`) before SNNModels 1.8.2
+
+SpikingNeuralNetworks.jl from v1.0.0 (commit 680a30c, 2025-01-06) used SNNModels 1.5.0 - 1.8.1, where the
+potentiation of `iSTDPRate` (and `iSTDPTime`) was applied to the wrong synapses (a `@turbo` loop with a
+reassigned loop variable). Simulations that used these rules with those versions should be rerun with SNNModels 1.8.2.
+Also in 1.8.2: `STDPGerstner` amplitudes are applied once (they were squared; default `A_post = -1e-4`), new rules
+`STDPTriplet` and `STDPWeightDependent`, and a new `sparse_matrix` generator (seeded networks differ).
+Plasticity runs only under `train!`, not `sim!`. See the
+[release notes](https://juliasnn.github.io/SpikingNeuralNetworks.jl/dev/release_notes/) (`docs/src/release_notes.md`).

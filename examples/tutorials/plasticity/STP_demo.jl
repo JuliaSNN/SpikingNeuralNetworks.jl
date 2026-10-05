@@ -4,7 +4,9 @@ SNN.@load_units
 
 neuron = SNN.IF(; N = 1, synapse=SNN.SingleExpSynapse(τe = 5ms))
 input = SNN.Identity(; N = 1)
-stp_param = SNN.MarkramSTPParameterHet(τD = [200ms], τF = [200ms], U = [0.4])
+
+
+stp_param = SNN.MarkramSTPParameterHet(τD = [20ms], τF = [200ms], U = [0.4])
 # stp_param = SNN.MarkramSTPParameter(τD = 200ms, τF = 200ms, U = 0.4)
 # stp_param = SNN.MarkramSTPParameterTimestep(τD = 200ms, τF = 200ms, U = 0.4)
 syn = SNN.SpikingSynapse(input, neuron, :ge; conn=(μ = 1, p = 1), STPParam = stp_param)
