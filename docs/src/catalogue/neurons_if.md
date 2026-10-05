@@ -151,6 +151,46 @@ Modules = [SNNModels]
 Pages   = ["generalized_if/adex.jl"]
 ```
 
+## Membrane parameters: the pair rule
+
+`IFParameter` and `AdExParameter` (and through it `Tripod` and `BallAndStick`) store `C`, `gl`,
+`R` and `τm`, tied by ``\tau_m = C / g_L`` and ``R = 1\,\mathrm{nS} / g_L``. `IF` and `AdEx`
+integrate with `τm` and `R`, the multicompartment models with `C` and `gl`, so the four values
+are kept consistent:
+
+| given | result |
+|---|---|
+| nothing | default pair (AdEx `C = 281pF, gl = 40nS`; IF `τm = 15ms, R = 0.06`) |
+| one value | `ArgumentError`: a given value is never combined with a default |
+| (C, gl), (C, R), (C, τm), (gl, τm), (R, τm) | the other two are derived |
+| more than two | accepted if consistent within 0.1 %, otherwise `ArgumentError` |
+
+Changing one value later keeps the others consistent:
+
+| changed | kept | recomputed |
+|---|---|---|
+| `τm` | `gl`, `R` | `C = τm gl` |
+| `C` | `gl`, `R` | `τm = C / gl` |
+| `gl` or `R` | `C` | `τm`, and `R` or `gl` |
+
+The rule applies to `@update!`, to property assignment on the mutable `AdExParameter`
+(`p.τm = 20ms`), to `with_membrane` and to the sampled fields of `make_heterogeneous`. Two values
+changed together (`with_membrane(p; τm = 20ms, C = 281pF)`) define a new pair. In an `@update!`
+block the assignments are applied one after the other, each with the rule above.
+
+```julia
+using SpikingNeuralNetworks
+SNN.@load_units
+p = SNN.AdExParameter(gl = 40nS, τm = 20ms)     # C = 800pF
+SNN.@update! p τm = 10ms                             # gl kept: C = 400pF
+q = SNN.with_membrane(p; C = 281pF, gl = 40nS)   # new pair: τm = 7.025ms
+```
+
+```@autodocs
+Modules = [SNNModels]
+Pages   = ["generalized_if/membrane.jl"]
+```
+
 ## Spike parameters: `PostSpike`
 
 | Field | Default | Units | Used by | Meaning |

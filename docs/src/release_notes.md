@@ -33,6 +33,29 @@ every public symbol. Several of them change simulation results.
     ``τ_F = 500`` ms, ``τ_D = 70`` ms a 20 Hz train facilitated before (0.30 -> 0.44) and
     depresses now (0.51 -> 0.47).
 
+!!! danger "Behaviour change: membrane parameters of AdExParameter and IFParameter (pair rule)"
+    `C`, `gl`, `R` and `τm` are now always consistent (``τ_m = C/g_L``, ``R = 1\,\mathrm{nS}/g_L``).
+    `AdEx` and `IF` integrate with `τm` and `R`; `Tripod` and `BallAndStick` (through their
+    `adex::AdExParameter`) with `C` and `gl`. Before, these were four independent fields after
+    construction, so the same parameter object could describe two different membranes.
+    - Construction takes a pair of independent values, any of (C, gl), (C, R), (C, τm),
+      (gl, τm), (R, τm), and derives the rest, or none and uses the default pair (AdEx
+      `C = 281pF, gl = 40nS`; IF `τm = 15ms, R = 0.06`). A single value is an `ArgumentError`
+      (before, it was combined with the defaults: `IFParameter(τm = 20ms)` used `R = 0.06`,
+      `AdExParameter(τm = 20ms)` kept `C = 281pF` for Tripod). More than two values must agree
+      within 0.1 %.
+    - Changing one value (`@update!`, `p.τm = x` on the mutable `AdExParameter`,
+      `with_membrane`, `make_heterogeneous`) follows a fixed rule: `τm` keeps `gl` and changes
+      `C`; `C` keeps `gl` and changes `τm`; `gl` or `R` keeps `C` and changes `τm`. Two values
+      given together define a new pair (`with_membrane(p; τm = 20ms, C = 281pF)`).
+    - Consequences: `@update! cfg.adex.τm = x` on a Tripod or BallAndStick used to have no
+      effect at run time (only `C` and `gl` are read); it now sets ``C = τ_m g_L``. A Tripod
+      built with `AdExParameter(gl = 40nS, τm = 20ms)` used `C = 281pF` and now uses
+      `C = 800pF`. A parameter set such as `C = 281, gl = 40, τm = 20, R = 0.1` (two different
+      membranes) is now rejected and must be fixed by choosing the intended pair.
+    - New: `with_membrane`, `resolve_membrane`, `membrane_update`; `@snn_kw` structs can
+      specialise `snn_kw_finalize` to derive dependent fields.
+
 !!! warning "Other behaviour changes"
     - HH and MorrisLecar flag one spike per action potential (they flagged about 60 per action
       potential at `dt = 0.01ms`).

@@ -41,7 +41,7 @@ using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.AdEx(N = 100, param = SNN.AdExParameter(b = 0pA),
              synapse = SNN.SingleExpSynapse(), spike = SNN.PostSpike(τabs = 2ms))
-I = SNN.IF(N = 25, param = SNN.IFParameter(τm = 10ms), synapse = SNN.DoubleExpSynapse())
+I = SNN.IF(N = 25, param = SNN.IFParameter(τm = 10ms, R = 0.06), synapse = SNN.DoubleExpSynapse())
 ```
 
 One step of a generalized IF population is: (1) `update_synapses!` adds the spikes delivered
