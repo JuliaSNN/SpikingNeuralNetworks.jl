@@ -85,8 +85,11 @@ C_{d,k} \frac{dV_{d,k}}{dt} &= g_{m,k} (E_{L,k} - V_{d,k}) - I_{syn,d,k}
 TripodNeuron.jl code detects spikes at ``V_s \ge V_T``, obtained with `Vspike = adex.Vt`). Then
 ``V_s`` is set to `AP_membrane`,
 ``w_s \mathrel{+}= b``, ``\theta \mathrel{+}= A_t`` (`spike.At`), and a refractory counter is set to
-`round((up + τabs)/dt)` steps. During the first `up` ms the soma is held at `AP_membrane`
-(back-propagating action potential), during the next `τabs` ms at `adex.Vr`. In both periods
+`n_up + n_abs` steps, with `n_up = max(1, round(up/dt))` and `n_abs = max(1, round(τabs/dt))`.
+During the first `n_up` steps the soma is held at `AP_membrane` (back-propagating action
+potential), during the next `n_abs` steps at `adex.Vr`. (In SNNModels 1.8.4 the counter was
+`round((up + τabs)/dt)`; with `up = τabs = 0.1ms` at `dt = 0.125ms` the reset was skipped and the
+neuron fired at about 1 kHz.) In both periods
 the dendrites only relax towards the soma through the axial term (forward Euler) and ``w_s`` is
 frozen. ``\theta`` relaxes to `adex.Vt` with time constant `spike.τA` at every step.
 

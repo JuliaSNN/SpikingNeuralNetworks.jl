@@ -23,7 +23,8 @@ somatic variable.
 `Rate` resets ``g`` to zero after each integration step, so ``g`` is the input of the current
 step (written by the connections after the population update); use `I` for a constant input.
 (In SNNModels 1.8.4 ``g`` was never reset: with a `RateSynapse` it was the running sum of all
-past inputs ``W r``.) `Rate` has no `fire` field; record `:x`, `:r` or `:g`.
+past inputs ``W r``.) `Rate` has no `fire` field; record `:x` or `:r` (a recorded `:g` is zero,
+because populations are recorded after their update).
 
 | Field | Default | Meaning |
 |:------|:--------|:--------|

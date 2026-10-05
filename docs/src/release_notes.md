@@ -1,5 +1,46 @@
 # Release notes
 
+## Unreleased: fixes of the documentation sweep (branches `fix/sweep-bugs`)
+
+Bug fixes in SNNModels, SNNPlots, SNNUtils and SpikingNeuralNetworks found while documenting
+every public symbol. Several of them change simulation results.
+
+!!! danger "Behaviour change: Tripod and BallAndStick"
+    - The somatic exponential term is now ``g_L \Delta_T e^{(V-\theta)/\Delta_T}``, as in the AdEx
+      model and in the published Tripod model (Quaresima et al. 2023, Eq. 1, and its code); it
+      lacked ``g_L`` (40 times smaller at `gl = 40nS`). Rheobase drops by about 29 % (Tripod with
+      default parameters: 1134 -> 814 pA; paper parameters: 1097 -> 782 pA), the rate at 1500 pA
+      rises from 24 to 44 Hz (19 to 32 Hz), the first ISI shortens from 18.7 to 10.9 ms, the
+      adaptation current reaches about 1.5 times higher values; subthreshold dendritic EPSPs and
+      NMDA plateaus are unchanged (< 0.1 mV). BallAndStick changes in the same way.
+    - The Heun stage is now consistent (the adaptation stage lacked `dt`, the synaptic currents
+      were not evaluated at the predicted state): spike times move by up to 7 ms over 500 ms and
+      the scheme converges with `dt`.
+    - The refractory counters keep at least one step per period: with `up = τabs = 0.1ms` at the
+      default `dt = 0.125ms` the neuron used to fire at about 1 kHz.
+    - In a 400-cell Tripod E/I network the E rate doubles (12.6 -> 24.8 Hz) and the
+      interneuron rates double as well.
+    - New: `Vspike` (spike detection threshold, default -10 mV), dendritic `El` used, `Is`/`Id`
+      of BallAndStick applied.
+
+!!! warning "Other behaviour changes"
+    - HH and MorrisLecar flag one spike per action potential (they flagged about 60 per action
+      potential at `dt = 0.01ms`).
+    - `Rate`/`WilsonCowan` reset their input `g` every step (it accumulated all past inputs).
+    - `Confavreux2025Synapse`: a spike of weight `w` increments the conductance by `w` (it was
+      `w dt`).
+    - `AggregateScaling`: time constants in ms, rate units, correct summed weight; `HetRec`
+      baseline with `dt`; `AdditiveNorm` restores the summed weight.
+    - vSTDP and iSTDPPotential voltage traces start at the membrane potential (no initial
+      spurious depression); vSTDP weights are unchanged otherwise.
+    - Recording: exact time axis of `record`/`interpolated_record`, sampling period rounded
+      to the nearest step.
+    - SNNPlots `stdp_test`/`stdp_kernel` measure a single pre/post pair (the kernel was shifted
+      by an extra causal pairing).
+    - BalancedStimulus, FORCE/PINning connections, `train!` with IZ/HH/MorrisLecar or without
+      connections, connections onto MorrisLecar/ExtendedIF/WilsonCowan, several analysis,
+      IO and SNNUtils functions now work; 35 exported-but-undefined names were removed.
+
 ## SpikingNeuralNetworks 1.2.1
 
 Requires SNNModels 1.8.4, SNNPlots 0.2.10 and SNNUtils 0.2.9 or later (within the same major
