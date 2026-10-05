@@ -9,9 +9,9 @@
 #   4. Advance the baseline for the same 500 ms window
 #   5. Recover spliced traces with perturbation_record and compare
 #
-# Because make_copy is a shallow copy (state arrays shared), each perturbation
-# uses from_state = a fresh deepcopy of the model at the checkpoint so that
-# setting I on the copy does not alias back to the archive.
+# Each perturbation uses from_state = a fresh `modelcopy` of the model at the checkpoint
+# (a deep copy without recorded data), so setting I on the copy does not alias back to the
+# archive.
 
 using SpikingNeuralNetworks
 SNN.@load_units
@@ -45,8 +45,8 @@ SNN.sim!(model, 1second)            # settle into balanced activity
 
 # ── Checkpoint helper ─────────────────────────────────────────────────────────
 #
-# make_copy is shallow (state arrays aliased), so we deepcopy, clear records,
-# re-apply monitoring, then apply the condition for full state independence.
+# `modelcopy` is a deep copy without recorded data (monitors stay configured); the
+# condition is applied to the copy only.
 
 fs = SNN.modelcopy(model)
 

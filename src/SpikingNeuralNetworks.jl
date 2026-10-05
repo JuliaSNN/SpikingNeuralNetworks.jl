@@ -1,3 +1,22 @@
+"""
+    SpikingNeuralNetworks
+
+Umbrella package of the JuliaSNN ecosystem. It loads and re-exports `SNNModels` (models,
+simulation, recording, analysis), `SNNPlots` (plotting) and `SNNUtils` (stimulation protocols,
+analysis and classifiers), defines the alias `SNN = SpikingNeuralNetworks`, applies the SNNPlots
+Makie theme (`@makie_default`) and loads the unit constants (`@load_units`) at load time.
+
+All exported SNNModels names are reachable as `SNN.<name>` (e.g. `SNN.IF`, `SNN.sim!`).
+
+# Example
+```julia
+using SpikingNeuralNetworks
+SNN.@load_units
+E = SNN.IF(N = 100)
+model = SNN.compose(; E, silent = true)
+SNN.sim!(model, 100ms)
+```
+"""
 module SpikingNeuralNetworks
 
     using SNNModels
@@ -9,6 +28,12 @@ module SpikingNeuralNetworks
     SNN = SpikingNeuralNetworks
     export SNN
 
+    """
+        DOCS_ASSETS_PATH
+
+    Absolute path of `docs/src/assets` in the SpikingNeuralNetworks package directory (figures
+    used by the documentation and the examples).
+    """
     DOCS_ASSETS_PATH =
         joinpath(dirname(dirname(pathof(SpikingNeuralNetworks))), "docs", "src", "assets")
     export DOCS_ASSETS_PATH
@@ -27,7 +52,7 @@ module SpikingNeuralNetworks
     MarkramSTPParameter, MultiplicativeNorm, NMDAVoltageDependency, NoLTP, NoSTP, Poisson,
     PoissonParameter, Population, PostSpike, Receptor, ReceptorSynapse, ReceptorVoltage,
     Receptors, SingleExpSynapse, SpikeTimeParameter, SpikeTimeStimulus, SpikeTimeStimulusParameter, SpikingSynapse, SpikingSynapseParameter, TripodParameter, iSTDPPotential, iSTDPRate, vSTDPParameter,
-    PoissonLayer, Stimulus, SpikingSynapse, Population, SNNModel, Poisson, StimulusGroup, LTPParam, STPParam, MultiCompartmentStimulusGroup
+    PoissonLayer, Stimulus, SpikingSynapse, Population, Poisson, StimulusGroup, MultiCompartmentStimulusGroup
 
     export MarkramSTPParameterHet, MarkramSTPParameter
 
@@ -36,7 +61,7 @@ module SpikingNeuralNetworks
     export asynchronous_state, bin_spiketimes, clear_monitor!, clear_records!, compose, compute_connections, firing_rate, get_time,  load_model, matrix, monitor!, name, place_populations, record, record!, reset_time!, sample_inputs, save_model, set_plasticity!, str_name,     train!, update_spikes!, SNNload, SNNsave, compose, sim!, set_plasticity!, change_plasticity!, update_traces!, set_STP!, set_LTP!, matrix_record
 
     ## Perturbation API from SNNModels
-    export make_copy, perturbation_test, perturbation_record,
+    export modelcopy, perturbation_test, perturbation_record,
            clear_perturbation_records!, clear_perturbation_monitor!
 
     export @update, @update!, @load_units

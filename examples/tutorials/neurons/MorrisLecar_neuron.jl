@@ -32,7 +32,7 @@ for i in eachindex(vs)
         ds[2, i, j] = SNNModels.MorrisLecar_dw(vs[i], ws[j], E.param)/1
 
         v_nullcline[i] = SNNModels.MorrisLecar_v_nullcline(vs[i], I, E.param)
-        w_nullcline[i] = - SNNModels.MorrisLecar_w_nullcline(vs[i], E.param)
+        w_nullcline[i] = SNNModels.MorrisLecar_w_nullcline(vs[i], E.param)
     end
 end
 
