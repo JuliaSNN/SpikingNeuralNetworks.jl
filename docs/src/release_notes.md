@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased: fixes of the documentation sweep (branches `fix/sweep-bugs`)
+## SNNModels 1.9.0, SNNPlots 0.2.11, SNNUtils 0.2.10, SpikingNeuralNetworks 1.3.0
 
 Bug fixes in SNNModels, SNNPlots, SNNUtils and SpikingNeuralNetworks found while documenting
 every public symbol. Several of them change simulation results.
