@@ -66,7 +66,7 @@ hist!(
 bins = 1.5:0.01:2.5
 ax_W0 = Axis(figure[4, 1]; xlabel = "Synaptic strength", ylabel = "Number of synapses")
 hist!(ax_W0, W0, label = "Before training", color = :black, bins = bins, normalization=:probability)
-hist!(ax_W0, model.syn.EE.W; bins, label="After training", color = :darkred, alpha = 0.9, normalization=:probability)
+hist!(ax_W0, SNN.plasticity_value(model.syn.EE, :W); bins, label="After training", color = :darkred, alpha = 0.9, normalization=:probability)
 axislegend(ax_W0; position = :rt)
 figure
 ax_W1 = Axis(figure[4, 2]; ylabel = "Synaptic weight (nS)",

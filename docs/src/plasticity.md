@@ -45,7 +45,8 @@ SNN.sim!(model = model, duration = 10s)     # weights frozen
 | `STDPSymmetric`, `STDPAntiSymmetric` | structured inhibition (Festa et al. 2024) | Euler | |
 | `iSTDPRate`, `iSTDPPotential` | inhibitory (Vogels et al. 2011) | Euler | same-step pre and post spikes interact |
 | `iSTDPTime` | - | - | parameters only, no update defined |
-| `vSTDPParameter` | voltage-based (Clopath et al. 2010) | Euler | LTP applied every step |
+| `vSTDPParameter` | voltage-based (Clopath et al. 2010) | Euler | event-driven (lazy weights: read `plasticity_value(syn, :W)`) |
+| `vSTDPDenseParameter` | voltage-based (Clopath et al. 2010) | Euler | clock-driven reference, LTP applied every step |
 | `MarkramSTPParameter`, `MarkramSTPParameterHet` | short-term (Tsodyks-Markram) | exact, event-driven | updated in `update_traces!` |
 | `MarkramSTPParameterTimestep` | short-term (Tsodyks-Markram) | Euler | |
 
@@ -104,7 +105,7 @@ The weight-update kernels are validated against analytic kernels, Brian2 and Aur
 
 ## Voltage-based and short-term plasticity
 
-`vSTDPParameter` implements voltage-based STDP (Clopath et al. 2010). Short-term plasticity (`MarkramSTPParameter`, `MarkramSTPParameterHet`, `MarkramSTPParameterTimestep`) acts on the efficacy `ρ` of each synapse: a presynaptic spike adds `W[s] * ρ[s]` to the target. It is also updated only under `train!`; the event-driven variants update `ρ` in `update_traces!`, before the spike is transmitted. See [Plasticity rules](catalogue/plasticity_rules.md).
+`vSTDPParameter` implements voltage-based STDP (Clopath et al. 2010) in its event-driven form (`vSTDPDenseParameter` is the clock-driven reference); its weights are materialised lazily, so read them with `plasticity_value(syn, :W)`. Short-term plasticity (`MarkramSTPParameter`, `MarkramSTPParameterHet`, `MarkramSTPParameterTimestep`) acts on the efficacy `ρ` of each synapse: a presynaptic spike adds `W[s] * ρ[s]` to the target. It is also updated only under `train!`; the event-driven variants update `ρ` in `update_traces!`, before the spike is transmitted. See [Plasticity rules](catalogue/plasticity_rules.md).
 
 ## Heterosynaptic plasticity and metaplasticity
 

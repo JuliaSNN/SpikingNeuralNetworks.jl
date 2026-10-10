@@ -32,7 +32,8 @@ object created by `plasticityvariables(param, Npre, Npost)`:
 | `iSTDPRate` | `iSTDPVariables` | inhibitory STDP, target rate | Euler |
 | `iSTDPPotential` | `iSTDPVariables` | inhibitory STDP, membrane potential | Euler |
 | `iSTDPTime` | `iSTDPVariables` | parameters only, no update defined | - |
-| `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP | Euler |
+| `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP, event-driven (weights materialised lazily, read them with `plasticity_value(syn, :W)`) | Euler |
+| `vSTDPDenseParameter` | `vSTDPDenseVariables` | voltage-based STDP, clock-driven reference (LTP on every synapse at every step) | Euler |
 | `MarkramSTPParameter` (= `MarkramSTPParameterEvent`) | `MarkramSTPVariables` | short-term plasticity | exact, event-driven |
 | `MarkramSTPParameterHet` | `MarkramSTPVariables` | short-term plasticity, per-neuron parameters | exact, event-driven |
 | `MarkramSTPParameterTimestep` | `MarkramSTPVariables` | short-term plasticity | Euler |
@@ -70,7 +71,7 @@ weights of neurons that fired are updated and clamped; all weights are clamped o
 first plasticity step. The loops are serial. The kernels were validated against Brian2
 (relative weight difference 2e-6), Auryn (2e-7) and the analytic pair kernels.
 
-`STDPMexicanHat`, the structured rules, the iSTDP rules and `vSTDPParameter` integrate their
+`STDPMexicanHat`, the structured rules, the iSTDP rules and the voltage-based rules integrate their
 traces with forward Euler and use their own orderings, described in each section.
 
 ## STDPGerstner
@@ -352,9 +353,15 @@ IE = SNN.SpikingSynapse(I, E, :gi; conn = (p = 0.2, μ = 5.0), LTPParam = SNN.iS
 SNN.train!(model = SNN.compose(; E, I, IE), duration = 500ms)
 ```
 
-## vSTDPParameter
+## vSTDPParameter and vSTDPDenseParameter
 
-Voltage-based STDP in the form of Clopath et al. (2010). ``V_i`` is the postsynaptic membrane
+Voltage-based STDP in the form of Clopath et al. (2010), in two implementations of the same rule: `vSTDPParameter`
+(event-driven, the default: the LTP term is not evaluated on every synapse at every step, the weights are materialised
+lazily and `syn.W` is NOT the current weight vector between materialisations: read it with `plasticity_value(syn, :W)`
+or call `sync_traces!(syn)` first) and `vSTDPDenseParameter` (the clock-driven reference, the rule that was called
+`vSTDPParameter` up to SNNModels 1.9; `syn.W` is always current). Both are generic over the precision of the postsynaptic
+population (`Float32` by default, `Float64` for a `Float64` population: the two rules then agree to about 1e-13).
+The text below describes the rule and the dense update order. ``V_i`` is the postsynaptic membrane
 potential (`v_post` of the synapse), ``u_i`` and ``v_i`` are low-pass filters of it, ``x_j`` is a
 presynaptic trace and ``[z]_+ = \max(z, 0)``:
 
@@ -368,7 +375,7 @@ presynaptic trace and ``[z]_+ = \max(z, 0)``:
 
 A presynaptic spike increases ``x_j`` by ``1/τ_x``; potentiation is a rate, integrated with `dt`,
 so the rule does not depend on `dt`. Update order per step: Euler update of ``x``, then of ``u``
-and ``v``; for each presynaptic neuron (threaded over chunks), LTD if it fired with clamping at
+and ``v``; for each presynaptic neuron, LTD if it fired with clamping at
 `Wmin`, then the LTP increment `dt * A_LTP * x * ...` on all its outgoing synapses with clamping
 at `Wmax`. At the first call ``u`` and ``v`` are set to the membrane potential.
 
@@ -396,6 +403,7 @@ E = SNN.Poisson(N = 50, param = SNN.PoissonParameter(20Hz))
 P = SNN.AdEx(N = 10, param = SNN.AdExParameter())
 syn = SNN.SpikingSynapse(E, P, :ge; conn = (p = 0.2, μ = 1.0), LTPParam = SNN.vSTDPParameter())
 SNN.train!(model = SNN.compose(; E, P, syn), duration = 200ms)
+SNN.plasticity_value(syn, :W)   # current weights (syn.W is lazy for the event-driven rule)
 ```
 
 ## Short-term plasticity: Tsodyks-Markram
