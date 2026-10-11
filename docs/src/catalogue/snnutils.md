@@ -7,7 +7,7 @@ CurrentModule = SNNUtils
 [SNNUtils.jl](https://github.com/JuliaSNN/SNNUtils.jl) provides stimulation protocols and analysis
 tools on top of SNNModels. It is a dependency of `SpikingNeuralNetworks`, which re-exports only
 `SVCtrain`; load it explicitly with `using SNNUtils` to access the functions below. The
-parameter collections of `src/models/` are described in [SNNUtils models](snnutils_models.md).
+short-term-plasticity parameters of `src/models/` are described in [SNNUtils models](snnutils_models.md).
 
 ## Word and phoneme sequences
 

@@ -132,9 +132,7 @@ The export lists of SNNPlots 0.2.10 contained names that were not defined in the
 `dendrite_gplot`, `soma_gplot`, `stdp_weight_decorrelated`, `default_colors`, `nature_figure`);
 they were removed. `plot` and `plot!` are Makie's; `save_model` and
 `load_model` are the SNNModels functions; `inch` and `pt` are `Measures` lengths, while `cm` is the
-SNNModels length unit (`cm == 1.0f0`). The files `backend/plots.jl`, `other_plots.jl`,
-`extra_plots.jl` and `old_plot.jl` of the source tree belong to the former Plots.jl interface and
-are not loaded.
+SNNModels length unit (`cm == 1.0f0`).
 
 ## API
 

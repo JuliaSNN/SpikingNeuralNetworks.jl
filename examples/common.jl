@@ -11,7 +11,7 @@ using LaTeXStrings
 using CairoMakie
 
 using SpikingNeuralNetworks
-import SNNPlots: vecplot, gplot
+import SNNPlots: vecplot
 using SNNPlots
 using SNNUtils
 

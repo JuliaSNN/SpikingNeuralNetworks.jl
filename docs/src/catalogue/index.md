@@ -31,7 +31,7 @@ model (how synaptic input is turned into a current) and a post-spike model (refr
 | Long- and short-term plasticity | `STDPGerstner`, `STDPTriplet`, `STDPWeightDependent`, `STDPMexicanHat`, `STDPConfavreux2025`, `STDPSymmetric`, `STDPAntiSymmetric`, `vSTDPParameter`, `iSTDPRate`, `iSTDPPotential`, `MarkramSTPParameter` | [Plasticity rules](plasticity_rules.md) |
 | Metaplasticity | `SynapseNormalization` (`MultiplicativeNorm`, `AdditiveNorm`), `AggregateScaling`, `Turnover` (`RandomTurnover`, `ActivityDependentTurnover`) | [Metaplasticity](metaplasticity.md) |
 | Stimuli | `PoissonStimulus`, `PoissonLayer`, `CurrentStimulus`, `SpikeTimeStimulus`, `BalancedStimulus`, `StimulusGroup`, `EmptyStimulus` | [Stimuli](stimuli.md) |
-| Network models in SNNUtils | parameter sets and network builders in `SNNUtils/src/models` | [SNNUtils models](snnutils_models.md) |
+| Short-term-plasticity parameters in SNNUtils | heterogeneous STP parameters sampled from experimental fits (`SNNUtils/src/models`) | [SNNUtils models](snnutils_models.md) |
 | SNNUtils tools | sequence stimuli, E/I balance, classifiers, weight analysis | [SNNUtils tools](snnutils.md) |
 
 Plasticity (long-term, short-term and metaplasticity) is applied only when the network is run with
