@@ -171,6 +171,13 @@ the mean delay; the plasticity variables are per neuron and are not affected. (I
 1.8.4 `ρ` and the delays were neither resized nor reordered, and `forward!` read out of bounds
 after a synapse was created.)
 
+Since SNNModels 1.10 a `SpikingSynapse` stores only what it uses: the transposed arrays `J` and
+`index` are empty until a plasticity rule, `presynaptic`, `presynaptic_idxs`, a normalization or
+scaling rule or `SNN.SNNModels.ensure_transpose!(c)` needs them; `ρ` is empty without a
+short-term rule (read it with `SNN.SNNModels.efficacy(c)`, call
+`SNN.SNNModels.materialize_efficacy!(c)` before writing to it); a delay common to all synapses
+is stored once.
+
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units

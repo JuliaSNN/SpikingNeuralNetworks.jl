@@ -29,6 +29,7 @@ post_tt = randn(size(EE.fireI))
 
 old = Int[]
 new = Int[]
+SNN.SNNModels.ensure_transpose!(EE)   # J/index of a synapse without plasticity are built only when read
 @unpack colptr, I, J, index, W, fireJ = EE
 for j in eachindex(fireJ)
     for s = colptr[j]:(colptr[j+1]-1)
