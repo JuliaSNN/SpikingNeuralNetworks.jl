@@ -456,12 +456,6 @@ SNN.train!(model = SNN.compose(; E, P, syn), duration = 500ms)
 extrema(syn.ρ)
 ```
 
-## Files present but not loaded
-
-The source tree contains two files under `connections/sparse_plasticity/` that are not
-included by SNNModels 1.8.4: `CaRule.jl` (an unfinished calcium-based rule, `CaPlasticityParameter`)
-and `dump.jl` (draft types for triplet and nonlinear STDP rules). They define nothing usable.
-
 ## API
 
 ### Common interface

@@ -233,13 +233,3 @@ Pages   = ["multicompartment/ballandstick.jl"]
 Modules = [SNNModels]
 Pages   = ["multicompartment/dendrite.jl", "multicompartment/dendneuron_parameter.jl"]
 ```
-
-## Multipod (not loaded)
-
-`src/populations/multicompartment/multipod.jl` is present in the source tree but not loaded (its
-`include` is commented out). It implements an AdEx soma coupled to an arbitrary number `Nd` of
-passive dendrites with receptor-based synapses, integrated with the Heun method, but it depends
-on names that no longer exist in the loaded code (`AdExSoma`, `synapsearray`); re-enabling it
-requires porting it to the current API. Its names (`Multipod`, `MultipodNeurons`) are not
-exported. (A sign error in the predicted-state leak term of that file was corrected after
-SNNModels 1.8.4.)

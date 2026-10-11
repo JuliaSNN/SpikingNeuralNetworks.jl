@@ -212,9 +212,6 @@ SNN.sim!(; model, duration = 200ms)
 SNN.getvariable(E, :I)[4, end]   # 0: neuron 4 is not stimulated
 ```
 
-A time-dependent current parameter (`ramping_current`, `CurrentVariableParameter`) is
-present in `src/stimuli/variable_inputs.jl` but that file is not loaded by SNNModels 1.8.4.
-
 ```@autodocs
 Modules = [SNNModels]
 Pages   = ["stimuli/current.jl"]

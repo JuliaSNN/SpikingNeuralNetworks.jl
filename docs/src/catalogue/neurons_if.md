@@ -275,17 +275,3 @@ SNN.sim!([E]; duration = 100ms)
 Modules = [SNNModels]
 Pages   = ["generalized_if/if_extended.jl"]
 ```
-
-## Models present in the source tree but not loaded
-
-The following files exist in `SNNModels/src/populations` but their `include` is commented out
-in `populations/populations.jl`; the types are not available in SNNModels 1.8.4 and the files
-refer to abstract types that no longer exist in the package.
-
-- `generalized_if/if_CANAHP.jl`: `IF_CANAHP` / `IF_CANAHPParameter`, an integrate-and-fire
-  neuron with a calcium variable, a non-specific calcium-activated cationic current (CAN) and a
-  calcium-activated after-hyperpolarisation potassium current (AHP), with NMDA receptors. The
-  docstring links the preprint https://www.biorxiv.org/content/10.1101/2022.07.26.501548v1.
-- `adex/adex_multitimescale.jl`: `AdExMultiTimescale` / `AdExMultiTimescaleParameter`, an AdEx
-  neuron with an arbitrary number of double-exponential synaptic timescales assigned to
-  glutamatergic or GABAergic receptors, and an adaptive threshold.

@@ -326,11 +326,8 @@ SNN.sim!([E, P], [EP]; duration = 100ms)
 
 The dendritic AMPA/NMDA values are attributed to Eyal et al. (2018), Front. Cell. Neurosci. 12,
 doi:10.3389/fncel.2018.00181, and the GABA values to Miles et al. (1996), Neuron 16(4):815-823
-(references as cited in `SNNUtils/src/models/quaresima2022.jl`); the somatic AMPA values are
+(see the receptor definitions in `SNNModels`); the somatic AMPA values are
 labelled "Duarte" in the code without a reference.
-
-`NMDA_CANAHP` and `Synapse_CANAHP` have commented-out definitions; SNNModels 1.8.4 exported
-them although they were not defined (removed from the exports afterwards).
 
 ```julia
 using SpikingNeuralNetworks
