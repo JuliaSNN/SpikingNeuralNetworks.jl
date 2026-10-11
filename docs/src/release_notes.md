@@ -1,5 +1,17 @@
 # Release notes
 
+## SNNModels 2.0.0, SNNPlots 2.0.0, SNNUtils 2.0.0, SpikingNeuralNetworks 2.0.0, CalciumSpike 2.0.0
+
+All packages move to version 2 together. SNNModels 2 changes the types of synapses, stimuli and
+populations (concretely typed plasticity rules, spike lists, lazy synapse arrays); saved models of 1.9.1 and
+earlier are refused at load time. Full release summaries: `CHANGELOG.md` of SNNModels, SNNUtils and SNNPlots; itemised
+notes with measurements and migrations: `claude/CHANGELOG.md` of SNNModels.
+
+- Faster: E/I balanced network 8 to 12 times faster than 1.9.1, synapse memory 29 to 9 bytes per synapse, event-driven vSTDP, ring-buffer delays, one spike list per population, vectorised Tripod/BallAndStick, flush-to-zero of subnormals, no allocation per step.
+- New: Float64 by population type, `with_plasticity`/`without_plasticity`/`change_plasticity`, opt-in threading (`neurons_per_thread`).
+- Breaking: synapse/stimulus/population struct fields, `iSTDPTime` removed, delays rounded up to whole steps, random streams changed, `vSTDPParameter` is event-driven, Tripod/BallAndStick use `param.physiology`.
+- Removed code that was not loaded: Multipod, IF_CANAHP, AdExMultiTimescale, `VariableInputParameter`, stale SNNUtils parameter sets, SNNPlots Plots.jl backend and their examples.
+
 ## SNNModels 1.9.0, SNNPlots 0.2.11, SNNUtils 0.2.10, SpikingNeuralNetworks 1.3.0
 
 Bug fixes in SNNModels, SNNPlots, SNNUtils and SpikingNeuralNetworks found while documenting
