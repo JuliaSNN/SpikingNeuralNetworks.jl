@@ -28,7 +28,7 @@ model (how synaptic input is turned into a current) and a post-spike model (refr
 | Multicompartment neurons | `Tripod`, `BallAndStick`, dendrite geometry (`Dendrite`, `Physiology`) | [Multicompartment neurons](multicompartment.md) |
 | Synapse and receptor models | `DeltaSynapse`, `CurrentSynapse`, `SingleExpSynapse`, `DoubleExpSynapse`, `DoubleExpCurrentSynapse`, `ReceptorSynapse`, `MultiReceptorSynapse`, `Confavreux2025Synapse`, `Receptor`, `NMDAVoltageDependency` | [Synapse and receptor models](synapses.md) |
 | Connections | `SpikingSynapse`, `RateSynapse`, `FLSynapse`, `PINningSynapse`, `EmptySynapse`, connectivity rules of `sparse_matrix` | [Connections](connections.md) |
-| Long- and short-term plasticity | `STDPGerstner`, `STDPTriplet`, `STDPWeightDependent`, `STDPMexicanHat`, `STDPConfavreux2025`, `STDPSymmetric`, `STDPAntiSymmetric`, `vSTDPParameter`, `iSTDPRate`, `iSTDPPotential`, `iSTDPTime`, `MarkramSTPParameter` | [Plasticity rules](plasticity_rules.md) |
+| Long- and short-term plasticity | `STDPGerstner`, `STDPTriplet`, `STDPWeightDependent`, `STDPMexicanHat`, `STDPConfavreux2025`, `STDPSymmetric`, `STDPAntiSymmetric`, `vSTDPParameter`, `iSTDPRate`, `iSTDPPotential`, `MarkramSTPParameter` | [Plasticity rules](plasticity_rules.md) |
 | Metaplasticity | `SynapseNormalization` (`MultiplicativeNorm`, `AdditiveNorm`), `AggregateScaling`, `Turnover` (`RandomTurnover`, `ActivityDependentTurnover`) | [Metaplasticity](metaplasticity.md) |
 | Stimuli | `PoissonStimulus`, `PoissonLayer`, `CurrentStimulus`, `SpikeTimeStimulus`, `BalancedStimulus`, `StimulusGroup`, `EmptyStimulus` | [Stimuli](stimuli.md) |
 | Network models in SNNUtils | parameter sets and network builders in `SNNUtils/src/models` | [SNNUtils models](snnutils_models.md) |

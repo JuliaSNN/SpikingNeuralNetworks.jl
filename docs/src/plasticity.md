@@ -44,7 +44,6 @@ SNN.sim!(model = model, duration = 10s)     # weights frozen
 | `STDPMexicanHat` | Mexican-hat kernel in Δt | Euler | event-driven weight passes; same-step spikes interact |
 | `STDPSymmetric`, `STDPAntiSymmetric` | structured inhibition (Festa et al. 2024) | Euler | |
 | `iSTDPRate`, `iSTDPPotential` | inhibitory (Vogels et al. 2011) | Euler | same-step pre and post spikes interact |
-| `iSTDPTime` | - | - | parameters only, no update defined |
 | `vSTDPParameter` | voltage-based (Clopath et al. 2010) | Euler | event-driven (lazy weights: read `plasticity_value(syn, :W)`) |
 | `vSTDPDenseParameter` | voltage-based (Clopath et al. 2010) | Euler | clock-driven reference, LTP applied every step |
 | `MarkramSTPParameter`, `MarkramSTPParameterHet` | short-term (Tsodyks-Markram) | exact, event-driven | updated in `update_traces!` |
@@ -97,11 +96,11 @@ The weight-update kernels are validated against analytic kernels, Brian2 and Aur
 `iSTDPRate` and `iSTDPPotential` implement the inhibitory plasticity of Vogels et al. (2011) with Euler-integrated traces.
 
 !!! danger "Bug fixed in SNNModels 1.8.2: `iSTDPRate` potentiation hit the wrong synapses"
-    In `iSTDPRate` (and the former `iSTDPTime`) the potentiation applied at a postsynaptic spike used a `@turbo` loop that reassigned its loop variable. LoopVectorization ignored the reassignment, so potentiation was applied to the synapses stored at positions `rowptr[i]:rowptr[i+1]-1` of the column-ordered arrays (synapses onto unrelated postsynaptic neurons) instead of the synapses onto the spiking neuron `i`. The depression branch was correct and `iSTDPPotential` was not affected.
+    In `iSTDPRate` the potentiation applied at a postsynaptic spike used a `@turbo` loop that reassigned its loop variable. LoopVectorization ignored the reassignment, so potentiation was applied to the synapses stored at positions `rowptr[i]:rowptr[i+1]-1` of the column-ordered arrays (synapses onto unrelated postsynaptic neurons) instead of the synapses onto the spiking neuron `i`. The depression branch was correct and `iSTDPPotential` was not affected.
 
-    Affected: SpikingNeuralNetworks.jl from commit 680a30c (2025-01-06, v1.0.0) and SNNModels 1.5.0 to 1.8.1. Simulations that used `iSTDPRate` or `iSTDPTime` with those versions give different results and should be rerun.
+    Affected: SpikingNeuralNetworks.jl from commit 680a30c (2025-01-06, v1.0.0) and SNNModels 1.5.0 to 1.8.1. Simulations that used `iSTDPRate` with those versions give different results and should be rerun.
 
-`iSTDPTime` holds parameters only: no update is defined for it, so it cannot be used as `LTPParam`. Equations and parameters: [Plasticity rules](catalogue/plasticity_rules.md).
+Equations and parameters: [Plasticity rules](catalogue/plasticity_rules.md).
 
 ## Voltage-based and short-term plasticity
 

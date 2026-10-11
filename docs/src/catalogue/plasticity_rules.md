@@ -31,7 +31,6 @@ object created by `plasticityvariables(param, Npre, Npost)`:
 | `STDPAntiSymmetric` | `STDPStructuredVariables` | antisymmetric exponentials | Euler |
 | `iSTDPRate` | `iSTDPVariables` | inhibitory STDP, target rate | Euler |
 | `iSTDPPotential` | `iSTDPVariables` | inhibitory STDP, membrane potential | Euler |
-| `iSTDPTime` | `iSTDPVariables` | parameters only, no update defined | - |
 | `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP, event-driven (weights materialised lazily, read them with `plasticity_value(syn, :W)`) | Euler |
 | `vSTDPDenseParameter` | `vSTDPDenseVariables` | voltage-based STDP, clock-driven reference (LTP on every synapse at every step) | Euler |
 | `MarkramSTPParameter` (= `MarkramSTPParameterEvent`) | `MarkramSTPVariables` | short-term plasticity | exact, event-driven |
@@ -303,7 +302,7 @@ syn = SNN.SpikingSynapse(pre, post, :ge; conn = (p = 0.1, μ = 1.0),
 SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
 ```
 
-## Inhibitory STDP: iSTDPRate, iSTDPPotential, iSTDPTime
+## Inhibitory STDP: iSTDPRate, iSTDPPotential
 
 Rules of Vogels et al. (2011), with Euler-integrated traces (time constant ``τ_y``) that jump
 by 1 at a spike.
@@ -326,21 +325,18 @@ if ``i`` fired for `iSTDPRate`, then the post-spike update of its incoming synap
 touched weight is clamped to `[Wmin, Wmax]`. Because the presynaptic trace is incremented
 before the postsynaptic pass, a pre and a post spike in the same step interact.
 
-`iSTDPTime` holds only parameters: no `plasticity!` method is defined for it and it cannot
-be used as `LTPParam`.
-
-| Field | `iSTDPRate` | `iSTDPPotential` | `iSTDPTime` | Units | Meaning |
-|---|---|---|---|---|---|
-| `η` | `0.01pA` | `0.001pA` | `0.01pA` | weight | learning rate |
-| `r` | `3Hz` | - | - | 1/ms | target postsynaptic rate |
-| `v0` | - | `-50mV` | - | mV | reference potential |
-| `τy` | `50ms` | `200ms` | `50ms` | ms | trace time constant |
-| `Wmax` | `243pF` | `243pF` | `243pF` | weight | upper bound |
-| `Wmin` | `0.01pF` | `0.01pF` | `0.01pF` | weight | lower bound |
+| Field | `iSTDPRate` | `iSTDPPotential` | Units | Meaning |
+|---|---|---|---|---|
+| `η` | `0.01pA` | `0.001pA` | weight | learning rate |
+| `r` | `3Hz` | - | 1/ms | target postsynaptic rate |
+| `v0` | - | `-50mV` | mV | reference potential |
+| `τy` | `50ms` | `200ms` | ms | trace time constant |
+| `Wmax` | `243pF` | `243pF` | weight | upper bound |
+| `Wmin` | `0.01pF` | `0.01pF` | weight | lower bound |
 
 !!! danger "Bug fixed in SNNModels 1.8.2"
-    In SNNModels 1.5.0 - 1.8.1 the potentiation of `iSTDPRate` (and of the former `iSTDPTime`
-    update) at a postsynaptic spike was applied to the synapses stored at CSC positions
+    In SNNModels 1.5.0 - 1.8.1 the potentiation of `iSTDPRate`
+    at a postsynaptic spike was applied to the synapses stored at CSC positions
     `rowptr[i]:rowptr[i+1]-1` instead of the incoming synapses of the spiking neuron. Since 1.8.2
     it walks the incoming synapses of `i` (`s = index[k]` for `k` in `rowptr[i]:rowptr[i+1]-1`).
     See the [Release notes](../release_notes.md).
