@@ -27,7 +27,7 @@ SNN.sim!(model = model, duration = 10s)     # weights frozen
 ## Switching and replacing rules
 
 - `SNN.set_LTP!(syn, false)` / `SNN.set_STP!(syn, false)` deactivate the long-term / short-term rule of a synapse (they set the `active` flag of `syn.LTPVars` / `syn.STPVars`); `true` reactivates it. They are no-ops for connections that are not sparse synapses.
-- `SNN.change_plasticity!(syn; LTP = rule, STP = rule)` replaces a rule and re-creates its state (traces are reset).
+- `SNN.update_plasticity!(syn; LTP = rule, STP = rule)` replaces a rule by one of the same type (other parameters) and re-creates its state (traces are reset); a rule of another type, or a rule on a synapse built without one, is an `ArgumentError`, because the rule types are type parameters of `SpikingSynapse`. `SNN.SNNModels.with_plasticity(syn; LTP = rule, STP = rule)` builds a new synapse with a rule of any type (it must replace the old one in the model, e.g. through `compose`).
 - The traces are fields of `syn.LTPVars` / `syn.STPVars` and can be recorded, e.g. `SNN.monitor!(syn, [:tpre, :tpost], :LTPVars)` for the STDP rules (see [Recordings](recordings.md)).
 
 !!! danger "Results obtained with `iSTDPRate` before SNNModels 1.8.2 are wrong"

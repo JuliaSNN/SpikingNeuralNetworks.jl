@@ -103,9 +103,11 @@ converted to `SparseMatrixCSC{Float32,Int}`.
 ### Delays
 
 With `delay_dist`, one delay ``d_{ij}`` (ms, `Float32`) is drawn per synapse. A spike of ``j``
-at time ``t`` puts ``W_{ij}\rho_{ij}`` (evaluated at emission) in the queue of neuron ``i``
-with arrival time ``t + d_{ij}``; at each step every queued increment with arrival time
-``\le t`` is added to ``g_i``. The parameter of a delayed synapse is a
+at step ``n`` puts ``W_{ij}\rho_{ij}`` (evaluated at emission) into a ring buffer, in the slot of
+step ``n + \mathrm{round}(d_{ij}/dt)``; at each step the slot of the current step is added to
+``g_i`` and cleared. Delays are counted in steps, so a delay that is an exact multiple of `dt`
+arrives exactly that many steps later (SNNModels 1.9.1 compared times with the Float32 clock
+and delivered some events one step late). The parameter of a delayed synapse is a
 `SpikingSynapseDelayParameter` instead of `SpikingSynapseParameter`.
 
 ### Plasticity
@@ -113,7 +115,8 @@ with arrival time ``t + d_{ij}``; at each step every queued increment with arriv
 The rule given with `LTPParam` modifies `W`, the rule given with `STPParam` modifies `ρ`; both
 only under `train!`. `set_LTP!(c, state)`, `set_STP!(c, state)` and
 `set_plasticity!(c, c.LTPParam, state)` switch a rule on or off, and
-`update_plasticity!(c; LTP, STP)` replaces it. The two-argument `set_plasticity!(c, state)`
+`update_plasticity!(c; LTP, STP)` replaces it by a rule of the same type (another type needs
+`with_plasticity(c; LTP, STP)`, which builds a new synapse). The two-argument `set_plasticity!(c, state)`
 switches both rules of a `SpikingSynapse`, and `has_plasticity(c)` tells whether a rule is
 present and active (in SNNModels 1.8.4 both raised a `FieldError` for `SpikingSynapse`).
 

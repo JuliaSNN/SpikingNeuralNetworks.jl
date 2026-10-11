@@ -40,8 +40,9 @@ object created by `plasticityvariables(param, Npre, Npost)`:
 | `NoLTP`, `NoSTP` | `NoVariables` | no plasticity (defaults) | - |
 
 Every state has an `active` flag; the rule runs only if it is `true`. Switch a rule with
-`set_LTP!(syn, false)` / `set_STP!(syn, false)`, replace it with
-`change_plasticity!(syn; LTP = ..., STP = ...)`.
+`set_LTP!(syn, false)` / `set_STP!(syn, false)`. `update_plasticity!(syn; LTP = ..., STP = ...)`
+replaces a rule by one of the same type; to give a synapse a rule of another type (or a first
+rule) build a new synapse with `with_plasticity(syn; LTP = ..., STP = ...)`.
 
 Notation: synapse ``s`` connects presynaptic neuron ``j`` to postsynaptic neuron ``i``, its
 weight is ``w_{ij}`` (`W[s]`), time is in ms and weights are in the units of `W` (pF for the

@@ -27,7 +27,10 @@ set by the parameter type:
 
 `PoissonParameter(rate)` returns a `PoissonHomoParameter` for a scalar and a
 `PoissonHetParameter` for a vector. `Population(param::PoissonParameter; N)` builds the
-population. Integration: `rand!(randcache)`, `fire[i] = randcache[i] < rate * dt`.
+population. Integration: sparse sampling (SNNModels 1.10): the neurons that spike in a step are
+Bernoulli(`rate dt`) along the population, so the gap to the next spiking neuron is drawn from a
+geometric law and no random number is spent per silent neuron (the law of the spikes is that of
+`fire[i] = rand() < rate * dt`, the cost is `O(1 + rate dt N)` per step).
 
 ```julia
 using SpikingNeuralNetworks
@@ -116,7 +119,10 @@ Pages   = ["populations/inhomogeneous_poisson.jl"]
 
 Each step, neuron ``i`` fires if its input `g` is positive; `spikecount` stores that input,
 `h` accumulates it, and `g` is reset to zero. Any target symbol used by a connection is mapped
-to `g`. Because populations are integrated before connections are forwarded, a spike arriving
+to `g`. When every writer of `g` is a `SpikeTimeStimulus` or a Poisson stimulus the population is
+updated sparsely from their spike list; if you redirect a connection's `g` onto an `Identity`
+after construction, call `SNN.SNNModels.release_input!(Id)` so that it no longer counts as a
+writer (otherwise the dense path is kept: correct, but slower). Because populations are integrated before connections are forwarded, a spike arriving
 in step ``t`` is re-emitted in step ``t + 1``.
 
 ```julia
