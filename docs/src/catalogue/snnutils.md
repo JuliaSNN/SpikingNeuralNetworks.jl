@@ -43,8 +43,7 @@ sequence_end(seq)                                      # total duration in ms
 onto a random fraction of a dendritic population; [`update_stimuli!`](@ref) copies the intervals of
 the sequence into the stimuli, and [`set_stimuli!`](@ref) switches word or phoneme stimuli on and
 off. With the default `targets = [nothing]` the input targets a point-neuron population; pass the
-compartments for dendritic neurons (with SNNUtils 0.2.9 and SNNModels 1.8.4 the default raised a
-`MethodError`).
+compartments for dendritic neurons.
 
 ```julia
 using SpikingNeuralNetworks, SNNUtils
@@ -73,8 +72,7 @@ Pages   = ["SNNUtils.jl", "stimuli/sequence/stimuli.jl", "stimuli/sequence/seque
 [`compute_kei`](@ref), [`residual_current`](@ref) and [`optimal_kei`](@ref) compute the ratio of
 inhibitory to excitatory input rate that cancels the net dendritic current of a dendritic neuron
 with the soma held at a given potential; [`get_model`](@ref) computes the passive properties of
-the neuron. `residual_current` is zero at the ratio returned by `compute_kei`. (In SNNUtils 0.2.9
-these functions always threw, and the leak term of `residual_current` had the opposite sign.)
+the neuron. `residual_current` is zero at the ratio returned by `compute_kei`.
 The non-exported helpers `SNNUtils.critical_window` and `SNNUtils.all_windows` estimate the
 bimodality of membrane-potential distributions with the kernel-density method of Silverman
 (1981).
@@ -91,9 +89,7 @@ for external analysis: [`import_bioseq_tasks`](@ref), [`bioseq_epochs`](@ref),
 [`bioseq_lexicon`](@ref), [`seq_bioseq`](@ref), and the writers [`root_path`](@ref),
 [`store_experiment_data`](@ref), [`store_target_pops`](@ref), [`store_labels`](@ref),
 [`store_activity_data`](@ref) (HDF5 through DrWatson, NPZ for membrane traces). These functions
-expect populations named `E`, `I1`, `I2` and specific JSON fields. (In SNNUtils 0.2.9
-`import_bioseq_tasks` read the files from swapped folders, the inhibitory neuron ranges of
-`store_experiment_data` were labelled in the wrong order, and `store_activity_data` threw.)
+expect populations named `E`, `I1`, `I2` and specific JSON fields.
 
 ```@autodocs
 Modules = [SNNUtils]

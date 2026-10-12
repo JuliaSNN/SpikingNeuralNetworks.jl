@@ -26,7 +26,7 @@ All objects are built with `MetaPlasticity(param, synapses)` or with their own c
 | `ActivityDependentTurnover`, `RandomTurnover` | `Turnover` | one `SpikingSynapse` |
 
 Periodic operations run when the step counter `get_step(T)` is a multiple of
-`max(1, round(Int, τ / dt))` (in SNNModels 1.8.4 `τ < dt/2` divided by zero). The code gives no literature reference for these rules.
+`max(1, round(Int, τ / dt))`.
 
 ## SynapseNormalization
 
@@ -39,8 +39,7 @@ normalized connections). Every `τ`, with ``W^1_i`` the current sum:
 | `MultiplicativeNorm(τ)` | ``\mu_i = W^0_i / W^1_i`` | ``W_s \leftarrow W_s\,\mu_i`` (restores ``W^0_i`` exactly) |
 | `AdditiveNorm(τ)` | ``\mu_i = (W^0_i - W^1_i) / n_i`` (``n_i`` inputs) | ``W_s \leftarrow W_s + \mu_i`` (restores ``W^0_i`` exactly) |
 
-(In SNNModels 1.8.4 the additive offset was ``(W^0_i - W^1_i)/W^1_i``, so the sum became
-``W^1_i + n_i (W^0_i - W^1_i)/W^1_i`` instead of ``W^0_i``.) `param` is a required keyword of the
+`param` is a required keyword of the
 keyword constructors.
 
 | Field | Default | Units | Meaning |
@@ -79,13 +78,6 @@ under `train!`, with ``W^t_i`` the current summed input weight and ``n_i`` the n
 
 so that the summed weight equals ``W^T_i``. ``W^T_i`` starts from the summed input weight at
 construction.
-
-!!! note "Changed after SNNModels 1.8.4"
-    In SNNModels 1.8.4 ``y`` and ``W^T`` were updated per step without `dt` (time constants
-    ``\tau_a dt``, ``\tau_e dt``), ``y`` counted spikes while ``Y`` is a rate (the fixed point was
-    at the rate ``Y/(\tau_a\,dt)``, i.e. ``Y`` / 12.5 ms at the defaults), ``W^T`` also evolved
-    under `sim!`, the rescaling gave a sum of ``W^T_i + (n_i - 1) W_{min}``, the positional
-    constructor defaulted to `Wmin = 0.05`, and `N` was always 0.
 
 `AggregateScalingParameter` has two constructors:
 
@@ -140,9 +132,6 @@ With `RandomTurnover`, every `τ` each synapse is rewired with probability `thre
 | `τpre`, `τpost` | `250ms` | | ms | time constants of the activity traces |
 | `μ` | `3.0` | `3.0` | weight units | mean of new weights |
 
-(In SNNModels 1.8.4 `RandomTurnover` had no `plasticity!(c, param, dt, T)` method and `train!`
-raised a `MethodError`; the default `p_new` of `synaptic_turnover!` had the wrong arity; new
-weights could be negative; `ρ` was not reordered after a rebuild.)
 
 ```julia
 using SpikingNeuralNetworks

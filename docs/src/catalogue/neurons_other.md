@@ -11,9 +11,7 @@ they have no `synapse` or `spike` field. Each carries two conductance-based syna
 
 All three run under `sim!` and `train!` and can be the postsynaptic population of a
 `SpikingSynapse` (target `:ge` or `:gi`; for `MorrisLecar` also `:glu` -> `:ge`,
-`:gaba` -> `:gi`). In SNNModels 1.8.4 their parameter types were not subtypes of
-`AbstractPopulationParameter` (so `train!` raised a `MethodError`) and `MorrisLecar` had no
-`synaptic_target` method.
+`:gaba` -> `:gi`).
 
 ## Izhikevich model: `IZ`
 
@@ -88,9 +86,7 @@ with ``u = v - V_t`` (mV) and rates in 1/ms:
 
 Integration: forward Euler, sequential (gating variables, then ``v`` with the new gates, then
 the conductance decay). A spike is flagged in the step in which ``v`` crosses -20 mV upwards,
-one flag per action potential. No reset, no refractory period. (In SNNModels 1.8.4 `fire` was the
-level test `v > -20mV`: one action potential produced several consecutive flags and spike counts
-were inflated.) Use a small `dt`
+one flag per action potential. No reset, no refractory period. Use a small `dt`
 (0.01-0.05 ms).
 
 | Field | Default | Value | Meaning |
@@ -106,9 +102,8 @@ were inflated.) Use a small `dt`
 | `τe`, `τi` | `5ms`, `10ms` | | decay of `ge`, `gi` |
 | `Ee`, `Ei` | `0mV`, `-80mV` | | synaptic reversal potentials |
 
-References: the code links the Wikipedia page of the Hodgkin-Huxley model; canonical model:
-Hodgkin and Huxley (1952), J. Physiol. 117:500-544. The kinetics above are of the Traub-Miles
-type used in the COBAHH benchmark of Brette et al. (2007); this attribution is not in the code.
+Reference: Hodgkin and Huxley (1952), J. Physiol. 117:500-544. The kinetics above are of the
+Traub-Miles type used in the COBAHH benchmark of Brette et al. (2007).
 
 ```julia
 using SpikingNeuralNetworks
@@ -143,7 +138,7 @@ w_\infty(v) = \tfrac12 \left(1 + \tanh\frac{v - V_3}{V_4}\right), \quad
 
 Integration: forward Euler, sequential (``v`` with the intrinsic currents and the old ``w``;
 ``w`` with the new ``v``; synaptic term; conductance decay). A spike is flagged at the upward
-crossing of 20 mV (one flag per action potential; a level test `v > 20mV` up to SNNModels 1.8.4);
+crossing of 20 mV (one flag per action potential);
 no reset. With the default parameters a constant suprathreshold current gives one action
 potential followed by a depolarised plateau.
 
@@ -159,8 +154,7 @@ potential followed by a depolarised plateau.
 | `Ee`, `Ei` | `0mV`, `-75mV` | mV | synaptic reversal potentials |
 
 Initial state: `v = -52.14`, `w = 0.2`. Parameters from the NEST ode-toolbox test
-`morris_lecar.json` (cited in the code). Reference: Morris and Lecar (1981), Biophys. J.
-35:193-213 (linked in the code).
+`morris_lecar.json`. Reference: Morris and Lecar (1981), Biophys. J. 35:193-213.
 
 ```julia
 using SpikingNeuralNetworks

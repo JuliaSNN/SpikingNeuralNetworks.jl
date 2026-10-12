@@ -6,9 +6,7 @@ CurrentModule = SNNUtils
 
 The folder `src/models/` of [SNNUtils.jl](https://github.com/JuliaSNN/SNNUtils.jl) contains
 `stp_het.jl`, the only file of the folder: short-term-plasticity parameters sampled from
-experimental fits, expressed with the SNNModels types. (Up to SNNUtils 0.2.10 the folder also held
-parameter sets of published or in-house networks that no module included; they were removed in 2.0.0
-and are available in the git history of SNNUtils.jl.)
+experimental fits, expressed with the SNNModels types.
 
 ## `stp_het.jl`: heterogeneous short-term plasticity
 

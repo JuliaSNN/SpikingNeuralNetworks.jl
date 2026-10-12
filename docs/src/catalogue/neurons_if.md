@@ -211,8 +211,7 @@ Pages   = ["spike/postspike.jl"]
 `make_heterogeneous(param, N; field = distribution, ...)` returns a parameter object of the same
 type in which every field is a vector of length `N`; the fields passed as keywords are sampled
 with `rand(distribution, N)`, the others are copies of the value in `param`. Only `AdEx`
-supports such parameters in SNNModels 1.8.4 (`IF` raises a `MethodError` when simulated with
-vector parameters).
+supports such parameters (`IF` raises a `MethodError` when simulated with vector parameters).
 
 ```julia
 using SpikingNeuralNetworks
@@ -259,8 +258,7 @@ of `PostSpike`). Integration: forward Euler, conductances first, then the membra
 | `α` | `0` | 1/nS | excitation-SST interaction strength |
 
 Connections target one of the three conductances: `SpikingSynapse(pre, E, :g_Exc; conn)` (also
-`:g_PV`, `:g_SST`; `:ge`/`:glu` map to `:g_Exc` and `:gi`/`:gaba` to `:g_PV`). (In SNNModels 1.8.4
-there was no `synaptic_target` method for `ExtendedIF`.)
+`:g_PV`, `:g_SST`; `:ge`/`:glu` map to `:g_Exc` and `:gi`/`:gaba` to `:g_PV`).
 
 ```julia
 using SpikingNeuralNetworks

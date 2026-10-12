@@ -24,6 +24,7 @@ equations and parameter tables; recording and plotting have their own pages.
 | Stimulus models | [Stimuli](catalogue/stimuli.md) |
 | Models shipped with SNNUtils | [SNNUtils models](catalogue/snnutils_models.md) |
 | `monitor!`, `record`, `getvariable`, ... | [Recordings](recordings.md) |
+| threads, flush-to-zero | [Running simulations](simulation.md) |
 | SNNPlots functions | [Visualization](visualization.md) |
 
 All symbols below are exported by `SNNModels`; with `using SpikingNeuralNetworks` they are
@@ -89,10 +90,7 @@ Pages   = ["src/SNNModels.jl"]
 
 ## Umbrella package
 
-`SpikingNeuralNetworks` re-exports `SNNModels`, `SNNPlots` and `SNNUtils`, and every exported
-name is defined. (Up to SpikingNeuralNetworks 1.2.1 the export list contained the undefined
-`LTPParam`, `STPParam`, `SNNModel`, `make_copy` and `raster!`. `LTPParam` and `STPParam` are
-keyword arguments and field names of `SpikingSynapse`; the model copy function is `modelcopy`.)
+`SpikingNeuralNetworks` re-exports `SNNModels`, `SNNPlots` and `SNNUtils`.
 
 ```@meta
 CurrentModule = SpikingNeuralNetworks

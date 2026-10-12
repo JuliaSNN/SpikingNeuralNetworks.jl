@@ -27,7 +27,7 @@ set by the parameter type:
 
 `PoissonParameter(rate)` returns a `PoissonHomoParameter` for a scalar and a
 `PoissonHetParameter` for a vector. `Population(param::PoissonParameter; N)` builds the
-population. Integration: sparse sampling (SNNModels 1.10): the neurons that spike in a step are
+population. Integration: sparse sampling: the neurons that spike in a step are
 Bernoulli(`rate dt`) along the population, so the gap to the next spiking neuron is drawn from a
 geometric law and no random number is spent per silent neuron (the law of the spikes is that of
 `fire[i] = rand() < rate * dt`, the cost is `O(1 + rate dt N)` per step).
@@ -58,7 +58,7 @@ fires with probability ``\nu\, dt / N``:
 ```
 
 ``\rho`` starts at ``r_0``; the slow feedback drives the mean of ``\nu`` to ``r_0``. ``F`` is
-discontinuous at 0 as written in the code.
+discontinuous at 0.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|

@@ -4,7 +4,7 @@
 CurrentModule = SNNModels
 ```
 
-This page lists every synaptic plasticity rule of SNNModels 1.8.4 that acts on a sparse synapse
+This page lists every synaptic plasticity rule that acts on a sparse synapse
 (`SpikingSynapse`): long-term rules, passed with the keyword `LTPParam`, and short-term rules,
 passed with `STPParam`. For how to use them in a network see [Plasticity](../plasticity.md);
 for the rules that act on whole connections (normalisation, aggregate scaling, turnover) see
@@ -31,17 +31,19 @@ object created by `plasticityvariables(param, Npre, Npost)`:
 | `STDPAntiSymmetric` | `STDPStructuredVariables` | antisymmetric exponentials | Euler |
 | `iSTDPRate` | `iSTDPVariables` | inhibitory STDP, target rate | Euler |
 | `iSTDPPotential` | `iSTDPVariables` | inhibitory STDP, membrane potential | Euler |
-| `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP, event-driven (weights materialised lazily, read them with `plasticity_value(syn, :W)`) | Euler |
-| `vSTDPDenseParameter` | `vSTDPDenseVariables` | voltage-based STDP, clock-driven reference (LTP on every synapse at every step) | Euler |
+| `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP, event-driven (lazy weights) | Euler |
+| `vSTDPDenseParameter` | `vSTDPDenseVariables` | voltage-based STDP, clock-driven | Euler |
 | `MarkramSTPParameter` (= `MarkramSTPParameterEvent`) | `MarkramSTPVariables` | short-term plasticity | exact, event-driven |
 | `MarkramSTPParameterHet` | `MarkramSTPVariables` | short-term plasticity, per-neuron parameters | exact, event-driven |
 | `MarkramSTPParameterTimestep` | `MarkramSTPVariables` | short-term plasticity | Euler |
 | `NoLTP`, `NoSTP` | `NoVariables` | no plasticity (defaults) | - |
 
-Every state has an `active` flag; the rule runs only if it is `true`. Switch a rule with
-`set_LTP!(syn, false)` / `set_STP!(syn, false)`. `update_plasticity!(syn; LTP = ..., STP = ...)`
-replaces a rule by one of the same type; to give a synapse a rule of another type (or a first
-rule) build a new synapse with `with_plasticity(syn; LTP = ..., STP = ...)`.
+Every state has an `active` flag (`set_LTP!`, `set_STP!`). To change a rule see
+[Plasticity](../plasticity.md#Switching-rules).
+
+The STDP and iSTDP traces are stored lazily (stored value times a common scale), and
+`vSTDPParameter` writes potentiation into `W` only at presynaptic spikes: read them with
+`trace_values`, `plasticity_value`, or call `sync_traces!(syn)` first. `monitor!` records values.
 
 Notation: synapse ``s`` connects presynaptic neuron ``j`` to postsynaptic neuron ``i``, its
 weight is ``w_{ij}`` (`W[s]`), time is in ms and weights are in the units of `W` (pF for the
@@ -60,16 +62,15 @@ presynaptic and `fireI` the postsynaptic spikes of the step, `plasticity!` does:
 2. **Post-spike pass.** For every postsynaptic neuron ``i`` that fired, every incoming
    synapse: ``w \leftarrow \mathrm{clamp}(w + f_{post}(w, i, j), W_{min}, W_{max})``.
 3. **Trace increment.** Every neuron that fired adds 1 to its trace(s).
-4. **Trace decay.** Every trace is multiplied by ``e^{-dt/τ}`` (one precomputed factor per time
-   constant; the decay is done every step, not lazily).
+4. **Trace decay.** Every trace decays by ``e^{-dt/τ}`` (applied to the common scale).
 
 The traces read in steps 1 and 2 therefore hold
 ``\sum_{m<n} e^{-(t_n - t_m)/τ}`` over the *earlier* spikes only: a pre and a post spike in the
 same step do not interact with each other (their earlier history does). This is the
 convention of Auryn and of Brian2 code that updates `w` before incrementing the trace. Only
 weights of neurons that fired are updated and clamped; all weights are clamped once on the
-first plasticity step. The loops are serial. The kernels were validated against Brian2
-(relative weight difference 2e-6), Auryn (2e-7) and the analytic pair kernels.
+first plasticity step. The weight passes are threaded by postsynaptic range when
+`neurons_per_thread > 0` (bit-identical results).
 
 `STDPMexicanHat`, the structured rules, the iSTDP rules and the voltage-based rules integrate their
 traces with forward Euler and use their own orderings, described in each section.
@@ -105,11 +106,6 @@ pairs (Hebbian, the default). Any sign combination is accepted.
 | `Wmax` | `30pF` | weight | upper bound |
 | `Wmin` | `0pF` | weight | lower bound |
 
-!!! warning "Behaviour change in SNNModels 1.8.2"
-    Before 1.8.2 the amplitudes were applied twice (effective ``A^2``, sign lost) and the default
-    `A_post` was positive. Now each amplitude is applied once and the default `A_post` is `-1e-4`.
-    Rescale old parameter sets: old `A = 5e-2` is a new amplitude of `2.5e-3`.
-
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units
@@ -122,8 +118,7 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 1s)
 
 ## STDPConfavreux2025
 
-Pair-based STDP with constant rate terms (named "Confavreux et al. 2025" in the code; full
-reference not given in the code). Same traces and ordering as `STDPGerstner`.
+Pair-based STDP with constant rate terms (Confavreux et al. 2025). Same traces and ordering as `STDPGerstner`.
 
 ```math
 \begin{aligned}
@@ -206,8 +201,8 @@ traces ``o_1`` (``τ_-``), ``o_2`` (``τ_y``), all read before this step's spike
 \end{aligned}
 ```
 
-The amplitudes are positive and the signs explicit. The defaults are documented in the code as
-the minimal all-to-all model fitted to the hippocampal culture data (Table 4 of Pfister and
+The amplitudes are positive and the signs explicit. The defaults are the minimal all-to-all
+model fitted to the hippocampal culture data (Table 4 of Pfister and
 Gerstner 2006), equal to Auryn's `MinimalTripletConnection` with `eta = 1`; with
 `A3_minus = 0` the trace ``r_2`` (and `τ_x`) has no effect.
 
@@ -237,8 +232,7 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
 
 Kernel ``Δw = A\,(1 - z)\,e^{-z/\sqrt 2}`` with ``z = [\ln(x_{pre}/x_{post})]^2``, where the pre-
 and postsynaptic traces have the same time constant ``τ``. For an isolated pair
-``z ≈ (Δt/τ)^2``: potentiation for ``|Δt| < τ``, depression beyond. Reference not given in the
-code.
+``z ≈ (Δt/τ)^2``: potentiation for ``|Δt| < τ``, depression beyond.
 
 Update order per step: (1) Euler decay of all traces, then +1 for the neurons that fired (so
 same-step spikes interact); (2) pre-spike pass and (3) post-spike pass, each applying ``Δw`` to
@@ -262,7 +256,7 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
 
 ## STDPSymmetric and STDPAntiSymmetric
 
-Structured rules cited in the code from Festa, Cusseddu and Gjorgjieva (2024), "Structured
+Structured rules of Festa, Cusseddu and Gjorgjieva (2024), "Structured
 stabilization in recurrent neural circuits through inhibitory synaptic plasticity". Both have
 pair kernels whose integral is ``A_x - A_y`` (zero with the defaults) and constant terms
 `αpre`, `αpost` added at every pre / post spike.
@@ -316,8 +310,7 @@ by 1 at a spike.
 `iSTDPPotential` replaces the postsynaptic spike trace by a low-pass filter of the membrane
 potential, ``τ_y\, dy_i/dt = V_i - y_i``, and the target by a reference potential ``v_0``:
 ``Δw_{ij} = η (y_i - v_0)`` at a presynaptic spike, ``Δw_{ij} = η x_j`` at a postsynaptic spike.
-At the first `plasticity!` call the trace is set to the membrane potential (it started at 0 mV
-in SNNModels 1.8.4, which potentiated inhibition at the start of every simulation).
+At the first `plasticity!` call the trace is set to the membrane potential.
 
 Update order per step: presynaptic pass (Euler decay of ``x_j``, +1 if ``j`` fired, then the
 pre-spike update of its outgoing synapses), then postsynaptic pass (Euler update of ``y_i``, +1
@@ -334,12 +327,7 @@ before the postsynaptic pass, a pre and a post spike in the same step interact.
 | `Wmax` | `243pF` | `243pF` | weight | upper bound |
 | `Wmin` | `0.01pF` | `0.01pF` | weight | lower bound |
 
-!!! danger "Bug fixed in SNNModels 1.8.2"
-    In SNNModels 1.5.0 - 1.8.1 the potentiation of `iSTDPRate`
-    at a postsynaptic spike was applied to the synapses stored at CSC positions
-    `rowptr[i]:rowptr[i+1]-1` instead of the incoming synapses of the spiking neuron. Since 1.8.2
-    it walks the incoming synapses of `i` (`s = index[k]` for `k` in `rowptr[i]:rowptr[i+1]-1`).
-    See the [Release notes](../release_notes.md).
+Results of `iSTDPRate` with SNNModels 1.5.0 to 1.8.1 are wrong; see [Release notes](../release_notes.md).
 
 ```julia
 using SpikingNeuralNetworks
@@ -352,13 +340,10 @@ SNN.train!(model = SNN.compose(; E, I, IE), duration = 500ms)
 
 ## vSTDPParameter and vSTDPDenseParameter
 
-Voltage-based STDP in the form of Clopath et al. (2010), in two implementations of the same rule: `vSTDPParameter`
-(event-driven, the default: the LTP term is not evaluated on every synapse at every step, the weights are materialised
-lazily and `syn.W` is NOT the current weight vector between materialisations: read it with `plasticity_value(syn, :W)`
-or call `sync_traces!(syn)` first) and `vSTDPDenseParameter` (the clock-driven reference, the rule that was called
-`vSTDPParameter` up to SNNModels 1.9; `syn.W` is always current). Both are generic over the precision of the postsynaptic
-population (`Float32` by default, `Float64` for a `Float64` population: the two rules then agree to about 1e-13).
-The text below describes the rule and the dense update order. ``V_i`` is the postsynaptic membrane
+Voltage-based STDP of Clopath et al. (2010) in two implementations: `vSTDPParameter` is event-driven and writes
+potentiation into `W` lazily (read the weights with `plasticity_value(syn, :W)` or call `sync_traces!(syn)` first);
+`vSTDPDenseParameter` is clock-driven, keeps `W` current, and is the rule called `vSTDPParameter` in SNNModels 1.9.
+Both are serial. The text below describes the rule and the dense update order. ``V_i`` is the postsynaptic membrane
 potential (`v_post` of the synapse), ``u_i`` and ``v_i`` are low-pass filters of it, ``x_j`` is a
 presynaptic trace and ``[z]_+ = \max(z, 0)``:
 
@@ -375,12 +360,6 @@ so the rule does not depend on `dt`. Update order per step: Euler update of ``x`
 and ``v``; for each presynaptic neuron, LTD if it fired with clamping at
 `Wmin`, then the LTP increment `dt * A_LTP * x * ...` on all its outgoing synapses with clamping
 at `Wmax`. At the first call ``u`` and ``v`` are set to the membrane potential.
-
-!!! note "Changed after SNNModels 1.8.4"
-    In SNNModels 1.8.4 a spike increased ``x_j`` by ``dt/τ_x`` and the LTP increment was added per
-    step without `dt`; the two factors cancel, so the weights are the same (up to rounding),
-    only the recorded `x` differs (it was proportional to `dt`). The traces ``u``, ``v`` started at
-    0 mV, which produced spurious depression during the first ``τ_u``.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -407,8 +386,8 @@ SNN.plasticity_value(syn, :W)   # current weights (syn.W is lazy for the event-d
 
 Each presynaptic neuron ``j`` has a utilisation ``u_j`` and available resources ``x_j``; the
 efficacy of its outgoing synapses is ``ρ_s = u_j x_j`` and a spike adds ``W_s ρ_s`` to the target
-conductance (Tsodyks and Markram 1997; Markram, Wang and Tsodyks 1998; the code follows the
-formulation of Mongillo, Barak and Tsodyks 2008). Between spikes
+conductance (Tsodyks and Markram 1997; Markram, Wang and Tsodyks 1998; formulation of
+Mongillo, Barak and Tsodyks 2008). Between spikes
 
 ```math
 \frac{du}{dt} = \frac{U - u}{τ_F}, \qquad \frac{dx}{dt} = \frac{1 - x}{τ_D}.
@@ -429,7 +408,8 @@ u &\leftarrow u^- + U\,(1 - u^-), & x &\leftarrow x^- - u\,x^- .
 This is done in `update_traces!`, i.e. before `forward!`, so the spike of the current step is
 transmitted with the new efficacy; the first spike of a neuron is transmitted with ``ρ = U``.
 `MarkramSTPParameterHet` uses per-presynaptic-neuron vectors `U[j]`, `τF[j]`, `τD[j]` (no
-defaults, no `Wmax`/`Wmin`).
+defaults, no `Wmax`/`Wmin`). The stored `u`, `x` are the values at the last spike of each neuron;
+`plasticity_value(syn, :STPVars, :u, t)` relaxes them to time `t`.
 
 **`MarkramSTPParameterTimestep`**: clock-driven. In `plasticity!` (after `forward!`): jumps
 ``u \leftarrow u + U(1-u)``, ``x \leftarrow x - u x`` for the neurons that fired, Euler relaxation of

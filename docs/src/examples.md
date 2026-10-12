@@ -1,26 +1,9 @@
-# Tutorial
+# Examples
 
-This tutorial shows how to build and run models with _SpikingNeuralNetworks.jl_. Each section is a
-self-contained script: it can be pasted in a Julia session in which `SpikingNeuralNetworks` (and
-`CairoMakie`, for the figures) is installed. The library offers many more models than the ones used
-here; they are described in the [Model catalogue](catalogue/index.md).
-
-Longer scripts, including the ones that produced the figures in this page, are in the
+Self-contained scripts, each runnable in a session with `SpikingNeuralNetworks` and `CairoMakie`
+installed. Longer scripts are in the
 [examples](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/tree/main/examples) folder of the
-package. Some of those scripts still use the old `Plots` interface of `SNNPlots`; since SNNPlots 0.2
-the plotting functions (`vecplot`, `raster`, ...) use `Makie`, as in the snippets below.
-
-Every script starts by loading the library and the unit constants:
-
-```julia
-using SpikingNeuralNetworks   # exports SNN, an alias of the module
-SNN.@load_units               # defines ms, mV, pA, nS, Hz, ... in the current scope
-using CairoMakie              # Makie backend used to render and save the figures
-```
-
-The unit system is: time in ms, voltage in mV, current in pA, capacitance in pF, conductance in nS,
-resistance in GΩ, rates in kHz (`Hz = 1e-3`). Writing `20ms` or `5nS` therefore only documents the unit;
-the stored number is `20f0` or `5f0`.
+package.
 
 ## AdEx neuron
 
@@ -38,9 +21,8 @@ membrane potential ``V`` and an adaptation current ``w``:
 
 The threshold ``\theta`` relaxes to ``V_t`` with time constant ``\tau_A`` and is increased by
 ``A_t`` after each spike (both from `PostSpike`; with the default `At = 0` it stays at ``V_t``).
-A spike is emitted when ``V \geq 0`` mV: ``V`` is set to 20 mV for that step, then reset to
-``V_r`` and held during the refractory period `τabs`; ``w`` is incremented by ``b``. `AdExParameter` is a subtype of `AbstractGeneralizedIFParameter`: the population `AdEx` can be
-combined with any synapse model (see [Neuron models: integrate-and-fire family](catalogue/neurons_if.md)).
+A spike is emitted when ``V \geq 0`` mV: ``V`` is reset to ``V_r`` and held during the refractory
+period `τabs`; ``w`` is incremented by ``b`` (see [Integrate-and-fire neurons](catalogue/neurons_if.md)).
 
 Changing the membrane time constant, the reset potential and the adaptation parameters gives
 different firing patterns:
@@ -100,16 +82,9 @@ dynamics of a generalized integrate-and-fire neuron reads
 \tau_{m} \frac{d u}{ d t} = f(u) + R I^{det}(t) + R I^{noise}(t)
 ```
 
-`CurrentNoise` implements such an input: at every time step it sets the target variable to
-`I_base` plus a fresh sample ``\xi`` of the distribution `I_dist`. With `α > 0` the new value is
-mixed with the previous one, ``I \leftarrow (1-\alpha)(I_{base} + \xi) + \alpha I``, which makes the
-noise temporally correlated (see [Stimuli](catalogue/stimuli.md)). In the following example we:
-
-1. define a leaky integrate-and-fire neuron with `Population`, which dispatches on the type of `param`;
-2. define a `CurrentNoise` with a deterministic current of 30 pA and Gaussian fluctuations with
-   standard deviation 100 pA;
-3. attach it to the `:I` variable of the population with `Stimulus` (it returns a `CurrentStimulus`);
-4. record, simulate and plot.
+`CurrentNoise` sets the target variable to `I_base` plus a fresh sample of `I_dist` at every
+step (see [Stimuli](catalogue/stimuli.md)). Here a leaky integrate-and-fire neuron receives 30 pA
+plus Gaussian noise of 100 pA standard deviation on its `:I` variable.
 
 ```julia
 using SpikingNeuralNetworks
@@ -143,19 +118,8 @@ save(joinpath(mktempdir(), "noise_current.png"), fig)
 
 ## Balanced input spikes
 
-In the brain, the membrane potential is driven by the opening of ion channels after presynaptic
-spikes rather than by injected currents. Populations of the generalized integrate-and-fire family
-accept any of the synapse models listed in [Synapse and receptor models](catalogue/synapses.md); the
-excitatory and inhibitory inputs are delivered to the receptor fields `:glu` and `:gaba`
-(the aliases `:ge`/`:he` and `:gi`/`:hi` map to the same fields).
-
-Here two Poisson spike trains, one excitatory and one inhibitory, drive an AdEx neuron above
-threshold. The large number of input spikes increases the synaptic conductance until it dominates
-the leak conductance: the neuron is in the so-called high-conductance state.
-
-`PoissonLayer` defines a layer of `N` independent Poisson sources; `Stimulus(param, population, sym;
-conn)` connects it to the population with the connectivity `conn` (connection probability `p` and
-mean weight `μ`, see `sparse_matrix`).
+Two layers of Poisson neurons, one excitatory (`:glu`) and one inhibitory (`:gaba`), drive an AdEx
+neuron into the high-conductance state, where the synaptic conductance dominates the leak.
 
 ```julia
 using SpikingNeuralNetworks
@@ -196,16 +160,9 @@ save(joinpath(mktempdir(), "balanced_stimuli.png"), fig)
 
 ## Ball-and-stick neuron
 
-A classical extension of the point neuron is the ball-and-stick neuron: a passive dendritic
-compartment coupled to an active AdEx soma. The dendrite can host voltage-dependent NMDA receptors,
-which make its response to synaptic input non-linear. See [Multicompartment neuron models](catalogue/multicompartment.md)
-for the equations and for the `Tripod` (two dendrites) variant.
-
-The somatic parameters are given by `adex`, the dendrite geometry by `BallAndStickParameter`
-(dendrite length, here a fixed 160 μm, and passive physiology), and the receptors of each
-compartment by `soma_syn` and `dend_syn` (defaults: `TripodSomaSynapse` with AMPA and GABA-A,
-`TripodDendSynapse` with AMPA, NMDA, GABA-A and GABA-B). Stimuli and synapses target a compartment
-with the extra positional argument `:s` (soma) or `:d` (dendrite).
+A passive dendrite with NMDA receptors coupled to an AdEx soma (see
+[Multicompartment neurons](catalogue/multicompartment.md)). Inputs target a compartment with the
+extra argument `:s` (soma) or `:d` (dendrite).
 
 ```julia
 using SpikingNeuralNetworks
@@ -238,13 +195,9 @@ save(joinpath(mktempdir(), "ballandstick_neuron.png"), fig)
 
 ## Recurrent EI network
 
-A conductance-based network of excitatory and inhibitory integrate-and-fire neurons driven by
-Poisson afferents (parameters in the spirit of the Zerlaut et al. 2019 mean-field network).
-The configuration is a nested `NamedTuple`; `@update` returns a modified copy, which is convenient
-for parameter sweeps. `compose` collects populations, synapses and stimuli into a model.
-
-The network below is reduced (1000 neurons, 1 s) so that it runs in a few seconds; the figure was
-produced with 10000 neurons and 10 s.
+An E/I network like the one of [Getting started](getting_started.md), built by a function of a configuration
+`NamedTuple` and run for two input rates. `@update` returns a modified copy of the configuration,
+which is convenient for parameter sweeps. The figure was produced with 10000 neurons and 10 s.
 
 ```julia
 using SpikingNeuralNetworks
@@ -309,44 +262,12 @@ save(joinpath(mktempdir(), "recurrent_network.png"), fig)
 
 ![Recurrent network](assets/examples/recurrent_network.png)
 
-## Synaptic plasticity
-
-Long-term plasticity is attached to a `SpikingSynapse` with the keyword `LTPParam`, short-term
-plasticity with `STPParam`. Plasticity is applied only when the model is run with `train!`; `sim!`
-propagates spikes but never changes the weights or the short-term variables. The available rules
-are described in [Plasticity](plasticity.md) and [Plasticity rules](catalogue/plasticity_rules.md).
-
-```julia
-using SpikingNeuralNetworks
-SNN.@load_units
-
-E = SNN.IF(N = 200, name = "E")
-input = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 200), E, :glu;
-                     conn = (p = 0.1, μ = 3nS), name = "input")
-EE = SNN.SpikingSynapse(E, E, :glu; conn = (p = 0.1, μ = 1nS),
-                        LTPParam = SNN.STDPGerstner(), name = "EE")
-model = SNN.compose(; E, input, EE, silent = true)
-
-w0 = copy(EE.W)
-SNN.sim!(; model, duration = 500ms)     # no weight change
-@assert EE.W == w0
-SNN.train!(; model, duration = 500ms)   # STDP is applied
-println("mean |Δw| = ", sum(abs.(EE.W .- w0)) / length(w0))
-```
-
 ## FORCE learning
 
-A rate network trained with the FORCE algorithm described in
-["Generating Coherent Patterns of Activity from Chaotic Neural Networks"](https://www.sciencedirect.com/science/article/pii/S0896627309005479)
-(Sussillo and Abbott, 2009). The network has 200 rate units (`Rate`) connected by an `FLSynapse`,
-whose readout `z` is trained online, with recursive least squares, to follow the target signal `f`.
-The readout weights are updated only during `train!` (training phase); `sim!` is used for the test
-phase. The script below trains for 1 s; the figure was obtained with 2.44 s of training.
-
-!!! note "Changed after SNNModels 1.8.4"
-    In SNNModels 1.8.4 this script did not run: the parameter types of `FLSynapse` and
-    `PINningSynapse` were not subtypes of `AbstractConnectionParameter`, so `sim!` and `train!`
-    stopped with a `MethodError`. The figure below was produced with an earlier version.
+200 rate units (`Rate`) connected by an `FLSynapse` whose readout `z` learns the target `f` by
+recursive least squares ([Sussillo and Abbott, 2009](https://www.sciencedirect.com/science/article/pii/S0896627309005479)).
+The readout learns under `train!` and is tested under `sim!`. The figure was obtained with 2.44 s of
+training.
 
 ```julia
 using SpikingNeuralNetworks

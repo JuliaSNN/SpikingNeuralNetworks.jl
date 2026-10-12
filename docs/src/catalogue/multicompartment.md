@@ -71,15 +71,6 @@ C_{d,k} \frac{dV_{d,k}}{dt} &= g_{m,k} (E_{L,k} - V_{d,k}) - I_{syn,d,k}
   `gl * (-v + Er + ΔT * exp((v - θ)/ΔT))`); ``\theta`` is a dynamic threshold of the
   exponential term only.
 
-!!! note "Changed after SNNModels 1.8.4"
-    In SNNModels 1.8.4 the exponential term was ``\Delta_T e^{(V_s-\theta)/\Delta_T}``
-    without ``g_L`` (40 times smaller at the default `gl = 40nS`), the Heun stage of ``w_s``
-    lacked the factor `dt` (results depended on `dt`), the synaptic currents were not
-    evaluated at the Heun stage, the dendritic leak used the somatic ``E_L``, and
-    `BallAndStick` ignored `Is`/`Id`. The effect on spiking (rheobase, f-I curve, spike
-    times, network rates) is quantified in the validation of the fix (see the release
-    notes).
-
 **Spike and refractoriness.** A spike is emitted when the predicted somatic potential
 ``V_s + dt\,\dot V_s`` reaches `Vspike` (population field, default ``-10`` mV; the published
 TripodNeuron.jl code detects spikes at ``V_s \ge V_T``, obtained with `Vspike = adex.Vt`). Then
@@ -87,9 +78,7 @@ TripodNeuron.jl code detects spikes at ``V_s \ge V_T``, obtained with `Vspike = 
 ``w_s \mathrel{+}= b``, ``\theta \mathrel{+}= A_t`` (`spike.At`), and a refractory counter is set to
 `n_up + n_abs` steps, with `n_up = max(1, round(up/dt))` and `n_abs = max(1, round(τabs/dt))`.
 During the first `n_up` steps the soma is held at `AP_membrane` (back-propagating action
-potential), during the next `n_abs` steps at `adex.Vr`. (In SNNModels 1.8.4 the counter was
-`round((up + τabs)/dt)`; with `up = τabs = 0.1ms` at `dt = 0.125ms` the reset was skipped and the
-neuron fired at about 1 kHz.) In both periods
+potential), during the next `n_abs` steps at `adex.Vr`. In both periods
 the dendrites only relax towards the soma through the axial term (forward Euler) and ``w_s`` is
 frozen. ``\theta`` relaxes to `adex.Vt` with time constant `spike.τA` at every step.
 
@@ -133,7 +122,7 @@ Predefined length ranges: `proximal_distal = [(150um, 400um), (150um, 400um)]`,
 | `Rd` | specific membrane resistance | 38907 Ω cm² | 1700 Ω cm² |
 | `Cd` | specific membrane capacitance | 0.5 μF/cm² | 1 μF/cm² |
 
-References for these values are not given in the code. Geometry helpers, for a cylinder of
+Geometry helpers, for a cylinder of
 length ``l`` and diameter ``d``:
 
 ```math
@@ -189,7 +178,7 @@ State variables: `v_s`, `v_d1`, `v_d2` (mV, initialised uniformly between `Vr` a
 `receptors_d2`.
 
 Reference: Quaresima A. et al. (2023), "The Tripod neuron: a minimal structural reduction of
-the dendritic tree", J. Physiol. (the reference is not given in the code).
+the dendritic tree", J. Physiol.
 
 ```julia
 using SpikingNeuralNetworks

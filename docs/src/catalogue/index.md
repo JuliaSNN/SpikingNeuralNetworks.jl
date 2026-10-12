@@ -28,7 +28,7 @@ model (how synaptic input is turned into a current) and a post-spike model (refr
 | Multicompartment neurons | `Tripod`, `BallAndStick`, dendrite geometry (`Dendrite`, `Physiology`) | [Multicompartment neurons](multicompartment.md) |
 | Synapse and receptor models | `DeltaSynapse`, `CurrentSynapse`, `SingleExpSynapse`, `DoubleExpSynapse`, `DoubleExpCurrentSynapse`, `ReceptorSynapse`, `MultiReceptorSynapse`, `Confavreux2025Synapse`, `Receptor`, `NMDAVoltageDependency` | [Synapse and receptor models](synapses.md) |
 | Connections | `SpikingSynapse`, `RateSynapse`, `FLSynapse`, `PINningSynapse`, `EmptySynapse`, connectivity rules of `sparse_matrix` | [Connections](connections.md) |
-| Long- and short-term plasticity | `STDPGerstner`, `STDPTriplet`, `STDPWeightDependent`, `STDPMexicanHat`, `STDPConfavreux2025`, `STDPSymmetric`, `STDPAntiSymmetric`, `vSTDPParameter`, `iSTDPRate`, `iSTDPPotential`, `MarkramSTPParameter` | [Plasticity rules](plasticity_rules.md) |
+| Long- and short-term plasticity | `STDPGerstner`, `STDPTriplet`, `STDPWeightDependent`, `STDPMexicanHat`, `STDPConfavreux2025`, `STDPSymmetric`, `STDPAntiSymmetric`, `vSTDPParameter`, `vSTDPDenseParameter`, `iSTDPRate`, `iSTDPPotential`, `MarkramSTPParameter` | [Plasticity rules](plasticity_rules.md) |
 | Metaplasticity | `SynapseNormalization` (`MultiplicativeNorm`, `AdditiveNorm`), `AggregateScaling`, `Turnover` (`RandomTurnover`, `ActivityDependentTurnover`) | [Metaplasticity](metaplasticity.md) |
 | Stimuli | `PoissonStimulus`, `PoissonLayer`, `CurrentStimulus`, `SpikeTimeStimulus`, `BalancedStimulus`, `StimulusGroup`, `EmptyStimulus` | [Stimuli](stimuli.md) |
 | Short-term-plasticity parameters in SNNUtils | heterogeneous STP parameters sampled from experimental fits (`SNNUtils/src/models`) | [SNNUtils models](snnutils_models.md) |
@@ -36,7 +36,3 @@ model (how synaptic input is turned into a current) and a post-spike model (refr
 
 Plasticity (long-term, short-term and metaplasticity) is applied only when the network is run with
 `train!`; `sim!` integrates the same dynamics with frozen synapses (see [Plasticity](../plasticity.md)).
-
-Some source files are present in the SNNModels source tree but are not loaded by the package
-(their `include` is commented out); they are listed on the page of their family for completeness
-and cannot be used without editing the package.

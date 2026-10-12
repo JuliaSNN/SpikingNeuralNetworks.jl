@@ -4,14 +4,16 @@ using Documenter, SpikingNeuralNetworks, .SNNModels, .SNNPlots, .SNNUtils
 # block (selected with `Pages = [...]`), so that each docstring appears once on the site.
 pages = [
     "Home" => "index.md",
-    "Tutorial" => "examples.md",
+    "Getting started" => "getting_started.md",
     "User guide" => [
         "Populations" => "populations.md",
         "Stimuli" => "stimuli.md",
+        "Running simulations" => "simulation.md",
         "Recordings" => "recordings.md",
         "Plasticity" => "plasticity.md",
         "Visualization (SNNPlots)" => "visualization.md",
     ],
+    "Examples" => "examples.md",
     "Model catalogue" => [
         "Overview" => "catalogue/index.md",
         "Integrate-and-fire neurons" => "catalogue/neurons_if.md",

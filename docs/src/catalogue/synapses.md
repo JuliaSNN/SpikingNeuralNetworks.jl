@@ -18,7 +18,7 @@ Each population owns three objects built from its synapse model:
 
 | Object | Built by | Content |
 |:-------|:---------|:--------|
-| `receptors` (`receptors_s`, `receptors_d1`, ... in dendritic models) | `synaptic_receptors` | `NamedTuple` of `Vector{Float32}` input buffers, by default `(glu, gaba)`; one per receptor group for `MultiReceptorSynapse` |
+| `receptors` (`receptors_s`, `receptors_d1`, ... in dendritic models) | `synaptic_receptors` | `NamedTuple` of input buffers, by default `(glu, gaba)`; one per receptor group for `MultiReceptorSynapse` |
 | `synvars` (`synvars_s`, ...) | `synaptic_variables` | the state variables (conductances, rise variables), an `AbstractSynapseVariable` |
 | `syn_curr` (columns of `is` in dendritic models) | | the synaptic current, written by `synaptic_current!` |
 
@@ -38,7 +38,8 @@ example `:glu`, `:gaba`, or a receptor group such as `:AMPA` of a `MultiReceptor
 For dendritic neurons, the fourth argument of `SpikingSynapse` selects the compartment
 (`:s`, `:d1`, `:d2` for `Tripod`, `:s`, `:d` for `BallAndStick`); see `synaptic_target`.
 
-All synaptic weights, buffers and state variables are `Float32`.
+Synaptic buffers and state variables have the precision of the population (`Float32` by default,
+see [Precision](../simulation.md#Precision)).
 
 **Sign convention.** The neuron equations subtract the synaptic current,
 ``C\,dV/dt = \ldots - I_{syn}``. Conductance-based models return
@@ -275,7 +276,7 @@ potential at the beginning of the step.
 | `k` | `-0.077` | 1/mV | voltage sensitivity |
 | `mg` | `1.0` | mM | extracellular magnesium concentration |
 
-The defaults are attributed in the code to Eyal et al. (2018). `SomaNMDA` and `EyalNMDA` are
+The defaults are from Eyal et al. (2018). `SomaNMDA` and `EyalNMDA` are
 predefined instances with these values.
 
 ### `ReceptorSynapse`
@@ -297,8 +298,8 @@ A positional form `ReceptorSynapse(syn, NMDA; kwargs...)` is also available.
 Each receptor is driven by the input buffer named by its `target`; the population gets one
 buffer per distinct target (computed by `infer_receptors`), and a connection addresses a group
 by name. Fields: `syn = SomaReceptors`, `NMDA = NMDAVoltageDependency()`, and the computed
-`receptors = infer_receptors(syn)`. Since 1.8.4 there is a positional constructor
-`MultiReceptorSynapse(syn; kwargs...)`, equivalent to `MultiReceptorSynapse(; syn, kwargs...)`.
+`receptors = infer_receptors(syn)`. The positional constructor
+`MultiReceptorSynapse(syn; kwargs...)` is equivalent to `MultiReceptorSynapse(; syn, kwargs...)`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -326,8 +327,7 @@ SNN.sim!([E, P], [EP]; duration = 100ms)
 
 The dendritic AMPA/NMDA values are attributed to Eyal et al. (2018), Front. Cell. Neurosci. 12,
 doi:10.3389/fncel.2018.00181, and the GABA values to Miles et al. (1996), Neuron 16(4):815-823
-(see the receptor definitions in `SNNModels`); the somatic AMPA values are
-labelled "Duarte" in the code without a reference.
+(see the receptor definitions in `SNNModels`); the somatic AMPA values are labelled "Duarte".
 
 ```julia
 using SpikingNeuralNetworks
@@ -367,10 +367,8 @@ I_{syn} = \left(\alpha\, g_{AMPA} + (1-\alpha)\, g_{NMDA}\right)(V - E_e) + g_{G
 | `α` | `0.23` | - | AMPA fraction of the excitatory conductance |
 
 Integration: forward Euler (`gAMPA`, then `gGABA`, then `gNMDA` with the updated `gAMPA`); a
-spike of weight ``w`` increments the conductance by ``w``, as in the other models. (In SNNModels
-1.8.4 the input entered the Euler step multiplied by `dt`, so the increment was ``w\,dt``, 8
-times smaller at `dt = 0.125ms`.) The model is named
-after Confavreux et al. (2025); the full reference is not given in the code.
+spike of weight ``w`` increments the conductance by ``w``, as in the other models. The model is
+named after Confavreux et al. (2025).
 
 ```julia
 using SpikingNeuralNetworks

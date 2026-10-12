@@ -4,13 +4,28 @@
 
 All packages move to the next major version together. SNNModels 2 changes the types of synapses, stimuli and
 populations (concretely typed plasticity rules, spike lists, lazy synapse arrays); saved models of 1.9.1 and
-earlier are refused at load time. Full release summaries: `CHANGELOG.md` of SNNModels, SNNUtils and SNNPlots; itemised
-notes with measurements and migrations: `claude/CHANGELOG.md` of SNNModels.
+earlier are refused at load time. Full release summaries: `CHANGELOG.md` of SNNModels, SNNUtils and SNNPlots; every
+change with its migration: `CHANGELOG_2.0.0.md` of SNNModels.
 
 - Faster: E/I balanced network 8 to 12 times faster than 1.9.1, synapse memory 29 to 9 bytes per synapse, event-driven vSTDP, ring-buffer delays, one spike list per population, vectorised Tripod/BallAndStick, flush-to-zero of subnormals, no allocation per step.
 - New: Float64 by population type, `with_plasticity`/`without_plasticity`/`change_plasticity`, opt-in threading (`neurons_per_thread`).
 - Breaking: synapse/stimulus/population struct fields, `iSTDPTime` removed, delays rounded up to whole steps, random streams changed, `vSTDPParameter` is event-driven, Tripod/BallAndStick use `param.physiology`.
 - Removed code that was not loaded: Multipod, IF_CANAHP, AdExMultiTimescale, `VariableInputParameter`, stale SNNUtils parameter sets, SNNPlots Plots.jl backend and their examples.
+
+### Upgrading from 1.x
+
+- Rebuild saved models from their configuration: files of 1.9.1 and earlier are refused by `load_model`.
+- Install a rule of another type with `with_plasticity`, `without_plasticity` or `change_plasticity(model, :name; LTP, STP)`;
+  `update_plasticity!` accepts only a rule of the current type.
+- Read weights of `vSTDPParameter` with `plasticity_value(syn, :W)` and STDP traces with `trace_values` or after
+  `sync_traces!(syn)`. For the 1.9 voltage rule use `vSTDPDenseParameter`.
+- Call `SNNModels.ensure_transpose!(syn)` before reading `syn.J` or `syn.index`; read `syn.ρ` with `SNNModels.efficacy(syn)`.
+  `param.delaytime` has length 1 when all delays are equal.
+- Seeded results with Poisson inputs, delays at `dt = 0.1ms`, or STDP weights change.
+- Positional constructors of the changed structs need updating; keyword constructors are unchanged.
+- For `Float64` build the populations with `VFT = Vector{Float64}` and the rules with `FT = Float64`.
+- Pass `flush_subnormals = false` to `sim!`/`train!` if a result depends on subnormal numbers.
+- Custom components must not write `pop.fire` of an integrate-and-fire population after its `integrate!` in a step.
 
 ## SNNModels 1.9.0, SNNPlots 0.2.11, SNNUtils 0.2.10, SpikingNeuralNetworks 1.3.0
 

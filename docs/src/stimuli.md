@@ -4,9 +4,9 @@
 CurrentModule = SNNModels
 ```
 
-This page explains how to attach external inputs to a network. The full list of stimulus
-models, with their equations and parameters, is in the
-[stimulus catalogue](catalogue/stimuli.md).
+After this page you can drive a population with Poisson, spike-time and current inputs, choose
+the neurons they reach, and change them between runs. Every stimulus model, with its equations,
+is in the [stimulus catalogue](catalogue/stimuli.md).
 
 ## Building a stimulus
 
@@ -19,15 +19,13 @@ stim = SNN.Stimulus(param, post, sym, [comp]; kwargs...)
 - `param` selects the stimulus model (`PoissonFixed`, `PoissonLayer`,
   `SpikeTimeStimulusParameter`, `CurrentNoise`, ...).
 - `post` is the population that receives the input.
-- `sym` is the variable that receives it. For spiking inputs it is resolved by the
-  population's `synaptic_target`: on integrate-and-fire neurons `:ge` (or `:he`, `:glu`)
-  is the excitatory receptor buffer and `:gi` (or `:hi`, `:gaba`) the inhibitory one. For
-  current inputs it is a field of the population, by default `:I`.
+- `sym` is the variable that receives it: a [synaptic target](populations.md#Synaptic-targets)
+  (`:ge`, `:gi`, ...) for spiking inputs, a field of the population (by default `:I`) for currents.
 - `comp` is the compartment of a dendritic neuron (`:s`, `:d1`, `:d2` for `Tripod`).
   Poisson stimuli take it as the keyword `comp`, layer and spike-time stimuli as the
   fourth positional argument.
 
-The stimulus is added to a model with `compose`, under any name:
+Add it to a model with `compose`, under any name:
 
 ```julia
 using SpikingNeuralNetworks
@@ -42,12 +40,9 @@ SNN.monitor!(E, :fire)
 SNN.sim!(; model, duration = 500ms)
 ```
 
-At every step of `sim!`/`train!` the stimuli are applied first, after the clock has
-advanced by `dt` and before the populations are integrated.
+Stimuli are applied at the start of each step, before the populations are integrated.
 
 ## Choosing the target neurons
-
-How the targeted neurons are chosen depends on the stimulus:
 
 - `PoissonStimulus` (`PoissonFixed`, `PoissonInterval`, `PoissonVariable`): keyword
   `neurons = :ALL` (default), a vector or range of indices, or `neurons = :p_post` with
@@ -72,15 +67,14 @@ current = SNN.Stimulus(SNN.CurrentNoise(E; I_base = 200pA), E; neurons = [1, 2, 
 
 Stimuli can be modified between `sim!` calls (or from a `perturbation!` function):
 
-- `set_active!(stim, false)` / `set_active!(stim, true)` switches a `PoissonStimulus` off
-  and on; it also works for `PoissonStimulusLayer` (ignored in SNNModels 1.8.4).
+- `set_active!(stim, false)` / `set_active!(stim, true)` switches a `PoissonStimulus` or a
+  `PoissonStimulusLayer` off and on.
 - `set_intervals!(stim, [[t1, t2], ...])` replaces the activity intervals of a
   `PoissonInterval` stimulus.
 - `set_variable!(stim, key, value)` sets `param.variables[key]` of a `PoissonVariable`
   stimulus, broadcasts `value` into an array field of the parameter (e.g. `:rates` of
   `PoissonLayerHet`, `:I_base` of `CurrentNoise`), or replaces a scalar field of a mutable
-  parameter (e.g. `:rate` of `PoissonFixed`, `PoissonInterval`, `PoissonLayer`; this failed in
-  SNNModels 1.8.4).
+  parameter (e.g. `:rate` of `PoissonFixed`, `PoissonInterval`, `PoissonLayer`).
 - `update_spikes!(stim, spikes, start_time)` and `shift_spikes!(stim, delay)` replace (sorted
   by time) or shift the spike list of a `SpikeTimeStimulus`; empty lists are allowed.
 
@@ -121,7 +115,4 @@ SNN.sim!(; model, duration = 100ms)
 ## Recording stimuli
 
 Stimuli that have their own spikes (`PoissonStimulusLayer`, `SpikeTimeStimulus`) can be
-monitored like populations, e.g. `monitor!(stim, :fire)` and `spiketimes(stim)`; see
-[Recordings](recordings.md).
-
-The API of every stimulus type is documented in the [stimulus catalogue](catalogue/stimuli.md).
+monitored like populations: `monitor!(stim, :fire)`, then `spiketimes(stim)`.

@@ -21,9 +21,7 @@ somatic variable.
 ``I`` an external input. Integration: forward Euler, `x += dt * (-x + g + I)`, `r = tanh(x)`.
 
 `Rate` resets ``g`` to zero after each integration step, so ``g`` is the input of the current
-step (written by the connections after the population update); use `I` for a constant input.
-(In SNNModels 1.8.4 ``g`` was never reset: with a `RateSynapse` it was the running sum of all
-past inputs ``W r``.) `Rate` has no `fire` field; record `:x` or `:r` (a recorded `:g` is zero,
+step (written by the connections after the population update); use `I` for a constant input. `Rate` has no `fire` field; record `:x` or `:r` (a recorded `:g` is zero,
 because populations are recorded after their update).
 
 | Field | Default | Meaning |
@@ -55,8 +53,7 @@ Despite its name, `WilsonCowan` implements the same single-variable dynamics as 
 (``dx/dt = -x + g + I``, ``r = \tanh x``, forward Euler, 1 ms time constant); it does not
 implement the coupled excitatory-inhibitory equations of Wilson and Cowan (1972). Its
 parameter type `WCParameter` has no fields. Connections target `g` as for `Rate`, and `g` is
-reset after each step (in SNNModels 1.8.4 there was no `synaptic_target` method for
-`WilsonCowan`).
+reset after each step.
 
 ```julia
 using SpikingNeuralNetworks
@@ -99,10 +96,6 @@ Euler step `v_s += dt / τm * Σ_d (v_d - v_s)` (with ``k`` connected dendrites 
 their mean with time constant ``τ_m / k``), refractory counter, baseline update, Bernoulli spike
 draw; a spike sets the refractory counter to `round(Int, τabs / dt)`.
 
-!!! note "Changed after SNNModels 1.8.4"
-    In SNNModels 1.8.4 the baseline relaxation had no `dt` factor (results depended on `dt`) and
-    the soma was relaxed sequentially once per dendrite (order-dependent).
-
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
 | `Nd` | `2` | - | dendrites per neuron |
@@ -114,7 +107,6 @@ draw; a spike sets the refractory counter to `round(Int, τabs / dt)`.
 | `τm` | `20ms` | ms | somatic time constant |
 | `τrate` | `100ms` | ms | time constant of the adaptive baseline |
 
-Reference not given in the code.
 
 ```julia
 using SpikingNeuralNetworks
