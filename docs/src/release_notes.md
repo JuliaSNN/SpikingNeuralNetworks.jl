@@ -1,8 +1,8 @@
 # Release notes
 
-## SNNModels 2.0.0, SNNPlots 2.0.0, SNNUtils 2.0.0, SpikingNeuralNetworks 2.0.0, CalciumSpike 2.0.0
+## SNNModels 2.0.0, SpikingNeuralNetworks 2.0.0, SNNUtils 1.0.0, SNNPlots 1.0.0, CalciumSpike 1.0.0
 
-All packages move to version 2 together. SNNModels 2 changes the types of synapses, stimuli and
+All packages move to the next major version together. SNNModels 2 changes the types of synapses, stimuli and
 populations (concretely typed plasticity rules, spike lists, lazy synapse arrays); saved models of 1.9.1 and
 earlier are refused at load time. Full release summaries: `CHANGELOG.md` of SNNModels, SNNUtils and SNNPlots; itemised
 notes with measurements and migrations: `claude/CHANGELOG.md` of SNNModels.
