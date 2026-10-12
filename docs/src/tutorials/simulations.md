@@ -110,9 +110,10 @@ See [Precision](../simulation.md#Precision) and [Threads](../simulation.md#Threa
 
 ## More scripts
 
-Runnable scripts in the `examples/tutorials` folder of the package:
+Runnable scripts in the `examples` folder of the package:
 
-- [`perturbations/EI_network_perturbation.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/perturbations/EI_network_perturbation.jl): perturbing a running E/I network
-- [`extensions/neuron_model.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/extensions/neuron_model.jl): a new neuron model (see [Model extensions](../models_ext.md))
-- [`extensions/stimulus_model.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/extensions/stimulus_model.jl): a new stimulus model
-- [`extensions/doubleExpCurrent.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/extensions/doubleExpCurrent.jl): a new synapse model
+- [`utils/load_model.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/utils/load_model.jl): save a network, load it, continue it, rerun it without one stimulus
+- [`tutorials/perturbations/EI_network_perturbation.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/perturbations/EI_network_perturbation.jl): perturbing a running E/I network
+- [`tutorials/extensions/neuron_model.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/extensions/neuron_model.jl): a new neuron model (see [Model extensions](../models_ext.md))
+- [`tutorials/extensions/stimulus_model.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/extensions/stimulus_model.jl): a new stimulus model
+- [`tutorials/extensions/doubleExpCurrent.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/extensions/doubleExpCurrent.jl): a new synapse model

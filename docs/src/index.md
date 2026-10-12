@@ -4,13 +4,13 @@ Simulate networks of spiking neurons in Julia: point and dendritic neuron models
 receptor synapses, delays, long- and short-term plasticity, Poisson and spike-time inputs, and
 recording, analysis and plotting of the results.
 
-```julia
+```@example index
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 100)
 EE = SNN.SpikingSynapse(E, E, :ge; conn = (p = 0.1, μ = 2nS))
 drive = SNN.Stimulus(SNN.PoissonFixed(rate = 2kHz), E, :ge)
-model = SNN.compose(; E, EE, drive)
+model = SNN.compose(; E, EE, drive, silent = true)
 SNN.monitor!(E, [:fire])
 SNN.sim!(model, 1s)
 SNN.firing_rate(E; interval = 0:10ms:1s, pop_average = true)

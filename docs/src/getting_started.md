@@ -16,7 +16,7 @@ tools (`SNNUtils`), and defines the alias `SNN`. `CairoMakie` renders the figure
 
 ## A balanced E/I network
 
-```julia
+```@example getting_started
 using SpikingNeuralNetworks
 SNN.@load_units                      # ms, mV, nS, pF, Hz, ... in the current scope
 using CairoMakie
@@ -37,7 +37,8 @@ noise = SNN.PoissonLayer(rate = 20Hz, N = 100)
 inE = SNN.Stimulus(noise, E, :ge; conn = (p = 0.1, μ = 4nS))
 inI = SNN.Stimulus(noise, I, :ge; conn = (p = 0.1, μ = 4nS))
 
-model = SNN.compose(; E, I, EE, EI, IE, II, inE, inI)
+model = SNN.compose(; E, I, EE, EI, IE, II, inE, inI, silent = true)
+nothing # hide
 ```
 
 - A population (`SNN.IF`) is `N` neurons of one model. Its `param` sets the membrane,
@@ -54,10 +55,11 @@ makes this explicit.
 
 ## Simulate and record
 
-```julia
-SNN.monitor!(model.pop, [:fire])          # all spikes of E and I
+```@example getting_started
+SNN.monitor!(model.pop, [:fire], monitor_rate = 50)  # all spikes of E and I
 SNN.monitor!(E, [:v], sr = 1kHz)          # membrane potential, sampled at 1 kHz
 SNN.sim!(model, 1s)
+nothing # hide
 ```
 
 `monitor!` registers what to record before the run; `sim!` advances the model by one second
@@ -65,17 +67,15 @@ with the default step `dt = 0.125ms`. Calling `sim!` again continues from where 
 
 ## Analyse and plot
 
-```julia
+```@example getting_started
 rates, r, names = SNN.firing_rate(model.pop; interval = 0:10ms:1s, pop_average = true)
 
 fig = Figure(size = (700, 500))
 SNN.raster!(Axis(fig[1, 1], ylabel = "Neuron"), model.pop)
 SNN.vecplot!(Axis(fig[2, 1], ylabel = "V (mV)", xlabel = "Time (s)"), E, :v,
              neurons = 1, add_spikes = true)
-save("getting_started.png", fig)
+fig
 ```
-
-![Raster and membrane potential of the E/I network](assets/getting_started.png)
 
 E fires at about 10 Hz and I at about 20 Hz, irregularly.
 

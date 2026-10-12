@@ -9,7 +9,7 @@ step and the floating-point precision, use several threads, and save a model to 
 
 ## `sim!` and `train!`
 
-```julia
+```@example simulation
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 100)
@@ -60,7 +60,7 @@ Models run in `Float32` by default. Build the populations with `VFT = Vector{Flo
 and `compose` gives the model a clock of the same type. `float_type` returns the precision of any
 component.
 
-```julia
+```@example simulation
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 100, VFT = Vector{Float64})
@@ -80,7 +80,7 @@ A rule built in `Float32` is converted to the precision of its synapse but keeps
 
 Start Julia with several threads (`julia -t 8`) and set the number of neurons per chunk:
 
-```julia
+```@example simulation
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 4000)
@@ -91,6 +91,7 @@ SNN.sim!(model, 100ms; neurons_per_thread = 512)    # this run only
 SNN.set_neurons_per_thread!(512)                    # every following run
 SNN.neurons_per_thread()                            # 512
 SNN.set_neurons_per_thread!(0)                      # off (the default)
+nothing # hide
 ```
 
 Neuron updates, `forward!` and the event-driven STDP, iSTDP and STP updates of `SpikingSynapse`
@@ -107,7 +108,7 @@ above `floatmin` are unaffected. Pass `flush_subnormals = false` for IEEE gradua
 
 ## Saving and loading
 
-```julia
+```@example simulation
 using SpikingNeuralNetworks
 E = SNN.IF(N = 10, name = "E")
 model = SNN.compose(; E, silent = true)

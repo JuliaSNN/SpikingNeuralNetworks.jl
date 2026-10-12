@@ -8,7 +8,7 @@ After this page you can add long- and short-term plasticity to a synapse, switch
 to another rule, and read weights and traces correctly. Equations and parameters of every rule are
 in [Plasticity rules](catalogue/plasticity_rules.md).
 
-```julia
+```@example plasticity
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -22,6 +22,7 @@ model = SNN.compose(; E, I, EE, IE, drive, silent = true)
 
 SNN.train!(model, 1s)   # weights change
 SNN.sim!(model, 1s)     # weights frozen
+nothing # hide
 ```
 
 `LTPParam` acts on the weights `W`, `STPParam` on the efficacy `ρ` (a presynaptic spike adds
@@ -46,7 +47,7 @@ separate components, see [Metaplasticity](catalogue/metaplasticity.md).
 
 ## Switching rules
 
-```julia
+```@example plasticity
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 100)
@@ -59,6 +60,7 @@ SNN.train!(model, 500ms)
 SNN.set_LTP!(model.syn.EE, false)                                         # pause the rule
 SNN.update_plasticity!(model.syn.EE; LTP = SNN.STDPGerstner(A_pre = 2e-4)) # same type, new parameters
 model = SNN.change_plasticity(model, :EE; LTP = SNN.NoLTP())              # weights frozen for good
+nothing # hide
 ```
 
 The rule types are type parameters of `SpikingSynapse`, so a rule of another type needs a new
@@ -79,7 +81,7 @@ Some rules store their state lazily: the STDP traces are kept as a value times a
 and `vSTDPParameter` writes potentiation into `W` only at presynaptic spikes. Read them through
 the accessors:
 
-```julia
+```@example plasticity
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 100)

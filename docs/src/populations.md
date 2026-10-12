@@ -10,7 +10,7 @@ know where connections deliver their input. The equations of every model are in 
 
 A population is `N` units of one model; its state variables are vectors of length `N`.
 
-```julia
+```@example populations
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.AdEx(N = 100, param = SNN.AdExParameter(b = 0pA),

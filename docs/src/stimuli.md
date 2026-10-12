@@ -27,7 +27,9 @@ stim = SNN.Stimulus(param, post, sym, [comp]; kwargs...)
 
 Add it to a model with `compose`, under any name:
 
-```julia
+```@example stimuli
+using Logging # hide
+Logging.disable_logging(Logging.Warn) # hide
 using SpikingNeuralNetworks
 SNN.@load_units
 
@@ -35,9 +37,10 @@ E = SNN.IF(N = 100)
 noise = SNN.Stimulus(SNN.PoissonFixed(rate = 2kHz), E, :ge)                  # independent trains
 layer = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 500), E, :gi;         # shared input layer
                      conn = (p = 0.1, μ = 1.0))
-model = SNN.compose(; E, noise, layer)
+model = SNN.compose(; E, noise, layer, silent = true)
 SNN.monitor!(E, :fire)
 SNN.sim!(; model, duration = 500ms)
+nothing # hide
 ```
 
 Stimuli are applied at the start of each step, before the populations are integrated.
@@ -53,7 +56,7 @@ Stimuli are applied at the start of each step, before the populations are integr
   `(p = 0.1, μ = 1.0, rule = :Fixed)`) or, for spike-time stimuli, a weight matrix of size
   `post.N x N`. `SpikeTimeStimulusIdentity` connects input `j` to neuron `j`.
 
-```julia
+```@example stimuli
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 100)
@@ -61,6 +64,7 @@ first20 = SNN.Stimulus(SNN.PoissonFixed(rate = 1kHz), E, :ge; neurons = 1:20)
 random = SNN.Stimulus(SNN.PoissonFixed(rate = 1kHz), E, :ge; neurons = :p_post, p_post = 0.2)
 SNN.neurons(random)          # the sampled indices
 current = SNN.Stimulus(SNN.CurrentNoise(E; I_base = 200pA), E; neurons = [1, 2, 3])
+nothing # hide
 ```
 
 ## Changing a stimulus during a simulation
@@ -80,14 +84,14 @@ Stimuli can be modified between `sim!` calls (or from a `perturbation!` function
 
 All of them also accept a `StimulusGroup` and are then applied to every element.
 
-```julia
+```@example stimuli
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.IF(N = 50)
 f(t, v) = v[:rate]
 stim = SNN.Stimulus(SNN.PoissonVariable(variables = Dict{Symbol,Any}(:rate => 1kHz), rate = f), E, :ge)
 pulse = SNN.Stimulus(SNN.PoissonInterval(rate = 2kHz, intervals = [[50ms, 100ms]]), E, :ge)
-model = SNN.compose(; E, stim, pulse)
+model = SNN.compose(; E, stim, pulse, silent = true)
 SNN.monitor!(E, :fire)
 SNN.sim!(; model, duration = 200ms)
 SNN.set_variable!(stim, :rate, 3kHz)              # stronger background
@@ -95,6 +99,7 @@ SNN.set_intervals!(pulse, [[250ms, 300ms]])       # new pulse
 SNN.sim!(; model, duration = 200ms)
 SNN.set_active!(stim, false)                      # background off
 SNN.sim!(; model, duration = 200ms)
+nothing # hide
 ```
 
 ## Multicompartment targets
@@ -102,17 +107,23 @@ SNN.sim!(; model, duration = 200ms)
 `MultiCompartmentStimulusGroup(param, post, sym, comps)` creates one Poisson stimulus per
 compartment and bundles them in a `StimulusGroup`:
 
-```julia
+```@example stimuli
 using SpikingNeuralNetworks
 SNN.@load_units
 E = SNN.Tripod(N = 10)
 group = SNN.MultiCompartmentStimulusGroup(SNN.PoissonFixed(rate = 200Hz), E, :glu, [:d1, :d2])
 soma = SNN.Stimulus(SNN.PoissonFixed(rate = 100Hz), E, :glu; comp = :s)
-model = SNN.compose(; E, group, soma)
+model = SNN.compose(; E, group, soma, silent = true)
 SNN.sim!(; model, duration = 100ms)
+nothing # hide
 ```
 
 ## Recording stimuli
 
 Stimuli that have their own spikes (`PoissonStimulusLayer`, `SpikeTimeStimulus`) can be
 monitored like populations: `monitor!(stim, :fire)`, then `spiketimes(stim)`.
+
+```@example stimuli
+Logging.disable_logging(Logging.Debug) # hide
+nothing # hide
+```

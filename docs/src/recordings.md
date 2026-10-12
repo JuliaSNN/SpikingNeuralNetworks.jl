@@ -11,7 +11,9 @@ The blocks of this page run in sequence on the network below (STP on `EE`, inhib
 
 <!-- run: sequential -->
 
-```julia
+```@example recordings
+using Logging # hide
+Logging.disable_logging(Logging.Warn) # hide
 using SpikingNeuralNetworks
 using Statistics
 SNN.@load_units
@@ -24,7 +26,8 @@ IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02), LTPParam = SNN.iS
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
 input_E = SNN.Stimulus(SNN.PoissonFixed(rate = 2kHz), E, :ge)
 input_I = SNN.Stimulus(SNN.PoissonFixed(rate = 2kHz), I, :ge)
-model = SNN.compose(; E, I, EE, EI, IE, II, input_E, input_I)
+model = SNN.compose(; E, I, EE, EI, IE, II, input_E, input_I, silent = true)
+nothing # hide
 ```
 
 ## Monitoring variables
@@ -34,11 +37,12 @@ a single component or a collection such as `model.pop`. The sampling rate `sr` d
 `1000Hz` for a single component and to `200Hz` for a collection; the sampling period is
 `max(1, round(1 / (sr * dt)))` steps. `:fire` records every spike, independently of `sr`.
 
-```julia
+```@example recordings
 SNN.monitor!(E, [:ge, :gi], sr = 200Hz)
 SNN.monitor!(model.pop, :v, sr = 200Hz)
 SNN.monitor!(model.pop, :fire)
 SNN.sim!(; model, duration = 2s)
+nothing # hide
 ```
 
 Buffers are allocated before the run from its duration (or `monitor_time`) and grow when
@@ -67,7 +71,7 @@ time axis `r`.
 Samples are taken at the global steps that are multiples of the sampling period, and `r` runs
 from the first to the last sample taken.
 
-```julia
+```@example recordings
 v = SNN.getvariable(E, :v)                    # 800 x 401 samples (2 s at 200 Hz, plus t = 0)
 v = SNN.record(E, :v)                         # interpolated
 v(1, 1.5s)
@@ -75,6 +79,7 @@ v(1:10, 1.2s:15ms:1.9s)
 v, r = SNN.record(E, :v, range = true)
 size(v), r
 v = SNN.record(E, :v, interpolate = false)    # same as getvariable
+nothing # hide
 ```
 
 ### Spike times and firing rates
@@ -82,16 +87,17 @@ v = SNN.record(E, :v, interpolate = false)    # same as getvariable
 `spiketimes(pop)` returns a `Spiketimes` object, a vector with the spike times (ms) of each
 neuron. The keyword `interval` restricts it to a time window.
 
-```julia
+```@example recordings
 st = SNN.spiketimes(E)
 length(st), length(st[1])
 st = SNN.spiketimes(E; interval = 0:1ms:1s)
+nothing # hide
 ```
 
 `bin_spiketimes(pop; interval)` counts the spikes in the bins defined by the range
 `interval` and returns `(counts, r)`, with `counts` a neurons x bins matrix.
 
-```julia
+```@example recordings
 interval = 0:10ms:2s
 bins, r = SNN.bin_spiketimes(E; interval)
 size(bins)
@@ -103,7 +109,7 @@ function by default). With `interpolate = true` (default) `rates` is an interpol
 object; `pop_average = true` averages over neurons. On a collection of populations it
 returns `(rates, r, names)`, one entry per population.
 
-```julia
+```@example recordings
 fr, r = SNN.firing_rate(E; interval)
 fr, r = SNN.firing_rate(E; interval, interpolate = false)
 fr, r, names = SNN.firing_rate(model.pop; interval)
@@ -112,10 +118,11 @@ names
 
 The same quantities are available through `record`:
 
-```julia
+```@example recordings
 fr = SNN.record(E, :fire; interval)
 fr, r = SNN.record(E, :fire; interval, range = true)
 st = SNN.record(E, :spikes)
+nothing # hide
 ```
 
 ## Synaptic variables
@@ -127,12 +134,13 @@ argument: `:STPVars` (`:u`, `:x` of `MarkramSTPParameter`) or `:LTPVars` (e.g. `
 at their value at the sampling time: some rules store traces and weights lazily, so read them
 outside a recording with `plasticity_value` or `trace_values` (see [Plasticity](plasticity.md)).
 
-```julia
+```@example recordings
 SNN.monitor!(EE, [:ρ], sr = 10Hz)
 SNN.monitor!(IE, [:W], sr = 10Hz)
 SNN.monitor!(IE, [:tpost]; sr = 10Hz, variables = :LTPVars)
 SNN.monitor!(EE, [:x, :u], :STPVars; sr = 10Hz)
 SNN.train!(; model, duration = 2s)
+nothing # hide
 ```
 
 The first run of this page used `sim!`, which never changes weights or STP variables; this one
@@ -147,22 +155,24 @@ uses `train!`.
 Connectivity is stored in sparse form; `matrix(c)` returns the current weights as an
 `N_post x N_pre` sparse matrix, and `matrix(c, sym)` any other per-synapse field.
 
-```julia
+```@example recordings
 W = SNN.matrix(EE)            # current weights
 ρ = SNN.matrix(EE, :ρ)        # current STP efficacy
+nothing # hide
 ```
 
 `presynaptic(c, i)` returns the presynaptic neurons of postsynaptic neuron `i`, and
 `postsynaptic(c, j)` the postsynaptic neurons of presynaptic neuron `j`; both also accept a
 vector of neurons.
 
-```julia
+```@example recordings
 neuron = 1
 Is = SNN.postsynaptic(EE, neuron)
 mean(W[Is, neuron])           # mean weight of the outgoing connections of neuron 1
 Js = SNN.presynaptic(EE, neuron)
 mean(W[neuron, Js])           # mean weight of the incoming connections of neuron 1
 Js_many = SNN.presynaptic(EE, 1:10)
+nothing # hide
 ```
 
 A recorded per-synapse variable is a synapses x samples array; `record` interpolates it in
@@ -170,20 +180,21 @@ time, and `matrix_record(c, sym, t)` rebuilds the sparse matrix at time `t` (a v
 times gives a 3-dimensional array). The times are those of the `train!` call above, from
 2 s to 4 s.
 
-```julia
+```@example recordings
 W_IE, r = SNN.record(IE, :W, range = true)
 W_IE(axes(W_IE, 1), 3.5s)                      # weights of all IE synapses at t = 3.5 s
 W_mat = SNN.matrix_record(IE, :W, 3.5s)         # 800 x 200 sparse matrix
 W_mat2 = SNN.matrix(IE, W_IE, 3.5s)             # same, from the interpolated record
 all(W_mat .== W_mat2)
 W_T = SNN.matrix_record(IE, :W, 3s:100ms:3.5s)  # 800 x 200 x 6
+nothing # hide
 ```
 
 ### Plasticity variables
 
 Plasticity variables are read with their compound key:
 
-```julia
+```@example recordings
 x = SNN.record(EE, :STPVars_x)
 x(1, 3.14s)
 x, r = SNN.record(EE, :STPVars_x, range = true)
@@ -201,6 +212,11 @@ tpost(1:10, 2.4s:15ms:3.1s)
     v, r = SNN.record(E, :v, range = true)
     plot(r, v(1, r), label = "membrane potential of neuron 1")
     ```
+
+```@example recordings
+Logging.disable_logging(Logging.Debug) # hide
+nothing # hide
+```
 
 ## Recording API
 

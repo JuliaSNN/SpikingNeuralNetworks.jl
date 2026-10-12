@@ -17,7 +17,7 @@ Loading SNNPlots applies its Makie theme ([`makie_default!`](@ref)): 600x400 fig
 lines, frameless legends, and the colour-blind-safe Okabe-Ito palette [`okabe_ito_10`](@ref).
 Call `SNNPlots.makie_default!()` (or [`@makie_default`](@ref)) to restore it after `set_theme!`.
 
-```julia
+```@example visualization
 using SpikingNeuralNetworks, CairoMakie
 SNNPlots.makie_default!()          # restore the SNNPlots theme
 fig = Figure()
@@ -25,6 +25,7 @@ ax = Axis(fig[1, 1])
 for k in 1:3
     lines!(ax, 1:10, k .* (1:10))  # colours cycle through okabe_ito_10
 end
+fig
 ```
 
 ## Raster plots
@@ -35,7 +36,7 @@ population (or stimulus) that records `:fire`, a `NamedTuple` of populations suc
 is in seconds for populations, in ms for a `Spiketimes` vector. `names` relabels the populations,
 other keywords go to `scatter!`. Above 200 000 spikes the plot is subsampled, with a warning.
 
-```julia
+```@example visualization
 using SpikingNeuralNetworks, CairoMakie
 SNN.@load_units
 E = SNN.IF(N = 80, name = "E")
@@ -45,7 +46,7 @@ inE = SNN.SpikingSynapse(input, E, :ge, conn = (p = 0.2, μ = 3.0))
 inI = SNN.SpikingSynapse(input, I, :ge, conn = (p = 0.2, μ = 3.0))
 EI = SNN.SpikingSynapse(E, I, :ge, conn = (p = 0.2, μ = 2.0))
 IE = SNN.SpikingSynapse(I, E, :gi, conn = (p = 0.2, μ = 5.0))
-model = SNN.compose(; E, I, input, inE, inI, EI, IE)
+model = SNN.compose(; E, I, input, inE, inI, EI, IE, silent = true)
 SNN.monitor!(model.pop, [:fire])
 SNN.sim!(; model, duration = 1s)
 
@@ -54,6 +55,7 @@ fig, ax, plt = SNN.raster(model.pop, 0:1s)        # all populations, new figure
 fig2 = Figure()
 ax2 = Axis(fig2[1, 1], xlabel = "Time (s)", ylabel = "Neuron")
 SNN.raster!(ax2, model.pop.E, 0:500ms)           # one population into an existing axis
+fig
 ```
 
 ## Recorded variables
@@ -65,12 +67,12 @@ the neurons, `pop_average = true` plots the mean (with `ribbon = true`, also the
 `add_spikes = true` marks the spikes as 20 mV peaks on the trace. Three-dimensional records
 (one value per compartment) need `sym_id`. The x tick labels are in seconds.
 
-```julia
+```@example visualization
 using SpikingNeuralNetworks, CairoMakie
 SNN.@load_units
 E = SNN.IF(N = 5, param = SNN.IFParameter(gl = 10nS, C = 200pF))
 stim = SNN.CurrentStimulus(E; param = SNN.CurrentNoise(E; I_base = 300pA))
-model = SNN.compose(; E, stim)
+model = SNN.compose(; E, stim, silent = true)
 SNN.monitor!(E, [:v, :fire])
 SNN.sim!(; model, duration = 300ms)
 
@@ -79,6 +81,7 @@ fig, ax, plt = SNN.vecplot(E, :v; interval = 0:1:300ms, neurons = 1:2,
 fig2 = Figure()
 ax2 = Axis(fig2[1, 1], ylabel = "V (mV)")
 SNN.vecplot!(ax2, E, :v; pop_average = true, ribbon = true)
+fig
 ```
 
 `vecplot(P::Array, sym)` (one panel per population) and `vecplot(p, Any[:v, :w])` (one panel per
@@ -94,11 +97,12 @@ of a long-term plasticity rule as a function of the spike-time difference
 ([`stdp_test`](@ref)) measuring one pre/post pair; the default grid has 40 points, so reduce `ΔTs`
 for a quick look.
 
-```julia
+```@example visualization
 using SpikingNeuralNetworks, CairoMakie
 SNN.@load_units
 fig = SNN.stdp_kernel(SNN.STDPGerstner(); ΔTs = [-40.0, -20.0, -10.0, -5.0, 5.0, 10.0, 20.0, 40.0])
 dw = SNNPlots.stdp_test(SNN.STDPGerstner(); ΔT = 10ms)   # single pairing
+fig
 ```
 
 ## Spatial networks
