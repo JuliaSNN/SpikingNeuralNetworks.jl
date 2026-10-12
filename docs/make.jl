@@ -4,10 +4,16 @@ using Documenter, SpikingNeuralNetworks, .SNNModels, .SNNPlots, .SNNUtils
 # block (selected with `Pages = [...]`), so that each docstring appears once on the site.
 pages = [
     "Home" => "index.md",
-    "Tutorial" => "examples.md",
+    "Getting started" => "getting_started.md",
+    "Tutorials" => [
+        "Populations" => "tutorials/populations.md",
+        "Plasticity" => "tutorials/plasticity.md",
+        "Simulations" => "tutorials/simulations.md",
+    ],
     "User guide" => [
         "Populations" => "populations.md",
         "Stimuli" => "stimuli.md",
+        "Running simulations" => "simulation.md",
         "Recordings" => "recordings.md",
         "Plasticity" => "plasticity.md",
         "Visualization (SNNPlots)" => "visualization.md",
@@ -30,7 +36,7 @@ pages = [
     "API Reference" => "api_reference.md",
     "Models Extension" => "models_ext.md",
     "Contributing" => "contributing.md",
-    "Release notes" => "release_notes.md",
+    "V2 changelog" => "release_notes.md",
 ]
 
 makedocs(

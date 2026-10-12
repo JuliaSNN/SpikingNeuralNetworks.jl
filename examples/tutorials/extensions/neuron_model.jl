@@ -1,124 +1,80 @@
-using Pkg
-Pkg.add(url = "https://github.com/JuliaSNN/SpikingNeuralNetworks.jl")
-Pkg.add("Distributions")
-##
 using SpikingNeuralNetworks
 using Distributions
+using CairoMakie
 SNN.@load_units
 
-# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
+# A new population model: current-based leaky integrate-and-fire neurons. `@eval SNN.SNNModels`
+# defines it inside SNNModels, as if it were a file of `SNNModels.jl/src/populations`.
 @eval SNN.SNNModels begin
-
     """
-    Define the neuron model parameters. 
-    Parameters are used at integration time to compute the equation update. 
-    All parameters are optional. We strongly advise using SI units and default values.
+        NeuronParameter
+
+    Parameters of a current-based leaky integrate-and-fire neuron, used by `integrate!`.
     """
     NeuronParameter
+
     @snn_kw struct NeuronParameter <: AbstractPopulationParameter
-        # adex parameters
-        R::Float32 = 1.0f0GΩ
-        El::Float32 = -70.6f0
-        Vt::Float32 = -50.4f0
-        up::Float32 = 0.1f0 * ms
-        τabs::Float32 = 0.1f0 * ms
-        τe::Float32 = 10.0f0ms
-        τi::Float32 = 10.0f0ms
+        R::Float32 = 1GΩ
+        El::Float32 = -70.6mV
+        Vt::Float32 = -50.4mV
+        Vr::Float32 = -70.6mV
+        τm::Float32 = 20ms
+        τe::Float32 = 10ms
+        τi::Float32 = 10ms
     end
 
     """
-    Define the neuron model. 
-    The neuron model holds the parameters and state variables of the neuron.
-    The state variables are used to compute the equation update at integration time and can be recorded.
+        Neuron
 
-    The entries:
-     - `param::NeuronParameter`: The parameters of the neuron model.
-     - `N::Int64`: The number of neurons in the population.
-     - `name::String`: The name of the neuron population.
-     - `id::String`: A unique identifier for the neuron population.
-     - `records::Dict{Symbol, Any}`: A dictionary to store recorded variables.
-    are compulsory
+    `N`, `param`, `name`, `id` and `records` are compulsory; `fire` is needed to record spikes and
+    to project them through a `SpikingSynapse`. Vector types are type parameters (`@snn_kw` does
+    not accept `Vector{Float32}` written in a field type).
     """
     Neuron
 
-    @snn_kw struct Neuron <: AbstractPopulation
+    @snn_kw struct Neuron{VFT = Vector{Float32}} <: AbstractPopulation
         param::NeuronParameter = NeuronParameter()
-        N::Int64 = 10
+        N::Int = 10
         name::String = "Neuron"
         id::String = randstring(12)
-        v::Vector{Float32} = ones(Float32, N)*-70.6f0  # Initial membrane potential
-        ge::Vector{Float32} = zeros(Float32, N)
-        gi::Vector{Float32} = zeros(Float32, N)
-        fire::Vector{Bool} = falses(N)
-        I::Vector{Float32} = zeros(Float32, N)
-        records::Dict{Symbol,Any} = Dict{Symbol,Any}()
+        v::VFT = fill(param.El, N)
+        ge::VFT = zeros(Float32, N)
+        gi::VFT = zeros(Float32, N)
+        fire::VBT = zeros(Bool, N)
+        I::VFT = zeros(Float32, N)
+        records::Dict = Dict()
     end
 
-    """
-    Integrate the neuron model.
-    The function integrate!(p::Neuron, param::NeuronParameter, dt::Float32) is mandatory for the a Population model
-    and is used to update the state variables of the neuron model at each time step.
-
-    The function must only define the integration step, the recordings are handled by the simulation engine. 
-    The following present a good practice to implement the integration step:
-    - Use the `@unpack` macro to extract the state variables from the neuron model.
-    - Use the `@inbounds` macro to skip bounds checking for performance reasons.
-    - Update the state variables in a for loop over the number of neurons `N`.
-    - Update the state variables using the timestep `dt` and the parameters from `param`. 
-
-    The macro `@inbounds` is used to skip bounds checking for performance reasons. It leads to segment faults if the indices are out of bounds.
-
-    The macro `@fastmath` is used to allow the compiler to use fast math operations, which may lead to slight inaccuracies but improves performance. We consider that in the context of biophysical networks this imprecisions are not critical.
-
-    """
-    integrate!
-
-    function integrate!(p::Neuron, param::NeuronParameter, dt::Float32)
+    # one forward Euler step; the recordings are handled by the simulation loop
+    function integrate!(p::Neuron, param::NeuronParameter, dt::AbstractFloat)
         @unpack N, v, ge, gi, fire, I = p
-        @inbounds @fastmath for i = 1:N
-            if fire[i]
-                v[i] = param.El
-                fire[i] = false
-            else
-                v[i] += dt*(param.El - v[i] + (ge[i] - gi[i]) * param.R + I[i] * param.R)
-            end
-            ge[i] -= ge[i] / param.τe * dt
-            gi[i] -= gi[i] / param.τi * dt
-            if v[i] >= param.Vt
-                fire[i] = true
-                v[i] = 20*mV  # Reset membrane potential after firing
-            end
+        @unpack R, El, Vt, Vr, τm, τe, τi = param
+        @inbounds for i in 1:N
+            v[i] += dt / τm * (El - v[i] + R * (ge[i] - gi[i] + I[i]))
+            ge[i] -= dt * ge[i] / τe
+            gi[i] -= dt * gi[i] / τi
+            fire[i] = v[i] >= Vt
+            fire[i] && (v[i] = Vr)
         end
     end
-    export Neuron, NeuronParameter, integrate!
+
+    # where connections and spiking stimuli deliver their input
+    function synaptic_target(targets::Dict, post::Neuron, sym::Symbol, target = nothing)
+        push!(targets, :sym => sym)
+        return getfield(post, sym), post.v
+    end
 end
 
-import SpikingNeuralNetworks:
-    NeuronParameter,
-    Neuron,
-    CurrentNoiseParameter,
-    CurrentStimulus,
-    compose,
-    sim!,
-    monitor!,
-    vecplot
-# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
+neuron = SNN.SNNModels.Neuron(N = 1)
+current_param = SNN.CurrentNoise(neuron.N; I_base = 20pA, I_dist = Normal(0pA, 20pA))
+current_stim = SNN.Stimulus(current_param, neuron, :I)
+input = SNN.Stimulus(SNN.PoissonLayer(rate = 10Hz, N = 100), neuron, :ge; conn = (p = 1, μ = 1pA))
 
-param = NeuronParameter()
-neuron = Neuron(param = param, N = 1)
-# Create a withe noise input current 
-current_param = CurrentNoiseParameter(neuron.N; I_base = 0pA, I_dist = Normal(-50pA, 100pA))
-current_stim = CurrentStimulus(neuron, :I, param = current_param)
+SNN.monitor!(neuron, [:v, :fire, :ge, :I], sr = 2kHz)
+model = SNN.compose(; neuron, current_stim, input, silent = true)
+SNN.sim!(; model, duration = 1000ms)
 
-monitor!(neuron, [:v, :fire, :ge, :gi, :I], sr = 2kHz)
-model = compose(; neuron, current_stim)
-sim!(; model, duration = 1000ms, pbar = true)
-
-vecplot(
-    neuron,
-    :v,
-    add_spikes = true,
-    ylabel = "Membrane potential (mV)",
-    # ylims = (-80, 10),
-    c = :black,
-)
+fig = Figure(size = (600, 500))
+SNN.vecplot!(Axis(fig[1, 1], ylabel = "Membrane potential (mV)"), neuron, :v, add_spikes = true)
+SNN.vecplot!(Axis(fig[2, 1], ylabel = "Input current (pA)", xlabel = "Time (s)"), neuron, :I)
+save(joinpath(mktempdir(), "neuron_model.png"), fig)

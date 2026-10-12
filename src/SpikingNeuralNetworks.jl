@@ -51,7 +51,7 @@ module SpikingNeuralNetworks
     ExtendedIFParameter, GABAergic, Glutamatergic, IFParameter, Identity,
     MarkramSTPParameter, MultiplicativeNorm, NMDAVoltageDependency, NoLTP, NoSTP, Poisson,
     PoissonParameter, Population, PostSpike, Receptor, ReceptorSynapse, ReceptorVoltage,
-    Receptors, SingleExpSynapse, SpikeTimeParameter, SpikeTimeStimulus, SpikeTimeStimulusParameter, SpikingSynapse, SpikingSynapseParameter, TripodParameter, iSTDPPotential, iSTDPRate, vSTDPParameter,
+    Receptors, SingleExpSynapse, SpikeTimeParameter, SpikeTimeStimulus, SpikeTimeStimulusParameter, SpikingSynapse, SpikingSynapseParameter, TripodParameter, iSTDPPotential, iSTDPRate, vSTDPParameter, vSTDPDenseParameter,
     PoissonLayer, Stimulus, SpikingSynapse, Population, Poisson, StimulusGroup, MultiCompartmentStimulusGroup
 
     export MarkramSTPParameterHet, MarkramSTPParameter

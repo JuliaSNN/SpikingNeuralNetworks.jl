@@ -1,84 +1,42 @@
 using SpikingNeuralNetworks
-using Distributions
+using CairoMakie
 SNN.@load_units
-using ProtoStructs
 
-# The macro @eval is used to define the new neuron model within the SNNModels module. It is equivalent to add a new file in the SNNModels.jl/src/populations directory. We strongly suggest this approach to avoid complications with the module system.
+# A new stimulus model: Poisson input with an absolute refractory period. A new parameter type
+# (subtype of `PoissonStimulusParameter`) and its `stimulate!` method are enough: the existing
+# `PoissonStimulus` container and its `Stimulus` constructor are reused.
 @eval SNN.SNNModels begin
-
-    """
-    Define the Poisson refractory stimulus parameters.
-    Parameters are used at integration time to compute the equation update.
-    All parameters are optional. 
-    """
-    PoissonRefractoryParameter
-
-    @snn_kw struct PoissonRefractoryParameter <: PoissonStimulusParameter #{R} where {R<:Float32}
-        # @proto struct PoissonRefractoryParameter{R = Float32} 
-        ΔT::Float32 = 2.0f0ms  # Absolute refractory period
-        N::Int = 100  # Number of neurons
+    @snn_kw struct PoissonRefractory{VFT = Vector{Float32}} <: PoissonStimulusParameter
         rate::Float32 = 10Hz
-        last_spike::Vector{Float32} = zeros(Float32, N)  # Last spike time for each neuron
-        rates::Vector{Float32} = fill(rate, N)  # Firing rate for each neuron
-        p::Float32 = 0.1f0  # Fraction of neurons receiving the stimulus
-        μ::Float32 = 1.0f0  # Mean of the weight distribution
-        σ::Float32 = 0.0f0  # Standard deviation of the weight distribution
-        active::Vector{Bool} = [true]  # Active neurons
+        ΔT::Float32 = 2ms                       # absolute refractory period
+        μ::Float32 = 1.0f0                      # increment per spike
+        N::Int = 100                            # size of the target population
+        last_spike::VFT = fill(-Inf32, N)
+        active::VBT = [true]
     end
 
-    """
-    Generate a Poisson stimulus with an absolute refractory period for a postsynaptic population.
-    """
-    function stimulate!(
-        p::PoissonStimulus,
-        param::PoissonRefractoryParameter,
-        time::Time,
-        dt::Float32,
-    )
-        @unpack N, randcache, fire, neurons, colptr, W, I, g = p
-        @unpack rates, ΔT, last_spike = param
-        current_time = get_time(time)
-        rand!(randcache)
-        @inbounds @simd for j = 1:N
-            if (current_time - last_spike[j]) > ΔT && randcache[j] < rates[j] * dt
-                fire[j] = true
-                last_spike[j] = current_time
-                @fastmath @simd for s ∈ colptr[j]:(colptr[j+1]-1)
-                    g[I[s]] += W[s]
-                end
-            else
-                fire[j] = false
+    function stimulate!(p::PoissonStimulus, param::PoissonRefractory, time::Time, dt::AbstractFloat)
+        param.active[1] || return
+        @unpack rate, ΔT, μ, last_spike = param
+        t = get_time(time)
+        @inbounds for n in p.neurons
+            if t - last_spike[n] > ΔT && rand() < rate * dt
+                p.g[n] += μ
+                last_spike[n] = t
             end
         end
     end
-    export PoissonRefractoryParameter, stimulate!
 end
 
-import SpikingNeuralNetworks:
-    PoissonLayer, PoissonRefractoryParameter, compose, sim!, monitor!, vecplot
-# validate_population_model(SNN.Neuron()) # This is only available in SNNModels v1.5.5
+# An Identity neuron fires in every step in which it receives input: it relays the stimulus spikes
+neuron = SNN.Identity(N = 1, name = "Identity Neuron")
+stim = SNN.Stimulus(SNN.SNNModels.PoissonRefractory(N = 1, rate = 100Hz, ΔT = 20ms), neuron, :g)
+SNN.monitor!(neuron, [:fire])
+model = SNN.compose(; neuron, stim, silent = true)
+SNN.sim!(; model, duration = 20s)
 
-neuron_param = SNN.IdentityParam()
-neuron = SNN.Identity(; param = neuron_param, N = 1, name = "Identity Neuron")
-
-# Create a withe noise input current 
-stim_param = PoissonRefractoryParameter(N = 1, ΔT = 20ms, p = 1)
-stim = PoissonLayer(neuron, :g; param = stim_param)
-
-monitor!(neuron, [:g, :fire], sr = 2kHz)
-model = compose(; neuron, stim)
-sim!(; model, duration = 100000ms, pbar = true)
-
-vecplot(
-    neuron,
-    :g,
-    neurons = 1,
-    add_spikes = true,
-    ylabel = "Membrane potential (mV)",
-    xlims = (0, 1000ms),
-    # ylims = (-80, 10),
-    c = :black,
-)
-
-st = SNN.spiketimes(neuron)[1]
-diff(st) |> x -> SNNPlots.histogram(x, bins = 100)
+isi = diff(SNN.spiketimes(neuron)[1])
+@assert minimum(isi) > 20ms
+fig = Figure(size = (500, 350))
+hist!(Axis(fig[1, 1], xlabel = "Inter-spike interval (ms)", ylabel = "Count"), isi, bins = 100)
+save(joinpath(mktempdir(), "stimulus_model.png"), fig)

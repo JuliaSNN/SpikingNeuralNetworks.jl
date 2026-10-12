@@ -4,16 +4,8 @@
 CurrentModule = SNNModels
 ```
 
-These single-compartment models do not belong to the generalized integrate-and-fire family:
-they have no `synapse` or `spike` field. Each carries two conductance-based synaptic variables,
-`ge` and `gi`, that decay exponentially and are incremented by the connections (target symbols
-`:ge`, `:gi`).
-
-All three run under `sim!` and `train!` and can be the postsynaptic population of a
-`SpikingSynapse` (target `:ge` or `:gi`; for `MorrisLecar` also `:glu` -> `:ge`,
-`:gaba` -> `:gi`). In SNNModels 1.8.4 their parameter types were not subtypes of
-`AbstractPopulationParameter` (so `train!` raised a `MethodError`) and `MorrisLecar` had no
-`synaptic_target` method.
+Single-compartment models with two exponentially decaying conductances `ge`, `gi` (targets `:ge`,
+`:gi`); no `synapse` or `spike` field.
 
 ## Izhikevich model: `IZ`
 
@@ -25,12 +17,7 @@ All three run under `sim!` and `train!` and can be the postsynaptic population o
 \end{aligned}
 ```
 
-``v`` in mV, ``t`` in ms; there is no capacitance, ``I`` is in mV/ms. When ``v > 30`` mV:
-``v \leftarrow c``, ``u \leftarrow u + d``. No refractory period.
-
-Integration, per step: conductance decay (forward Euler); two forward-Euler half steps of
-`dt/2` for the quadratic part of ``v`` (as in Izhikevich 2003); one step for ``u`` with the new
-``v``; addition of the synaptic term `dt * (ge * (Ee - v) + gi * (Ei - v))`; spike test and reset.
+When ``v > 30`` mV: ``v \leftarrow c``, ``u \leftarrow u + d``. ``I`` is in mV/ms.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
@@ -43,11 +30,7 @@ Integration, per step: conductance decay (forward Euler); two forward-Euler half
 | `Ee` | `0mV` | mV | excitatory reversal potential |
 | `Ei` | `-80mV` | mV | inhibitory reversal potential |
 
-Initial state: `v = -65`, `u = b v`, `ge = (1.5randn + 4) * 10nS`, `gi = (12randn + 20) * 10nS`
-(random, non-zero initial conductances).
-
-Reference: Izhikevich, E. M. (2003). Simple model of spiking neurons. IEEE Transactions on
-Neural Networks, 14(6), 1569-1572.
+Reference: Izhikevich (2003), IEEE Trans. Neural Netw. 14:1569-1572.
 
 ```julia
 using SpikingNeuralNetworks
@@ -86,12 +69,7 @@ with ``u = v - V_t`` (mV) and rates in 1/ms:
 \end{aligned}
 ```
 
-Integration: forward Euler, sequential (gating variables, then ``v`` with the new gates, then
-the conductance decay). A spike is flagged in the step in which ``v`` crosses -20 mV upwards,
-one flag per action potential. No reset, no refractory period. (In SNNModels 1.8.4 `fire` was the
-level test `v > -20mV`: one action potential produced several consecutive flags and spike counts
-were inflated.) Use a small `dt`
-(0.01-0.05 ms).
+A spike is flagged when ``v`` crosses -20 mV upwards; no reset. Use `dt` of 0.01-0.05 ms.
 
 | Field | Default | Value | Meaning |
 |:------|:--------|:------|:--------|
@@ -106,9 +84,8 @@ were inflated.) Use a small `dt`
 | `τe`, `τi` | `5ms`, `10ms` | | decay of `ge`, `gi` |
 | `Ee`, `Ei` | `0mV`, `-80mV` | | synaptic reversal potentials |
 
-References: the code links the Wikipedia page of the Hodgkin-Huxley model; canonical model:
-Hodgkin and Huxley (1952), J. Physiol. 117:500-544. The kinetics above are of the Traub-Miles
-type used in the COBAHH benchmark of Brette et al. (2007); this attribution is not in the code.
+Reference: Hodgkin and Huxley (1952), J. Physiol. 117:500-544; Traub-Miles kinetics as in the
+COBAHH benchmark of Brette et al. (2007).
 
 ```julia
 using SpikingNeuralNetworks
@@ -141,11 +118,7 @@ w_\infty(v) = \tfrac12 \left(1 + \tanh\frac{v - V_3}{V_4}\right), \quad
 \tau_w(v) = \frac{1}{\phi \cosh\left(\frac{v - V_3}{2 V_4}\right)}
 ```
 
-Integration: forward Euler, sequential (``v`` with the intrinsic currents and the old ``w``;
-``w`` with the new ``v``; synaptic term; conductance decay). A spike is flagged at the upward
-crossing of 20 mV (one flag per action potential; a level test `v > 20mV` up to SNNModels 1.8.4);
-no reset. With the default parameters a constant suprathreshold current gives one action
-potential followed by a depolarised plateau.
+A spike is flagged when ``v`` crosses 20 mV upwards; no reset.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
@@ -158,9 +131,7 @@ potential followed by a depolarised plateau.
 | `ϕ` | `25Hz` | 1/ms | potassium rate scale (0.025 per ms) |
 | `Ee`, `Ei` | `0mV`, `-75mV` | mV | synaptic reversal potentials |
 
-Initial state: `v = -52.14`, `w = 0.2`. Parameters from the NEST ode-toolbox test
-`morris_lecar.json` (cited in the code). Reference: Morris and Lecar (1981), Biophys. J.
-35:193-213 (linked in the code).
+Reference: Morris and Lecar (1981), Biophys. J. 35:193-213.
 
 ```julia
 using SpikingNeuralNetworks

@@ -1,36 +1,27 @@
 using SpikingNeuralNetworks
-using Plots
-@load_units
+using CairoMakie
+SNN.@load_units
 
 # Create a postsynaptic population
-E = IF(; N = 3, param = IFParameter())
+E = SNN.IF(; N = 3, param = SNN.IFParameter())
 
-# Define spike times and neuron indices
-spiketimes = [0.1, 0.2, 0.3]  # in seconds
-neurons = [1, 2, 3]            # neuron indices
-param = SpikeTimeParameter(spiketimes, neurons)
+# Define spike times (ms) and the input neuron of each spike
+spiketimes = [100ms, 200ms, 300ms]
+neurons = [1, 2, 3]
+param = SNN.SpikeTimeParameter(spiketimes, neurons)
 
-# Create a spike time stimulus
-stim = SpikeTimeStimulus(E, :ge, param = param, p = 1, μ = 1)
+# Create a spike time stimulus: input neuron j excites neuron j with weight 10 nS
+stim = SNN.SpikeTimeStimulus(E, :ge; param, conn = Matrix(10nS * SNN.SNNModels.LinearAlgebra.I(3)))
 
 # Create a model and simulate
-model = compose(; E = E, stim)
-monitor!(E, [:v, :fire, :ge], sr = 2kHz)
-sim!(; model, duration = 1s)
+model = SNN.compose(; E, stim, silent = true)
+SNN.monitor!(E, [:v, :fire, :syn_curr], sr = 2kHz)
+SNN.sim!(; model, duration = 500ms)
 
 # Plot the results
-p = plot(
-    vecplot(
-        E,
-        :v,
-        add_spikes = true,
-        ylabel = "Membrane potential (mV)",
-        ylims = (-80, 10),
-        c = :black,
-    ),
-    vecplot(E, :ge, ylabel = "Synaptic conductance (nS)", c = :gray, lw = 0.4, alpha = 0.4),
-    layout = (2, 1),
-    size = (600, 500),
-    xlabel = "Time (s)",
-    leftmargin = 10Plots.mm,
-)
+fig = Figure(size = (600, 500))
+ax1 = Axis(fig[1, 1], ylabel = "Membrane potential (mV)")
+SNN.vecplot!(ax1, E, :v, add_spikes = true)
+ax2 = Axis(fig[2, 1], ylabel = "Synaptic current (pA)", xlabel = "Time (s)")
+SNN.vecplot!(ax2, E, :syn_curr)
+save(joinpath(mktempdir(), "timed_stim.png"), fig)

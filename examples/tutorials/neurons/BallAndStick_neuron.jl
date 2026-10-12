@@ -1,170 +1,58 @@
+# Ball-and-stick neuron: AdEx soma and one passive dendrite with AMPA, NMDA, GABAa and GABAb
+# receptors, driven by Poisson input onto the dendrite.
 using SpikingNeuralNetworks
-using Plots
-using Random
+using CairoMakie, Random
 SNN.@load_units
-import SpikingNeuralNetworks:
-    Receptors, Receptor, Glutamatergic, GABAergic, DendNeuronParameter, synapsearray
-import SpikingNeuralNetworks: get_time
-
-using BenchmarkTools
-
-## Define the neuron model parameters
 Random.seed!(1234)
-# Define the synaptic properties for the soma and dendrites
-SomaSynapse = Receptors(
-    AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
-    GABAa = Receptor(E_rev = -70.0, τr = 0.1, τd = 15.0, g0 = 0.38),
-    # SomaSynapse has not NMDA and GABAb receptors, 
-    # they are assigned to a NullReceptor and skipped at simulation time
+
+SomaSynapse = SNN.ReceptorSynapse(
+    glu_receptors = [1], gaba_receptors = [2],
+    syn = SNN.Receptors(
+        SNN.Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73, target = :glu),
+        SNN.Receptor(E_rev = -70.0, τr = 0.1, τd = 15.0, g0 = 0.38, target = :gaba),
+    ),
+)
+DendReceptors = SNN.Receptors(
+    SNN.Receptor(name = "AMPA", E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73, target = :glu),
+    SNN.Receptor(name = "NMDA", E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0, target = :glu),
+    SNN.Receptor(name = "GABAa", E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27, target = :gaba),
+    SNN.Receptor(name = "GABAb", E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006, target = :gaba),
+)
+DendSynapse = SNN.ReceptorSynapse(
+    glu_receptors = [1, 2], gaba_receptors = [3, 4], syn = DendReceptors,
+    NMDA = SNN.NMDAVoltageDependency(mg = 1.0, b = 3.36, k = -0.077),   # Eyal et al. 2018
 )
 
-DendSynapse = Receptors(
-    AMPA = Receptor(E_rev = 0.0, τr = 0.26, τd = 2.0, g0 = 0.73),
-    NMDA = Receptor(E_rev = 0.0, τr = 8, τd = 35.0, g0 = 1.31, nmda = 1.0f0),
-    GABAa = Receptor(E_rev = -70.0, τr = 4.8, τd = 29.0, g0 = 0.27),
-    GABAb = Receptor(E_rev = -90.0, τr = 30, τd = 400.0, g0 = 0.0006),
-)
-
-NMDA = let
-    Mg_mM = 1.0mM
-    nmda_b = 3.36   # voltage dependence of nmda channels
-    nmda_k = -0.077     # Eyal 2018
-    SNN.NMDAVoltageDependency(mg = Mg_mM/mM, b = nmda_b, k = nmda_k)
-end
-
-# We then define the dendritic neuron model. The dendritic neuron holds has the soma and dendritic compartments parameters, and the synaptic properties for both compartments. 
-dend_neuron = DendNeuronParameter(
-    # adex parameters
-    C = 281pF,
-    gl = 40nS,
-    Vr = -55.6,
-    El = -70.6,
-    ΔT = 2,
-    Vt = -50.4,
-    a = 4,
-    b = 80.5pA,
-    τw = 144,
-    up = 0.1ms,
-    τabs = 0.1ms,
-
-    # post-spike adaptation
-    postspike = SNN.PostSpike(A = 10.0, τA = 30.0),
-
-    # synaptic properties
+E = SNN.BallAndStick(
+    N = 1,
+    param = SNN.BallAndStickParameter(ds = [160um], physiology = SNN.human_dend),
+    adex = SNN.AdExParameter(C = 281pF, gl = 40nS, Vr = -55.6mV, El = -70.6mV, ΔT = 2mV,
+                             Vt = -50.4mV, a = 4nS, b = 80.5pA, τw = 144ms),
+    spike = SNN.PostSpike(At = 10.0, τA = 30.0),
     soma_syn = SomaSynapse,
     dend_syn = DendSynapse,
-    NMDA = NMDA,
-
-    # dendrite
-    ds = [160um],
-    physiology = SNN.human_dend,
 )
 
-E = SNN.SNNModels.BallAndStick(N = 1, param = dend_neuron)
+stim_exc = SNN.Stimulus(SNN.PoissonLayer(rate = 10.2Hz, N = 1000), E, :glu, :d;
+                        conn = (p = 1, μ = 1.0), name = "noiseE")
+stim_inh = SNN.Stimulus(SNN.PoissonLayer(rate = 3Hz, N = 1000), E, :gaba, :d;
+                        conn = (p = 1, μ = 4.0), name = "noiseI")
 
-poisson_exc = SNN.PoissonLayerParameter(
-    10.2Hz,    # Mean firing rate (Hz) 
-    p = 1.0f0,  # Probability of connecting to a neuron
-    μ = 1.0,  # Synaptic strength (nS)
-    N = 1000, # Neurons in the Poisson Layer
-)
-
-poisson_inh = SNN.PoissonLayerParameter(
-    3Hz,       # Mean firing rate (Hz)
-    p = 1.0f0,   # Probability of connecting to a neuron
-    μ = 4.0,   # Synaptic strength (nS)
-    N = 1000,  # Neurons in the Poisson Layer
-)
-
-# Create the Poisson layers for excitatory and inhibitory inputs
-stim_exc = SNN.PoissonLayer(E, :glu, :d, param = poisson_exc, name = "noiseE")
-stim_inh = SNN.PoissonLayer(E, :gaba, :d, param = poisson_inh, name = "noiseI")
-
-model = SNN.compose(; E, stim_exc, stim_inh)
-SNN.monitor!(E, [:v_s, :v_d, :fire, :g_s, :g_d], sr = 1000Hz)
-
-#
-Plots.default(palette = :okabe_ito)
+model = SNN.compose(; E, stim_exc, stim_inh, silent = true)
+SNN.monitor!(E, [:v_s, :v_d, :fire], sr = 1000Hz)
+SNN.monitor!(E, :g, variables = :synvars_d, sr = 1000Hz)
 SNN.sim!(model, 3s)
-p = SNN.vecplot(
-    E,
-    :v_d,
-    sym_id = 1,
-    interval = 1:2ms:get_time(model),
-    neurons = 1,
-    label = "Dendritic Compartment",
-)
-SNN.vecplot!(
-    p,
-    E,
-    :v_s,
-    sym_id = 2,
-    interval = 1:2ms:get_time(model),
-    neurons = 1,
-    add_spikes = true,
-    label = "Soma Compartment",
-)
-plot!(
-    ylims = :auto,
-    legend = :outertop,
-    legendfontsize = 12,
-    xlabel = "Time (s)",
-    ylabel = "Voltage (mV)",
-    title = "Ball and Stick Neuron Model",
-)
-plot!(fg_legend = :transparent)
 
-##
-p = plot()
-for i = 1:4
-    SNN.vecplot!(p, E, :g_d, sym_id = i)
+interval = 1:2ms:SNN.get_time(model)
+fig = Figure(size = (800, 700))
+ax1 = Axis(fig[1, 1], ylabel = "Voltage (mV)", title = "Ball-and-stick neuron")
+SNN.vecplot!(ax1, E, :v_d; interval, neurons = 1, label = "Dendrite")
+SNN.vecplot!(ax1, E, :v_s; interval, neurons = 1, add_spikes = true, label = "Soma")
+axislegend(ax1)
+ax2 = Axis(fig[2, 1], ylabel = "Dendritic conductance (nS)", xlabel = "Time (s)")
+for (i, r) in enumerate(DendReceptors)
+    SNN.vecplot!(ax2, E, :g; variables = :synvars_d, sym_id = i, interval, neurons = 1,
+                 label = r.name, factor = r.gsyn)
 end
-plot!()
-
-##
-savefig(
-    p,
-    "/home/user/mnt/helix/User_folders/aquaresi/network_models/src/SpikingNeuralNetworks.jl/docs/src/assets/examples/ballandstick_neuron.png",
-)
-
-##
-p = SNN.vecplot(
-    E,
-    :g_d,
-    sym_id = 1,
-    interval = 1:2ms:get_time(model),
-    neurons = 1,
-    label = "AMPA",
-    factor = DendSynapse.AMPA.gsyn,
-)
-SNN.vecplot!(
-    p,
-    E,
-    :g_d,
-    sym_id = 2,
-    interval = 1:2ms:get_time(model),
-    neurons = 1,
-    label = "NMDA",
-    factor = DendSynapse.NMDA.gsyn*0.3,
-)
-SNN.vecplot!(
-    p,
-    E,
-    :g_d,
-    sym_id = 3,
-    interval = 1:2ms:get_time(model),
-    neurons = 1,
-    label = "GABAa",
-    factor = DendSynapse.GABAa.gsyn,
-)
-SNN.vecplot!(
-    p,
-    E,
-    :g_d,
-    sym_id = 4,
-    interval = 1:2ms:get_time(model),
-    neurons = 1,
-    label = "GABAb",
-    factor = DendSynapse.GABAb.gsyn,
-)
-plot!(legend = :outertop, ylims = :auto)
+axislegend(ax2)
+save(joinpath(mktempdir(), "ballandstick_neuron.png"), fig)

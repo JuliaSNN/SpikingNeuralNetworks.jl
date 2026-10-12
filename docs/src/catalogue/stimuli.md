@@ -4,26 +4,8 @@
 CurrentModule = SNNModels
 ```
 
-Stimuli are the external inputs of a network. A stimulus is attached to one target
-population and, at every time step, writes into one of its variables: the input buffer of a
-receptor or conductance (Poisson and spike-time stimuli), or the external current `I`
-(current stimuli). Every stimulus type is built from a parameter object with the generic
-constructor
-
-```
-Stimulus(param, post, sym, [comp]; kwargs...)
-```
-
-whose method is chosen by the type of `param`. In the simulation loop the stimuli are
-called first, after the clock has advanced by `dt` and before the populations are
-integrated (see [Stimuli](../stimuli.md) for the user guide and `sim!` for the loop).
-
-The variable `sym` is resolved by the `synaptic_target` method of the target population:
-for generalized integrate-and-fire neurons `:ge`/`:he` select the glutamatergic receptor
-buffer and `:gi`/`:hi` the GABAergic one (or the receptor group name of a
-`MultiReceptorSynapse`); for dendritic neurons the compartment is given as `comp`
-(e.g. `:d1`). Rates use the library units: `Hz` = 1e-3 per ms, so `10Hz` is the rate
-of 10 spikes per second.
+External inputs, built with `Stimulus(param, post, sym, [comp]; kwargs...)`; the type of `param`
+selects the model. Usage: [Stimuli](../stimuli.md).
 
 | Stimulus | Parameter types | Writes | Presynaptic layer |
 |:--|:--|:--|:--|
@@ -37,14 +19,12 @@ of 10 spikes per second.
 
 ## Poisson stimulus
 
-`PoissonStimulus` delivers to each targeted neuron ``n`` its own Poisson process of rate
-``\nu(t)``. There is no presynaptic population and no weight matrix.
+One independent Poisson process per targeted neuron:
 
 ```math
 g_n \leftarrow g_n + \mu\, k_n, \qquad k_n \sim \mathrm{Poisson}\big(\nu(t)\,\Delta t\big)
 ```
 
-The rate ``\nu(t)`` is returned by `get_poisson_rate(param, time)`:
 
 | Parameter | Rate ``\nu(t)`` |
 |:--|:--|
@@ -59,10 +39,6 @@ The rate ``\nu(t)`` is returned by `get_poisson_rate(param, time)`:
 | `variables` | required | | `PoissonVariable` only: arguments of the rate function |
 | `μ` | `1.0` | units of the target variable | increment per input spike |
 | `active` | `[true]` | | on/off switch, see `set_active!` |
-
-Constructor keywords: `neurons = :ALL` (all neurons), a vector of indices, or `:p_post`
-together with `p_post` (fraction of randomly chosen target neurons); `comp` for
-multicompartment targets; `name`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -84,11 +60,8 @@ Pages   = ["stimuli/poisson.jl"]
 
 ## Poisson layer
 
-`PoissonStimulusLayer` is a layer of `N` independent Poisson neurons connected to the target
-population through a sparse matrix ``W`` (`post.N x N`) generated from `conn` with
-`sparse_matrix` (rules `:Fixed`, `:FixedIn`, `:FixedOut`, `:Bernoulli`, `:PowerLaw`; weight
-distribution `μ`, `σ`, `dist`). At each step layer neuron ``j`` fires with probability
-``\nu_j \Delta t`` (at most one spike per step), and then
+`N` Poisson neurons connected through a sparse matrix built from `conn`; layer neuron ``j`` fires
+with probability ``\nu_j \Delta t`` and
 
 ```math
 g_i \leftarrow g_i + W_{ij} \quad \text{for every target } i \text{ of } j .
@@ -98,13 +71,10 @@ g_i \leftarrow g_i + W_{ij} \quad \text{for every target } i \text{ of } j .
 |:--|:--|:--|:--|:--|
 | `PoissonLayer` | `rate` | required | rate (`Hz`) | rate of every layer neuron |
 | | `N` | `1` | | number of layer neurons |
-| | `active` | `[true]` | | `false` silences the layer (ignored in 1.8.4) |
+| | `active` | `[true]` | | `false` silences the layer |
 | `PoissonLayerHet` | `rates` | required | rate (`Hz`) | rate of each layer neuron (length `N`) |
 | | `N` | `1` | | number of layer neurons |
-| | `active` | `[true]` | | `false` silences the layer (ignored in 1.8.4) |
-
-Unlike `PoissonStimulus`, a layer has spikes of its own (`stim.fire`), which can be
-recorded with `monitor!(stim, :fire)` and read with `spiketimes(stim)`.
+| | `active` | `[true]` | | `false` silences the layer |
 
 ```julia
 using SpikingNeuralNetworks
@@ -119,9 +89,6 @@ SNN.sim!(; model, duration = 200ms)
 length(SNN.spiketimes(layer))   # 1000 input neurons
 ```
 
-`set_active!(stim, false)` silences a `PoissonStimulusLayer` (it had no effect in SNNModels
-1.8.4). The positional form `PoissonLayer(rate; N = 1)` no longer requires `N`.
-
 ```@autodocs
 Modules = [SNNModels]
 Pages   = ["stimuli/poisson_layer.jl"]
@@ -129,31 +96,15 @@ Pages   = ["stimuli/poisson_layer.jl"]
 
 ## Spike-time stimulus
 
-`SpikeTimeStimulus` replays a list of spikes (`neurons[k]` fires at `spiketimes[k]`) from
-`N` virtual input neurons, delivered through a sparse weight matrix built from `conn`
-(NamedTuple or matrix). The spikes are consumed in order, so they must be sorted by time:
-build the parameter with `SpikeTimeParameter`, which sorts them.
-`SpikeTimeStimulusIdentity` connects input neuron `j` to target neuron `j` with weight 1.
-
-A spike with time ``t_k`` is delivered in the first step whose time ``t`` satisfies
-``t_k \le t``, adding ``W_{ij}`` to the target ``i`` of input neuron ``j``.
+Replays a sorted spike list (`neurons[k]` fires at `spiketimes[k]`) through a sparse matrix built
+from `conn`; `SpikeTimeParameter` sorts the list, `SpikeTimeStimulusIdentity` connects input `j` to
+neuron `j`.
 
 | Field of `SpikeTimeStimulusParameter` | Default | Units | Meaning |
 |:--|:--|:--|:--|
 | `spiketimes` | `[]` | ms | spike times, sorted |
 | `neurons` | `[]` | | input neuron of each spike |
 
-| Constructor keyword | Default | Meaning |
-|:--|:--|:--|
-| `conn` | required (except for `SpikeTimeStimulusIdentity`) | connectivity NamedTuple or `post.N x N` matrix |
-| `N` | `max_neuron(param)` | number of input neurons |
-| `name` | `"SpikeTime"` | |
-
-Related functions: `shift_spikes!(stim, delay)` shifts the spike list and rewinds the
-stimulus; `update_spikes!(stim, spikes, start_time)` replaces it (sorted by time; empty lists
-are allowed); `next_neuron(stim)` returns the neuron of the next pending spike, `[]` once all
-are delivered. (In SNNModels 1.8.4 `next_neuron` returned `[]` while the last spike was pending
-and then threw, and empty lists made `shift_spikes!`/`update_spikes!` throw.)
 
 ```julia
 using SpikingNeuralNetworks
@@ -176,29 +127,20 @@ Pages   = ["stimuli/timed.jl"]
 
 ## Current stimulus
 
-`CurrentStimulus` writes into the external-current field (`sym = :I` by default) of the
-targeted neurons. The loaded parameter type is `CurrentNoise`:
+Sets the external current (`:I` by default) of the targeted neurons:
 
 ```math
 I_i \leftarrow (1-\alpha_i)\,\big(I^{base}_i + \xi_i\big) + \alpha_i\, I_i,
 \qquad \xi_i \sim \texttt{I\_dist}
 ```
 
-With ``\alpha_i = 0`` the current is redrawn every step (white noise around `I_base`, with
-per-step standard deviation equal to that of `I_dist`, not scaled by `dt`); with
-``0 < \alpha_i < 1`` it is an exponentially filtered (AR(1)) process with correlation time
-``\Delta t/(1-\alpha_i)``.
+``\alpha = 0`` gives white noise per step; ``0 < \alpha < 1`` a filtered process.
 
 | Field | Default (`CurrentNoise(N; ...)`) | Units | Meaning |
 |:--|:--|:--|:--|
 | `I_base` | `0`, filled to length `N` | pA | baseline current, indexed by neuron id |
 | `I_dist` | `Normal(0.0, 0.0)` | pA | noise distribution |
 | `α` | `0.0`, filled to length `N` | | filter coefficient in ``[0, 1]`` |
-
-The stimulus sets (does not add to) `I`, so two current stimuli on the same neurons
-overwrite each other; neurons outside `neurons` are not touched. Since SNNModels 1.8.4 a
-subset of neurons (`neurons = [...]`) is handled correctly (the random numbers are indexed
-by position in `neurons`, `I_base` and `α` by neuron id).
 
 ```julia
 using SpikingNeuralNetworks
@@ -212,9 +154,6 @@ SNN.sim!(; model, duration = 200ms)
 SNN.getvariable(E, :I)[4, end]   # 0: neuron 4 is not stimulated
 ```
 
-A time-dependent current parameter (`ramping_current`, `CurrentVariableParameter`) is
-present in `src/stimuli/variable_inputs.jl` but that file is not loaded by SNNModels 1.8.4.
-
 ```@autodocs
 Modules = [SNNModels]
 Pages   = ["stimuli/current.jl"]
@@ -222,10 +161,8 @@ Pages   = ["stimuli/current.jl"]
 
 ## Balanced stimulus
 
-`BalancedStimulus` drives every neuron of the target with Poisson inhibitory input of rate
-``k_{IE} r_0`` and Poisson excitatory input whose rate fluctuates around ``r_0`` with
-correlation time ``\tau`` and amplitude ``\beta``. The equations and the parameters are
-listed in [`BalancedParameter`](@ref).
+Poisson inhibition at rate ``k_{IE} r_0`` and Poisson excitation fluctuating around ``r_0``
+(see [`BalancedParameter`](@ref)).
 
 | Field | Default | Units | Meaning |
 |:--|:--|:--|:--|
@@ -236,17 +173,6 @@ listed in [`BalancedParameter`](@ref).
 | `w` | `1.0` | units of the target | increment per input spike |
 | `wIE` | `1.0` | | extra factor on the inhibitory increment |
 | `same_input` | `false` | | one rate process shared by all neurons |
-
-`Stimulus(param, post, sym)` takes `sym` as the excitatory target and its counterpart
-(`:ge` -> `:gi`, `:glu` -> `:gaba`) as the inhibitory one; `Stimulus(param, post, sym_e, sym_i)`
-sets both. Each neuron receives one excitatory and one inhibitory Poisson draw per step.
-
-!!! note "Changed after SNNModels 1.8.4"
-    In SNNModels 1.8.4 the default configuration (`same_input = false`) threw
-    `UndefVarError: randcache not defined` at the first step, the per-neuron branch added `N`
-    draws per neuron (rate times `N`), `same_input = true` delivered all excitatory input to
-    neuron 1, and `Stimulus(param, post, sym)` used the same target for excitation and
-    inhibition.
 
 ```julia
 using SpikingNeuralNetworks
@@ -265,13 +191,7 @@ Pages   = ["stimuli/balanced.jl"]
 
 ## Stimulus groups
 
-A `StimulusGroup` bundles several stimuli. `sim!`/`train!` unpack it, and `set_variable!`,
-`set_intervals!`, `set_active!` and `record` are applied to all elements.
-`MultiCompartmentStimulusGroup` creates one stimulus per compartment of a dendritic neuron
-(`[nothing]` for a point neuron), all sharing the same parameter object; it works with Poisson,
-Poisson-layer and spike-time parameters (pass `conn` for the last two). `neurons(group)`
-returns the concatenated target indices. (In SNNModels 1.8.4 only Poisson parameters worked and
-`neurons` returned a vector of vectors.)
+A `StimulusGroup` bundles stimuli; `MultiCompartmentStimulusGroup` makes one per compartment.
 
 ```julia
 using SpikingNeuralNetworks
@@ -291,9 +211,6 @@ Pages   = ["stimuli/stimulus_group.jl"]
 ```
 
 ## Common interface
-
-`stimulate!`, `neurons`, `set_variable!`, `set_intervals!`, `set_active!`, and the empty
-placeholder stimulus.
 
 ```@autodocs
 Modules = [SNNModels]

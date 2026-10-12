@@ -1,39 +1,9 @@
-# Model Extensions
+# Model extensions
 
-New populations, connections, stimuli and plasticity rules are added by defining new concrete
-subtypes of the abstract types of `SNNModels` and the methods that the simulation loop calls for
-them. Because `sim!` and `train!` dispatch on the type of each component and on the type of its
-`param` field, it is often enough to define a new *parameter* type and the method that specialises on
-it, without a new component type.
-
-## The simulation loop
-
-At every time step `sim!` and `train!` do the following (see `src/utils/main.jl` in SNNModels):
-
-<!-- norun -->
-```julia
-record_zero!(P, C, S, T)                  # only at t = 0: store the initial state in the records
-update_time!(T, dt)
-for s in S                                # stimuli
-    stimulate!(s, s.param, T, dt)
-    record!(s, T)
-end
-for p in P                                # populations
-    update_traces!(p, p.param, dt, T)     # train! only
-    integrate!(p, p.param, dt)
-    plasticity!(p, p.param, dt, T)        # train! only
-    record!(p, T)
-end
-for c in C                                # connections
-    update_traces!(c, c.param, dt, T)     # train! only
-    forward!(c, c.param, dt, T)
-    plasticity!(c, c.param, dt, T)        # train! only
-    record!(c, T)
-end
-```
-
-`sim!` never calls `update_traces!` or `plasticity!`: the weights and the short-term plasticity
-variables of a model stay fixed under `sim!`, even if its synapses carry plasticity rules.
+After this page you can add a population, connection, stimulus or plasticity rule of your own.
+`sim!` and `train!` dispatch on the type of each component and of its `param` field (see the step
+in [Running simulations](simulation.md)), so a new model is a new type plus the methods the step
+calls; often a new parameter type and one method are enough.
 
 ## Interface of each component
 
@@ -44,7 +14,8 @@ variables of a model stay fixed under `sim!`, even if its synapses carry plastic
   A field `fire::Vector{Bool}` is needed to record spikes (`monitor!(p, [:fire])`) and to be the
   presynaptic population of a `SpikingSynapse`. Any other field (`v`, `I`, ...) can be recorded
   with `monitor!`.
-- `integrate!(p, param, dt::Float32)`: advance the state by one step.
+- `integrate!(p, param, dt::AbstractFloat)`: advance the state by one step (`dt` arrives in the
+  precision of the population, `float_type(p)`).
 - `synaptic_target(targets::Dict, post, sym::Symbol, target)`: return `(g, v_post)`, the vector
   into which connections and stimuli add their input and the membrane potential used by
   voltage-dependent plasticity. Needed only if the population receives `SpikingSynapse`s or spiking
@@ -61,16 +32,15 @@ variables of a model stay fixed under `sim!`, even if its synapses carry plastic
   four-argument method calls the two-argument one. This generic method, and the no-op
   `update_traces!` fallback, exist only for parameters that are subtypes of
   `AbstractConnectionParameter`; with any other parameter type `sim!` and `train!` fail with a
-  `MethodError`, so always subtype it (all SNNModels connection parameters are subtypes after
-  1.8.4).
-- `plasticity!(c, param, dt::Float32, T::Time)`: called by `train!` for every connection; there is
+  `MethodError`.
+- `plasticity!(c, param, dt, T::Time)`: called by `train!` for every connection; there is
   no generic fallback, so define it (it can return `nothing`) if the model is ever run with `train!`.
   `update_traces!` has a no-op fallback.
 
 **Stimuli** (`<: AbstractStimulus`, parameter `<: AbstractStimulusParameter`)
 
 - Required fields: `param`, `id`, `name`, `records::Dict` (checked by `validate_stimulus_model`).
-- `stimulate!(s, param, T::Time, dt::Float32)`.
+- `stimulate!(s, param, T::Time, dt)`.
 - Optional: a `Stimulus(param::MyParameter, post, sym; kwargs...)` method.
 
 **Plasticity rules** for `SpikingSynapse` (`<: LTPParameter` or `<: STPParameter`)
@@ -81,6 +51,10 @@ variables of a model stay fixed under `sim!`, even if its synapses carry plastic
 - `plasticity!(c, param, vars, dt, T)` (applied after `forward!`) and, if the rule needs it,
   `update_traces!(c, param, vars, dt, T)` (applied before `forward!`). Long-term rules modify
   `c.W`, short-term rules the efficacy `c.ρ`.
+
+Connections read the spikes of a population from its `fire` vector once per step. A population
+that already knows which neurons fired can return its own list from `spike_index` (see the API
+below).
 
 The existing types in SNNModels are the best templates: see the [Model catalogue](catalogue/index.md).
 
@@ -142,7 +116,7 @@ SNN.@load_units
     end
 
     # one forward Euler step; recordings are handled by the simulation loop
-    function integrate!(p::Neuron, param::NeuronParameter, dt::Float32)
+    function integrate!(p::Neuron, param::NeuronParameter, dt::AbstractFloat)
         @unpack N, v, ge, gi, fire, I = p
         @unpack R, El, Vt, Vr, τm, τe, τi = param
         @inbounds for i in 1:N
@@ -194,7 +168,7 @@ SNN.@load_units
         active::VBT = [true]
     end
 
-    function stimulate!(p::PoissonStimulus, param::PoissonRefractory, time::Time, dt::Float32)
+    function stimulate!(p::PoissonStimulus, param::PoissonRefractory, time::Time, dt::AbstractFloat)
         param.active[1] || return
         @unpack rate, ΔT, μ, last_spike = param
         t = get_time(time)
@@ -214,4 +188,15 @@ model = SNN.compose(; neuron, stim, silent = true)
 SNN.sim!(; model, duration = 2000ms)
 isi = diff(SNN.spiketimes(neuron)[1])
 @assert minimum(isi) > 20ms
+```
+
+## Internals: spike lists
+
+```@meta
+CurrentModule = SNNModels
+```
+
+```@autodocs
+Modules = [SNNModels]
+Pages   = ["populations/spike_index.jl"]
 ```
