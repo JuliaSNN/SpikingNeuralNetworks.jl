@@ -1,7 +1,7 @@
 # Network of the COBA benchmark (Brette et al. 2007, J. Comput. Neurosci. 23:349): 3200 excitatory and
 # 800 inhibitory leaky integrate-and-fire neurons with conductance-based exponential synapses,
-# here driven by Poisson afferents: with these parameters the self-sustained activity of the
-# benchmark dies out within 300 ms of a current kick.
+# weights 0.6 gL (E) and 6.7 gL (I), gL = 10 nS. From the initial conditions of the benchmark the
+# activity is self-sustained, with no external input (about 18 Hz in E, as in Brian2).
 using SpikingNeuralNetworks
 using CairoMakie, Distributions, Statistics
 SNN.@load_units
@@ -12,20 +12,20 @@ synapse = SNN.SingleExpSynapse(τe = 5ms, τi = 10ms, E_e = 0mV, E_i = -80mV)
 
 E = SNN.Population(; param = neuron_param, synapse, spike, N = 3200, name = "Excitatory")
 I = SNN.Population(; param = neuron_param, synapse, spike, N = 800, name = "Inhibitory")
-we, wi = 60 * 0.27nS / 10, 20 * 4.5nS / 10
+we, wi = 6nS, 67nS
 delay = Dirac(0.8ms)
 EE = SNN.SpikingSynapse(E, E, :glu; conn = (μ = we, p = 0.02, rule = :Bernoulli), delay_dist = delay)
 EI = SNN.SpikingSynapse(E, I, :glu; conn = (μ = we, p = 0.02, rule = :Bernoulli), delay_dist = delay)
 II = SNN.SpikingSynapse(I, I, :gaba; conn = (μ = wi, p = 0.02, rule = :Bernoulli), delay_dist = delay)
 IE = SNN.SpikingSynapse(I, E, :gaba; conn = (μ = wi, p = 0.02, rule = :Bernoulli), delay_dist = delay)
-afferents = SNN.PoissonLayer(rate = 10Hz, N = 200)
-inE = SNN.Stimulus(afferents, E, :glu; conn = (μ = 2nS, p = 0.1))
-inI = SNN.Stimulus(afferents, I, :glu; conn = (μ = 2nS, p = 0.1))
-model = SNN.compose(; E, I, EE, EI, IE, II, inE, inI)
+model = SNN.compose(; E, I, EE, EI, IE, II)
 
-E.v .= neuron_param.Vr .+ rand(Float32, size(E.v)) .* (neuron_param.Vt - neuron_param.Vr)
-I.v .= neuron_param.Vr .+ rand(Float32, size(I.v)) .* (neuron_param.Vt - neuron_param.Vr)
-SNN.monitor!(model.pop, [:fire])
+for P in (E, I)   # v ~ -65 ± 5 mV, ge ~ N(4, 1.5) gL, gi ~ N(20, 12) gL
+    P.v .= -65mV .+ 5mV .* randn(Float32, P.N)
+    P.synvars.ge .= (4 .+ 1.5f0 .* randn(Float32, P.N)) .* 10nS
+    P.synvars.gi .= (20 .+ 12 .* randn(Float32, P.N)) .* 10nS
+end
+SNN.monitor!(model.pop, [:fire], monitor_rate = 50Hz)
 SNN.monitor!(E, [(:v, 1:1)])
 SNN.monitor!(I, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
 
