@@ -4,21 +4,11 @@
 CurrentModule = SNNModels
 ```
 
-This page lists every synaptic plasticity rule that acts on a sparse synapse
-(`SpikingSynapse`): long-term rules, passed with the keyword `LTPParam`, and short-term rules,
-passed with `STPParam`. For how to use them in a network see [Plasticity](../plasticity.md);
-for the rules that act on whole connections (normalisation, aggregate scaling, turnover) see
-[Metaplasticity](metaplasticity.md).
-
-!!! warning "Plasticity runs only under `train!`"
-    `train!` calls, for every connection and every time step, `update_traces!` before
-    `forward!` and `plasticity!` after it. `sim!` calls neither: weights, traces and STP
-    variables stay frozen.
+Long-term rules (`LTPParam`, act on `W`) and short-term rules (`STPParam`, act on `ρ`) of
+`SpikingSynapse`; they run only under `train!`. Usage: [Plasticity](../plasticity.md).
 
 ## Common structure
 
-A rule is a parameter object (subtype of `LTPParameter` or `STPParameter`) and a state
-object created by `plasticityvariables(param, Npre, Npost)`:
 
 | Rule (parameter type) | State type | Family | Traces |
 |---|---|---|---|
@@ -38,47 +28,13 @@ object created by `plasticityvariables(param, Npre, Npost)`:
 | `MarkramSTPParameterTimestep` | `MarkramSTPVariables` | short-term plasticity | Euler |
 | `NoLTP`, `NoSTP` | `NoVariables` | no plasticity (defaults) | - |
 
-Every state has an `active` flag (`set_LTP!`, `set_STP!`). To change a rule see
-[Plasticity](../plasticity.md#Switching-rules).
-
-The STDP and iSTDP traces are stored lazily (stored value times a common scale), and
-`vSTDPParameter` writes potentiation into `W` only at presynaptic spikes: read them with
-`trace_values`, `plasticity_value`, or call `sync_traces!(syn)` first. `monitor!` records values.
-
-Notation: synapse ``s`` connects presynaptic neuron ``j`` to postsynaptic neuron ``i``, its
-weight is ``w_{ij}`` (`W[s]`), time is in ms and weights are in the units of `W` (pF for the
-default conductance-based synapses). The traces of the event-driven rules jump by 1 at a spike.
-Amplitudes must be scaled to the weight scale of the network.
-
-## Event-driven implementation (Auryn ordering)
-
-`STDPGerstner`, `STDPConfavreux2025`, `STDPWeightDependent` and `STDPTriplet` share the
-kernels of `sparse_plasticity/STDP_kernels.jl`, which follow Auryn's `STDPConnection` /
-`TripletConnection` (Zenke and Gerstner 2014). At step ``n`` (time ``t_n``), with `fireJ` the
-presynaptic and `fireI` the postsynaptic spikes of the step, `plasticity!` does:
-
-1. **Pre-spike pass.** For every presynaptic neuron ``j`` that fired, every outgoing
-   synapse: ``w \leftarrow \mathrm{clamp}(w + f_{pre}(w, i, j), W_{min}, W_{max})``.
-2. **Post-spike pass.** For every postsynaptic neuron ``i`` that fired, every incoming
-   synapse: ``w \leftarrow \mathrm{clamp}(w + f_{post}(w, i, j), W_{min}, W_{max})``.
-3. **Trace increment.** Every neuron that fired adds 1 to its trace(s).
-4. **Trace decay.** Every trace decays by ``e^{-dt/τ}`` (applied to the common scale).
-
-The traces read in steps 1 and 2 therefore hold
-``\sum_{m<n} e^{-(t_n - t_m)/τ}`` over the *earlier* spikes only: a pre and a post spike in the
-same step do not interact with each other (their earlier history does). This is the
-convention of Auryn and of Brian2 code that updates `w` before incrementing the trace. Only
-weights of neurons that fired are updated and clamped; all weights are clamped once on the
-first plasticity step. The weight passes are threaded by postsynaptic range when
-`neurons_per_thread > 0` (bit-identical results).
-
-`STDPMexicanHat`, the structured rules, the iSTDP rules and the voltage-based rules integrate their
-traces with forward Euler and use their own orderings, described in each section.
+Synapse ``s`` connects ``j`` to ``i`` with weight ``w_{ij}`` (`W[s]`); traces jump by 1 at a spike.
+Read lazily stored traces and weights with `trace_values` and `plasticity_value`.
 
 ## STDPGerstner
 
-Additive pair-based STDP with all-to-all spike interaction (Gerstner et al. 1996, Auryn
-`STDPConnection`). Traces ``x_{pre}`` (``τ_{pre}``) and ``x_{post}`` (``τ_{post}``).
+Additive pair STDP (Gerstner et al. 1996), traces ``x_{pre}``, ``x_{post}``; update order:
+[Pair and triplet STDP](../plasticity.md#Pair-and-triplet-STDP).
 
 ```math
 \begin{aligned}
@@ -93,9 +49,7 @@ For a single pair with ``Δt = t_{post} - t_{pre}``:
 Δw = \begin{cases} A_{pre}\, e^{-Δt/τ_{pre}} & Δt > 0 \\ A_{post}\, e^{Δt/τ_{post}} & Δt < 0 \end{cases}
 ```
 
-and ``Δw = 0`` if both spikes fall in the same step. The amplitudes are signed and applied
-once: `A_pre > 0` potentiates pre-before-post pairs, `A_post < 0` depresses post-before-pre
-pairs (Hebbian, the default). Any sign combination is accepted.
+Amplitudes are signed: `A_pre > 0` potentiates, `A_post < 0` depresses (default).
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -118,7 +72,7 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 1s)
 
 ## STDPConfavreux2025
 
-Pair-based STDP with constant rate terms (Confavreux et al. 2025). Same traces and ordering as `STDPGerstner`.
+Pair STDP with constant rate terms (Confavreux et al. 2025).
 
 ```math
 \begin{aligned}
@@ -127,9 +81,7 @@ Pair-based STDP with constant rate terms (Confavreux et al. 2025). Same traces a
 \end{aligned}
 ```
 
-For one pair, ``Δw = ηγ e^{-Δt/τ_{pre}}`` (``Δt > 0``) and ``Δw = ηκ e^{Δt/τ_{post}}``
-(``Δt < 0``); every presynaptic spike also adds ``ηα`` and every postsynaptic spike ``ηβ``.
-The signs are carried by `κ`, `γ`, `α`, `β`; with the defaults both pairings potentiate.
+The signs are carried by `κ`, `γ`, `α`, `β`.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -141,20 +93,10 @@ The signs are carried by `κ`, `γ`, `α`, `β`; with the defaults both pairings
 | `τpre`, `τpost` | `20ms` | ms | trace time constants |
 | `Wmin`, `Wmax` | `0pF`, `30pF` | weight | bounds |
 
-```julia
-using SpikingNeuralNetworks
-SNN.@load_units
-pre = SNN.Poisson(N = 100, param = SNN.PoissonParameter(10Hz))
-post = SNN.IF(N = 10)
-rule = SNN.STDPConfavreux2025(η = 1e-3, κ = -1.0, γ = 1.0, α = -0.1)
-syn = SNN.SpikingSynapse(pre, post, :ge; conn = (p = 0.1, μ = 1.0), LTPParam = rule)
-SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
-```
 
 ## STDPWeightDependent
 
-Weight-dependent (soft-bound) pair STDP (Gütig et al. 2003; Morrison, Diesmann and Gerstner
-2008; Auryn `STDPwdConnection`). With ``\tilde W = W_{max} - W_{min}``:
+Soft-bound pair STDP (Gütig et al. 2003). With ``\tilde W = W_{max} - W_{min}``:
 
 ```math
 \begin{aligned}
@@ -163,10 +105,7 @@ Weight-dependent (soft-bound) pair STDP (Gütig et al. 2003; Morrison, Diesmann 
 \end{aligned}
 ```
 
-(the factors ``(w - W_{min})`` and ``(W_{max} - w)`` are floored at 0). `μ = 0` is additive
-STDP with hard bounds and amplitudes ``η \tilde W`` and ``-ηα\tilde W``; `μ = 1` is
-multiplicative STDP. With `Wmin = 0` the rule equals Auryn's `STDPwdConnection`
-(`learning_rate = η`, `param_alpha = α`).
+`μ = 0` is additive STDP with hard bounds, `μ = 1` multiplicative STDP.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -177,22 +116,10 @@ multiplicative STDP. With `Wmin = 0` the rule equals Auryn's `STDPwdConnection`
 | `τpre`, `τpost` | `20ms` | ms | trace time constants |
 | `Wmax`, `Wmin` | `30pF`, `0pF` | weight | bounds |
 
-```julia
-using SpikingNeuralNetworks
-SNN.@load_units
-pre = SNN.Poisson(N = 100, param = SNN.PoissonParameter(10Hz))
-post = SNN.IF(N = 10)
-rule = SNN.STDPWeightDependent(η = 1e-3, α = 1.05, μ_plus = 0.0, μ_minus = 1.0)
-syn = SNN.SpikingSynapse(pre, post, :ge; conn = (p = 0.1, μ = 10.0), LTPParam = rule)
-SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
-```
 
 ## STDPTriplet
 
-All-to-all triplet STDP (Pfister and Gerstner 2006; Auryn `MinimalTripletConnection` /
-`TripletConnection`). Presynaptic traces ``r_1`` (``τ_+``), ``r_2`` (``τ_x``), postsynaptic
-traces ``o_1`` (``τ_-``), ``o_2`` (``τ_y``), all read before this step's spikes are added
-(the ``t - ε`` of the paper):
+All-to-all triplet STDP (Pfister and Gerstner 2006), traces ``r_1``, ``r_2`` (pre), ``o_1``, ``o_2`` (post):
 
 ```math
 \begin{aligned}
@@ -201,10 +128,7 @@ traces ``o_1`` (``τ_-``), ``o_2`` (``τ_y``), all read before this step's spike
 \end{aligned}
 ```
 
-The amplitudes are positive and the signs explicit. The defaults are the minimal all-to-all
-model fitted to the hippocampal culture data (Table 4 of Pfister and
-Gerstner 2006), equal to Auryn's `MinimalTripletConnection` with `eta = 1`; with
-`A3_minus = 0` the trace ``r_2`` (and `τ_x`) has no effect.
+Defaults: minimal all-to-all model (Table 4 of Pfister and Gerstner 2006).
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -218,26 +142,11 @@ Gerstner 2006), equal to Auryn's `MinimalTripletConnection` with `eta = 1`; with
 | `τ_y` | `40ms` | ms | postsynaptic trace ``o_2`` |
 | `Wmax`, `Wmin` | `30pF`, `0pF` | weight | bounds |
 
-```julia
-using SpikingNeuralNetworks
-SNN.@load_units
-pre = SNN.Poisson(N = 100, param = SNN.PoissonParameter(10Hz))
-post = SNN.IF(N = 10)
-rule = SNN.STDPTriplet(A2_plus = 5.3e-2, A3_plus = 8e-2, A2_minus = 3.5e-2)
-syn = SNN.SpikingSynapse(pre, post, :ge; conn = (p = 0.1, μ = 10.0), LTPParam = rule)
-SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
-```
 
 ## STDPMexicanHat
 
-Kernel ``Δw = A\,(1 - z)\,e^{-z/\sqrt 2}`` with ``z = [\ln(x_{pre}/x_{post})]^2``, where the pre-
-and postsynaptic traces have the same time constant ``τ``. For an isolated pair
-``z ≈ (Δt/τ)^2``: potentiation for ``|Δt| < τ``, depression beyond.
-
-Update order per step: (1) Euler decay of all traces, then +1 for the neurons that fired (so
-same-step spikes interact); (2) pre-spike pass and (3) post-spike pass, each applying ``Δw`` to
-every synapse of a firing neuron whose two traces are non-zero (a `NaN` kernel value is
-replaced by 0); (4) clamp of the touched weights.
+``Δw = A\,(1 - z)\,e^{-z/\sqrt 2}`` with ``z = [\ln(x_{pre}/x_{post})]^2 ≈ (Δt/τ)^2``: potentiation for
+``|Δt| < τ``, depression beyond.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -245,21 +154,11 @@ replaced by 0); (4) clamp of the touched weights.
 | `τ` | `20ms` | ms | trace time constant |
 | `Wmax`, `Wmin` | `30pF`, `0pF` | weight | bounds |
 
-```julia
-using SpikingNeuralNetworks
-SNN.@load_units
-pre = SNN.Poisson(N = 100, param = SNN.PoissonParameter(10Hz))
-post = SNN.IF(N = 10)
-syn = SNN.SpikingSynapse(pre, post, :ge; conn = (p = 0.1, μ = 1.0), LTPParam = SNN.STDPMexicanHat(A = 1e-3))
-SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
-```
 
 ## STDPSymmetric and STDPAntiSymmetric
 
-Structured rules of Festa, Cusseddu and Gjorgjieva (2024), "Structured
-stabilization in recurrent neural circuits through inhibitory synaptic plasticity". Both have
-pair kernels whose integral is ``A_x - A_y`` (zero with the defaults) and constant terms
-`αpre`, `αpost` added at every pre / post spike.
+Structured rules of Festa, Cusseddu and Gjorgjieva (2024); kernel integral ``A_x - A_y``, plus
+constant terms `αpre`, `αpost` per spike.
 
 Symmetric kernel (``Δt = t_{post} - t_{pre}``):
 
@@ -272,10 +171,6 @@ Antisymmetric kernel:
 ```math
 Δw(Δt) = \begin{cases} \dfrac{A_x}{τ_x} e^{-Δt/τ_x} & Δt > 0 \\[1ex] -\dfrac{A_y}{τ_y} e^{Δt/τ_y} & Δt < 0 \end{cases}
 ```
-
-Implementation: per step (1) pre-spike pass and (2) post-spike pass using the traces before
-this step's spikes, (3) Euler decay of all traces then +1 for the neurons that fired, (4)
-clamp of the touched weights (all weights once on the first step).
 
 | Field | `STDPSymmetric` | `STDPAntiSymmetric` | Units | Meaning |
 |---|---|---|---|---|
@@ -298,8 +193,7 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
 
 ## Inhibitory STDP: iSTDPRate, iSTDPPotential
 
-Rules of Vogels et al. (2011), with Euler-integrated traces (time constant ``τ_y``) that jump
-by 1 at a spike.
+Vogels et al. (2011), Euler-integrated traces.
 
 `iSTDPRate` (target rate ``r``, ``α = 2 r τ_y``):
 
@@ -307,16 +201,8 @@ by 1 at a spike.
 Δw_{ij} = η\,(y_i - α) \ \text{at a presynaptic spike}, \qquad Δw_{ij} = η\, x_j \ \text{at a postsynaptic spike}
 ```
 
-`iSTDPPotential` replaces the postsynaptic spike trace by a low-pass filter of the membrane
-potential, ``τ_y\, dy_i/dt = V_i - y_i``, and the target by a reference potential ``v_0``:
-``Δw_{ij} = η (y_i - v_0)`` at a presynaptic spike, ``Δw_{ij} = η x_j`` at a postsynaptic spike.
-At the first `plasticity!` call the trace is set to the membrane potential.
-
-Update order per step: presynaptic pass (Euler decay of ``x_j``, +1 if ``j`` fired, then the
-pre-spike update of its outgoing synapses), then postsynaptic pass (Euler update of ``y_i``, +1
-if ``i`` fired for `iSTDPRate`, then the post-spike update of its incoming synapses). Every
-touched weight is clamped to `[Wmin, Wmax]`. Because the presynaptic trace is incremented
-before the postsynaptic pass, a pre and a post spike in the same step interact.
+`iSTDPPotential` uses ``τ_y\, dy_i/dt = V_i - y_i`` and the target potential ``v_0``:
+``Δw_{ij} = η (y_i - v_0)`` at a presynaptic spike, ``η x_j`` at a postsynaptic spike.
 
 | Field | `iSTDPRate` | `iSTDPPotential` | Units | Meaning |
 |---|---|---|---|---|
@@ -340,12 +226,9 @@ SNN.train!(model = SNN.compose(; E, I, IE), duration = 500ms)
 
 ## vSTDPParameter and vSTDPDenseParameter
 
-Voltage-based STDP of Clopath et al. (2010) in two implementations: `vSTDPParameter` is event-driven and writes
-potentiation into `W` lazily (read the weights with `plasticity_value(syn, :W)` or call `sync_traces!(syn)` first);
-`vSTDPDenseParameter` is clock-driven, keeps `W` current, and is the rule called `vSTDPParameter` in SNNModels 1.9.
-Both are serial. The text below describes the rule and the dense update order. ``V_i`` is the postsynaptic membrane
-potential (`v_post` of the synapse), ``u_i`` and ``v_i`` are low-pass filters of it, ``x_j`` is a
-presynaptic trace and ``[z]_+ = \max(z, 0)``:
+Clopath et al. (2010). `vSTDPParameter` is event-driven (read `W` with `plasticity_value(syn, :W)`);
+`vSTDPDenseParameter` is clock-driven (the `vSTDPParameter` of SNNModels 1.9). ``V_i`` is the
+postsynaptic potential, ``u_i``, ``v_i`` its low-pass filters, ``[z]_+ = \max(z, 0)``:
 
 ```math
 \begin{aligned}
@@ -354,12 +237,6 @@ presynaptic trace and ``[z]_+ = \max(z, 0)``:
 \frac{dw_{ij}}{dt} &= A_{LTP}\, x_j\,[v_i - θ_{LTD}]_+\,[V_i - θ_{LTP}]_+
 \end{aligned}
 ```
-
-A presynaptic spike increases ``x_j`` by ``1/τ_x``; potentiation is a rate, integrated with `dt`,
-so the rule does not depend on `dt`. Update order per step: Euler update of ``x``, then of ``u``
-and ``v``; for each presynaptic neuron, LTD if it fired with clamping at
-`Wmin`, then the LTP increment `dt * A_LTP * x * ...` on all its outgoing synapses with clamping
-at `Wmax`. At the first call ``u`` and ``v`` are set to the membrane potential.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -384,18 +261,14 @@ SNN.plasticity_value(syn, :W)   # current weights (syn.W is lazy for the event-d
 
 ## Short-term plasticity: Tsodyks-Markram
 
-Each presynaptic neuron ``j`` has a utilisation ``u_j`` and available resources ``x_j``; the
-efficacy of its outgoing synapses is ``ρ_s = u_j x_j`` and a spike adds ``W_s ρ_s`` to the target
-conductance (Tsodyks and Markram 1997; Markram, Wang and Tsodyks 1998; formulation of
-Mongillo, Barak and Tsodyks 2008). Between spikes
+Presynaptic utilisation ``u_j`` and resources ``x_j`` set the efficacy ``ρ_s = u_j x_j`` (Tsodyks and
+Markram 1997; Mongillo, Barak and Tsodyks 2008). Between spikes
 
 ```math
 \frac{du}{dt} = \frac{U - u}{τ_F}, \qquad \frac{dx}{dt} = \frac{1 - x}{τ_D}.
 ```
 
-**`MarkramSTPParameter` (alias of `MarkramSTPParameterEvent`) and `MarkramSTPParameterHet`**:
-event-driven and exact. At a presynaptic spike, with ``Δ`` the interval from the previous
-spike of the same neuron,
+At a presynaptic spike, ``Δ`` after the previous one (`MarkramSTPParameter`, `MarkramSTPParameterHet`, exact):
 
 ```math
 \begin{aligned}
@@ -405,16 +278,8 @@ u &\leftarrow u^- + U\,(1 - u^-), & x &\leftarrow x^- - u\,x^- .
 \end{aligned}
 ```
 
-This is done in `update_traces!`, i.e. before `forward!`, so the spike of the current step is
-transmitted with the new efficacy; the first spike of a neuron is transmitted with ``ρ = U``.
-`MarkramSTPParameterHet` uses per-presynaptic-neuron vectors `U[j]`, `τF[j]`, `τD[j]` (no
-defaults, no `Wmax`/`Wmin`). The stored `u`, `x` are the values at the last spike of each neuron;
-`plasticity_value(syn, :STPVars, :u, t)` relaxes them to time `t`.
-
-**`MarkramSTPParameterTimestep`**: clock-driven. In `plasticity!` (after `forward!`): jumps
-``u \leftarrow u + U(1-u)``, ``x \leftarrow x - u x`` for the neurons that fired, Euler relaxation of
-``u`` and ``x`` for all neurons, then ``ρ = u x``. The spike of step ``n`` is transmitted with the
-efficacy of step ``n - 1``.
+`MarkramSTPParameterHet` takes per-neuron vectors `U`, `τF`, `τD`; `MarkramSTPParameterTimestep` is
+clock-driven (Euler).
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -422,8 +287,6 @@ efficacy of step ``n - 1``.
 | `τF` | `1500ms` | ms | facilitation time constant |
 | `U` | `0.2` | - | baseline utilisation |
 | `Wmax`, `Wmin` | `1pF`, `0pF` | weight | not used by the update |
-
-Under `sim!` the efficacy `ρ` is not updated and keeps its current value (1 for a new synapse).
 
 ```julia
 using SpikingNeuralNetworks

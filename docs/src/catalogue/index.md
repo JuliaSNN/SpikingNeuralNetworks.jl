@@ -4,20 +4,8 @@
 CurrentModule = SNNModels
 ```
 
-This section lists every model that the JuliaSNN stack provides, one page per family. Each entry
-gives the equations as implemented in the code, the parameter table with the default values of
-the constructor, the integration scheme, a short example and the API reference of the source file
-that defines it.
-
-All quantities use the unit system of `SNNModels` (load it with `SNN.@load_units`): time in ms,
-voltage in mV, current in pA, capacitance in pF, conductance in nS, length in cm, concentration in
-μM, rates in events per ms (`Hz = 1e-3`). Writing parameters with units (`20ms`, `-70mV`, `281pF`)
-keeps them correct whatever the internal base unit is.
-
-A network is composed of three kinds of objects: populations (neuron models and spike sources),
-connections (synapses between populations, with optional plasticity) and stimuli (external inputs
-to a population). Populations of the generalized integrate-and-fire family also carry a synapse
-model (how synaptic input is turned into a current) and a post-spike model (refractoriness).
+Every model, one page per family: equations, parameters with defaults, an example and the API.
+Units (`SNN.@load_units`): ms, mV, pA, pF, nS, cm, μM; rates per ms (`Hz = 1e-3`).
 
 | Family | Models | Page |
 |:-------|:-------|:-----|
@@ -33,6 +21,3 @@ model (how synaptic input is turned into a current) and a post-spike model (refr
 | Stimuli | `PoissonStimulus`, `PoissonLayer`, `CurrentStimulus`, `SpikeTimeStimulus`, `BalancedStimulus`, `StimulusGroup`, `EmptyStimulus` | [Stimuli](stimuli.md) |
 | Short-term-plasticity parameters in SNNUtils | heterogeneous STP parameters sampled from experimental fits (`SNNUtils/src/models`) | [SNNUtils models](snnutils_models.md) |
 | SNNUtils tools | sequence stimuli, E/I balance, classifiers, weight analysis | [SNNUtils tools](snnutils.md) |
-
-Plasticity (long-term, short-term and metaplasticity) is applied only when the network is run with
-`train!`; `sim!` integrates the same dynamics with frozen synapses (see [Plasticity](../plasticity.md)).

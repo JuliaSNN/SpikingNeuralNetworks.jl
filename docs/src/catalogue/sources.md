@@ -4,10 +4,8 @@
 CurrentModule = SNNModels
 ```
 
-Spike sources are populations without input dynamics: they produce spikes that connections
-propagate to other populations. They differ from stimuli (see [Stimuli](stimuli.md)), which
-write directly into a target population without a connection object. `Identity` is a relay
-population that turns its input into spikes.
+Populations that produce spikes for connections (unlike [stimuli](stimuli.md), which write into
+a population directly), and the relay population `Identity`.
 
 ## Poisson population: `Poisson`
 
@@ -17,20 +15,13 @@ In each step neuron ``i`` fires with probability
 P(\text{spike}) = \nu_i\, dt ,
 ```
 
-the Bernoulli approximation of a Poisson process (accurate for ``\nu_i dt \ll 1``). The rate is
-set by the parameter type:
+with ``\nu_i`` set by the parameter type (`PoissonParameter(rate)` picks one):
 
 | Parameter type | Field | Default | Meaning |
 |:---------------|:------|:--------|:--------|
 | `PoissonHomoParameter` | `rate` | `1Hz` | same rate for all neurons |
 | `PoissonHetParameter` | `rate` | `1Hz` (must be a vector of length `N`) | one rate per neuron |
 
-`PoissonParameter(rate)` returns a `PoissonHomoParameter` for a scalar and a
-`PoissonHetParameter` for a vector. `Population(param::PoissonParameter; N)` builds the
-population. Integration: sparse sampling: the neurons that spike in a step are
-Bernoulli(`rate dt`) along the population, so the gap to the next spiking neuron is drawn from a
-geometric law and no random number is spent per silent neuron (the law of the spikes is that of
-`fire[i] = rand() < rate * dt`, the cost is `O(1 + rate dt N)` per step).
 
 ```julia
 using SpikingNeuralNetworks
@@ -43,10 +34,8 @@ SNN.sim!([P, Ph]; duration = 1s)
 
 ## Population with a shared fluctuating rate: `VariablePoisson`
 
-`VariablePoisson(; N, param = VariablePoissonParameter(...))` (no `Population` method, `param`
-is required). One scalar noise ``\eta``, low-pass filtered uniform noise
-(``\xi_t \in [-0.5, 0.5]``), modulates the total rate ``\nu`` of the population; each neuron
-fires with probability ``\nu\, dt / N``:
+One filtered noise ``\eta`` (``\xi_t`` uniform in ``[-0.5, 0.5]``) modulates the total rate ``\nu``;
+each neuron fires with probability ``\nu\, dt / N``:
 
 ```math
 \begin{aligned}
@@ -56,9 +45,6 @@ fires with probability ``\nu\, dt / N``:
 \rho &\leftarrow \rho + (r_0 - \nu)\, dt / 400\,\text{ms}
 \end{aligned}
 ```
-
-``\rho`` starts at ``r_0``; the slow feedback drives the mean of ``\nu`` to ``r_0``. ``F`` is
-discontinuous at 0.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
@@ -81,10 +67,7 @@ Pages   = ["populations/poisson.jl"]
 
 ## Inhomogeneous Poisson population: `InhomogeneousPoisson`
 
-`Population(InhomogeneousPoissonParam(...); N)`. Same rate process as `VariablePoisson`, but
-independent for every neuron and with rate ``\nu_i`` per neuron (not divided by `N`); the
-feedback time constant is a parameter, and the spike probability is
-``1 - e^{-\nu_i dt}``:
+The rate process of `VariablePoisson`, independent for every neuron:
 
 ```math
 \begin{aligned}
@@ -117,13 +100,7 @@ Pages   = ["populations/inhomogeneous_poisson.jl"]
 
 ## Relay population: `Identity`
 
-Each step, neuron ``i`` fires if its input `g` is positive; `spikecount` stores that input,
-`h` accumulates it, and `g` is reset to zero. Any target symbol used by a connection is mapped
-to `g`. When every writer of `g` is a `SpikeTimeStimulus` or a Poisson stimulus the population is
-updated sparsely from their spike list; if you redirect a connection's `g` onto an `Identity`
-after construction, call `SNN.SNNModels.release_input!(Id)` so that it no longer counts as a
-writer (otherwise the dense path is kept: correct, but slower). Because populations are integrated before connections are forwarded, a spike arriving
-in step ``t`` is re-emitted in step ``t + 1``.
+Neuron ``i`` fires in the step after it receives positive input `g` (any target symbol maps to `g`).
 
 ```julia
 using SpikingNeuralNetworks

@@ -4,17 +4,12 @@
 CurrentModule = SNNUtils
 ```
 
-[SNNUtils.jl](https://github.com/JuliaSNN/SNNUtils.jl) provides stimulation protocols and analysis
-tools on top of SNNModels. It is a dependency of `SpikingNeuralNetworks`, which re-exports only
-`SVCtrain`; load it explicitly with `using SNNUtils` to access the functions below. The
-short-term-plasticity parameters of `src/models/` are described in [SNNUtils models](snnutils_models.md).
+Stimulation protocols and analysis tools of [SNNUtils.jl](https://github.com/JuliaSNN/SNNUtils.jl);
+load them with `using SNNUtils`.
 
 ## Word and phoneme sequences
 
-A *lexicon* is a `NamedTuple` `(dict, symbols, ph_duration, silence)` built from a dictionary
-word => phonemes; a *sequence* adds a 6-row matrix with, for each element, its word, phoneme,
-duration (ms), type (`:onset`, `:offset`, `:offset_j`, `:silence`), onset and offset time (ms), and
-the row index `line_id`.
+A lexicon maps words to phonemes; a sequence is the timed list of their presentations.
 
 - [`getdictionary`](@ref), [`getphonemes`](@ref), [`getduration`](@ref), [`generate_lexicon`](@ref)
   and the shortcut [`get_lexicon`](@ref) build lexicons.
@@ -39,11 +34,8 @@ sequence_end(seq)                                      # total duration in ms
 
 ## Stimuli for sequences
 
-[`step_input`](@ref) creates one Poisson `MultiCompartmentStimulusGroup` per symbol, projecting
-onto a random fraction of a dendritic population; [`update_stimuli!`](@ref) copies the intervals of
-the sequence into the stimuli, and [`set_stimuli!`](@ref) switches word or phoneme stimuli on and
-off. With the default `targets = [nothing]` the input targets a point-neuron population; pass the
-compartments for dendritic neurons.
+[`step_input`](@ref) makes one Poisson stimulus group per symbol, [`update_stimuli!`](@ref) copies the
+sequence intervals into them, [`set_stimuli!`](@ref) switches words or phonemes on and off.
 
 ```julia
 using SpikingNeuralNetworks, SNNUtils
@@ -69,13 +61,8 @@ Pages   = ["SNNUtils.jl", "stimuli/sequence/stimuli.jl", "stimuli/sequence/seque
 
 ## Excitation/inhibition balance of dendritic neurons
 
-[`compute_kei`](@ref), [`residual_current`](@ref) and [`optimal_kei`](@ref) compute the ratio of
-inhibitory to excitatory input rate that cancels the net dendritic current of a dendritic neuron
-with the soma held at a given potential; [`get_model`](@ref) computes the passive properties of
-the neuron. `residual_current` is zero at the ratio returned by `compute_kei`.
-The non-exported helpers `SNNUtils.critical_window` and `SNNUtils.all_windows` estimate the
-bimodality of membrane-potential distributions with the kernel-density method of Silverman
-(1981).
+[`compute_kei`](@ref), [`residual_current`](@ref), [`optimal_kei`](@ref): inhibitory/excitatory rate ratio
+that cancels the dendritic current; [`get_model`](@ref): passive properties of the neuron.
 
 ```@autodocs
 Modules = [SNNUtils]
@@ -86,10 +73,8 @@ Pages   = ["stimuli/balance_EI/compute_kei.jl", "stimuli/balance_EI/bimodal_kern
 
 Import of artificial-grammar tasks in the BioSeq JSON format and storage of the network activity
 for external analysis: [`import_bioseq_tasks`](@ref), [`bioseq_epochs`](@ref),
-[`bioseq_lexicon`](@ref), [`seq_bioseq`](@ref), and the writers [`root_path`](@ref),
-[`store_experiment_data`](@ref), [`store_target_pops`](@ref), [`store_labels`](@ref),
-[`store_activity_data`](@ref) (HDF5 through DrWatson, NPZ for membrane traces). These functions
-expect populations named `E`, `I1`, `I2` and specific JSON fields.
+[`bioseq_lexicon`](@ref), [`seq_bioseq`](@ref), [`root_path`](@ref), [`store_experiment_data`](@ref),
+[`store_target_pops`](@ref), [`store_labels`](@ref), [`store_activity_data`](@ref).
 
 ```@autodocs
 Modules = [SNNUtils]
@@ -103,11 +88,10 @@ Pages   = ["stimuli/bioseq/import_bioseq.jl"]
   spike counts or recorded variables.
 - [`SVCtrain`](@ref) (linear SVM) and `SNNUtils.LogRegtrain` (multinomial logistic regression):
   train/test a decoder, return Cohen's kappa and the confusion matrix.
-  [`MultinomialLogisticRegression`](@ref): random train/test split, returns the test accuracy
-  (it always threw in 0.2.9).
+  [`MultinomialLogisticRegression`](@ref): random train/test split, returns the test accuracy.
 - [`score_spikes`](@ref): decode the presented word from the activity of the word assemblies.
 - [`trial_average`](@ref), [`trial_sort`](@ref), [`symbols_to_int`](@ref), [`standardize`](@ref),
-  [`do_pca`](@ref): helpers. (The undefined `pca` was exported up to 0.2.9.)
+  [`do_pca`](@ref): helpers.
 
 ```julia
 using SpikingNeuralNetworks, SNNUtils

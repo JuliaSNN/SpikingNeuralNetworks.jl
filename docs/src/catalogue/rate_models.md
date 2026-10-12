@@ -4,10 +4,8 @@
 CurrentModule = SNNModels
 ```
 
-SNNModels provides two firing-rate populations, `Rate` and `WilsonCowan`, which have identical
-dynamics, and `HetRec`, a stochastically spiking population with
-heterogeneous dendritic time constants whose firing probability is a sigmoid of a filtered
-somatic variable.
+`Rate` and `WilsonCowan` (rate units, same dynamics) and `HetRec` (stochastic spiking with
+heterogeneous dendritic time constants).
 
 ## Rate units: `Rate`
 
@@ -15,22 +13,8 @@ somatic variable.
 \frac{dx}{dt} = -x + g + I, \qquad r = \tanh(x)
 ```
 
-``t`` is in ms, so the time constant is fixed to 1 ms; there are no parameters
-(`RateParameter` has no fields). ``g`` is the input written by `RateSynapse`
-(``g_i \mathrel{+}= \sum_j W_{ij} r_j`` at every step, see [Connections](connections.md)),
-``I`` an external input. Integration: forward Euler, `x += dt * (-x + g + I)`, `r = tanh(x)`.
-
-`Rate` resets ``g`` to zero after each integration step, so ``g`` is the input of the current
-step (written by the connections after the population update); use `I` for a constant input. `Rate` has no `fire` field; record `:x` or `:r` (a recorded `:g` is zero,
-because populations are recorded after their update).
-
-| Field | Default | Meaning |
-|:------|:--------|:--------|
-| `N` | `100` | number of units |
-| `x` | `0.5randn(N)` | internal state |
-| `r` | `tanh.(x)` | output rate in ``(-1, 1)`` |
-| `g` | zeros | synaptic input (target of `RateSynapse`) |
-| `I` | zeros | external input |
+Time constant 1 ms, no parameters. ``g`` is the input of the step (written by `RateSynapse`,
+reset after each step), ``I`` an external input. Record `:x` or `:r`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -49,11 +33,7 @@ Pages   = ["populations/rate.jl"]
 
 ## `WilsonCowan`
 
-Despite its name, `WilsonCowan` implements the same single-variable dynamics as `Rate`
-(``dx/dt = -x + g + I``, ``r = \tanh x``, forward Euler, 1 ms time constant); it does not
-implement the coupled excitatory-inhibitory equations of Wilson and Cowan (1972). Its
-parameter type `WCParameter` has no fields. Connections target `g` as for `Rate`, and `g` is
-reset after each step.
+Same dynamics as `Rate`; not the coupled E/I equations of Wilson and Cowan (1972).
 
 ```julia
 using SpikingNeuralNetworks
@@ -71,12 +51,9 @@ Pages   = ["populations/wilsoncowan.jl"]
 
 ## Heterogeneous dendritic timescales: `HetRec`
 
-`HetRec` is created with `Population(HetRecParameter(...); N)`. Each of the `N` neurons owns
-`Nd` leaky dendritic compartments with time constants sampled from `τd`. The soma of neuron
-``i`` reads its own dendrites and, with probability `overlap`, each dendrite of every other
-neuron. Input connections target the dendrites through the receptors `:glu` and `:gaba`
-(postsynaptic size `N * Nd`), filtered by a current-based `CurrentSynapse`
-(``\tau_e = 6`` ms, ``\tau_i = 2`` ms). Spikes are stochastic.
+Each neuron owns `Nd` dendrites with time constants sampled from `τd`; its soma also reads each
+dendrite of the other neurons with probability `overlap`. Inputs target the dendrites (`:glu`,
+`:gaba`, size `N * Nd`).
 
 ```math
 \begin{aligned}
@@ -87,14 +64,8 @@ P(\text{spike of } i \text{ in } dt) &= r_i\, \sigma\!\left(k\, (v_s^i - a_i)\ri
 \end{aligned}
 ```
 
-``r_i`` (sampled from `rate`, in spikes per ms) is the maximal rate, ``k`` = `steepness`, and
-``a_i`` (`trace`) is an adaptive baseline: it decays with `τrate`, relaxes towards ``v_s`` with
-`dt * (v_s - trace) / τrate` per non-refractory step, and increases by 1 at each spike.
-
-Integration per step: synapse update, Euler step of the dendrites, then for each neuron one
-Euler step `v_s += dt / τm * Σ_d (v_d - v_s)` (with ``k`` connected dendrites the soma relaxes to
-their mean with time constant ``τ_m / k``), refractory counter, baseline update, Bernoulli spike
-draw; a spike sets the refractory counter to `round(Int, τabs / dt)`.
+``r_i`` (from `rate`) is the maximal rate, ``k`` = `steepness`, ``a_i`` an adaptive baseline
+(time constant `τrate`, +1 per spike).
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
@@ -106,7 +77,6 @@ draw; a spike sets the refractory counter to `round(Int, τabs / dt)`.
 | `steepness` | `1` | 1/mV | slope of the sigmoid |
 | `τm` | `20ms` | ms | somatic time constant |
 | `τrate` | `100ms` | ms | time constant of the adaptive baseline |
-
 
 ```julia
 using SpikingNeuralNetworks
