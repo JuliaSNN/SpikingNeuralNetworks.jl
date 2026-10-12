@@ -1,6 +1,8 @@
-# Release notes
+# V2 changelog
 
-## SNNModels 2.0.0, SpikingNeuralNetworks 2.0.0, SNNUtils 1.0.0, SNNPlots 1.0.0, CalciumSpike 1.0.0
+Changes of version 2, its known limitations, and the bugs fixed during version 1.
+
+## 2.0.0: SNNModels 2.0.0, SpikingNeuralNetworks 2.0.0, SNNUtils 1.0.0, SNNPlots 1.0.0, CalciumSpike 1.0.0
 
 All packages move to the next major version together. SNNModels 2 changes the types of synapses, stimuli and
 populations (concretely typed plasticity rules, spike lists, lazy synapse arrays); saved models of 1.9.1 and
@@ -12,27 +14,30 @@ change with its migration: `CHANGELOG_2.0.0.md` of SNNModels.
 - Breaking: synapse/stimulus/population struct fields, `iSTDPTime` removed, delays rounded up to whole steps, random streams changed, `vSTDPParameter` is event-driven, Tripod/BallAndStick use `param.physiology`.
 - Removed code that was not loaded: Multipod, IF_CANAHP, AdExMultiTimescale, `VariableInputParameter`, stale SNNUtils parameter sets, SNNPlots Plots.jl backend and their examples.
 
-### Upgrading from 1.x
+Upgrading: see [What changes from v1 to v2](index.md#What-changes-from-v1-to-v2).
 
-- Rebuild saved models from their configuration: files of 1.9.1 and earlier are refused by `load_model`.
-- Install a rule of another type with `with_plasticity`, `without_plasticity` or `change_plasticity(model, :name; LTP, STP)`;
-  `update_plasticity!` accepts only a rule of the current type.
-- Read weights of `vSTDPParameter` with `plasticity_value(syn, :W)` and STDP traces with `trace_values` or after
-  `sync_traces!(syn)`. For the 1.9 voltage rule use `vSTDPDenseParameter`.
-- Call `SNNModels.ensure_transpose!(syn)` before reading `syn.J` or `syn.index`; read `syn.ρ` with `SNNModels.efficacy(syn)`.
-  `param.delaytime` has length 1 when all delays are equal.
-- Seeded results with Poisson inputs, delays at `dt = 0.1ms`, or STDP weights change.
-- Positional constructors of the changed structs need updating; keyword constructors are unchanged.
-- For `Float64` build the populations with `VFT = Vector{Float64}` and the rules with `FT = Float64`.
-- Pass `flush_subnormals = false` to `sim!`/`train!` if a result depends on subnormal numbers.
-- Custom components must not write `pop.fire` of an integrate-and-fire population after its `integrate!` in a step.
+## Known limitations
 
-## SNNModels 1.9.0, SNNPlots 0.2.11, SNNUtils 0.2.10, SpikingNeuralNetworks 1.3.0
+- `Float32` only: `HetRec` (refuses a `Float64` step), `CurrentStimulus`, `BalancedStimulus` and
+  `Turnover` (refuse a `Float64` target), and the rate and FORCE connections.
+- The clock accumulates rounding at a step that is not exact in `Float32` (e.g. `dt = 0.1ms`):
+  `get_time` drifts, and a `SpikeTimeStimulus` spike can be delivered one step off.
+- Delays are counted in steps: after a change of `dt` mid-run, spikes in flight are dropped (if the
+  delay in steps changes) or keep their old step count.
+- A record closed by a plasticity switch is not reopened by a later switch (`clear_records!` first).
+- Some components still do per-step dense work: `iSTDPPotential`, `vSTDPDenseParameter`,
+  `MarkramSTPParameterTimestep`, `ActivityDependentTurnover`, `AggregateScaling`.
+- `Tripod`/`BallAndStick` reproduce 1.9 bit for bit only on x86-64 with FMA.
+- Files saved with version 1 cannot be loaded (`load_model` throws an `ArgumentError`).
+
+## Bugs fixed in version 1
+
+### SNNModels 1.9.0, SNNPlots 0.2.11, SNNUtils 0.2.10, SpikingNeuralNetworks 1.3.0
 
 Bug fixes in SNNModels, SNNPlots, SNNUtils and SpikingNeuralNetworks found while documenting
 every public symbol. Several of them change simulation results.
 
-### Breaking changes
+#### Breaking changes
 
 These are released as a minor version (1.9.0), but code that ran with 1.8.x can fail or
 give different results. Check this list before upgrading.
@@ -118,17 +123,17 @@ give different results. Check this list before upgrading.
       connections, connections onto MorrisLecar/ExtendedIF/WilsonCowan, several analysis,
       IO and SNNUtils functions now work; 35 exported-but-undefined names were removed.
 
-## SpikingNeuralNetworks 1.2.1
+### SpikingNeuralNetworks 1.2.1
 
 Requires SNNModels 1.8.4, SNNPlots 0.2.10 and SNNUtils 0.2.9 or later (within the same major
 version). Documentation updated for the changes below; `matrix_record` is exported.
 
-## Changes in SNNModels 1.8.4
+### Changes in SNNModels 1.8.4
 
 - `get_git_commit_hash` no longer throws outside a git repository (cluster jobs run from a copied
   directory); `write_config` records `"unknown"` and the run continues.
 
-## Changes in SNNModels 1.8.3
+### Changes in SNNModels 1.8.3
 
 - `CurrentStimulus` with `CurrentNoise` on a neuron subset (e.g. `neurons = 51:100` on a 100-neuron
   population) indexed its random cache by neuron id and read past its end; fixed.
@@ -136,13 +141,13 @@ version). Documentation updated for the changes below; `matrix_record` is export
 - `SomaNMDA`: a first definition (`b = 3.57, k = -0.062`) that was always overridden by
   `NMDAVoltageDependency()` (`b = 3.36, k = -0.077`) was removed. The effective value is unchanged.
 
-## Changes in SNNPlots 0.2.10
+### Changes in SNNPlots 0.2.10
 
 - `using SNNPlots` now applies the SNNPlots Makie theme (no grid, frameless legends, Okabe-Ito
   palette). Before, the theme was set only during precompilation and never reached user sessions;
   with older versions call `SNNPlots.@makie_default` after loading.
 
-## Changes in SNNModels 1.8.2
+### Changes in SNNModels 1.8.2
 
 SNNModels 1.8.2 (released 2026-10-05) rewrites the trace-based STDP rules, fixes a bug in the inhibitory STDP and replaces the connectivity generator. Two changes alter simulation results.
 
@@ -158,14 +163,14 @@ SNNModels 1.8.2 (released 2026-10-05) rewrites the trace-based STDP rules, fixes
 !!! warning "Behaviour change: `STDPGerstner` amplitude and default"
     `A_pre` and `A_post` were applied twice (the trace was incremented by `A` and multiplied by `A` again), so the effective amplitude was ``A^2`` and the sign was lost: a negative `A_post` potentiated. Now each amplitude is applied once and keeps its sign. The default `A_post` is `-1e-4` (LTD). Both signs are accepted (`A_post < 0` is Hebbian LTD). To reproduce an old parameter set with amplitude `A`, use `|A|^2` with the intended sign (old `5e-2` becomes `2.5e-3`).
 
-### New features
+#### New features
 
 - `STDPTriplet`: minimal all-to-all triplet rule (Pfister and Gerstner 2006, Table 4 defaults; equal to Auryn `MinimalTriplet`), with `STDPTripletVariables`.
 - `STDPWeightDependent`: weight-dependent soft-bound pair rule (Gütig et al. 2003; Auryn `STDPwd` form, `η` is a relative rate).
 - Event-driven kernels (`sparse_plasticity/STDP_kernels.jl`) shared by `STDPGerstner`, `STDPConfavreux2025`, `STDPWeightDependent`, `STDPTriplet` (see [Plasticity](plasticity.md)). Validated against Brian2 (2e-6), Auryn (2e-7) and analytic kernels.
 - `sparse_matrix` builds the sparse matrix directly: no dense `Npost x Npre` array. 1e5 x 1e5 at `p = 1e-3` takes 0.22 s and 0.11 GiB.
 
-### Behaviour changes
+#### Behaviour changes
 
 - Plasticity still runs only under `train!`, not `sim!`; the documentation now says so.
 - Same-step pre and post spikes do not interact in the pair and triplet rules (traces are read before the current step's spikes; earlier history is kept), as in Auryn and Brian2.
@@ -174,7 +179,7 @@ SNNModels 1.8.2 (released 2026-10-05) rewrites the trace-based STDP rules, fixes
 - Autapses of recurrent `SpikingSynapse(pre, pre, ...)` are removed structurally; no zero-weight self synapses remain that plasticity could grow.
 - Synaptic data (weights, delays, STP `ρ`) are `Float32` at all constructor boundaries, whatever the element type of the input.
 
-### Performance
+#### Performance
 
 Measured on the science workstation (Julia 1.12.6), 4000 `Identity` neurons, recurrent `p = 0.02`, `plasticity!` alone, microseconds per step at 10 Hz:
 
@@ -185,7 +190,7 @@ Measured on the science workstation (Julia 1.12.6), 4000 `Identity` neurons, rec
 
 A full `train!` second of a 4000-neuron Poisson population projecting to an IF population with `STDPGerstner` (320,000 synapses) takes 0.21 s against 4.59 s before (1 thread), and 0.17 s without plasticity. `sparse_matrix` for 2e4 x 2e4 at `p = 1e-3` (Bernoulli): 0.01 s and 5 MiB against 13.5 s and 19.9 GiB.
 
-### Migration checklist
+#### Migration checklist
 
 1. Rerun every simulation that used `iSTDPRate` or `iSTDPTime`.
 2. Rescale `STDPGerstner` amplitudes (`A_new = ±A_old^2`) and check the sign of `A_post`.

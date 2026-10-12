@@ -25,8 +25,7 @@ SNN.get_time(model.time)                # 2000.0 (ms): runs continue from the cu
 
 `sim!` and `train!` run the same step; only `train!` applies plasticity. Both accept the model
 positionally (`sim!(model, duration)`) or as a keyword (`sim!(; model, duration)`). The time step
-is the keyword `dt` (default `0.125ms`); the clock has the precision of the model, so a step that
-is not exact in `Float32`, such as `0.1ms`, accumulates rounding in `get_time`. Further keywords: `pbar = true` (progress bar), `perturbation!` (a function called before each step),
+is the keyword `dt` (default `0.125ms`). Further keywords: `pbar = true` (progress bar), `perturbation!` (a function called before each step),
 `neurons_per_thread` and `flush_subnormals` (below).
 
 One step does, in this order:
@@ -74,8 +73,8 @@ SNN.float_type(EE), eltype(model.time.t)    # (Float64, Float64)
 
 A rule built in `Float32` is converted to the precision of its synapse but keeps its
 `Float32`-rounded values; build it with `FT = Float64` for exact `Float64` parameters. Mixing a
-`Float32` parameter object into a `Float64` population is an `ArgumentError`. `HetRec`,
-`CurrentStimulus`, `BalancedStimulus`, `Turnover` and the rate connections are `Float32` only.
+`Float32` parameter object into a `Float64` population is an `ArgumentError`. A few components are
+`Float32` only (see [Known limitations](release_notes.md#Known-limitations)).
 
 ## Threads
 
@@ -118,9 +117,8 @@ loaded = SNN.load_model(dir, "toy", (seed = 1,))
 loaded.model.pop.E.N                    # 10
 ```
 
-`info` is a `NamedTuple` of metadata that becomes part of the folder name. Models saved with
-SNNModels 1.9.1 or earlier cannot be loaded (`load_model` throws an `ArgumentError`): rebuild them
-from their configuration.
+`info` is a `NamedTuple` of metadata that becomes part of the folder name. Files saved with
+version 1 cannot be loaded (see [What changes from v1 to v2](index.md#What-changes-from-v1-to-v2)).
 
 ## API
 

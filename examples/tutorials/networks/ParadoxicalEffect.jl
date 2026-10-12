@@ -1,82 +1,43 @@
+# Paradoxical effect of inhibition-stabilised networks (Tsodyks et al. 1997, J. Neurosci. 17:4382):
+# an extra current into the inhibitory neurons lowers their steady-state firing rate.
 using SpikingNeuralNetworks
+using CairoMakie, Statistics, Random
 SNN.@load_units
-import SpikingNeuralNetworks: AdExParameter, IF
-import SpikingNeuralNetworks: plot, plot!
-using Statistics, Random
 
 function initialize()
-    E = SNN.IF(; N = 2000, param = SNN.IFSinExpParameter())
-    I = SNN.IF(; N = 500, param = SNN.IFSinExpParameter())
-    EE = SNN.SpikingSynapse(E, E, :ge; conn = (μ = 2.0, p = 0.2))
-    EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 10.0, p = 0.2))
-    IE = SNN.SpikingSynapse(I, E, :gi; conn = (μ = 10.0, p = 0.2))
-    II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10.0, p = 0.2))
-    inputs = SNN.Poisson(; N = 200, param = SNN.PoissonParameter(rate = 10.5Hz))
-    ProjE = SNN.SpikingSynapse(inputs, E, :ge; conn = (μ = 5, p = 0.2))
-    P = (; E, I, inputs)
-    C = (; EE, EI, IE, II, ProjE)
-    return SNN.compose(; P..., C..., silent = true)
+    synapse = SNN.SingleExpSynapse(τe = 5ms, τi = 5ms, E_e = 0mV, E_i = -80mV)
+    spike = SNN.PostSpike(τabs = 2ms)
+    E = SNN.IF(; N = 800, param = SNN.IFParameter(C = 200pF, gl = 10nS, Vt = -50mV, Vr = -70mV), synapse, spike, name = "E")
+    I = SNN.IF(; N = 200, param = SNN.IFParameter(C = 200pF, gl = 10nS, Vt = -53mV, Vr = -70mV), synapse, spike, name = "I")
+    EE = SNN.SpikingSynapse(E, E, :ge; conn = (p = 0.05, μ = 2nS))
+    EI = SNN.SpikingSynapse(E, I, :ge; conn = (p = 0.05, μ = 2nS))
+    IE = SNN.SpikingSynapse(I, E, :gi; conn = (p = 0.05, μ = 20nS))
+    II = SNN.SpikingSynapse(I, I, :gi; conn = (p = 0.05, μ = 20nS))
+    noise = SNN.PoissonLayer(rate = 20Hz, N = 100)
+    inE = SNN.Stimulus(noise, E, :ge; conn = (p = 0.1, μ = 4nS))
+    inI = SNN.Stimulus(noise, I, :ge; conn = (p = 0.1, μ = 4nS))
+    return SNN.compose(; E, I, EE, EI, IE, II, inE, inI, silent = true)
 end
-#
 
-
-model = initialize()
-SNN.monitor!(model.pop, [:fire, :v, :ge])
-SNN.sim!(; model, duration = 3second)
-SNN.vecplot(model.pop.E, [:ge], r = 0.1s:1.2s, neurons = 1:4)
-SNN.vecplot(model.pop.E, [:v], r = 0.1s:1.2s, neurons = 1:5)
-fr, r, labels = SNN.firing_rate(model.pop, interval = 0.1s:1.2s)
-e, i, inputs = mean.(fr)
-@info "E: $e, I: $i, Inputs: $inputs"
-SNN.raster(model.pop, [1 * 1000, 3.0 * 1000])
-
-
-##
-Irange = 0:0.25nA:2nA
+Irange = 0:25pA:100pA
 rE = zeros(length(Irange))
 rI = zeros(length(Irange))
-Threads.@threads for x in eachindex(Irange)
+for x in eachindex(Irange)
     Random.seed!(10)
     model = initialize()
-    SNN.sim!(; model, duration = 1second)
+    SNN.sim!(model, 500ms)                       # transient
     SNN.monitor!(model.pop, [:fire])
-    model.pop.I.I .= Irange[x]
-    SNN.sim!(; model, duration = 5second)
-    fr, r, labels = SNN.firing_rate(model.pop, interval = 0.0s:10ms:5s)
-    e, i, inputs = mean.(fr)
-    @info "Input: $x, E: $e, I: $i"
-    rE[x] = e
-    rI[x] = i
+    model.pop.I.I .= Irange[x]                   # extra current into the inhibitory neurons
+    SNN.sim!(model, 2second)
+    fr, r, labels = SNN.firing_rate(model.pop, interval = 0.5s:10ms:2.5s, pop_average = true)
+    rE[x], rI[x] = mean(fr[1]), mean(fr[2])
+    @info "Input to I: $(Irange[x]) pA, E: $(round(rE[x], digits = 2)) Hz, I: $(round(rI[x], digits = 2)) Hz"
 end
 
-##
-plot(
-    Irange,
-    [rI],
-    xlabel = "Input to I neurons (nA)",
-    ylabel = "Inhibitory neurons (Hz)",
-    label = "",
-    lc = [:blue],
-    lw = 4,
-    legend = :topright,
-)
-plot!(
-    [[], []],
-    lc = [:blue :red],
-    label = ["Excitatory" "Inhibitory"],
-    legend = :top,
-    legendfontsize = 12,
-    lw = 4,
-)
-#
-plot!(
-    SNN.SNNPlots.twinx(),
-    Irange,
-    [rE],
-    lc = [:red],
-    label = "",
-    lw = 4,
-    ylabel = "Excitatory neurons (Hz)",
-    legend = :topright,
-)
-##
+fig = Figure(size = (450, 350))
+ax = Axis(fig[1, 1], xlabel = "Current into I neurons (pA)", ylabel = "Firing rate (Hz)")
+scatterlines!(ax, Irange, rE, label = "E")
+scatterlines!(ax, Irange, rI, label = "I")
+axislegend(ax)
+save(joinpath(mktempdir(), "ParadoxicalEffect.png"), fig)
+fig

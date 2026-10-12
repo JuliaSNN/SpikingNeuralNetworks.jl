@@ -5,6 +5,11 @@ using Documenter, SpikingNeuralNetworks, .SNNModels, .SNNPlots, .SNNUtils
 pages = [
     "Home" => "index.md",
     "Getting started" => "getting_started.md",
+    "Tutorials" => [
+        "Populations" => "tutorials/populations.md",
+        "Plasticity" => "tutorials/plasticity.md",
+        "Simulations" => "tutorials/simulations.md",
+    ],
     "User guide" => [
         "Populations" => "populations.md",
         "Stimuli" => "stimuli.md",
@@ -13,7 +18,6 @@ pages = [
         "Plasticity" => "plasticity.md",
         "Visualization (SNNPlots)" => "visualization.md",
     ],
-    "Examples" => "examples.md",
     "Model catalogue" => [
         "Overview" => "catalogue/index.md",
         "Integrate-and-fire neurons" => "catalogue/neurons_if.md",
@@ -32,7 +36,7 @@ pages = [
     "API Reference" => "api_reference.md",
     "Models Extension" => "models_ext.md",
     "Contributing" => "contributing.md",
-    "Release notes" => "release_notes.md",
+    "V2 changelog" => "release_notes.md",
 ]
 
 makedocs(

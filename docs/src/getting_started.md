@@ -85,5 +85,6 @@ E fires at about 10 Hz and I at about 20 Hz, irregularly.
 - [Running simulations](simulation.md): `sim!`, `train!`, time step, precision, threads.
 - [Recordings](recordings.md) and [Visualization](visualization.md).
 - [Plasticity](plasticity.md): STDP, short-term plasticity, `train!`.
-- [Examples](examples.md): single neurons, noise, dendrites, FORCE learning.
+- Tutorials: [Populations](tutorials/populations.md), [Plasticity](tutorials/plasticity.md),
+  [Simulations](tutorials/simulations.md) (save, load, rerun).
 - [Model catalogue](catalogue/index.md): every model with its equations.

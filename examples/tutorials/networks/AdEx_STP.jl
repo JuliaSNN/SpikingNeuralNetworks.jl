@@ -1,117 +1,34 @@
-using BenchmarkTools
-using Random 
-
+# AdEx/IF network with depressing short-term plasticity (Tsodyks-Markram) on the excitatory
+# recurrent synapses. STP acts only under `train!`.
+using SpikingNeuralNetworks
+using CairoMakie, Distributions, Statistics, Random
+SNN.@load_units
 Random.seed!(1234)
 
-## AdEx neuron with fixed external current connections with multiple receptors
 E_uni = SNN.AdExParameter(; El = -50mV)
-E_het = SNN.heterogeneous(E_uni, 3200; τm = Distributions.Normal(10.0f0, 2.0f0), b = Distributions.Normal(60.0f0, 4.0f0))
-E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 3200, name = "Excitatory")
-
-I = SNN.Population(
-    SNN.IFParameter(),
-    synapse = SNN.SingleExpSynapse();
-    N = 800,
-    name = "Inhibitory",
-    spike = SNN.PostSpike(),
-)
-
-EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 17, p = 0.02), STPParam = SNN.MarkramSTPParameterEvent(U=0.5))
+E_het = SNN.make_heterogeneous(E_uni, 1600; τm = Normal(10.0f0, 2.0f0), b = Normal(60.0f0, 4.0f0))
+E = SNN.Population(E_het, synapse = SNN.DoubleExpSynapse(); N = 1600, name = "Excitatory")
+I = SNN.Population(SNN.IFParameter(), synapse = SNN.SingleExpSynapse(); N = 400,
+                   name = "Inhibitory", spike = SNN.PostSpike())
+EE = SNN.SpikingSynapse(E, E, :he; conn = (μ = 17, p = 0.02), STPParam = SNN.MarkramSTPParameter(U = 0.5))
 EI = SNN.SpikingSynapse(E, I, :ge; conn = (μ = 30, p = 0.02))
 IE = SNN.SpikingSynapse(I, E, :hi; conn = (μ = 50, p = 0.02))
 II = SNN.SpikingSynapse(I, I, :gi; conn = (μ = 10, p = 0.02))
 model = SNN.compose(; E, I, EE, EI, IE, II)
 
-# SNN.monitor!(E, [(:ge, 1:1), (:gi, 1:1)], variables = :synvars)
-# SNN.monitor!(E, (:v, 1:3))
 SNN.monitor!(model.pop, [:fire])
-# @btime 
-SNN.train!(model = model; duration = 5second, pbar = true)
-SNN.reset_time!(model)
-SNN.train!(model = model; duration = 5second, pbar = true)
-#
+SNN.monitor!(E, [(:v, 1:3)])
+SNN.monitor!(EE, [:ρ], sr = 50Hz)                  # STP efficacy of every EE synapse
+SNN.train!(model = model; duration = 3second)
 
-fr, r = SNN.firing_rate(model.pop.E, 0:20ms:4s, pop_average = true)
-SNN.raster(model.pop, 4s:5s)
-
-##
-ssn = SNN.spiketimes(model.pop.E)[1:100]
-SNN.STTC(ssn, 50ms, 0:1s ) |> mean
-
-
-
-# default(palette = :okabe_ito)
 ## Plot
-p1 = plot(
-    [
-        SNN.vecplot(
-            E,
-            :v,
-            neurons = n,
-            r = 3s:2ms:4s,
-            add_spikes = true,
-            lw = 2,
-            xlabel = "",
-            c = :black,
-        ) for n = 1:3
-    ]...,
-    layout = (3, 1),
-    leftmargin = 10Plots.mm,
-    rightmargin = 10Plots.mm,
-    frame = :none,
-    ylims = :auto,
-    size = (800, 400),
-)
-plot!(
-    p1,
-    subplot = 3,
-    xticks = (3:0.2:4, 3:0.2:4),
-    xlabel = "Time (s)",
-    xaxis = true,
-    frame = :axes,
-    grid = false,
-    yaxis = false,
-    ylabel = "",
-)
-plot!(
-    p1,
-    ylabel = "Membrane potential (mV)",
-    subplot = 2,
-    yaxis = true,
-    xaxis = false,
-    frame = :axes,
-    grid = false,
-)
-plot!(p1, subplot = 1, topmargin = 5Plots.mm)
-
-p = plot(
-    SNN.raster(model.pop, [3.4s, 4s], yrotation = 90),
-    SNN.vecplot(
-        E,
-        [:ge, :gi],
-        variables = :synvars,
-        neurons = 1,
-        r = 3.8s:4s;
-        legend = true,
-        xlabel = "Time (s)",
-        ylabel = "Conductance (nS)",
-        palette = :okabe_ito,
-    ),
-    p1,
-    SNN.firing_rate(model.pop.E, 0:4s, time_average = true)[1] |>
-    x->histogram(
-        x,
-        ylabel = "Neurons",
-        xlabel = "Firing rate (Hz)",
-        label = "",
-        c = :black,
-    ),
-    size = (900, 600),
-    fg_legend = :transparent,
-    legendfontsize = 12,
-)
-
-p = plot!(p, size = (800, 600))
-savefig(p, joinpath(SNN.DOCS_ASSETS_PATH, "AdEx_net.png"))
-
-p
+fig = Figure(size = (800, 600))
+ax1 = Axis(fig[1, 1], ylabel = "Neuron")
+SNN.raster!(ax1, model.pop, 2s:3s)
+ax2 = Axis(fig[2, 1], xlabel = "Time (s)", ylabel = "Mean efficacy ρ")
+ρ, r = SNN.record(EE, :ρ, range = true)
+lines!(ax2, r ./ 1000, vec(mean(ρ(axes(ρ, 1), r), dims = 1)), color = :black)
+ax3 = Axis(fig[3, 1], xlabel = "Time (s)", ylabel = "V (mV)")
+SNN.vecplot!(ax3, E, :v, neurons = 1, interval = 2s:1ms:3s, add_spikes = true)
+save(joinpath(mktempdir(), "AdEx_STP.png"), fig)
+fig

@@ -32,10 +32,44 @@ Install with `] add SpikingNeuralNetworks`, then follow [Getting started](gettin
 | To | Read |
 |:---|:-----|
 | build and run a first network | [Getting started](getting_started.md) |
+| learn by example: neurons, plasticity, save and rerun | Tutorials: [Populations](tutorials/populations.md), [Plasticity](tutorials/plasticity.md), [Simulations](tutorials/simulations.md) |
 | understand populations, connections, stimuli | [Populations](populations.md), [Stimuli](stimuli.md) |
 | run, train, change precision or threads, save | [Running simulations](simulation.md) |
 | record and plot | [Recordings](recordings.md), [Visualization](visualization.md) |
 | add plasticity | [Plasticity](plasticity.md) |
 | find a model and its equations | [Model catalogue](catalogue/index.md) |
 | write a new model | [Model extensions](models_ext.md) |
-| upgrade from 1.x | [Release notes](release_notes.md) |
+| upgrade from 1.x | [What changes from v1 to v2](#What-changes-from-v1-to-v2), [V2 changelog](release_notes.md) |
+
+## What changes from v1 to v2
+
+Version 2 is faster (an E/I network runs 8 to 12 times faster than 1.9, synapses use a third of the
+memory) and adds `Float64` models, opt-in threads and rule switching. Keyword-built models run
+unchanged; what needs attention:
+
+**Saved files**
+- Files saved with version 1 cannot be loaded: rebuild the model from its configuration and save it again.
+
+**Plasticity**
+- Rule types are part of the synapse type: install another rule with `with_plasticity`,
+  `without_plasticity` or `change_plasticity(model, :name; LTP, STP)`; `update_plasticity!` keeps the type.
+- `vSTDPParameter` is event-driven: read its weights with `plasticity_value(syn, :W)`; the 1.9 rule is `vSTDPDenseParameter`.
+- STDP traces are stored lazily: read them with `trace_values(syn, :tpre)` or after `sync_traces!(syn)`.
+- `iSTDPTime` is removed: use `iSTDPRate` or `iSTDPPotential`.
+
+**Synapse fields**
+- `syn.J`, `syn.index`: call `SNNModels.ensure_transpose!(syn)` first.
+- `syn.ρ`: read with `SNNModels.efficacy(syn)`, call `SNNModels.materialize_efficacy!(syn)` before writing.
+- `syn.param.delaytime` has length 1 when all delays are equal; delays round up to whole steps.
+
+**Results**
+- Seeded runs with Poisson inputs, delays at `dt = 0.1ms`, or STDP weights differ from 1.9 (same statistics).
+- `sim!`/`train!` flush subnormal numbers to zero: pass `flush_subnormals = false` for IEEE behaviour.
+
+**Custom code**
+- Positional constructors of the changed structs need the new fields; keyword constructors are unchanged.
+- Do not write `pop.fire` of an integrate-and-fire population after its `integrate!` within a step.
+- For `Float64` build populations with `VFT = Vector{Float64}` and rules with `FT = Float64`.
+
+Every change, with its migration: [V2 changelog](release_notes.md) and
+[`CHANGELOG_2.0.0.md`](https://github.com/JuliaSNN/SNNModels.jl/blob/main/CHANGELOG_2.0.0.md) of SNNModels.

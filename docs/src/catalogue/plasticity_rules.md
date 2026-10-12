@@ -327,7 +327,7 @@ before the postsynaptic pass, a pre and a post spike in the same step interact.
 | `Wmax` | `243pF` | `243pF` | weight | upper bound |
 | `Wmin` | `0.01pF` | `0.01pF` | weight | lower bound |
 
-Results of `iSTDPRate` with SNNModels 1.5.0 to 1.8.1 are wrong; see [Release notes](../release_notes.md).
+Results of `iSTDPRate` with SNNModels 1.5.0 to 1.8.1 are wrong; see the [V2 changelog](../release_notes.md#Bugs-fixed-in-version-1).
 
 ```julia
 using SpikingNeuralNetworks

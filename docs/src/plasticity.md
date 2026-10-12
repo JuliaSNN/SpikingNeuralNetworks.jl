@@ -121,8 +121,8 @@ Amplitudes are in the units of `W`; rescale them to the weights of your network.
 
 ## Inhibitory, voltage-based and short-term plasticity
 
-- `iSTDPRate` and `iSTDPPotential` (Vogels et al. 2011) use Euler-integrated traces. Results of
-  `iSTDPRate` with SNNModels 1.5.0 to 1.8.1 are wrong (see [Release notes](release_notes.md)).
+- `iSTDPRate` and `iSTDPPotential` (Vogels et al. 2011) use Euler-integrated traces (results of
+  `iSTDPRate` with SNNModels 1.5.0 to 1.8.1: see the [V2 changelog](release_notes.md#Bugs-fixed-in-version-1)).
 - `vSTDPParameter` (Clopath et al. 2010) is event-driven: read its weights with
   `plasticity_value(syn, :W)`. `vSTDPDenseParameter` updates `W` every step and reproduces the
   rule of SNNModels 1.9.
