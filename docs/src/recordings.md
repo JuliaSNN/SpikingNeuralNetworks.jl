@@ -46,7 +46,7 @@ nothing # hide
 ```
 
 Buffers are allocated before the run from its duration (or `monitor_time`) and grow when
-needed, with a one-time warning; `monitor_rate` (default 20 Hz) sizes the spike buffer.
+needed, with a one-time warning; `monitor_rate` (default `20Hz`, written with units) sizes the spike buffer.
 
 A tuple `(key, indices)` restricts the recording of a vector field to some neurons, e.g.
 `SNN.monitor!(E, [(:v, 1:10)])`. For `:fire` only the spikes of the listed neurons are

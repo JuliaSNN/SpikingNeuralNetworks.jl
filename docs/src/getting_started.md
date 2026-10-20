@@ -56,7 +56,7 @@ makes this explicit.
 ## Simulate and record
 
 ```@example getting_started
-SNN.monitor!(model.pop, [:fire], monitor_rate = 50)  # all spikes of E and I
+SNN.monitor!(model.pop, [:fire], monitor_rate = 50Hz)  # all spikes of E and I
 SNN.monitor!(E, [:v], sr = 1kHz)          # membrane potential, sampled at 1 kHz
 SNN.sim!(model, 1s)
 nothing # hide

@@ -33,6 +33,7 @@ pages = [
         "SNNUtils models" => "catalogue/snnutils_models.md",
         "SNNUtils tools" => "catalogue/snnutils.md",
     ],
+    "Performance comparison" => "performance.md",
     "API Reference" => "api_reference.md",
     "Models Extension" => "models_ext.md",
     "Contributing" => "contributing.md",

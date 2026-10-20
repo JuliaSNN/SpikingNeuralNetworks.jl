@@ -2,6 +2,18 @@
 
 Changes of version 2, its known limitations, and the bugs fixed during version 1.
 
+## 2.0.1: SpikingNeuralNetworks 2.0.1, SNNModels 2.0.2
+
+- Perturbation records are stored compactly (SNNModels 2.0.2): one `PerturbationStore` /
+  `PerturbationSpikeStore` per (object, variable, condition) instead of one `Dict` per window, with
+  `perturbation_record` output unchanged. Records written by earlier versions must be converted once with
+  `compact_perturbation_records!` (then saved again); readers and new recordings refuse the old layout.
+  New accessor `perturbation_windows`. Window numbers are never reused after a deletion.
+- Re-exported: `perturbation_windows`, `compact_perturbation_records!`, `PerturbationStore`,
+  `PerturbationSpikeStore`. Compat `SNNModels = "2.0.2"`.
+- Documentation: performance comparison page (v1, v2, Auryn, Brian2); `monitor_rate` written with units;
+  COBA tutorial with the Brette et al. 2007 weights.
+
 ## 2.0.0: SNNModels 2.0.0, SpikingNeuralNetworks 2.0.0, SNNUtils 1.0.0, SNNPlots 1.0.0, CalciumSpike 1.0.0
 
 All packages move to the next major version together. SNNModels 2 changes the types of synapses, stimuli and
