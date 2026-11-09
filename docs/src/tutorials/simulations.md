@@ -110,7 +110,7 @@ See [Precision](../simulation.md#Precision) and [Threads](../simulation.md#Threa
 
 ## More scripts
 
-Runnable scripts in the `examples` folder of the package:
+Runnable scripts in [SNNExamples](https://github.com/JuliaSNN/SNNExamples):
 
 - [`utils/load_model.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/SNN_usage/load_model.jl): save a network, load it, continue it, rerun it without one stimulus
 - [`tutorials/perturbations/EI_network_perturbation.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/perturbations/EI_network_perturbation.jl): perturbing a running E/I network
