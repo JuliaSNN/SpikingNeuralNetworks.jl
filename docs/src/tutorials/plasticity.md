@@ -158,15 +158,15 @@ save("force.png", fig)
 
 Runnable scripts in the `examples/tutorials` folder of the package:
 
-- [`plasticity/STP_demo.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/plasticity/STP_demo.jl): short-term plasticity: ρ, u, x
-- [`networks/AdEx_STP.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/AdEx_STP.jl): network with short-term depression
-- [`networks/STP_het.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/STP_het.jl): heterogeneous short-term plasticity from experimental fits
-- [`stdp_demo.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/stdp_demo.jl): pair STDP: weight change against spike-time difference
-- [`STDP_kernel.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/STDP_kernel.jl): kernels of all long-term rules
-- [`plasticity/AdEx_plasticity.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/plasticity/AdEx_plasticity.jl): vSTDP network with synaptic normalisation
-- [`networks/synaptic_turnover.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/synaptic_turnover.jl): random synaptic turnover
-- [`plasticity/AdEx_turnover.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/plasticity/AdEx_turnover.jl): activity-dependent turnover in space
-- [`rate_models/rate_net.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/rate_models/rate_net.jl): rate network
-- [`rate_models/Oja_rule.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/rate_models/Oja_rule.jl): Oja rule in a rate network
-- [`rate_models/pinning_net.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/rate_models/pinning_net.jl): PINning
-- [`rate_models/ppc.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/rate_models/ppc.jl): rate network with a trained readout
+- [`plasticity/STP_demo.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/plasticity/STP_demo.jl): short-term plasticity: ρ, u, x
+- [`networks/AdEx_STP.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/AdEx_STP.jl): network with short-term depression
+- [`networks/STP_het.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/STP_het.jl): heterogeneous short-term plasticity from experimental fits
+- [`stdp_demo.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/stdp_demo.jl): pair STDP: weight change against spike-time difference
+- [`STDP_kernel.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/STDP_kernel.jl): kernels of all long-term rules
+- [`plasticity/AdEx_plasticity.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/plasticity/AdEx_plasticity.jl): vSTDP network with synaptic normalisation
+- [`networks/synaptic_turnover.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/synaptic_turnover.jl): random synaptic turnover
+- [`plasticity/AdEx_turnover.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/plasticity/AdEx_turnover.jl): activity-dependent turnover in space
+- [`rate_models/rate_net.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/rate_models/rate_net.jl): rate network
+- [`rate_models/Oja_rule.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/rate_models/Oja_rule.jl): Oja rule in a rate network
+- [`rate_models/pinning_net.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/rate_models/pinning_net.jl): PINning
+- [`rate_models/ppc.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/rate_models/ppc.jl): rate network with a trained readout
