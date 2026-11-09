@@ -121,7 +121,7 @@ SNN.sim!([T]; duration = 200ms)
 
 ```@autodocs
 Modules = [SNNModels]
-Pages   = ["multicompartment/tripod.jl"]
+Pages   = ["multicompartment/tripod.jl", "multicompartment/tripod_paper.jl"]
 ```
 
 ## BallAndStick
