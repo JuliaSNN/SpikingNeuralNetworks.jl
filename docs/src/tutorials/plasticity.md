@@ -156,7 +156,7 @@ save("force.png", fig)
 
 ## More scripts
 
-Runnable scripts in the `examples/tutorials` folder of the package:
+Runnable scripts in the `tutorials` folder of [SNNExamples](https://github.com/JuliaSNN/SNNExamples):
 
 - [`plasticity/STP_demo.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/plasticity/STP_demo.jl): short-term plasticity: ρ, u, x
 - [`networks/AdEx_STP.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/AdEx_STP.jl): network with short-term depression
