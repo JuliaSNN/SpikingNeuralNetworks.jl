@@ -112,7 +112,7 @@ See [Precision](../simulation.md#Precision) and [Threads](../simulation.md#Threa
 
 Runnable scripts in [SNNExamples](https://github.com/JuliaSNN/SNNExamples):
 
-- [`utils/load_model.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/SNN_usage/load_model.jl): save a network, load it, continue it, rerun it without one stimulus
+- [`utils/load_model.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/usage/load_model.jl): save a network, load it, continue it, rerun it without one stimulus
 - [`tutorials/perturbations/EI_network_perturbation.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/perturbations/EI_network_perturbation.jl): perturbing a running E/I network
 - [`tutorials/extensions/neuron_model.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/extensions/neuron_model.jl): a new neuron model (see [Model extensions](../models_ext.md))
 - [`tutorials/extensions/stimulus_model.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/extensions/stimulus_model.jl): a new stimulus model
