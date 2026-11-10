@@ -6,7 +6,7 @@ simulation, recording, analysis), `SNNPlots` (plotting) and `SNNUtils` (stimulat
 analysis and classifiers), defines the alias `SNN = SpikingNeuralNetworks`, applies the SNNPlots
 Makie theme (`@makie_default`) and loads the unit constants (`@load_units`) at load time.
 
-All exported SNNModels names are reachable as `SNN.<name>` (e.g. `SNN.IF`, `SNN.sim!`).
+All exported SNNModels names are reachable as `SNN.<name>` (e.g. `SNN.IF`, `SNN.sim!`, `SNN.TripodPaper`).
 
 # Example
 ```julia
@@ -55,6 +55,11 @@ module SpikingNeuralNetworks
     PoissonLayer, Stimulus, SpikingSynapse, Population, Poisson, StimulusGroup, MultiCompartmentStimulusGroup
 
     export MarkramSTPParameterHet, MarkramSTPParameter
+
+    ## Tripod configurations and synapse sets from SNNModels (2.1.0)
+    export TripodPaper, PaperScheme, HeunScheme, AbstractTripodScheme,
+    DuarteGluDend, TripodDendSynapseMouse, MouseNMDA, EyalNMDA32,
+    TripodSomaSynapsePaper, TripodDendSynapsePaper, TripodDendSynapsePaperMouse
 
     
     ## Functions from SNNModels

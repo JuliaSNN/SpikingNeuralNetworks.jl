@@ -2,3 +2,7 @@
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SNNModels = "5fb03681-66ea-42c3-a459-1265ed30d607"
+SNNPlots = "1906bf50-7128-11ef-3209-891d16f9be9f"
+SNNUtils = "df079cdf-2344-43fe-90b5-fc41d8d26db7"
+SpikingNeuralNetworks = "9d8b7fda-1049-58bc-9481-071a9f369938"

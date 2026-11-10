@@ -32,6 +32,7 @@ pages = [
         "Stimuli" => "catalogue/stimuli.md",
         "SNNUtils models" => "catalogue/snnutils_models.md",
         "SNNUtils tools" => "catalogue/snnutils.md",
+        "SNNUtils Spike TIMIT" => "catalogue/spiketimit.md",
     ],
     "Performance comparison" => "performance.md",
     "API Reference" => "api_reference.md",

@@ -2,6 +2,26 @@
 
 Changes of version 2, its known limitations, and the bugs fixed during version 1.
 
+## 2.1.0: SpikingNeuralNetworks 2.1.0, SNNModels 2.2.0
+
+Bugfix
+
+- Receptor kinetics (SNNModels 2.2.0): `ReceptorSynapse` and `MultiReceptorSynapse` (soma and dendrites of
+  `Tripod` and `BallAndStick`, point neurons with receptors) now peak at `g0` at any `dt`; they peaked at
+  `c(dt) g0`, `c = α dt / (1 - exp(-α dt))`, `α = 1/τr - 1/τd` (AMPA and GABAa 17 to 23 % too high at
+  dt 0.1 to 0.125 ms). Old runs: `g0_new = c(dt) g0_old`, per receptor at the old `dt`. Table of `c` and the
+  other result changes (Tripod soma clamp, `PostSpike` defaults, `IZ`, `HH`): SNNModels `CHANGELOG.md`
+  (2.1.0 and 2.2.0).
+
+Improvements
+
+- Compat `SNNModels = "2.2"` (SNNPlots 1 and SNNUtils 1 unchanged).
+- Re-exported from SNNModels: `TripodPaper`, `PaperScheme`, `HeunScheme`, `AbstractTripodScheme`, `DuarteGluDend`,
+  `TripodDendSynapseMouse`, `MouseNMDA`, `EyalNMDA32`, `TripodSomaSynapsePaper`, `TripodDendSynapsePaper`,
+  `TripodDendSynapsePaperMouse`; the length presets (`distal_distal`, `soma_only`, ...) stay `SNN.<name>`.
+- Documentation: `TripodPaper`, dendrite diameter, fixed length presets, mouse synapses and the receptor
+  kinetics in the model catalogue; new site logo; corrected link to `tutorials/usage/load_model.jl`.
+
 ## 2.0.1: SpikingNeuralNetworks 2.0.1, SNNModels 2.0.2
 
 - Perturbation records are stored compactly (SNNModels 2.0.2): one `PerturbationStore` /

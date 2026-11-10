@@ -48,9 +48,13 @@ C_{d,k} \frac{dV_{d,k}}{dt} &= g_{m,k} (E_{L,k} - V_{d,k}) - I_{syn,d,k}
 ``I_{syn}`` are the currents of the synapse models (clamped to ``\pm 1500`` pA in `Tripod`,
 ``\pm 1000`` pA in `BallAndStick`); ``C_{d,k}``, ``g_{m,k}``, ``g_{ax,k}`` come from `create_dendrite`.
 
-A spike is emitted when ``V_s`` reaches `Vspike` (default ``-10`` mV): ``V_s`` is held at
+A spike is emitted when ``V_s`` reaches `Vspike` (default ``0`` mV): ``V_s`` is held at
 `spike.AP_membrane` for `spike.up`, then at `adex.Vr` for `spike.τabs`; ``w_s \mathrel{+}= b``,
-``\theta \mathrel{+}= A_t``. Integration: Heun method.
+``\theta \mathrel{+}= A_t``. During the back-propagation (`up`) and refractory (`τabs`) periods the
+dendrites are integrated in full (leak, synapses, axial current, external input) with the soma held at its
+clamp value, and ``w_s`` is frozen. `Vspike` is compared with the predicted potential. Integration: Heun
+method (`scheme = HeunScheme()`); the split scheme of the original code is `PaperScheme`, see
+[TripodPaper](#TripodPaper).
 
 ## Parameters
 
@@ -60,11 +64,16 @@ A spike is emitted when ``V_s`` reaches `Vspike` (default ``-10`` mV): ``V_s`` i
 |:------|:--------|:------|:--------|
 | `ds` | `[(200um, 400um), (200um, 400um)]` | cm | one entry per dendrite: a length or a `(min, max)` range sampled per neuron in 1 μm steps |
 | `physiology` | `human_dend` | | cable properties (`Physiology`) |
+| `d` | `4um` | cm | dendrite diameter (any `Real`, stored as `Float32`): ``g_{ax} \propto d^2``, ``g_m \propto d``, ``C \propto d`` |
+| `El_dend` | `nothing` | mV | dendritic leak reversal; `nothing` uses `adex.El`. Read at construction only |
 | `geometry` | `[(:s=>:d1), (:s=>:d2)]` | | compartment graph, stored for bookkeeping |
 | `type` | `TripodNeuron()` if `length(ds) == 2`, `BallAndStickNeuron()` if `length(ds) == 1` | | other lengths raise an error |
 
-Shortcuts: `TripodParameter`, `BallAndStickParameter`. Predefined length ranges: `proximal_distal`,
-`proximal_proximal`, `proximal`, `all_lengths`.
+Shortcuts: `TripodParameter`, `BallAndStickParameter`. Predefined fixed lengths:
+`distal_distal` (400, 400 um), `proximal_proximal` (150, 150 um), `proximal_distal` (150, 400 um),
+`distal_proximal` (400, 150 um), `soma_only` (0, 0 um); the first word is the length of `d1`. The random
+ranges are `random_proximal_distal` and `random_proximal_proximal`, `proximal`, `all_lengths`. Dendrites longer than 1000 um raise an
+error (a length written without units is read as cm).
 
 ### Cable properties: `Physiology`
 
@@ -73,6 +82,8 @@ Shortcuts: `TripodParameter`, `BallAndStickParameter`. Predefined length ranges:
 | `Ri` | axial resistivity | 200 Ω cm | 200 Ω cm |
 | `Rd` | specific membrane resistance | 38907 Ω cm² | 1700 Ω cm² |
 | `Cd` | specific membrane capacitance | 0.5 μF/cm² | 1 μF/cm² |
+
+Sources: Eyal et al. (2016), eLife 5:e16553 (human); Dasika et al. (2007), J Neurophysiol 97:3449 (mouse).
 
 For a cylinder of length ``l`` and diameter ``d``:
 
@@ -94,25 +105,28 @@ d.C[1], d.gm[1], d.gax[1]
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
-| `AP_membrane` | `10mV` | mV | somatic potential during the spike |
+| `AP_membrane` | `20mV` | mV | somatic potential during the spike |
 | `up` | `1ms` | ms | duration of the clamped spike (back-propagation period) |
-| `τabs` | `1ms` | ms | absolute refractory period after `up` |
+| `τabs` | `2ms` | ms | absolute refractory period after `up` |
 | `At` | `0mV` | mV | threshold increment ``A_t`` per spike |
-| `τA` | `10ms` | ms | relaxation time constant of ``\theta`` |
+| `τA` | `30ms` | ms | relaxation time constant of ``\theta`` |
 
 ### Synapses
 
 Defaults: `soma_syn = TripodSomaSynapse` (AMPA + GABAa), `dend_syn = TripodDendSynapse`
-(AMPA + NMDA + GABAa + GABAb); see [Synapse and receptor models](synapses.md).
+(AMPA + NMDA + GABAa + GABAb); see [Synapse and receptor models](synapses.md). Mouse and paper sets: `TripodDendSynapseMouse` (with `DuarteGluDend`, `EyalNMDA32`), `MouseNMDA` (the Mg-block
+values printed in the preprint, opt-in), and the sets of the original code `TripodSomaSynapsePaper`,
+`TripodDendSynapsePaper`, `TripodDendSynapsePaperMouse`. Select with `dend_syn = TripodDendSynapseMouse`.
 
 ## Tripod
 
-Reference: Quaresima et al. (2023), J. Physiol.
+Reference: Quaresima et al. (2023), J. Physiol.; preprint bioRxiv 10.1101/2022.09.05.506197 (its Eq. 1
+omits ``g_L`` on the exponential term).
 
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units
-T = SNN.Tripod(N = 10, param = SNN.TripodParameter(ds = SNN.proximal_distal),
+T = SNN.Tripod(N = 10, param = SNN.TripodParameter(ds = SNN.random_proximal_distal),
                adex = SNN.AdExParameter(b = 0pA, a = 0nS))
 T.I .= 300pA
 SNN.monitor!(T, [:v_s, :fire])
@@ -123,6 +137,28 @@ SNN.sim!([T]; duration = 200ms)
 Modules = [SNNModels]
 Pages   = ["multicompartment/tripod.jl", "multicompartment/tripod_paper.jl"]
 ```
+
+### TripodPaper
+
+`TripodPaper(; N = 100, physiology = :human, config = :distal_proximal, d = 4um, kwargs...)` is a `Tripod` with the parameters and the integration scheme (`PaperScheme`) of the original code
+(`aquaresima/tripod_neuron`, commit 8698e1a). `physiology` is `:human` or `:mouse`; `config` is
+`:distal_distal`, `:proximal_proximal`, `:proximal_distal`, `:distal_proximal` or `:soma_only`; `kwargs`
+replace any `Tripod` field. Use it to reproduce the published results; the default `Tripod` is the library's
+own scheme.
+
+| | `TripodPaper` | default `Tripod` |
+|:--|:--|:--|
+| Integration | split two-stage scheme of the original, frozen axial current (`PaperScheme`) | full Heun |
+| NMDA Mg block | `exp32` approximation (`EyalNMDA32`, b 3.36, gamma 0.077) | `exp256` |
+| Spike onset | fires when ``V \ge V_t`` (-50.4 mV) at the start of the step | predicts ``V + dt\,k_2`` against `Vspike` (0 mV) |
+| Receptor update | the original discrete update with its dt bias (`exact = false`) | exact update, peak = `g0` at any dt |
+| Dendrite lengths | fixed configurations (400 / 150 um) | random 150 to 400 um |
+| dt | 0.1 ms | 0.125 ms |
+| Other | original GABAa (-75 mV, soma ``\tau_r`` 0.3 ms), soma AMPA ``\tau_r`` 0.25 ms, BAP 20 mV, ``\tau_{abs}`` 2.1 ms | `PostSpike` 20 mV / 1 ms / 2 ms |
+
+`PaperScheme` handles `ReceptorSynapse` only. Run `TripodPaper` at `dt = 0.1ms`: the scheme and the
+receptor update reproduce the original at that step (subthreshold step and single EPSP within 7.6e-6 mV,
+identical spike times for a 1200 pA step and a frozen Poisson input, Fig. 8 plateau durations identical).
 
 ## BallAndStick
 

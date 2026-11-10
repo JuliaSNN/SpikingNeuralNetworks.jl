@@ -163,6 +163,7 @@ A list of receptors (`Receptor`), each with its kinetics, reversal potential, pe
 ```
 
 with ``g_{syn} = g_0\,\mathrm{norm\_synapse}(\tau_r, \tau_d)`` (a unit weight peaks at ``g_0`` nS) and
+the conductance integrated exactly over one step (see [Receptor kinetics](#Receptor-kinetics)),
 
 ```math
 I_{syn} = \sum_r g_{syn,r}\, g_r\,(V - E_{rev,r})\, B_r(V), \qquad
@@ -193,6 +194,7 @@ B_r(V) = \begin{cases} 1 & nmda_r = 0 \\
 | `b` | `3.36` | mM | |
 | `k` | `-0.077` | 1/mV | voltage sensitivity |
 | `mg` | `1.0` | mM | extracellular magnesium concentration |
+| `approx` | `256` | | exponential used in the block: `0` (exact), `32`, `64`, `256` |
 
 Defaults from Eyal et al. (2018) (`SomaNMDA`, `EyalNMDA`).
 
@@ -206,6 +208,25 @@ Defaults from Eyal et al. (2018) (`SomaNMDA`, `EyalNMDA`).
 | `NMDA` | `NMDAVoltageDependency()` | magnesium block |
 | `glu_receptors` | `[1, 2]` | indices driven by `glu` |
 | `gaba_receptors` | `[3, 4]` | indices driven by `gaba` |
+| `exact` | `true` | exact kinetics; `false` selects the discrete update of the published code |
+| `decay` | `64` | exponential approximation (`0`, `32`, `64`, `256`) of the discrete update; used only if `exact = false` |
+
+#### Receptor kinetics
+
+`ReceptorSynapse` and `MultiReceptorSynapse` (hence the soma and dendrites of `Tripod` and `BallAndStick`)
+integrate the double exponential exactly over one step: `h += α w`, `g = e_d g + K h`, `h = e_r h`, with
+``e_d = e^{-dt/\tau_d}``, ``e_r = e^{-dt/\tau_r}``, ``K = (e_d - e_r)/\alpha``. The peak conductance of a unit
+weight is `g0` at any `dt` (on the time grid, at most 1e-3 below for the library receptors at `dt <= 0.2` ms).
+
+`exact = false` selects the discrete update of the published Tripod code (with the exponential
+approximation `decay`); its peak is ``c(dt)\,g_0`` with
+
+```math
+c(dt, \tau_r, \tau_d) = \frac{\alpha\, dt}{1 - e^{-\alpha\, dt}}, \qquad \alpha = \frac{1}{\tau_r} - \frac{1}{\tau_d}.
+```
+
+`TripodSomaSynapsePaper`, `TripodDendSynapsePaper` and `TripodDendSynapsePaperMouse` use `exact = false`.
+`DoubleExpSynapse`, `DoubleExpCurrentSynapse` and the other synapse models use forward Euler.
 
 ### `MultiReceptorSynapse`
 
