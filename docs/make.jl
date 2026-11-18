@@ -28,6 +28,7 @@ pages = [
         "Synapse and receptor models" => "catalogue/synapses.md",
         "Connections" => "catalogue/connections.md",
         "Plasticity rules" => "catalogue/plasticity_rules.md",
+        "Plasticity: conventions and implementation notes" => "catalogue/plasticity_conventions.md",
         "Metaplasticity" => "catalogue/metaplasticity.md",
         "Stimuli" => "catalogue/stimuli.md",
         "SNNUtils models" => "catalogue/snnutils_models.md",

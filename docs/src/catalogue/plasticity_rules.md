@@ -5,7 +5,8 @@ CurrentModule = SNNModels
 ```
 
 Long-term rules (`LTPParam`, act on `W`) and short-term rules (`STPParam`, act on `ρ`) of
-`SpikingSynapse`; they run only under `train!`. Usage: [Plasticity](../plasticity.md).
+`SpikingSynapse`; they run only under `train!`. Usage: [Plasticity](../plasticity.md). Implementation details to check when reproducing a
+published result (trace and amplitude conventions, update order, clamping, lazy weights): [Plasticity: conventions and implementation notes](plasticity_conventions.md).
 
 ## Common structure
 
@@ -32,6 +33,8 @@ Synapse ``s`` connects ``j`` to ``i`` with weight ``w_{ij}`` (`W[s]`); traces ju
 Read lazily stored traces and weights with `trace_values` and `plasticity_value`.
 
 ## STDPGerstner
+
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Pair-STDP).
 
 Additive pair STDP (Gerstner et al. 1996), traces ``x_{pre}``, ``x_{post}``; update order:
 [Pair and triplet STDP](../plasticity.md#Pair-and-triplet-STDP).
@@ -72,6 +75,8 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 1s)
 
 ## STDPConfavreux2025
 
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Pair-STDP).
+
 Pair STDP with constant rate terms (Confavreux et al. 2025).
 
 ```math
@@ -96,6 +101,8 @@ The signs are carried by `κ`, `γ`, `α`, `β`.
 
 ## STDPWeightDependent
 
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Weight-dependent-STDP).
+
 Soft-bound pair STDP (Gütig et al. 2003). With ``\tilde W = W_{max} - W_{min}``:
 
 ```math
@@ -118,6 +125,8 @@ Soft-bound pair STDP (Gütig et al. 2003). With ``\tilde W = W_{max} - W_{min}``
 
 
 ## STDPTriplet
+
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Triplet-STDP).
 
 All-to-all triplet STDP (Pfister and Gerstner 2006), traces ``r_1``, ``r_2`` (pre), ``o_1``, ``o_2`` (post):
 
@@ -144,6 +153,8 @@ Defaults: minimal all-to-all model (Table 4 of Pfister and Gerstner 2006).
 
 
 ## STDPMexicanHat
+
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Pair-STDP).
 
 ``Δw = A\,(1 - z)\,e^{-z/\sqrt 2}`` with ``z = [\ln(x_{pre}/x_{post})]^2 ≈ (Δt/τ)^2``: potentiation for
 ``|Δt| < τ``, depression beyond.
@@ -193,6 +204,8 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
 
 ## Inhibitory STDP: iSTDPRate, iSTDPPotential
 
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Inhibitory-STDP).
+
 Vogels et al. (2011), Euler-integrated traces.
 
 `iSTDPRate` (target rate ``r``, ``α = 2 r τ_y``):
@@ -225,6 +238,8 @@ SNN.train!(model = SNN.compose(; E, I, IE), duration = 500ms)
 ```
 
 ## vSTDPParameter and vSTDPDenseParameter
+
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Voltage-based-STDP).
 
 Clopath et al. (2010). `vSTDPParameter` is event-driven (read `W` with `plasticity_value(syn, :W)`);
 `vSTDPDenseParameter` is clock-driven (the `vSTDPParameter` of SNNModels 1.9). ``V_i`` is the
@@ -261,6 +276,8 @@ SNN.plasticity_value(syn, :W)   # current weights (syn.W is lazy for the event-d
 
 ## Short-term plasticity: Tsodyks-Markram
 
+Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Short-term-plasticity).
+
 Presynaptic utilisation ``u_j`` and resources ``x_j`` set the efficacy ``ρ_s = u_j x_j`` (Tsodyks and
 Markram 1997; Mongillo, Barak and Tsodyks 2008). Between spikes
 
@@ -273,7 +290,7 @@ At a presynaptic spike, ``Δ`` after the previous one (`MarkramSTPParameter`, `M
 ```math
 \begin{aligned}
 u^- &= U - (U - u)\,e^{-Δ/τ_F}, & x^- &= 1 - (1 - x)\,e^{-Δ/τ_D}, \\
-ρ &= u^- x^-, & & \\
+ρ &= u^+ x^-, & & \\
 u &\leftarrow u^- + U\,(1 - u^-), & x &\leftarrow x^- - u\,x^- .
 \end{aligned}
 ```

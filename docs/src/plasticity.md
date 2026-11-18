@@ -6,7 +6,9 @@ CurrentModule = SpikingNeuralNetworks
 
 After this page you can add long- and short-term plasticity to a synapse, switch rules on, off or
 to another rule, and read weights and traces correctly. Equations and parameters of every rule are
-in [Plasticity rules](catalogue/plasticity_rules.md).
+in [Plasticity rules](catalogue/plasticity_rules.md); conventions and implementation notes
+(trace scaling, update order, clamping, lazy weights) in
+[Plasticity: conventions and implementation notes](catalogue/plasticity_conventions.md).
 
 ```@example plasticity
 using SpikingNeuralNetworks
