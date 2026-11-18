@@ -11,26 +11,39 @@ published result (trace and amplitude conventions, update order, clamping, lazy 
 ## Common structure
 
 
-| Rule (parameter type) | State type | Family | Traces |
-|---|---|---|---|
-| `STDPGerstner` | `STDPVariables` | pair STDP, additive | exact decay, event-driven |
-| `STDPConfavreux2025` | `STDPVariables` | pair STDP with rate terms | exact decay, event-driven |
-| `STDPWeightDependent` | `STDPVariables` | pair STDP, soft bounds | exact decay, event-driven |
-| `STDPTriplet` | `STDPTripletVariables` | triplet STDP | exact decay, event-driven |
-| `STDPMexicanHat` | `STDPVariables` | Mexican-hat kernel | Euler |
-| `STDPSymmetric` | `STDPStructuredVariables` | symmetric difference of exponentials | Euler |
-| `STDPAntiSymmetric` | `STDPStructuredVariables` | antisymmetric exponentials | Euler |
-| `iSTDPRate` | `iSTDPVariables` | inhibitory STDP, target rate | Euler |
-| `iSTDPPotential` | `iSTDPVariables` | inhibitory STDP, membrane potential | Euler |
-| `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP, event-driven (lazy weights) | Euler |
-| `vSTDPDenseParameter` | `vSTDPDenseVariables` | voltage-based STDP, clock-driven | Euler |
-| `MarkramSTPParameter` (= `MarkramSTPParameterEvent`) | `MarkramSTPVariables` | short-term plasticity | exact, event-driven |
-| `MarkramSTPParameterHet` | `MarkramSTPVariables` | short-term plasticity, per-neuron parameters | exact, event-driven |
-| `MarkramSTPParameterTimestep` | `MarkramSTPVariables` | short-term plasticity | Euler |
-| `NoLTP`, `NoSTP` | `NoVariables` | no plasticity (defaults) | - |
+| Rule (parameter type) | State type | Family | Reference | Integration |
+|---|---|---|---|---|
+| `STDPGerstner` | `STDPVariables` | pair STDP, additive | Gerstner et al. (1996) | event-driven, traces exact decay |
+| `STDPConfavreux2025` | `STDPVariables` | pair STDP with rate terms | citation not recorded | event-driven, traces exact decay |
+| `STDPWeightDependent` | `STDPVariables` | pair STDP, soft bounds | Gütig et al. (2003) | event-driven, traces exact decay |
+| `STDPTriplet` | `STDPTripletVariables` | triplet STDP | Pfister and Gerstner (2006) | event-driven, traces exact decay |
+| `STDPMexicanHat` | `STDPVariables` | Mexican-hat kernel | none | event-driven, traces forward Euler |
+| `STDPSymmetric` | `STDPStructuredVariables` | symmetric difference of exponentials | Festa et al. (2024) | event-driven, traces forward Euler |
+| `STDPAntiSymmetric` | `STDPStructuredVariables` | antisymmetric exponentials | Festa et al. (2024) | event-driven, traces forward Euler |
+| `iSTDPRate` | `iSTDPVariables` | inhibitory STDP, target rate | Vogels et al. (2011) | event-driven, traces forward Euler |
+| `iSTDPPotential` | `iSTDPVariables` | inhibitory STDP, membrane potential | Vogels et al. (2011) | clock-driven, traces forward Euler |
+| `vSTDPParameter` | `vSTDPVariables` | voltage-based STDP, lazy weights | Clopath et al. (2010) | forward Euler, event-driven evaluation |
+| `vSTDPDenseParameter` | `vSTDPDenseVariables` | voltage-based STDP, clock-driven | Clopath et al. (2010) | forward Euler, every step |
+| `MarkramSTPParameter` (= `MarkramSTPParameterEvent`), `MarkramSTPParameterHet` | `MarkramSTPVariables` | short-term plasticity (`Het`: per-neuron parameters) | Tsodyks and Markram (1997); Mongillo et al. (2008) | exact solution at presynaptic spikes |
+| `MarkramSTPParameterTimestep` | `MarkramSTPVariables` | short-term plasticity | same | forward Euler, every step |
+| `NoLTP`, `NoSTP` | `NoVariables` | no plasticity (defaults) | - | - |
 
-Synapse ``s`` connects ``j`` to ``i`` with weight ``w_{ij}`` (`W[s]`); traces jump by 1 at a spike.
-Read lazily stored traces and weights with `trace_values` and `plasticity_value`.
+References (full citations):
+
+- Gerstner, Kempter, van Hemmen and Wagner (1996), Nature 383:76-78, [10.1038/383076a0](https://doi.org/10.1038/383076a0).
+- Gütig, Aharonov, Rotter and Sompolinsky (2003), J. Neurosci. 23:3697-3714, [10.1523/JNEUROSCI.23-09-03697.2003](https://doi.org/10.1523/JNEUROSCI.23-09-03697.2003).
+- Pfister and Gerstner (2006), J. Neurosci. 26:9673-9682, [10.1523/JNEUROSCI.1425-06.2006](https://doi.org/10.1523/JNEUROSCI.1425-06.2006).
+- Clopath, Büsing, Vasilaki and Gerstner (2010), Nat. Neurosci. 13:344-352, [10.1038/nn.2479](https://doi.org/10.1038/nn.2479).
+- Vogels, Sprekeler, Zenke, Clopath and Gerstner (2011), Science 334:1569-1573, [10.1126/science.1211095](https://doi.org/10.1126/science.1211095).
+- Festa, Cusseddu and Gjorgjieva (2024), Structured stabilization in recurrent neural circuits through inhibitory synaptic plasticity, bioRxiv, [10.1101/2024.10.12.618014](https://doi.org/10.1101/2024.10.12.618014).
+- Tsodyks and Markram (1997), PNAS 94:719-723, [10.1073/pnas.94.2.719](https://doi.org/10.1073/pnas.94.2.719); Markram, Wang and Tsodyks (1998), PNAS 95:5323-5328, [10.1073/pnas.95.9.5323](https://doi.org/10.1073/pnas.95.9.5323);
+  Mongillo, Barak and Tsodyks (2008), Science 319:1543-1546, [10.1126/science.1150769](https://doi.org/10.1126/science.1150769).
+
+Synapse ``s`` connects ``j`` to ``i`` with weight ``w_{ij}`` (`W[s]`); traces jump by 1 at a spike (`vSTDP`: by ``1/τ_x``).
+Traces are stored lazily as a vector times a scale: read traces and weights with `trace_values` and `plasticity_value`.
+
+Same-step spikes: in the pair rules with exact decay and in the triplet rule a presynaptic and a postsynaptic spike of the same step do not interact
+(traces are read before the spikes of the step are added); they interact in `iSTDPRate`, `STDPMexicanHat` and the voltage rules.
 
 ## STDPGerstner
 
@@ -63,6 +76,9 @@ Amplitudes are signed: `A_pre > 0` potentiates, `A_post < 0` depresses (default)
 | `Wmax` | `30pF` | weight | upper bound |
 | `Wmin` | `0pF` | weight | lower bound |
 
+**Integration:** event-driven; traces jump by 1 and decay exactly by `exp(-dt/τ)` per step.
+**Reference:** Gerstner et al. (1996) (table above).
+
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units
@@ -77,7 +93,7 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 1s)
 
 Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Pair-STDP).
 
-Pair STDP with constant rate terms (Confavreux et al. 2025).
+Pair STDP with constant rate terms.
 
 ```math
 \begin{aligned}
@@ -98,6 +114,7 @@ The signs are carried by `κ`, `γ`, `α`, `β`.
 | `τpre`, `τpost` | `20ms` | ms | trace time constants |
 | `Wmin`, `Wmax` | `0pF`, `30pF` | weight | bounds |
 
+**Integration:** as `STDPGerstner`. **Reference:** citation not recorded; the rule is named after Confavreux et al. (2025).
 
 ## STDPWeightDependent
 
@@ -123,6 +140,7 @@ Soft-bound pair STDP (Gütig et al. 2003). With ``\tilde W = W_{max} - W_{min}``
 | `τpre`, `τpost` | `20ms` | ms | trace time constants |
 | `Wmax`, `Wmin` | `30pF`, `0pF` | weight | bounds |
 
+**Integration:** as `STDPGerstner`. **Reference:** Gütig et al. (2003) (table above).
 
 ## STDPTriplet
 
@@ -137,7 +155,7 @@ All-to-all triplet STDP (Pfister and Gerstner 2006), traces ``r_1``, ``r_2`` (pr
 \end{aligned}
 ```
 
-Defaults: minimal all-to-all model (Table 4 of Pfister and Gerstner 2006).
+Defaults: minimal all-to-all model (Table 4 of Pfister and Gerstner 2006). `nearest = true` selects the nearest-spike interaction: a spike sets its traces to 1 instead of adding 1.
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -149,7 +167,13 @@ Defaults: minimal all-to-all model (Table 4 of Pfister and Gerstner 2006).
 | `τ_minus` | `33.7ms` | ms | postsynaptic trace ``o_1`` |
 | `τ_x` | `946ms` | ms | presynaptic trace ``r_2`` |
 | `τ_y` | `40ms` | ms | postsynaptic trace ``o_2`` |
+| `nearest` | `false` | | `true`: nearest-spike interaction |
 | `Wmax`, `Wmin` | `30pF`, `0pF` | weight | bounds |
+
+**Integration:** as `STDPGerstner` (four traces, exact decay). **Reference:** Pfister and Gerstner (2006) (table above).
+
+!!! note "Implementation note"
+    The defaults were not re-checked against Table 4 of the paper; `τ_x = 946 ms` has no effect while `A3_minus = 0`.
 
 
 ## STDPMexicanHat
@@ -165,11 +189,18 @@ Conventions: [Plasticity: conventions and implementation notes](plasticity_conve
 | `τ` | `20ms` | ms | trace time constant |
 | `Wmax`, `Wmin` | `30pF`, `0pF` | weight | bounds |
 
+**Integration:** event-driven; traces jump by 1 and decay by forward Euler (factor `1 - dt/τ`). **Reference:** none.
+
+!!! note "Implementation note"
+    The spikes of the step are added to the traces before the weight update, so same-step pre and post spikes interact; for one pair the Euler traces give
+    an effective time constant of about `τ - dt/2`. A `NaN` kernel value (log of a zero trace) is replaced by 0.
 
 ## STDPSymmetric and STDPAntiSymmetric
 
-Structured rules of Festa, Cusseddu and Gjorgjieva (2024); kernel integral ``A_x - A_y``, plus
+Structured rules of Festa, Cusseddu and Gjorgjieva (2024, table above); kernel integral ``A_x - A_y``, plus
 constant terms `αpre`, `αpost` per spike.
+
+**Integration:** event-driven; per step the pre pass, the post pass, then forward-Euler decay (factor `1 - dt/τ`) and `+1` of the traces.
 
 Symmetric kernel (``Δt = t_{post} - t_{pre}``):
 
@@ -206,7 +237,10 @@ SNN.train!(model = SNN.compose(; pre, post, syn), duration = 500ms)
 
 Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Inhibitory-STDP).
 
-Vogels et al. (2011), Euler-integrated traces.
+Vogels et al. (2011, table above).
+
+**Integration:** traces jump by 1 and decay by forward Euler (factor `1 - dt/τ_y`); `iSTDPRate` is event-driven, `iSTDPPotential` low-passes the
+postsynaptic potential of every neuron at every step.
 
 `iSTDPRate` (target rate ``r``, ``α = 2 r τ_y``):
 
@@ -226,7 +260,10 @@ Vogels et al. (2011), Euler-integrated traces.
 | `Wmax` | `243pF` | `243pF` | weight | upper bound |
 | `Wmin` | `0.01pF` | `0.01pF` | weight | lower bound |
 
-Results of `iSTDPRate` with SNNModels 1.5.0 to 1.8.1 are wrong; see the [V2 changelog](../release_notes.md#Bugs-fixed-in-version-1).
+!!! note "Implementation note"
+    `iSTDPRate` lets a presynaptic and a postsynaptic spike of the same step interact: traces decay, the spikes of the step are added, and
+    postsynaptic spikes read the presynaptic trace including them. The depression is the constant ``-2 η r τ_y`` per presynaptic spike, so `r = 0` only potentiates.
+    The Euler traces shorten the effective time constant by about `dt/2`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -241,9 +278,9 @@ SNN.train!(model = SNN.compose(; E, I, IE), duration = 500ms)
 
 Conventions: [Plasticity: conventions and implementation notes](plasticity_conventions.md#Voltage-based-STDP).
 
-Clopath et al. (2010). `vSTDPParameter` is event-driven (read `W` with `plasticity_value(syn, :W)`);
-`vSTDPDenseParameter` is clock-driven (the `vSTDPParameter` of SNNModels 1.9). ``V_i`` is the
-postsynaptic potential, ``u_i``, ``v_i`` its low-pass filters, ``[z]_+ = \max(z, 0)``:
+Clopath et al. (2010, table above). `vSTDPParameter` is event-driven (read `W` with `plasticity_value(syn, :W)`);
+`vSTDPDenseParameter` is clock-driven. ``V_i`` is the
+postsynaptic potential of the target compartment, ``u_i``, ``v_i`` its low-pass filters, ``[z]_+ = \max(z, 0)``:
 
 ```math
 \begin{aligned}
@@ -262,7 +299,17 @@ postsynaptic potential, ``u_i``, ``v_i`` its low-pass filters, ``[z]_+ = \max(z,
 | `τu` | `20ms` | ms | LTD filter time constant |
 | `τv` | `7ms` | ms | LTP filter time constant |
 | `τx` | `15ms` | ms | presynaptic trace time constant |
+| `delay_uv` | `0ms` | ms | delay of the potential that drives ``u`` and ``v`` |
 | `Wmax`, `Wmin` | `30pF`, `0.1pF` | weight | bounds |
+
+**Integration:** forward Euler for ``x``, ``u``, ``v`` (``x`` includes the spikes of the step); LTD at presynaptic spikes, then LTP as the rate integrated over `dt`
+(`dt A_LTP x ...`). `vSTDPParameter` evaluates the same Euler recursion event-driven: filters and drive every step, weights materialised at presynaptic spikes, once per
+`epoch` times `τx`, and on demand (`Float64` accumulators). `vSTDPDenseParameter` updates every weight every step.
+
+!!! note "Implementation note"
+    The trace ``x`` jumps by ``1/τ_x`` (units 1/ms), LTP is integrated with `dt` and LTD acts per spike without `dt`; the LTP sum depends on `dt` (8 % larger at `dt = 0.1 ms` than at 0.025 ms
+    in the protocol of the conventions page). `syn.W` of `vSTDPParameter` holds the weights of the last materialisation: read `plasticity_value(syn, :W)`; the event rule needs `A_LTP >= 0`.
+    `delay_uv` (default 0) follows the ModelDB implementation of Clopath et al. and NEST `delay_u_bars`; it is not in the paper.
 
 ```julia
 using SpikingNeuralNetworks
@@ -296,7 +343,10 @@ u &\leftarrow u^- + U\,(1 - u^-), & x &\leftarrow x^- - u\,x^- .
 ```
 
 `MarkramSTPParameterHet` takes per-neuron vectors `U`, `τF`, `τD`; `MarkramSTPParameterTimestep` is
-clock-driven (Euler).
+clock-driven (forward Euler).
+
+**Integration:** `MarkramSTPParameter` and `MarkramSTPParameterHet`: exact solution between spikes, evaluated at presynaptic spikes only; `MarkramSTPParameterTimestep`: forward Euler of
+``u`` and ``x`` at every step, jumps at spikes. **Reference:** Tsodyks and Markram (1997); Mongillo et al. (2008) (table above).
 
 | Field | Default | Units | Meaning |
 |---|---|---|---|
@@ -304,6 +354,10 @@ clock-driven (Euler).
 | `τF` | `1500ms` | ms | facilitation time constant |
 | `U` | `0.2` | - | baseline utilisation |
 | `Wmax`, `Wmin` | `1pF`, `0pF` | weight | not used by the update |
+
+!!! note "Implementation note"
+    The efficacy is ``u^+ x^-`` (Mongillo et al. 2008): the spike is transmitted with the utilisation after the jump, so the first spike from rest has
+    ``ρ = U(2 - U)``, not ``U`` (the value with ``u^-``).
 
 ```julia
 using SpikingNeuralNetworks

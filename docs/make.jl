@@ -39,7 +39,7 @@ pages = [
     "API Reference" => "api_reference.md",
     "Models Extension" => "models_ext.md",
     "Contributing" => "contributing.md",
-    "V2 changelog" => "release_notes.md",
+    "Changelog" => "changelog.md",
 ]
 
 makedocs(

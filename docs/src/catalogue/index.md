@@ -4,7 +4,9 @@
 CurrentModule = SNNModels
 ```
 
-Every model, one page per family: equations, parameters with defaults, an example and the API.
+Every model, one page per family: equations, parameters with defaults, integration scheme, reference, an example and the API. Each page starts with a
+table model | reference | integration scheme; each model section carries the lines **Integration** (numerical method as implemented) and **Reference**,
+and a note where the implementation deviates from the published model or has a consequence a user can trip over.
 Units (`SNN.@load_units`): ms, mV, pA, pF, nS, cm, μM; rates per ms (`Hz = 1e-3`).
 
 | Family | Models | Page |
@@ -13,7 +15,7 @@ Units (`SNN.@load_units`): ms, mV, pA, pF, nS, cm, μM; rates per ms (`Hz = 1e-3
 | Other single-compartment neurons | `IZ` (Izhikevich), `HH` (Hodgkin-Huxley), `MorrisLecar` | [Izhikevich, Hodgkin-Huxley, Morris-Lecar](neurons_other.md) |
 | Rate models | `Rate`, `WilsonCowan`, `HetRec` | [Rate models](rate_models.md) |
 | Spike sources | `Poisson` (homogeneous, heterogeneous, variable rate), `InhomogeneousPoisson`, `Identity` | [Spike sources](sources.md) |
-| Multicompartment neurons | `Tripod`, `BallAndStick`, dendrite geometry (`Dendrite`, `Physiology`) | [Multicompartment neurons](multicompartment.md) |
+| Multicompartment neurons | `Tripod`, `TripodPaper`, `BallAndStick`, `Multipod`, dendrite geometry (`Dendrite`, `Physiology`) | [Multicompartment neurons](multicompartment.md) |
 | Synapse and receptor models | `DeltaSynapse`, `CurrentSynapse`, `SingleExpSynapse`, `DoubleExpSynapse`, `DoubleExpCurrentSynapse`, `ReceptorSynapse`, `MultiReceptorSynapse`, `Confavreux2025Synapse`, `Receptor`, `NMDAVoltageDependency` | [Synapse and receptor models](synapses.md) |
 | Connections | `SpikingSynapse`, `RateSynapse`, `FLSynapse`, `PINningSynapse`, `EmptySynapse`, connectivity rules of `sparse_matrix` | [Connections](connections.md) |
 | Long- and short-term plasticity | `STDPGerstner`, `STDPTriplet`, `STDPWeightDependent`, `STDPMexicanHat`, `STDPConfavreux2025`, `STDPSymmetric`, `STDPAntiSymmetric`, `vSTDPParameter`, `vSTDPDenseParameter`, `iSTDPRate`, `iSTDPPotential`, `MarkramSTPParameter` | [Plasticity rules](plasticity_rules.md) |

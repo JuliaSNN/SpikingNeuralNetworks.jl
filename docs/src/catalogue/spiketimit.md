@@ -82,8 +82,7 @@ The BAE files (threshold encoding of Pan et al., 2020) are read through a packag
 size 2 x K: row 1 the spike times, row 2 the 0-based channel of each spike; the times are taken
 as seconds.
 
-The strings of the old API (`"bae"`, `"cochlea35"`, `"cochlea70"`) are still accepted by
-[`encoding`](@ref).
+[`encoding`](@ref) also accepts the strings `"bae"`, `"cochlea35"` and `"cochlea70"`.
 
 ## Units
 

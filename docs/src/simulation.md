@@ -74,7 +74,7 @@ SNN.float_type(EE), eltype(model.time.t)    # (Float64, Float64)
 A rule built in `Float32` is converted to the precision of its synapse but keeps its
 `Float32`-rounded values; build it with `FT = Float64` for exact `Float64` parameters. Mixing a
 `Float32` parameter object into a `Float64` population is an `ArgumentError`. A few components are
-`Float32` only (see [Known limitations](release_notes.md#Known-limitations)).
+`Float32` only (see [Known limitations](#Known-limitations)).
 
 ## Threads
 
@@ -118,8 +118,22 @@ loaded = SNN.load_model(dir, "toy", (seed = 1,))
 loaded.model.pop.E.N                    # 10
 ```
 
-`info` is a `NamedTuple` of metadata that becomes part of the folder name. Files saved with
-version 1 cannot be loaded (see [What changes from v1 to v2](index.md#What-changes-from-v1-to-v2)).
+`info` is a `NamedTuple` of metadata that becomes part of the folder name. `load_model` and
+`load_data` accept only files written with the current layout (otherwise an `ArgumentError`): rebuild
+the model from its configuration and save it again.
+
+## Known limitations
+
+- `Float32` only: `HetRec` (refuses a `Float64` step), `CurrentStimulus`, `BalancedStimulus` and
+  `Turnover` (refuse a `Float64` target), and the rate and FORCE connections.
+- The clock accumulates rounding at a step that is not exact in `Float32` (e.g. `dt = 0.1ms`):
+  `get_time` drifts, and a `SpikeTimeStimulus` spike can be delivered one step off.
+- Delays are counted in steps: after a change of `dt` mid-run, spikes in flight are dropped (if the
+  delay in steps changes) or keep their step count.
+- A record closed by a plasticity switch is not reopened by a later switch (`clear_records!` first).
+- Some components do per-step dense work: `iSTDPPotential`, `vSTDPDenseParameter`,
+  `MarkramSTPParameterTimestep`, `ActivityDependentTurnover`, `AggregateScaling`.
+- `Tripod` and `BallAndStick` reproduce the reference traces bit for bit only on x86-64 with FMA.
 
 ## API
 

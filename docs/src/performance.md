@@ -151,9 +151,6 @@ rate of each input neuron.
 - **Not measured:** threading, MPI and OpenMP, which are not included in these comparisons.
 - **Precision:** `Float64` populations cost 1.4 to 4 times the `Float32` ones, depending on the
   model, and 2.3 times on the E/I network.
-- **Per-call overhead:** after the measurement, SNNModels 2.0.1 removed a fixed cost of 12 to
-  30 ns from each call of the single-step `train!`. This cost matters only for very small networks
-  stepped one call at a time, such as the plasticity tests above, where it is a few percent of the
-  time.
-  - With 2.0.1, pair STDP at 10 000 synapses takes 0.020 s.
+- **Single-step calls** (very small networks stepped one `train!` call at a time, as in the plasticity tests above; SNNModels 2.0.1):
+  - Pair STDP at 10 000 synapses takes 0.020 s.
   - Event-driven voltage-based STDP at 10 000 synapses takes 0.036 s.

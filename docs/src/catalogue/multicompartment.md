@@ -4,7 +4,15 @@
 CurrentModule = SNNModels
 ```
 
-`Tripod` (AdEx soma, two passive dendrites `d1`, `d2`) and `BallAndStick` (one dendrite `d`).
+`Tripod` (AdEx soma, two passive dendrites `d1`, `d2`), `BallAndStick` (one dendrite `d`) and `Multipod` (1 to 64 dendrites `d1`, ..., `dN`).
+The soma is an adaptive exponential integrate-and-fire neuron; the dendrites are passive cables with leak, synaptic currents (AMPA, NMDA, GABA) and axial coupling to the soma.
+
+| Model | Reference | Integration |
+|:------|:----------|:------------|
+| `Tripod` | Quaresima et al. (2023), J. Physiol. 601:3265-3295, [10.1113/JP283399](https://doi.org/10.1113/JP283399) | Heun (explicit trapezoid), `HeunScheme`; synaptic conductances exact over a step |
+| `TripodPaper` | as `Tripod` | split two-stage scheme of the published code, `PaperScheme`, at `dt = 0.1ms` |
+| `BallAndStick` | as `Tripod` | Heun |
+| `Multipod` | as `Tripod` | Heun (default) or `PaperScheme` |
 
 | Group | Population field | Type | Default |
 |:------|:-----------------|:-----|:--------|
@@ -52,8 +60,12 @@ A spike is emitted when ``V_s`` reaches `Vspike` (default ``0`` mV): ``V_s`` is 
 `spike.AP_membrane` for `spike.up`, then at `adex.Vr` for `spike.τabs`; ``w_s \mathrel{+}= b``,
 ``\theta \mathrel{+}= A_t``. During the back-propagation (`up`) and refractory (`τabs`) periods the
 dendrites are integrated in full (leak, synapses, axial current, external input) with the soma held at its
-clamp value, and ``w_s`` is frozen. `Vspike` is compared with the predicted potential. Integration: Heun
-method (`scheme = HeunScheme()`); the split scheme of the original code is `PaperScheme`, see
+clamp value, and ``w_s`` is frozen. `Vspike` is compared with the predicted potential.
+
+**Integration:** Heun method on ``(V_s, V_{d,k}, w_s)`` (`scheme = HeunScheme()`, second order between spikes): the synaptic conductances
+are advanced once per step with the exact exponential update, then ``k_1 = f(x_n)`` and ``k_2 = f(x_n + dt\,k_1)`` are evaluated with every
+term, synaptic currents included, at the stage state, and ``x_{n+1} = x_n + dt (k_1 + k_2)/2``. ``\theta`` relaxes by forward Euler. The spike
+and refractory counters are `round(up / dt)` and `round(τabs / dt)` steps. The split scheme of the published code is `PaperScheme`, see
 [TripodPaper](#TripodPaper).
 
 ## Parameters
@@ -83,7 +95,8 @@ error (a length written without units is read as cm).
 | `Rd` | specific membrane resistance | 38907 Ω cm² | 1700 Ω cm² |
 | `Cd` | specific membrane capacitance | 0.5 μF/cm² | 1 μF/cm² |
 
-Sources: Eyal et al. (2016), eLife 5:e16553 (human); Dasika et al. (2007), J Neurophysiol 97:3449 (mouse).
+Sources: Eyal et al. (2016), eLife 5:e16553, [10.7554/eLife.16553](https://doi.org/10.7554/eLife.16553) (human); Dasika et al. (2007), J. Neurophysiol. 97:3449-3459,
+[10.1152/jn.00669.2005](https://doi.org/10.1152/jn.00669.2005) (mouse).
 
 For a cylinder of length ``l`` and diameter ``d``:
 
@@ -114,14 +127,14 @@ d.C[1], d.gm[1], d.gax[1]
 ### Synapses
 
 Defaults: `soma_syn = TripodSomaSynapse` (AMPA + GABAa), `dend_syn = TripodDendSynapse`
-(AMPA + NMDA + GABAa + GABAb); see [Synapse and receptor models](synapses.md). Mouse and paper sets: `TripodDendSynapseMouse` (with `DuarteGluDend`, `EyalNMDA32`), `MouseNMDA` (the Mg-block
-values printed in the preprint, opt-in), and the sets of the original code `TripodSomaSynapsePaper`,
+(AMPA + NMDA + GABAa + GABAb); see [Synapse and receptor models](synapses.md). Alternatives: `TripodDendSynapseMouse` (with `DuarteGluDend`, `EyalNMDA32`), `MouseNMDA` (the Mg-block
+values printed in the preprint), and the sets of the published code `TripodSomaSynapsePaper`,
 `TripodDendSynapsePaper`, `TripodDendSynapsePaperMouse`. Select with `dend_syn = TripodDendSynapseMouse`.
 
 ## Tripod
 
-Reference: Quaresima et al. (2023), J. Physiol.; preprint bioRxiv 10.1101/2022.09.05.506197 (its Eq. 1
-omits ``g_L`` on the exponential term).
+**Reference:** Quaresima, Fitz, Duarte et al. (2023), The Tripod neuron: a minimal structural reduction of the dendritic tree, J. Physiol. 601:3265-3295,
+[10.1113/JP283399](https://doi.org/10.1113/JP283399).
 
 ```julia
 using SpikingNeuralNetworks
@@ -132,6 +145,12 @@ T.I .= 300pA
 SNN.monitor!(T, [:v_s, :fire])
 SNN.sim!([T]; duration = 200ms)
 ```
+
+!!! note "Implementation note"
+    The exponential term of the soma carries ``g_L`` (``g_L \Delta_T e^{(V-\theta)/\Delta_T}``), as in the published code and in AdEx; Eq. 1 of the preprint
+    omits it. The default scheme detects the spike on the predicted potential against `Vspike` (0 mV); the published code tests the potential at the
+    start of the step (`PaperScheme`, `TripodPaper`). The adaptation current is unbounded and has no reversal, so the somatic potential undershoots
+    after a burst (about -130 mV after 46 spikes under 3 nA); nothing is clipped, as in `AdEx`.
 
 ```@autodocs
 Modules = [SNNModels]
@@ -164,7 +183,7 @@ identical spike times for a 1200 pA step and a frozen Poisson input, Fig. 8 plat
 
 `Multipod` is the `Tripod` model with any number of dendrites: an AdEx soma and `N_d` passive dendrites, each attached to the
 soma (star topology), with the equations, synapse models, spike rules and integration schemes of `Tripod`. With `N_d = 2` it is the
-`Tripod` model, with the same trajectory bit for bit.
+`Tripod` model, with the same trajectory bit for bit. Reference and integration: as `Tripod`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -187,6 +206,8 @@ Pages   = ["multicompartment/multipod.jl", "multicompartment/multipod_paper.jl"]
 ```
 
 ## BallAndStick
+
+`Tripod` with one dendrite `d`. Reference and integration: as `Tripod`; synaptic currents are clamped to ``\pm 1000`` pA.
 
 ```julia
 using SpikingNeuralNetworks

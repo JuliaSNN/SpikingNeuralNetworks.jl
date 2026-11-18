@@ -5,17 +5,17 @@ CurrentModule = SNNModels
 ```
 
 External inputs, built with `Stimulus(param, post, sym, [comp]; kwargs...)`; the type of `param`
-selects the model. Usage: [Stimuli](../stimuli.md).
+selects the model. Usage: [Stimuli](../stimuli.md). None of the stimuli has a literature reference.
 
-| Stimulus | Parameter types | Writes | Presynaptic layer |
-|:--|:--|:--|:--|
-| [`PoissonStimulus`](@ref) | `PoissonFixed`, `PoissonInterval`, `PoissonVariable` | adds `μ` per input spike to `g` | none (one independent train per target) |
-| [`PoissonStimulusLayer`](@ref) | `PoissonLayer`, `PoissonLayerHet` | adds `W[i,j]` per spike of layer neuron `j` | `N` Poisson neurons, sparse weights |
-| [`SpikeTimeStimulus`](@ref) | `SpikeTimeStimulusParameter` | adds `W[i,j]` per listed spike | `N` virtual neurons, sparse weights |
-| [`CurrentStimulus`](@ref) | `CurrentNoise` | sets the current `I` | none |
-| [`BalancedStimulus`](@ref) | `BalancedParameter` | adds Poisson E and I input | none |
-| [`StimulusGroup`](@ref) | (shared Poisson parameter) | its elements | |
-| `EmptyStimulus` | `EmptyParam` | nothing (placeholder) | |
+| Stimulus | Parameter types | Writes | Presynaptic layer | Integration |
+|:--|:--|:--|:--|:--|
+| [`PoissonStimulus`](@ref) | `PoissonFixed`, `PoissonInterval`, `PoissonVariable` | adds `μ` per input spike to `g` | none (one independent train per target) | Poisson count of mean ``\nu\,\Delta t`` per step |
+| [`PoissonStimulusLayer`](@ref) | `PoissonLayer`, `PoissonLayerHet` | adds `W[i,j]` per spike of layer neuron `j` | `N` Poisson neurons, sparse weights | Bernoulli trial of probability ``\nu\,\Delta t`` per step |
+| [`SpikeTimeStimulus`](@ref) | `SpikeTimeStimulusParameter` | adds `W[i,j]` per listed spike | `N` virtual neurons, sparse weights | spike delivered at its step |
+| [`CurrentStimulus`](@ref) | `CurrentNoise` | sets the current `I` | none | AR(1) filter, one draw per step |
+| [`BalancedStimulus`](@ref) | `BalancedParameter` | adds Poisson E and I input | none | forward Euler for the rate noise; Poisson counts per step |
+| [`StimulusGroup`](@ref) | (shared Poisson parameter) | its elements | | as its elements |
+| `EmptyStimulus` | `EmptyParam` | nothing (placeholder) | | - |
 
 ## Poisson stimulus
 
@@ -183,6 +183,9 @@ model = SNN.compose(; E, stim)
 SNN.monitor!(E, [:fire])
 SNN.sim!(; model, duration = 200ms)
 ```
+
+!!! note "Implementation note"
+    The excitatory rate uses ``R(x) = x`` for ``x > 0`` and ``1`` otherwise (not ``\max(x, 0)``), as in `VariablePoisson`.
 
 ```@autodocs
 Modules = [SNNModels]

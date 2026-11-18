@@ -7,6 +7,15 @@ CurrentModule = SNNModels
 `IF`, `AdEx` and `ExtendedIF`. `IF` and `AdEx` combine a neuron model (`param`), a
 [synapse model](synapses.md) (`synapse`, which gives ``I_{syn}``) and spike parameters (`spike`).
 
+| Model | Reference | Integration |
+|:------|:----------|:------------|
+| `IF` | Gerstner et al. (2014), *Neuronal Dynamics*, Cambridge University Press, [10.1017/CBO9781107447615](https://doi.org/10.1017/CBO9781107447615); adaptation as in Brette and Gerstner (2005) | forward Euler |
+| `AdEx` | Brette and Gerstner (2005), J. Neurophysiol. 94:3637-3642, [10.1152/jn.00686.2005](https://doi.org/10.1152/jn.00686.2005) | forward Euler |
+| `ExtendedIF` | none | forward Euler |
+
+All three advance by one step of length `dt` (default `0.125ms`); the absolute refractory period is
+`round(τabs / dt)` steps.
+
 ```@autodocs
 Modules = [SNNModels]
 Pages   = ["populations/populations.jl", "generalized_if/gif.jl"]
@@ -22,7 +31,7 @@ Pages   = ["populations/populations.jl", "generalized_if/gif.jl"]
 ```
 
 Spike when ``v > V_t``: ``v \leftarrow V_r``, ``w \leftarrow w + b``, refractory for `spike.τabs`.
-`τw = 0` (default) disables adaptation.
+`τw = 0` (default) disables adaptation. A leaky integrate-and-fire neuron with an adaptation current ``w``.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
@@ -35,6 +44,8 @@ Spike when ``v > V_t``: ``v \leftarrow V_r``, ``w \leftarrow w + b``, refractory
 | `a` | `0` | nS | subthreshold adaptation |
 | `b` | `0` | pA | spike-triggered adaptation increment |
 | `τw` | `0` | ms | adaptation time constant |
+
+**Integration:** forward Euler. Per step: `v` (with the old `w`), spike test, then `w` (with the updated `v`) if `τw > 0`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -61,7 +72,8 @@ Pages   = ["generalized_if/if.jl"]
 \end{aligned}
 ```
 
-Spike when ``v \geq 0`` mV: ``v \leftarrow V_r`` at the next step, ``w \leftarrow w + b``,
+The exponential term captures spike initiation and the adaptation variable ``w`` the effective dynamics of
+spike-frequency adaptation. Spike when ``v \geq 0`` mV: ``v \leftarrow V_r`` at the next step, ``w \leftarrow w + b``,
 ``\theta \leftarrow \theta + A_t``, refractory for `spike.τabs`.
 
 | Field | Default | Units | Meaning |
@@ -77,6 +89,8 @@ Spike when ``v \geq 0`` mV: ``v \leftarrow V_r`` at the next step, ``w \leftarro
 | `a` | `4nS` | nS | subthreshold adaptation |
 | `b` | `80.5pA` | pA | spike-triggered adaptation increment |
 
+**Integration:** forward Euler. Per step: reset if the neuron fired in the previous step, `w` (old `v`), `v`, `θ`, spike test.
+
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units
@@ -85,6 +99,10 @@ E.I .= 1nA
 SNN.monitor!(E, [:v, :w, :fire])
 SNN.sim!([E]; duration = 500ms)
 ```
+
+!!! note "Implementation note"
+    The spike is detected at ``v \geq 0`` mV with a peak of 20 mV, whatever `Vt`; `spike.AP_membrane` is not used. During the
+    refractory period `w` and `θ` are frozen, whereas `IF` keeps integrating `w`.
 
 ```@autodocs
 Modules = [SNNModels]
@@ -120,9 +138,9 @@ Pages   = ["generalized_if/membrane.jl"]
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
 | `At` | `0mV` | mV | adaptive-threshold increment per spike |
-| `τA` | `10ms` | ms | relaxation time of the threshold |
-| `AP_membrane` | `10mV` | mV | somatic potential during the action potential (dendritic models) |
-| `τabs` | `1ms` | ms | absolute refractory period |
+| `τA` | `30ms` | ms | relaxation time of the threshold |
+| `AP_membrane` | `20mV` | mV | somatic potential during the action potential (dendritic models) |
+| `τabs` | `2ms` | ms | absolute refractory period |
 | `up` | `1ms` | ms | action-potential duration (dendritic models) |
 
 ```@autodocs
@@ -142,7 +160,7 @@ SNN.sim!([E]; duration = 100ms)
 
 ## `ExtendedIF`
 
-Excitatory, PV-like and SST-like conductances with an excitation-SST interaction; no `synapse` field.
+Conductance-based integrate-and-fire neuron with excitatory, PV-like and SST-like conductances and an excitation-SST interaction; no `synapse` field.
 
 ```math
 \begin{aligned}
@@ -169,6 +187,8 @@ C_m \frac{dv}{dt} &= g_l (E_l - v) + g_E (E_e - v) + g_{PV} (E_i - v) + g_{SST} 
 | `α` | `0` | 1/nS | excitation-SST interaction strength |
 
 Targets: `:g_Exc` (`:ge`, `:glu`), `:g_PV` (`:gi`, `:gaba`), `:g_SST`.
+
+**Integration:** forward Euler. Per step the three conductances decay, then `v` is advanced; refractory for `round(τabs / dt)` steps.
 
 ```julia
 using SpikingNeuralNetworks

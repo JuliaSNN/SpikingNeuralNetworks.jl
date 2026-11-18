@@ -125,10 +125,8 @@ Amplitudes are in the units of `W`; rescale them to the weights of your network.
 
 ## Inhibitory, voltage-based and short-term plasticity
 
-- `iSTDPRate` and `iSTDPPotential` (Vogels et al. 2011) use Euler-integrated traces (results of
-  `iSTDPRate` with SNNModels 1.5.0 to 1.8.1: see the [V2 changelog](release_notes.md#Bugs-fixed-in-version-1)).
+- `iSTDPRate` and `iSTDPPotential` (Vogels et al. 2011) use Euler-integrated traces.
 - `vSTDPParameter` (Clopath et al. 2010) is event-driven: read its weights with
-  `plasticity_value(syn, :W)`. `vSTDPDenseParameter` updates `W` every step and reproduces the
-  rule of SNNModels 1.9.
+  `plasticity_value(syn, :W)`. `vSTDPDenseParameter` updates `W` every step.
 - Short-term plasticity acts on the efficacy `ρ`; the event-driven Markram rules update it before
   the spike is transmitted.
