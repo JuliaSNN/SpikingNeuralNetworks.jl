@@ -13,4 +13,10 @@ using Test
     @test SNN.TripodDendSynapseMouse === SNNModels.TripodDendSynapseMouse
     @test SNN.distal_proximal === SNNModels.distal_proximal
     @test SNN.TripodPaper(N = 3) isa SNNModels.Tripod
+    # Multipod names of SNNModels 2.3.0
+    for name in (:Multipod, :MultipodParameter, :MultipodPaper, :declare_multipod, :set_dendrite_length!)
+        @test name in names(SpikingNeuralNetworks)
+        @test getfield(SNN, name) === getfield(SNNModels, name)
+    end
+    @test SNN.Multipod(N = 2, param = SNN.MultipodParameter(ds = [300 * SNN.um, 200 * SNN.um, 100 * SNN.um])) isa SNNModels.Multipod{3}
 end

@@ -9,7 +9,7 @@ SNNPlots = "1906bf50-7128-11ef-3209-891d16f9be9f"
 SNNUtils = "df079cdf-2344-43fe-90b5-fc41d8d26db7"
 
 [compat]
-SNNModels = "2.2"
+SNNModels = "2.3"
 SNNPlots = "1"
 SNNUtils = "1"
 julia = "1.12"

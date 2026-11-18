@@ -61,6 +61,9 @@ module SpikingNeuralNetworks
     DuarteGluDend, TripodDendSynapseMouse, MouseNMDA, EyalNMDA32,
     TripodSomaSynapsePaper, TripodDendSynapsePaper, TripodDendSynapsePaperMouse
 
+    ## Multipod (SNNModels 2.3.0)
+    export Multipod, MultipodParameter, MultipodPaper, declare_multipod, set_dendrite_length!
+
     
     ## Functions from SNNModels
     export asynchronous_state, bin_spiketimes, clear_monitor!, clear_records!, compose, compute_connections, firing_rate, get_time,  load_model, matrix, monitor!, name, place_populations, record, record!, reset_time!, sample_inputs, save_model, set_plasticity!, str_name,     train!, update_spikes!, SNNload, SNNsave, compose, sim!, set_plasticity!, change_plasticity!, update_traces!, set_STP!, set_LTP!, matrix_record

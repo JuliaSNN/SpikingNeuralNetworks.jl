@@ -2,7 +2,7 @@
 
 Changes of version 2, its known limitations, and the bugs fixed during version 1.
 
-## 2.1.0: SpikingNeuralNetworks 2.1.0, SNNModels 2.2.0
+## 2.1.0: SpikingNeuralNetworks 2.1.0, SNNModels 2.3.0
 
 Bugfix
 
@@ -15,7 +15,13 @@ Bugfix
 
 Improvements
 
-- Compat `SNNModels = "2.2"` (SNNPlots 1 and SNNUtils 1 unchanged).
+- Compat `SNNModels = "2.3"` (SNNPlots 1 and SNNUtils 1 unchanged).
+- SNNModels 2.3 features reachable as `SNN.<name>`: `Multipod`, `MultipodParameter`, `MultipodPaper`, `declare_multipod`,
+  `set_dendrite_length!` (re-exported); `delay_uv` of `vSTDPParameter` and `vSTDPDenseParameter` and `nearest` of
+  `STDPTriplet` (fields, no new names).
+- Documentation: new page [Plasticity: conventions and implementation notes](catalogue/plasticity_conventions.md)
+  (implementation choices, sensitivities and constraints of each rule, with evidence); a Multipod section in the
+  multicompartment catalogue; corrected Tsodyks-Markram efficacy equation (`u^+ x^-`).
 - Re-exported from SNNModels: `TripodPaper`, `PaperScheme`, `HeunScheme`, `AbstractTripodScheme`, `DuarteGluDend`,
   `TripodDendSynapseMouse`, `MouseNMDA`, `EyalNMDA32`, `TripodSomaSynapsePaper`, `TripodDendSynapsePaper`,
   `TripodDendSynapsePaperMouse`; the length presets (`distal_distal`, `soma_only`, ...) stay `SNN.<name>`.

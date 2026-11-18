@@ -11,14 +11,14 @@ plasticity model with these types, compare the points below with your reference.
 
 ## How to read this page
 
-Each statement carries an evidence tag, dated 2026-11-18 (day of the check), on SNNModels 2.2.0
-(tag `v2.2.0`):
+Each statement carries an evidence tag, dated 2026-11-18 (day of the check). Sources and tests are those of SNNModels 2.3.0
+(the plasticity files are unchanged from 2.2.0 except `delay_uv`, `nearest` and docstrings):
 
 | Tag | Meaning |
 |---|---|
 | `[source: file]` | a docstring or code comment in `src/connections/sparse_plasticity/` or `metaplasticity/` (`kernels` = `STDP_kernels.jl`, `traces` = `STDP_traces.jl`, `triplet`, `wdep` = `STDP_weight_dependent.jl`, `vSTDP`, `iSTDP`, `norm` = `normalization.jl`, `aggr` = `aggregate_scaling.jl`, `STP`) |
-| `[test: file]` | a test in SNNModels `test/syn/` (`vstdp.jl`, `lazy_traces_euler.jl`, `istdp_kernel.jl`, `stdp_reference.jl`, `lazy_traces.jl`, `lazy_weights.jl`, `metaplasticity.jl`) |
-| `[measured here]` | a short Julia experiment run for this page with SNNModels 2.2.0, protocol given in the text |
+| `[test: file]` | a test in SNNModels `test/syn/` (`vstdp.jl`, `vstdp_delay.jl`, `stdp_triplet.jl`, `lazy_traces_euler.jl`, `istdp_kernel.jl`, `stdp_reference.jl`, `lazy_traces.jl`, `lazy_weights.jl`, `metaplasticity.jl`) |
+| `[measured here]` | a short Julia experiment run for this page with SNNModels 2.2.0 (sections up to the voltage rule's dt table, inhibitory, pair) or 2.3.0 (`delay_uv`, `nearest`), protocol given in the text |
 | `[derived]` | follows from the equations |
 
 "Rationale not recorded" means the code and tests state the behaviour but not why it was chosen.
@@ -34,7 +34,7 @@ Weights are `Float32`, times in ms.
 | Traces are stored lazily as vector times a scalar `scale`; `syn.LTPVars.tpre` is not the trace. Read `trace_values`, `plasticity_value`, or `sync_traces!` first. A `sync_traces!` rounds once, so a run that syncs is not bit-identical to one that does not. | `[source: kernels, traces]`, `[test: lazy_traces.jl]` |
 | `scale` is kept in `[1e-6, 1]` so stored values stay far from the `Float32` limit; the stored vector absorbs it below that. | `[source: kernels: _SCALE_MIN]` |
 | Bounds `Wmin`, `Wmax` are applied to touched weights only (synapses of neurons that fired) plus once to all weights at the first step (pair rules). A weight outside the bounds that is never touched stays outside. | `[source: kernels: _initial_clamp!, _clamp_touched!]` |
-| A voltage rule reads `v_post`, the potential of the target compartment of the synapse (the compartment passed when the synapse is built); one filter pair per synapse object. | `[source: spiking_synapse.jl: fields g, v_post]` |
+| A voltage rule reads `v_post`, the potential of the target compartment of the synapse (the compartment passed when the synapse is built, e.g. `:d1` reads the potential of dendrite `d1` of a multicompartment target); one filter pair per synapse object. | `[source: spiking_synapse.jl: fields g, v_post; vSTDP docstring]` |
 | Amplitude units: pair rules weight per unit trace; voltage rules weight/mV (LTD) and weight/mV^2 (LTP). Defaults of `Wmin` differ between rules (0 pF; `vSTDP` 0.1 pF; `iSTDP` 0.01 pF): rationale not recorded. | `[source: traces, vSTDP, iSTDP]` |
 
 ## Pair STDP
@@ -58,14 +58,16 @@ Sensitivity: for a single pair, the Euler traces of `STDPMexicanHat` give an eff
 
 `STDPTriplet`. Definition `[source: triplet]`: pre spike `w -= o1 (A2_minus + A3_minus r2)`, post spike
 `w += r1 (A2_plus + A3_plus o2)`; `r1` (`τ_plus`), `r2` (`τ_x`) presynaptic, `o1` (`τ_minus`), `o2` (`τ_y`)
-postsynaptic; all-to-all interaction only.
+postsynaptic; all-to-all interaction (default) or nearest-spike (`nearest = true`).
 
 | Choice or behaviour | Evidence |
 |---|---|
 | Traces read before this step's spikes are added, `r2` and `o2` before their own increment (the `t - ε` of the definition); same-step pre and post spikes do not interact (`[measured here]`: same step 0.0 with the defaults). | `[source: triplet]` |
 | Defaults: the all-to-all minimal parameter set of Table 4 of Pfister and Gerstner (2006); the values were not re-checked against the paper. Equal to Auryn `MinimalTripletConnection` with `eta = 1`. | `[source: triplet]`; paper side not verified |
 | `τ_x = 946 ms` (full-model value) is a placeholder while `A3_minus = 0`. | `[source: triplet]` |
-| No nearest-spike option. | `[source: triplet: fields]` |
+| `nearest = false` (default): a spike adds 1 to the traces of its neuron, every earlier spike contributes. `nearest = true` (the nearest-spike model of Pfister and Gerstner 2006): a spike sets the traces of its neuron to 1, only the most recent spike contributes; the weight updates and the order are the same. | `[source: triplet, kernels: _spike_set!]`, `[test: stdp_triplet.jl]` (closed-form updates for both, event-driven equals dense) |
+
+`[measured here]` (2.3.0, defaults, `dt = 0.1`, `w0 = 1`): `dW` for one pre and one post spike 5 ms later is 0.0039357 for both; for 3 pre spikes 10 ms apart then a post spike 5 ms after the last, all-to-all 0.0073028 against nearest 0.0039357 (the earlier pre spikes no longer count); for one pre spike then 3 post spikes 10 ms apart, 0.012356 against 0.011261. The choice changes the result as soon as spikes are not isolated pairs.
 
 Fragility: set `A3_minus = 0` to switch the triplet LTD off; a non-positive `τ_x` or `τ_y` is not a valid time
 constant for these exact-decay traces. `[derived]`
@@ -94,7 +96,7 @@ constant for these exact-decay traces. `[derived]`
 | `θ_LTD` thresholds both `u` (LTD) and `v` (in the LTP term); `θ_LTP` the instantaneous `V`. | `[source: vSTDP]` |
 | Order per step: Euler `x` (this step's spikes included), Euler `u` and `v` driven by the current `v_post`, LTD at pre spikes (clamp at `Wmin`), LTP on all outgoing synapses (clamp at `Wmax`). A pre spike therefore gets LTD with this step's `u` and LTP with an `x` that already contains it. | `[source: vSTDP]`, `[test: vstdp.jl]` (independent Float64 reference, same order) |
 | `u`, `v` are set to the current `v_post` at the first `plasticity!` call; `x` starts at 0. | `[source: vSTDP]` |
-| No delay on the voltage that drives `u`, `v` (no `delay_uv` field), no nearest-spike option. | `[source: vSTDP]` |
+| `delay_uv = 0 ms` (default): `u`, `v` are driven by the current `v_post`. For `delay_uv > 0` they are driven by the potential `D = max(1, round(delay_uv/dt))` steps earlier (at least one step even if `delay_uv < dt/2`); the LTP term keeps the current potential; the delay buffer is filled with the current potential at the first step and whenever `D` changes (new `dt` or `delay_uv`). This is the library's way to handle delayed-voltage filtering: it follows the ModelDB implementation of Clopath et al. 2010 and NEST `delay_u_bars`, and is not in the paper. Event-driven and dense rules have the same option. | `[source: vSTDP]`, `[test: vstdp_delay.jl]` (closed form after a potential step; event equals dense; `dt` change) |
 | Event-driven rule: `syn.W` holds the weights of the last materialisation; LTP is added at the pre spike of each neuron, every `epoch` times `τx` and on demand (`sync_traces!`, a change of `dt`, `τx`, `A_LTP`, `Wmax`, `epoch`). Read `plasticity_value(syn, :W)`. The trace is stored as an amplitude: `plasticity_value(syn, :LTPVars, :x, t)`. | `[source: vSTDP]`, `[test: lazy_weights.jl]` |
 | Event and dense rules agree: same equations and order. One known difference: a weight initially above `Wmax` is clamped at the first step by the dense rule and at the first materialisation by the event rule. | `[source: vSTDP: Bounds]` |
 
@@ -115,6 +117,16 @@ with 15 ms at every postsynaptic spike, evaluated at each step; `A_LTD = 8e-4`, 
 - The LTD sum is nearly independent of `dt`; the LTP sum is not: for this protocol it is 8 % larger at `dt = 0.1` than at 0.025, and net depression turns into net potentiation at `dt = 0.5`. The cause was not isolated (candidates: sampling of the 1 ms spike waveform, `x` including the spike of the step, Euler filters); only the protocol above was tested. Consequence: tune amplitudes at the `dt` you will use, or check the sum at two time steps.
 - Initial filter values: starting `u`, `v` at 0 mV instead of the postsynaptic potential changes `dW` of synapse 1 from -0.0089 to -0.0596 (6.7 times more depression) in this protocol, because the LTD term `[u - θ_LTD]_+` is large until `u` relaxes to the potential.
 - Epoch: event minus dense weights differ by at most 2.4e-7 for `epoch` = 1, 10 and 25 at `dt = 0.1` (the `Float32` rounding of the weights, `dW` about 9e-3); default `epoch = 10` (rationale not recorded; `[test: vstdp.jl]` compares against a Float64 reference).
+
+Delay `[measured here]` (2.3.0, `dt = 0.1`, `τu = 20 ms`, LTD only, `A_LTD = 1e-2`, `V` steps from -70 to -40 mV at t = 10 ms, one presynaptic spike):
+
+| spike at t (ms) | `delay_uv` 0 | 1 ms | 5 ms |
+|---|---|---|---|
+| 10.5, `u` (mV), `dW` | -69.11, -0.0089 | -70.00, 0 | -70.00, 0 |
+| 12.0 | -67.00, -0.0300 | -68.39, -0.0161 | -70.00, 0 |
+| 20.0 | -58.08, -0.1192 | -59.01, -0.1099 | -63.23, -0.0677 |
+
+Event-driven and dense weights agree to the digits shown. A delay of 1 ms removes the whole response of a spike 0.5 ms after the step and reduces the LTD of a spike 10 ms after it by 8 %; set `delay_uv` to the value of your reference implementation and check it at your `dt`.
 
 Looks like a bug but is intended: `syn.W` does not change between presynaptic spikes (event rule); LTD has no `dt`;
 `A_LTP < 0` raises an error for the event rule.
@@ -156,9 +168,9 @@ Only mappings that the library docstrings state or that follow from the equation
 
 | Definition | Library symbols | Evidence |
 |---|---|---|
-| Clopath et al. 2010 | `A_LTD`, `A_LTP`, `θ_LTD` (θ-), `θ_LTP` (θ+), `τu`, `τv`, `τx`; a paper trace that jumps by 1 corresponds to `A_LTP τx` here, because the library `x` is the paper trace divided by `τx` | `[source: vSTDP]` (default values are "not referenced in the code"), `[derived]` |
+| Clopath et al. 2010 | `A_LTD`, `A_LTP`, `θ_LTD` (θ-), `θ_LTP` (θ+), `τu`, `τv`, `τx`; a paper trace that jumps by 1 corresponds to `A_LTP τx` here, because the library `x` is the paper trace divided by `τx`; the visual-cortex fit is given in the docstring as `A_LTD = 14e-5, A_LTP = 8e-5, θ_LTD = -70.6mV, θ_LTP = -45.3mV, τu = 10ms, τv = 7ms` (from the NEST `clopath_synapse` example) | `[source: vSTDP]` (the defaults are "not referenced in the code"), `[derived]` |
 | Pfister and Gerstner 2006 | `A2_plus`, `A3_plus`, `A2_minus`, `A3_minus`, `τ_plus`, `τ_minus`, `τ_x`, `τ_y`; traces `r1, r2, o1, o2` | `[source: triplet]` |
-| Gütig et al. 2003 | `η = λ`, `α`, `μ_plus = μ_minus = μ`, `τpre = τpost = τ`, `Wmin = 0`, `Wmax = 1` reduces to LTP `λ(1-w)^μ x_pre`, LTD `-λ α w^μ x_post` | `[source: wdep]`, `[derived]` |
+| Gütig et al. 2003 | `η = λ`, `α`, `μ_plus = μ_minus = μ`, `τpre = τpost = τ`, `Wmin = 0`, `Wmax = 1` reduces to LTP `λ(1-w)^μ x_pre`, LTD `-λ α w^μ x_post` | `[source: wdep docstring]` |
 | Vogels et al. 2011 | `η`, `r` (target rate), `τy`, `α = 2 r τy` | `[source: iSTDP]` |
 
 ## Checklist when reproducing a published result
@@ -171,14 +183,15 @@ Only mappings that the library docstrings state or that follow from the equation
 | Update order | LTD before LTP; same-step pre/post: none in the exact-decay pair rules and triplet, interaction in `iSTDPRate`, `STDPMexicanHat` and the voltage rules |
 | Compartment voltage | `v_post` of the target compartment; one filter pair per synapse object |
 | Initial filter values | `u`, `v`, `iSTDPPotential` `y` start at the potential; initial 0 changes `vSTDP` results (6.7 times in the protocol above) |
-| Delays | none on the voltage filters; synaptic delays are those of the synapse |
+| Delays | `delay_uv` on the voltage filters (default 0), `round(delay_uv/dt)` steps, at least one; synaptic delays are those of the synapse |
 | Normalisation | listed synapses, period, additive or multiplicative, clamps after it |
 | Lazy weights and traces | `plasticity_value`, `trace_values`, `sync_traces!`; only under `train!` |
 
 ## Design guideline
 
 The library implements the most correct formulation of each rule and carries no options, presets or forked code paths whose
-only purpose is to imitate another implementation (policy of the library maintainer, 2026-11-18). Reproducing a published result
+only purpose is to imitate another implementation (policy of the library maintainer, 2026-11-18). The options that exist, `delay_uv`
+and `nearest`, are defined by a published or reference model, not by a particular code base. Reproducing a published result
 that uses other conventions is done in the reproducing code, by converting parameters: for example `A_LTD = dt a` for a rule
 written with a `dt` factor in the LTD term, or `A_LTP = a τx` for a trace that jumps by 1 (`[derived]`). Each conversion is a
 statement of the form above and should be checked at the `dt` of the study.

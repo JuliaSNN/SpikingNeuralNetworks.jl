@@ -160,6 +160,32 @@ own scheme.
 receptor update reproduce the original at that step (subthreshold step and single EPSP within 7.6e-6 mV,
 identical spike times for a 1200 pA step and a frozen Poisson input, Fig. 8 plateau durations identical).
 
+## Multipod
+
+`Multipod` is the `Tripod` model with any number of dendrites: an AdEx soma and `N_d` passive dendrites, each attached to the
+soma (star topology), with the equations, synapse models, spike rules and integration schemes of `Tripod`. With `N_d = 2` it is the
+`Tripod` model, with the same trajectory bit for bit.
+
+```julia
+using SpikingNeuralNetworks
+SNN.@load_units
+param = SNN.MultipodParameter(ds = [400um, 250um => 3um, (150um, 300um)])   # length, length => diameter, or a (min, max) range
+M = SNN.Multipod(N = 10, param = param)
+E = SNN.Poisson(N = 50, param = SNN.PoissonParameter(20Hz))
+syn = SNN.SpikingSynapse(E, M, :glu, :d3; conn = (p = 0.2, μ = 2.0))
+```
+
+- Constructors: `Multipod(; N, param, ...)` or `Multipod{D}(; ...)`; `MultipodParameter(; ds, physiology, d, El_dend)` builds the morphology (the star is the only geometry); `MultipodPaper(; N, lengths, ...)` is the preset of the integration scheme and parameters of `TripodPaper` for any number of dendrites.
+- Targets: the soma `:s` and the dendrites `:d1`, ..., `:dN` (fourth argument of `SpikingSynapse`).
+- Size: 1 to 64 dendrites. The types for 1 to 8 are defined when the package is loaded, the constructor defines the others (`declare_multipod(D)`); `load_model` and `SNNload` declare the types found in a file. Other readers of a saved file (`JLD2.load`) need `declare_multipod(D)` first.
+- `set_dendrite_length!(M, k, l; neurons)` changes the length of dendrite `k` for some neurons; `l = 0um` leaves an inert dendrite: isolated from the soma, it relaxes to its leak reversal with a 1 ms time constant, and still costs the same per step (use a `Multipod` with fewer dendrites to save it).
+- Synapses: `MultiReceptorSynapse` models are supported (the third argument of `SpikingSynapse` is then a receptor group, e.g. `:NMDA`; a group that the compartment does not have raises an error). `PaperScheme` (and `MultipodPaper`) needs `ReceptorSynapse` models and does not accept `MultiReceptorSynapse`.
+
+```@autodocs
+Modules = [SNNModels]
+Pages   = ["multicompartment/multipod.jl", "multicompartment/multipod_paper.jl"]
+```
+
 ## BallAndStick
 
 ```julia
