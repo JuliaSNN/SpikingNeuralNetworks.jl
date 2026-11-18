@@ -159,34 +159,34 @@ save("ballandstick.png", fig)
 
 ## More scripts
 
-Runnable scripts in the `examples/tutorials` folder of the package:
+Runnable scripts in the `tutorials` folder of [SNNExamples](https://github.com/JuliaSNN/SNNExamples):
 
-- [`neurons/IF_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/IF_neuron.jl): IF neuron under Poisson input
-- [`neurons/IF_noise_input.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/IF_noise_input.jl): IF neuron under a noisy current
-- [`neurons/AdEx_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/AdEx_neuron.jl): AdEx firing patterns, V and w
-- [`neurons/AdEx_threshold.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/AdEx_threshold.jl): AdEx with adaptive threshold
-- [`neurons/AdEx_balanced_stimuli.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/AdEx_balanced_stimuli.jl): AdEx under balanced Poisson input
-- [`neurons/AdEx_multireceptors.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/AdEx_multireceptors.jl): AdEx with AMPA, NMDA, GABA receptors
-- [`neurons/Izikievich_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/Izikievich_neuron.jl): Izhikevich firing patterns
-- [`neurons/HH_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/HH_neuron.jl): Hodgkin-Huxley f-I curve
-- [`neurons/MorrisLecar_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/MorrisLecar_neuron.jl): Morris-Lecar phase plane
-- [`neurons/BallAndStick_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/BallAndStick_neuron.jl): ball-and-stick neuron, receptor conductances
-- [`neurons/Tripod_neuron.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/Tripod_neuron.jl): Tripod neuron, receptor conductances
-- [`neurons/Tripod_multireceptors.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/Tripod_multireceptors.jl): Tripod with several receptors
-- [`neurons/tripod2.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/tripod2.jl): Tripod under dendritic Poisson input
-- [`neurons/HetRec_layer.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/HetRec_layer.jl): HetRec layer
-- [`neurons/PoissonPop.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/neurons/PoissonPop.jl): Poisson population: rates and ISI CV
-- [`timed_stim.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/timed_stim.jl): spike-time stimulus
-- [`networks/IF_net.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/IF_net.jl): IF network
-- [`networks/HH_net.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/HH_net.jl): Hodgkin-Huxley network
-- [`networks/Izikievich_net.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/Izikievich_net.jl): Izhikevich network
-- [`networks/AdEx_net.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/AdEx_net.jl): AdEx network with heterogeneous parameters and delays
-- [`networks/AdExVarStimuli.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/AdExVarStimuli.jl): network driven by a time-varying Poisson rate
-- [`networks/COBA.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/COBA.jl): conductance-based benchmark network
-- [`networks/CUBA.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/CUBA.jl): current-based benchmark network
-- [`networks/afferent_response.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/afferent_response.jl): network rate against afferent rate
-- [`networks/weak_strong_afferents.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/weak_strong_afferents.jl): synchrony against afferent rate
-- [`networks/ParadoxicalEffect.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/ParadoxicalEffect.jl): paradoxical response of an inhibition-stabilised network
-- [`networks/passive_vs_active_dendrites.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/passive_vs_active_dendrites.jl): networks of passive and NMDA-active dendrites
-- [`networks/out_degree.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/networks/out_degree.jl): out-degree of the connectivity rules
-- [`analysis/recordings.jl`](https://github.com/JuliaSNN/SpikingNeuralNetworks.jl/blob/main/examples/tutorials/analysis/recordings.jl): every way to read a recording
+- [`neurons/IF_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/IF_neuron.jl): IF neuron under Poisson input
+- [`neurons/IF_noise_input.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/IF_noise_input.jl): IF neuron under a noisy current
+- [`neurons/AdEx_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/AdEx_neuron.jl): AdEx firing patterns, V and w
+- [`neurons/AdEx_threshold.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/AdEx_threshold.jl): AdEx with adaptive threshold
+- [`neurons/AdEx_balanced_stimuli.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/AdEx_balanced_stimuli.jl): AdEx under balanced Poisson input
+- [`neurons/AdEx_multireceptors.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/AdEx_multireceptors.jl): AdEx with AMPA, NMDA, GABA receptors
+- [`neurons/Izikievich_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/Izikievich_neuron.jl): Izhikevich firing patterns
+- [`neurons/HH_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/HH_neuron.jl): Hodgkin-Huxley f-I curve
+- [`neurons/MorrisLecar_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/MorrisLecar_neuron.jl): Morris-Lecar phase plane
+- [`neurons/BallAndStick_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/BallAndStick_neuron.jl): ball-and-stick neuron, receptor conductances
+- [`neurons/Tripod_neuron.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/Tripod_neuron.jl): Tripod neuron, receptor conductances
+- [`neurons/Tripod_multireceptors.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/Tripod_multireceptors.jl): Tripod with several receptors
+- [`neurons/tripod2.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/tripod2.jl): Tripod under dendritic Poisson input
+- [`neurons/HetRec_layer.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/HetRec_layer.jl): HetRec layer
+- [`neurons/PoissonPop.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/neurons/PoissonPop.jl): Poisson population: rates and ISI CV
+- [`timed_stim.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/timed_stim.jl): spike-time stimulus
+- [`networks/IF_net.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/IF_net.jl): IF network
+- [`networks/HH_net.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/HH_net.jl): Hodgkin-Huxley network
+- [`networks/Izikievich_net.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/Izikievich_net.jl): Izhikevich network
+- [`networks/AdEx_net.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/AdEx_net.jl): AdEx network with heterogeneous parameters and delays
+- [`networks/AdExVarStimuli.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/AdExVarStimuli.jl): network driven by a time-varying Poisson rate
+- [`networks/COBA.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/COBA.jl): conductance-based benchmark network
+- [`networks/CUBA.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/CUBA.jl): current-based benchmark network
+- [`networks/afferent_response.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/afferent_response.jl): network rate against afferent rate
+- [`networks/weak_strong_afferents.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/weak_strong_afferents.jl): synchrony against afferent rate
+- [`networks/ParadoxicalEffect.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/ParadoxicalEffect.jl): paradoxical response of an inhibition-stabilised network
+- [`networks/passive_vs_active_dendrites.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/passive_vs_active_dendrites.jl): networks of passive and NMDA-active dendrites
+- [`networks/out_degree.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/networks/out_degree.jl): out-degree of the connectivity rules
+- [`analysis/recordings.jl`](https://github.com/JuliaSNN/SNNExamples/blob/main/tutorials/analysis/recordings.jl): every way to read a recording

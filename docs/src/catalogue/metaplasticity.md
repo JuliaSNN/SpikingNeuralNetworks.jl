@@ -15,6 +15,22 @@ All objects are built with `MetaPlasticity(param, synapses)` or with their own c
 | `AggregateScalingParameter` | `AggregateScaling` | vector of sparse synapses with the same postsynaptic population |
 | `ActivityDependentTurnover`, `RandomTurnover` | `Turnover` | one `SpikingSynapse` |
 
+| Model | Reference | Integration |
+|:------|:----------|:------------|
+| `SynapseNormalization` (`MultiplicativeNorm`, `AdditiveNorm`) | Turrigiano et al. (1998); Turrigiano (1999); Turrigiano (2008) | rescaling every `max(1, round(τ / dt))` steps |
+| `AggregateScaling` | Turrigiano et al. (1998); Turrigiano (2008) | forward Euler for ``y`` and ``W^T``, rescaling every `max(1, round(τ / dt))` steps |
+| `Turnover` | none | forward Euler traces (`ActivityDependentTurnover`), rewiring every `max(1, round(τ / dt))` steps |
+
+References for the scaling rules (homeostatic synaptic scaling: all excitatory synapses of a neuron are scaled by a common factor so that the total input follows
+the activity of the neuron):
+
+- Turrigiano, Leslie, Desai, Rutherford and Nelson (1998), Activity-dependent scaling of quantal amplitude in neocortical neurons, Nature 391:892-896,
+  [10.1038/36103](https://doi.org/10.1038/36103).
+- Turrigiano (1999), Homeostatic plasticity in neuronal networks: the more things change, the more they stay the same, Trends Neurosci. 22:221-227,
+  [10.1016/S0166-2236(98)01341-1](https://doi.org/10.1016/S0166-2236(98)01341-1).
+- Turrigiano (2008), The self-tuning neuron: synaptic scaling of excitatory synapses, Cell 135:422-435,
+  [10.1016/j.cell.2008.10.008](https://doi.org/10.1016/j.cell.2008.10.008).
+
 ## SynapseNormalization
 
 Every `τ`, restores the summed input weight ``W^0_i`` of each neuron at construction (``W^1_i``: current sum):
@@ -27,6 +43,11 @@ Every `τ`, restores the summed input weight ``W^0_i`` of each neuron at constru
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|
 | `τ` | required | ms | interval between normalizations |
+
+**Integration:** every `max(1, round(τ / dt))` steps under `train!`, after the `plasticity!` of the connections listed before it, on the current weights. **Reference:** Turrigiano et al. (1998), Turrigiano (2008).
+
+!!! note "Implementation note"
+    The normalisation does not clamp to the `Wmin`, `Wmax` of the plasticity rules: a weight can leave the bounds until its rule touches it again.
 
 ```julia
 using SpikingNeuralNetworks
@@ -64,6 +85,12 @@ with ``W^t_i`` the current summed weight and ``n_i`` the number of inputs:
 | `Wmin` | `0.5pF` | `0.5pF` | offset added after rescaling (units of the weights) |
 | `Wmax` | `250pF` | `250pF` | soft upper bound of ``W^T`` |
 
+**Integration:** forward Euler: ``y`` in `forward!` (every step of `sim!` and `train!`), ``W^T`` in `plasticity!` (`train!` only); every `max(1, round(τ / dt))` steps the weights are rescaled.
+**Reference:** Turrigiano et al. (1998), Turrigiano (2008).
+
+!!! note "Implementation note"
+    `Wmin` is an offset added to every weight after rescaling, not a clamp; `Wmax` is a soft bound of the target sum ``W^T``, not of single weights.
+
 ```julia
 using SpikingNeuralNetworks
 SNN.@load_units
@@ -96,6 +123,8 @@ a^{post}_i \leftarrow a^{post}_i + \frac{-a^{post}_i\,dt + \delta_i}{\tau_{post}
 | `threshold` | | `0.1` | | probability that a synapse is rewired at each event |
 | `τpre`, `τpost` | `250ms` | | ms | time constants of the activity traces |
 | `μ` | `3.0` | `3.0` | weight units | mean of new weights |
+
+**Integration:** forward Euler for the activity traces at every step; rewiring every `max(1, round(τ / dt))` steps. **Reference:** none.
 
 ```julia
 using SpikingNeuralNetworks

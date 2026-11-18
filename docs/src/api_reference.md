@@ -67,6 +67,13 @@ Modules = [SNNModels]
 Pages   = ["utils/spatial.jl"]
 ```
 
+## Exponential approximations
+
+```@autodocs
+Modules = [SNNModels]
+Pages   = ["utils/exp_approx.jl"]
+```
+
 ## Perturbation analysis
 
 ```@autodocs

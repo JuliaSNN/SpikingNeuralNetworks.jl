@@ -7,6 +7,15 @@ CurrentModule = SNNModels
 Single-compartment models with two exponentially decaying conductances `ge`, `gi` (targets `:ge`,
 `:gi`); no `synapse` or `spike` field.
 
+| Model | Reference | Integration |
+|:------|:----------|:------------|
+| `IZ` | Izhikevich (2003), IEEE Trans. Neural Netw. 14:1569-1572, [10.1109/TNN.2003.820440](https://doi.org/10.1109/TNN.2003.820440) | forward Euler, two half steps of `dt/2` for the quadratic part of `v` |
+| `HH` | Hodgkin and Huxley (1952), J. Physiol. 117:500-544, [10.1113/jphysiol.1952.sp004764](https://doi.org/10.1113/jphysiol.1952.sp004764); Traub-Miles kinetics as in Brette et al. (2007), J. Comput. Neurosci. 23:349-398, [10.1007/s10827-007-0038-6](https://doi.org/10.1007/s10827-007-0038-6) | forward Euler, gating variables first, then `v` |
+| `MorrisLecar` | Morris and Lecar (1981), Biophys. J. 35:193-213, [10.1016/S0006-3495(81)84782-0](https://doi.org/10.1016/S0006-3495(81)84782-0) | forward Euler, `v` then `w` |
+
+The quadratic term of `IZ` gives the model its two-variable form: ``v`` is the membrane potential, ``u`` a recovery variable
+that sets the firing pattern through ``a, b, c, d``.
+
 ## Izhikevich model: `IZ`
 
 ```math
@@ -30,7 +39,10 @@ When ``v > 30`` mV: ``v \leftarrow c``, ``u \leftarrow u + d``. ``I`` is in mV/m
 | `Ee` | `0mV` | mV | excitatory reversal potential |
 | `Ei` | `-80mV` | mV | inhibitory reversal potential |
 
-Reference: Izhikevich (2003), IEEE Trans. Neural Netw. 14:1569-1572.
+**Integration:** conductances decay by forward Euler; `v` takes two forward-Euler half steps of `dt/2`; `u` one Euler step with the new `v`;
+then the synaptic term `dt (ge (Ee - v) + gi (Ei - v))` is added; spikes are detected at `v > 30` and reset. No refractory period.
+
+**Reference:** Izhikevich (2003), IEEE Trans. Neural Netw. 14:1569-1572, [10.1109/TNN.2003.820440](https://doi.org/10.1109/TNN.2003.820440).
 
 ```julia
 using SpikingNeuralNetworks
@@ -40,6 +52,10 @@ E.I .= 10
 SNN.monitor!(E, [:v, :fire])
 SNN.sim!([E]; duration = 200ms, dt = 0.5ms)
 ```
+
+!!! note "Implementation note"
+    `ge` and `gi` are in 1/ms (``\tau_m = 1/(g_e + g_i)``) and enter an explicit step: the step is stable only for `dt (ge + gi) < 2`,
+    and a negative conductance is unstable at any `dt`. They start at zero.
 
 ```@autodocs
 Modules = [SNNModels]
@@ -69,7 +85,7 @@ with ``u = v - V_t`` (mV) and rates in 1/ms:
 \end{aligned}
 ```
 
-A spike is flagged when ``v`` crosses -20 mV upwards; no reset. Use `dt` of 0.01-0.05 ms.
+A spike is flagged when ``v`` crosses -20 mV upwards (one flag per action potential); no reset.
 
 | Field | Default | Value | Meaning |
 |:------|:--------|:------|:--------|
@@ -84,8 +100,10 @@ A spike is flagged when ``v`` crosses -20 mV upwards; no reset. Use `dt` of 0.01
 | `τe`, `τi` | `5ms`, `10ms` | | decay of `ge`, `gi` |
 | `Ee`, `Ei` | `0mV`, `-80mV` | | synaptic reversal potentials |
 
-Reference: Hodgkin and Huxley (1952), J. Physiol. 117:500-544; Traub-Miles kinetics as in the
-COBAHH benchmark of Brette et al. (2007).
+**Integration:** forward Euler, sequential: `m`, `n`, `h`, then `v` with the new gating variables, then `ge`, `gi` decay.
+
+**Reference:** Hodgkin and Huxley (1952), J. Physiol. 117:500-544, [10.1113/jphysiol.1952.sp004764](https://doi.org/10.1113/jphysiol.1952.sp004764); Traub-Miles kinetics as in the
+COBAHH benchmark of Brette et al. (2007), J. Comput. Neurosci. 23:349-398, [10.1007/s10827-007-0038-6](https://doi.org/10.1007/s10827-007-0038-6).
 
 ```julia
 using SpikingNeuralNetworks
@@ -96,6 +114,10 @@ E.I .= 500pA
 SNN.monitor!(E, [:v])
 SNN.sim!([E]; duration = 50ms, dt = 0.01ms)
 ```
+
+!!! warning "Implementation note"
+    The forward-Euler step is stiff (``g_n/C_m = 100`` 1/ms): it needs `dt <= 0.02 ms`. The default `dt = 0.125 ms` of `sim!` gives `NaN`; pass
+    `dt = 0.01ms`. The `ge`, `gi` start random, set them to zero as in the example. The rate functions use their limit at the 0/0 points.
 
 ```@autodocs
 Modules = [SNNModels]
@@ -131,7 +153,10 @@ A spike is flagged when ``v`` crosses 20 mV upwards; no reset.
 | `ϕ` | `25Hz` | 1/ms | potassium rate scale (0.025 per ms) |
 | `Ee`, `Ei` | `0mV`, `-75mV` | mV | synaptic reversal potentials |
 
-Reference: Morris and Lecar (1981), Biophys. J. 35:193-213.
+**Integration:** forward Euler, sequential: `v` with the old `w`, then `w` with the new `v`, then the synaptic term
+`dt (ge (Ee - v) + gi (Ei - v)) / Cm`, then `ge`, `gi` decay.
+
+**Reference:** Morris and Lecar (1981), Biophys. J. 35:193-213, [10.1016/S0006-3495(81)84782-0](https://doi.org/10.1016/S0006-3495(81)84782-0).
 
 ```julia
 using SpikingNeuralNetworks
