@@ -12,16 +12,19 @@ as given). The neuron equations subtract ``I_{syn}``: conductance models give
 
 ## Summary
 
-| Model | Type | Variables | Integration | Works with |
+| Model | Type | Reference | Integration | Works with |
 |:------|:-----|:----------|:------------|:-----------|
-| `DeltaSynapse` | current, instantaneous | `ge`, `gi` | none (one-step pulse) | `IF`, `AdEx`, `ExtendedIF` |
-| `CurrentSynapse` | current, single exponential | `ge`, `gi` | forward Euler | point neurons, dendritic neurons |
-| `SingleExpSynapse` | conductance, single exponential | `ge`, `gi` | forward Euler | point neurons, dendritic neurons |
-| `DoubleExpSynapse` | conductance, rise and decay | `ge`, `gi`, `he`, `hi` | forward Euler | all (default of `IF`, `AdEx`) |
-| `DoubleExpCurrentSynapse` | current, rise and decay | `ge`, `gi`, `he`, `hi` | forward Euler | all |
-| `ReceptorSynapse` | conductance, list of receptors, NMDA block | `g`, `h` (`N x n_rec`) | exponential Euler | all (default of `Tripod`, `BallAndStick`) |
-| `MultiReceptorSynapse` | as `ReceptorSynapse`, one input per receptor group | `g`, `h` | exponential Euler | point neurons, dendritic neurons |
-| `Confavreux2025Synapse` | conductance, AMPA + filtered NMDA + GABA | `gAMPA`, `gNMDA`, `gGABA` | forward Euler | all |
+| `DeltaSynapse` | current, instantaneous | none | none (one-step pulse) | `IF`, `AdEx`, `ExtendedIF` |
+| `CurrentSynapse` | current, single exponential | none | forward Euler | point neurons, dendritic neurons |
+| `SingleExpSynapse` | conductance, single exponential | none | forward Euler | point neurons, dendritic neurons |
+| `DoubleExpSynapse` | conductance, rise and decay | none | forward Euler | all (default of `IF`, `AdEx`) |
+| `DoubleExpCurrentSynapse` | current, rise and decay | none | forward Euler | all |
+| `ReceptorSynapse` | conductance, list of receptors, NMDA block | Jahr and Stevens (1990); Eyal et al. (2018); Miles et al. (1996) | exact exponential update over a step | all (default of `Tripod`, `BallAndStick`) |
+| `MultiReceptorSynapse` | as `ReceptorSynapse`, one input per receptor group | as `ReceptorSynapse` | exact exponential update | point neurons, dendritic neurons |
+| `Confavreux2025Synapse` | conductance, AMPA + filtered NMDA + GABA | citation not recorded (named after Confavreux et al. 2025) | forward Euler | all |
+
+State variables: `ge`, `gi` (and `he`, `hi` for rise and decay) for the first five models, `g`, `h` (`N x n_rec`) for the receptor models,
+`gAMPA`, `gNMDA`, `gGABA` for `Confavreux2025Synapse`. References are given in the sections below.
 
 ## Delta synapse
 
@@ -129,6 +132,8 @@ syn = SNN.DoubleExpSynapse(τre = 1ms, τde = 6ms, τri = 0.5ms, τdi = 2ms)
 E = SNN.IF(N = 10, param = SNN.IFParameter(C = 281pF, gl = 40nS), synapse = syn)
 ```
 
+**Integration:** forward Euler: the input is added to `he`/`hi`, then `ge += dt (-ge/τde + he)`, then `he` decays; the peak conductance of a unit weight depends on `dt`.
+
 ```@autodocs
 Modules = [SNNModels]
 Pages   = ["synapse/synapses/DoubleExpSynapse.jl"]
@@ -136,7 +141,7 @@ Pages   = ["synapse/synapses/DoubleExpSynapse.jl"]
 
 ## Double-exponential current synapse
 
-Same kinetics as `DoubleExpSynapse`, but `ge` and `gi` are currents (pA) and
+Same kinetics and integration as `DoubleExpSynapse`, but `ge` and `gi` are currents (pA) and
 ``I_{syn} = -(g_e - g_i)``. Fields: `τre = 1ms`, `τde = 6ms`, `τri = 0.5ms`, `τdi = 2ms`.
 
 ```julia
@@ -163,6 +168,7 @@ A list of receptors (`Receptor`), each with its kinetics, reversal potential, pe
 ```
 
 with ``g_{syn} = g_0\,\mathrm{norm\_synapse}(\tau_r, \tau_d)`` (a unit weight peaks at ``g_0`` nS) and
+the conductance integrated exactly over one step (see [Receptor kinetics](#Receptor-kinetics)),
 
 ```math
 I_{syn} = \sum_r g_{syn,r}\, g_r\,(V - E_{rev,r})\, B_r(V), \qquad
@@ -170,7 +176,10 @@ B_r(V) = \begin{cases} 1 & nmda_r = 0 \\
 \left(1 + \frac{[\mathrm{Mg}]}{b}\, e^{k V}\right)^{-1} & \text{otherwise.} \end{cases}
 ```
 
-``B`` (`nmda_gating`) is the Jahr and Stevens (1990) block.
+``B`` (`nmda_gating`) is the magnesium block of Jahr and Stevens.
+
+**Reference:** Jahr and Stevens (1990), Voltage dependence of NMDA-activated macroscopic conductances predicted by single-channel kinetics, J. Neurosci. 10:3178-3182,
+[10.1523/JNEUROSCI.10-09-03178.1990](https://doi.org/10.1523/JNEUROSCI.10-09-03178.1990).
 
 ### `Receptor` fields
 
@@ -193,8 +202,9 @@ B_r(V) = \begin{cases} 1 & nmda_r = 0 \\
 | `b` | `3.36` | mM | |
 | `k` | `-0.077` | 1/mV | voltage sensitivity |
 | `mg` | `1.0` | mM | extracellular magnesium concentration |
+| `approx` | `256` | | exponential used in the block: `0` (exact), `32`, `64`, `256` |
 
-Defaults from Eyal et al. (2018) (`SomaNMDA`, `EyalNMDA`).
+Defaults from Eyal et al. (2018), Front. Cell. Neurosci. 12:181, [10.3389/fncel.2018.00181](https://doi.org/10.3389/fncel.2018.00181) (`SomaNMDA`, `EyalNMDA`).
 
 ### `ReceptorSynapse`
 
@@ -206,6 +216,24 @@ Defaults from Eyal et al. (2018) (`SomaNMDA`, `EyalNMDA`).
 | `NMDA` | `NMDAVoltageDependency()` | magnesium block |
 | `glu_receptors` | `[1, 2]` | indices driven by `glu` |
 | `gaba_receptors` | `[3, 4]` | indices driven by `gaba` |
+| `exact` | `true` | exact kinetics; `false` selects the discrete update of the published code |
+| `decay` | `64` | exponential approximation (`0`, `32`, `64`, `256`) of the discrete update; used only if `exact = false` |
+
+#### Receptor kinetics
+
+**Integration:** `ReceptorSynapse` and `MultiReceptorSynapse` (hence the soma and dendrites of `Tripod` and `BallAndStick`)
+integrate the double exponential exactly over one step: `h += α w`, `g = e_d g + K h`, `h = e_r h`, with
+``e_d = e^{-dt/\tau_d}``, ``e_r = e^{-dt/\tau_r}``, ``K = (e_d - e_r)/\alpha``. The peak conductance of a unit
+weight is `g0` at any `dt` (on the time grid, at most 1e-3 below for the library receptors at `dt <= 0.2` ms).
+
+!!! note "Implementation note"
+    `exact = false` selects the discrete exponential-Euler update of the published Tripod code (with the exponential
+    approximation `decay`); its peak is ``c(dt)\,g_0`` with
+    ```math
+    c(dt, \tau_r, \tau_d) = \frac{\alpha\, dt}{1 - e^{-\alpha\, dt}}, \qquad \alpha = \frac{1}{\tau_r} - \frac{1}{\tau_d}.
+    ```
+    `TripodSomaSynapsePaper`, `TripodDendSynapsePaper` and `TripodDendSynapsePaperMouse` use `exact = false`. `DoubleExpSynapse` and the other
+    synapse models use forward Euler with unnormalised weights.
 
 ### `MultiReceptorSynapse`
 
@@ -231,11 +259,16 @@ SNN.sim!([E, P], [EP]; duration = 100ms)
 |:-----|:-----|:------------------------------|:--------|
 | `SomaReceptors` | `ReceptorArray` | AMPA (0, 1, 6, 0.7); NMDA (0, 1, 100, 0.15, block); GABAa (-70, 0.5, 10, 2.0); GABAb (-90, 30, 400, 0.006) | |
 | `SomaSynapse` | `ReceptorSynapse` | `SomaReceptors`, `NMDA = SomaNMDA` (equal to `ReceptorSynapse()`) | glu `[1, 2]`, gaba `[3, 4]` |
-| `TripodSomaSynapse` | `ReceptorSynapse` | AMPA (0, 0.26, 2.0, 0.73); GABAa (-70, 0.1, 15.0, 0.38); `NMDA = EyalNMDA` | glu `[1]`, gaba `[2]` |
-| `TripodDendSynapse` | `ReceptorSynapse` | AMPA (0, 0.26, 2.0, 0.73); NMDA (0, 8, 35, 1.31, block); GABAa (-70, 4.8, 29, 0.27); GABAb (-90, 30, 400, 0.006); `NMDA = EyalNMDA` | glu `[1, 2]`, gaba `[3, 4]` |
+| `TripodSomaSynapse` | `ReceptorSynapse` | AMPA (0, 0.25, 2.0, 0.73); GABAa (-75, 0.3, 15.0, 0.38); `NMDA = EyalNMDA` | glu `[1]`, gaba `[2]` |
+| `TripodDendSynapse` | `ReceptorSynapse` | AMPA (0, 0.26, 2.0, 0.73); NMDA (0, 8, 35, 1.31, block); GABAa (-75, 4.8, 29, 0.27); GABAb (-90, 30, 400, 0.006); `NMDA = EyalNMDA` | glu `[1, 2]`, gaba `[3, 4]` |
+| `TripodDendSynapseMouse` | `ReceptorSynapse` | `DuarteGluDend`: AMPA (0, 0.25, 2.0, 0.73), NMDA (0, 0.99, 100, 0.159, block); GABA as `TripodDendSynapse` | glu `[1, 2]`, gaba `[3, 4]` |
 | `SomaNMDA`, `EyalNMDA` | `NMDAVoltageDependency` | `b = 3.36`, `k = -0.077`, `mg = 1` | |
 
-Dendritic AMPA/NMDA: Eyal et al. (2018); GABA: Miles et al. (1996).
+The `Paper` variants of the Tripod sets have the same values with `exact = false`.
+
+Sources: dendritic AMPA/NMDA, Eyal et al. (2018) (above); GABA, Miles et al. (1996), Differences between somatic and dendritic inhibition in the hippocampus,
+Neuron 16:815-823, [10.1016/S0896-6273(00)80101-4](https://doi.org/10.1016/S0896-6273(00)80101-4); somatic AMPA and mouse dendritic receptors, Duarte and Morrison (2017),
+bioRxiv, [10.1101/230821](https://doi.org/10.1101/230821).
 
 ```julia
 using SpikingNeuralNetworks
@@ -279,6 +312,10 @@ SNN.@load_units
 E = SNN.IF(N = 10, param = SNN.IFParameter(C = 281pF, gl = 40nS),
            synapse = SNN.Confavreux2025Synapse())
 ```
+
+**Integration:** forward Euler, in this order: `gAMPA += -dt gAMPA/τAMPA + glu`, `gGABA` likewise, `gNMDA += dt (gAMPA - gNMDA)/τNMDA`.
+
+**Reference:** citation not recorded; the model is named after Confavreux et al. (2025).
 
 ```@autodocs
 Modules = [SNNModels]

@@ -5,7 +5,7 @@ CurrentModule = SNNUtils
 ```
 
 Heterogeneous short-term plasticity parameters sampled from Tsodyks-Markram fits of mouse cortical
-connections (Allen Institute synaptic physiology; Campagnola et al. 2022). [`sample_stp_params`](@ref)
+connections (Allen Institute synaptic physiology; Campagnola et al. (2022), Local connectivity and synaptic dynamics in mouse and human neocortex, Science 375:eabj5861, [10.1126/science.abj5861](https://doi.org/10.1126/science.abj5861)). [`sample_stp_params`](@ref)
 samples the whole table, [`sample_stp_campagnola`](@ref) one connection class (`:exc_exc`,
 `:exc_inh`, `:inh_exc`, `:inh_inh`).
 

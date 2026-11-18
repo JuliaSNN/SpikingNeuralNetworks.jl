@@ -5,7 +5,17 @@ CurrentModule = SNNModels
 ```
 
 Populations that produce spikes for connections (unlike [stimuli](stimuli.md), which write into
-a population directly), and the relay population `Identity`.
+a population directly), and the relay population `Identity`. None of them has a literature reference.
+
+| Model | Integration |
+|:------|:------------|
+| `Poisson` | one Bernoulli trial per neuron and step, probability ``\nu\,dt`` |
+| `VariablePoisson` | forward Euler for ``\eta`` and ``\rho``; one Bernoulli trial per neuron and step, probability ``\nu\,dt/N`` |
+| `InhomogeneousPoisson` | forward Euler for ``\eta_i`` and ``\rho_i``; Bernoulli trial of probability ``1 - e^{-\nu_i dt}`` |
+| `Identity` | none: fires in the step after it receives input |
+
+The Bernoulli trials draw one random number per spike (geometric skipping for a common rate, thinning for per-neuron rates); when
+the largest per-step probability reaches 3 %, every neuron is tested with one uniform number.
 
 ## Poisson population: `Poisson`
 
@@ -31,6 +41,10 @@ Ph = SNN.Population(SNN.PoissonParameter(collect(range(1Hz, 50Hz, length = 100))
 SNN.monitor!([P, Ph], [:fire])
 SNN.sim!([P, Ph]; duration = 1s)
 ```
+
+!!! note "Implementation note"
+    ``P = \nu\,dt`` is the Bernoulli approximation of a Poisson process, accurate for ``\nu\,dt \ll 1``; `InhomogeneousPoisson` uses
+    ``1 - e^{-\nu dt}``.
 
 ## Population with a shared fluctuating rate: `VariablePoisson`
 

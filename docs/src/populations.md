@@ -25,7 +25,7 @@ external current `I` (pA). Any vector field can be recorded with `monitor!`.
 
 ## Integrate-and-fire populations
 
-`IF`, `AdEx`, `Tripod` and `BallAndStick` combine three independent objects:
+`IF`, `AdEx`, `Tripod`, `BallAndStick` and `Multipod` combine independent objects:
 
 - `param`: the neuron model (`IFParameter`, `AdExParameter`, ...);
 - `synapse`: how input becomes a current, any [synapse model](catalogue/synapses.md)
@@ -48,13 +48,13 @@ Connections and spiking stimuli write into the variable named by their target sy
 
 | Population | Target symbols |
 |:-----------|:---------------|
-| `IF`, `AdEx`, `Tripod`, `BallAndStick` | `:ge`, `:glu`, `:he` (excitatory); `:gi`, `:gaba`, `:hi` (inhibitory); receptor names of `ReceptorSynapse` |
+| `IF`, `AdEx`, `Tripod`, `BallAndStick`, `Multipod` | `:ge`, `:glu`, `:he` (excitatory); `:gi`, `:gaba`, `:hi` (inhibitory); receptor names of `ReceptorSynapse` |
 | `ExtendedIF` | `:g_Exc`, `:g_PV`, `:g_SST` |
 | `IZ`, `HH`, `MorrisLecar` | `:ge`, `:gi` |
 | `HetRec` | `:glu`, `:gaba` (dendrites) |
 | `Rate`, `WilsonCowan`, `Identity` | any symbol, mapped to `g` |
 
-Multicompartment models take the compartment as an extra argument (`:s`, `:d`, `:d1`, `:d2`; see
+Multicompartment models take the compartment as an extra argument (`:s`, `:d`, `:d1`, `:d2`, ..., `:dN` for `Multipod`; see
 [Multicompartment neurons](catalogue/multicompartment.md)).
 
 ## Choosing a model
@@ -66,7 +66,7 @@ Multicompartment models take the compartment as an extra argument (`:s`, `:d`, `
 | three conductances (E, PV, SST) | `ExtendedIF` | [Integrate-and-fire neurons](catalogue/neurons_if.md) |
 | Izhikevich firing patterns | `IZ` | [Izhikevich, Hodgkin-Huxley, Morris-Lecar](catalogue/neurons_other.md) |
 | conductance-based spike generation | `HH`, `MorrisLecar` | [Izhikevich, Hodgkin-Huxley, Morris-Lecar](catalogue/neurons_other.md) |
-| dendritic integration, NMDA spikes | `Tripod`, `BallAndStick` | [Multicompartment neurons](catalogue/multicompartment.md) |
+| dendritic integration, NMDA spikes | `Tripod`, `BallAndStick`, `Multipod` | [Multicompartment neurons](catalogue/multicompartment.md) |
 | firing-rate units | `Rate`, `WilsonCowan` | [Rate models](catalogue/rate_models.md) |
 | stochastic units with heterogeneous dendritic timescales | `HetRec` | [Rate models](catalogue/rate_models.md) |
 | background or input spike trains | `Poisson`, `VariablePoisson`, `InhomogeneousPoisson` | [Spike sources](catalogue/sources.md) |

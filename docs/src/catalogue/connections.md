@@ -8,6 +8,13 @@ A connection links a presynaptic population to a target variable of a postsynapt
 have the units of the target (nS for conductances, pA for currents) and the precision of the target
 population. Plasticity: [Plasticity rules](plasticity_rules.md), [Metaplasticity](metaplasticity.md).
 
+| Connection | Reference | Integration |
+|:-----------|:----------|:------------|
+| `SpikingSynapse` | none | event-driven: the increment of a spike is added to the target at the spike step, or `ceil(delay / dt)` steps later |
+| `RateSynapse` | none | per-step update under `train!` |
+| `FLSynapse`, `FLSparseSynapse` | Sussillo and Abbott (2009), Neuron 63:544-557, [10.1016/j.neuron.2009.07.018](https://doi.org/10.1016/j.neuron.2009.07.018) | recursive least squares, one update per step |
+| `PINningSynapse`, `PINningSparseSynapse` | Rajan, Harvey and Tank (2016), Neuron 90:128-142, [10.1016/j.neuron.2016.02.009](https://doi.org/10.1016/j.neuron.2016.02.009) | recursive least squares, one update per step |
+
 ## SpikingSynapse
 
 Sparse `N_post x N_pre` connection between spiking populations:
@@ -139,7 +146,7 @@ SNN.train!([R], [RR]; duration = 10ms)
 ## FLSynapse (FORCE learning)
 
 Dense rate connection with a readout ``z = w^\top r`` fed back through ``u``, trained by
-recursive least squares towards the target `c.f` (Sussillo and Abbott 2009):
+recursive least squares towards the target `c.f` (Sussillo and Abbott 2009, see the table above):
 
 ```math
 q = P\, r, \qquad g = W r + z\, u, \qquad
@@ -167,7 +174,7 @@ end
 
 ## PINningSynapse
 
-Dense rate connection whose recurrent weights learn the targets ``f_i`` (Rajan, Harvey and Tank 2016):
+Dense rate connection whose recurrent weights learn the targets ``f_i`` (Rajan, Harvey and Tank 2016, see the table above):
 
 ```math
 q = P\, r, \qquad g = W r, \qquad C = \frac{1}{1 + q^\top r}, \qquad

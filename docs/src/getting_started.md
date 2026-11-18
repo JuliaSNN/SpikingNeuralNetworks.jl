@@ -87,4 +87,7 @@ E fires at about 10 Hz and I at about 20 Hz, irregularly.
 - [Plasticity](plasticity.md): STDP, short-term plasticity, `train!`.
 - Tutorials: [Populations](tutorials/populations.md), [Plasticity](tutorials/plasticity.md),
   [Simulations](tutorials/simulations.md) (save, load, rerun).
-- [Model catalogue](catalogue/index.md): every model with its equations.
+- Dendritic neurons: `SNN.Tripod` (two dendrites), `SNN.BallAndStick` (one), `SNN.Multipod` (1 to 64) and the preset `SNN.TripodPaper`, see
+  [Multicompartment neurons](catalogue/multicompartment.md).
+- [Model catalogue](catalogue/index.md): every model with its equations, integration scheme and reference.
+- [Changelog](changelog.md): what changed in each release.

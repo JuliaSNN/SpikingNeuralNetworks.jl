@@ -7,6 +7,12 @@ CurrentModule = SNNModels
 `Rate` and `WilsonCowan` (rate units, same dynamics) and `HetRec` (stochastic spiking with
 heterogeneous dendritic time constants).
 
+| Model | Reference | Integration |
+|:------|:----------|:------------|
+| `Rate` | none | forward Euler |
+| `WilsonCowan` | named after Wilson and Cowan (1972), Biophys. J. 12:1-24, [10.1016/S0006-3495(72)86068-5](https://doi.org/10.1016/S0006-3495(72)86068-5); see the note | forward Euler |
+| `HetRec` | none | forward Euler, stochastic spike per step |
+
 ## Rate units: `Rate`
 
 ```math
@@ -15,6 +21,8 @@ heterogeneous dendritic time constants).
 
 Time constant 1 ms, no parameters. ``g`` is the input of the step (written by `RateSynapse`,
 reset after each step), ``I`` an external input. Record `:x` or `:r`.
+
+**Integration:** forward Euler, `x += dt (-x + g + I)`, then `r = tanh(x)`, then `g = 0`.
 
 ```julia
 using SpikingNeuralNetworks
@@ -33,7 +41,12 @@ Pages   = ["populations/rate.jl"]
 
 ## `WilsonCowan`
 
-Same dynamics as `Rate`; not the coupled E/I equations of Wilson and Cowan (1972).
+Same dynamics and integration as `Rate`.
+
+**Reference:** Wilson and Cowan (1972), Biophys. J. 12:1-24, [10.1016/S0006-3495(72)86068-5](https://doi.org/10.1016/S0006-3495(72)86068-5).
+
+!!! note "Implementation note"
+    The population only carries the name: it does not implement the coupled excitatory/inhibitory equations of the reference.
 
 ```julia
 using SpikingNeuralNetworks
@@ -66,6 +79,10 @@ P(\text{spike of } i \text{ in } dt) &= r_i\, \sigma\!\left(k\, (v_s^i - a_i)\ri
 
 ``r_i`` (from `rate`) is the maximal rate, ``k`` = `steepness`, ``a_i`` an adaptive baseline
 (time constant `τrate`, +1 per spike).
+
+**Integration:** forward Euler. Per step: dendrites `v_d += dt (-v_d - is) / τd`, soma `v_s += dt/τm Σ_d (v_d - v_s)` (with ``k`` connected
+dendrites the soma relaxes to their mean with time constant ``τ_m/k``), baseline decay, then one Bernoulli trial of probability
+``r_i σ(k (v_s - a_i)) dt``; refractory for `round(τabs / dt)` steps. Reference: none.
 
 | Field | Default | Units | Meaning |
 |:------|:--------|:------|:--------|

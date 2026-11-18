@@ -28,16 +28,18 @@ pages = [
         "Synapse and receptor models" => "catalogue/synapses.md",
         "Connections" => "catalogue/connections.md",
         "Plasticity rules" => "catalogue/plasticity_rules.md",
+        "Plasticity: conventions and implementation notes" => "catalogue/plasticity_conventions.md",
         "Metaplasticity" => "catalogue/metaplasticity.md",
         "Stimuli" => "catalogue/stimuli.md",
         "SNNUtils models" => "catalogue/snnutils_models.md",
         "SNNUtils tools" => "catalogue/snnutils.md",
+        "SNNUtils Spike TIMIT" => "catalogue/spiketimit.md",
     ],
     "Performance comparison" => "performance.md",
     "API Reference" => "api_reference.md",
     "Models Extension" => "models_ext.md",
     "Contributing" => "contributing.md",
-    "V2 changelog" => "release_notes.md",
+    "Changelog" => "changelog.md",
 ]
 
 makedocs(
