@@ -93,8 +93,14 @@ Rules read from these numbers:
   networks and networks below a few thousand neurons do not. Test with the tuner before a production run.
 - The gain is flat beyond 8 threads, because a population has at most 8 chunks. With 2 threads the
   threaded normalisation of 4.6 M synapses is 8 % slower than serial; from 4 threads it gains.
-- The large cases stop improving around 4 to 8 threads. The pass is limited by memory bandwidth
-  (12 threads of this workstation reach 50 GB/s) [Likely].
+- With `c` chunks on `k` threads the parallel stages take `ceil(c / k) / c` of the serial time, so the best
+  speed-up is `c / ceil(c / k)`. 8 chunks on 4 threads gives 4, on 6 threads still 4; 5 chunks on 4 threads gives
+  2.5; 6 chunks give 3. Choose `neurons_per_thread` so that the number of chunks is a multiple of the thread count
+  (4 threads, N = 6000: 1536 gives 4 chunks, 768 gives 8) or let the tuner pick it.
+- Large synapse counts are also limited by memory bandwidth: the normalisation of 25 M synapses at 4 threads moves about
+  30 GB/s, close to the 50 GB/s that 12 threads of this workstation reach [Likely].
+- Weights of event-driven `vSTDP` synapses are materialised serially before each normalisation step; a normalisation
+  of such synapses gains little from threads.
 - Threaded runs use up to 8 cores for as long as they run, even when the chunks are small, because the
   workers spin. Give them dedicated cores. A worker that the operating system takes away stalls the
   whole step: on a shared machine this showed as occasional runs 3 to 7 times slower. Pin the process
