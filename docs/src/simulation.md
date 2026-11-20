@@ -98,7 +98,7 @@ Neuron updates, `forward!` and the event-driven STDP, iSTDP and STP updates of `
 are split by neuron range into at most 8 chunks. Results are bit-identical for every setting
 and thread count. `set_optimal_neurons_per_thread!(model)` times a copy of the model for several
 settings and keeps the fastest; `with_neurons_per_thread(f, n)` runs `f()` with a temporary
-setting.
+setting. What runs in parallel and when it pays: [Threads and multicore](threads.md).
 
 ## Subnormal numbers
 
