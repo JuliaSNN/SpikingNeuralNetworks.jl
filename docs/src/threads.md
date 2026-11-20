@@ -102,18 +102,58 @@ Rules read from these numbers:
 - `Threads.@spawn` user tasks that each step their own model work and give the same results as serial
   runs; Polyester hands a free worker to each and falls back to the calling thread when none is free.
 
+## Theoretical speed-up
+
+Amdahl bound for the part of the step that is parallel, from the share of the serial step measured
+with a sampling profile on one thread (`validation/threading/out/profile_split_*.txt`, the first four
+rows of each table: balanced E/I network of `IF` neurons, `sim!` or `train!` with event-driven
+`STDP` on E to E; `AdEx`: share of the population stages in an N = 10 000 network). With parallel fraction `f` and `k` threads the bound is
+`1 / ((1 - f) + f / k)`; `k` stops counting at 8 because a population has at most 8 chunks. The bound ignores the
+fork and join (0.2 to 0.7 us per fork) and the cache traffic between cores, so a measured speed-up is lower.
+
+**Populations** (neuron update and synaptic-variable update; `f` = share of the serial step)
+
+| Network | f | 2 threads | 4 threads | 8 threads | Measured, 4 / 8 threads |
+|---|---|---|---|---|---|
+| `IF`, N = 10 000 | 0.49 | 1.32 | 1.58 | 1.75 | 1.03 / 1.01 [from report] |
+| `IF`, N = 2000 | 0.43 | 1.27 | 1.48 | 1.60 | 0.4 to 1.08 (below one chunk of 512: serial) [from report] |
+| `IF` + STDP, N = 10 000 | 0.36 | 1.22 | 1.37 | 1.46 | not measured |
+| `AdEx`, N = 10 000 | 0.78 | 1.64 | 2.41 | 3.15 | 1.35 / 1.47 [from report] |
+
+**Synapses** (`forward!`, delay arrival and event-driven plasticity, partitioned by postsynaptic range)
+
+| Network | f | 2 threads | 4 threads | 8 threads | Measured |
+|---|---|---|---|---|---|
+| `forward!` only, `IF` N = 10 000 | 0.35 | 1.21 | 1.35 | 1.43 | not measured alone |
+| `forward!` only, `IF` N = 2000 | 0.20 | 1.11 | 1.18 | 1.21 | not measured alone |
+| `forward!` + STDP, N = 10 000 | 0.48 | 1.31 | 1.56 | 1.72 | not measured alone |
+| `forward!` + STDP, N = 2000 | 0.30 | 1.17 | 1.29 | 1.35 | not measured alone |
+| `SynapseNormalization`, 4.6 M / 25 M synapses | 0.8 to 0.9 [Likely] | - | 1.9 / 2.2 | 2.2 (6 threads) | 1.9 / 2.2 at 4 threads [measured, `bench/normalisation_bench.jl`] |
+
+Populations and synapses together (`IF`, N = 10 000): `f` = 0.83 gives 1.71 / 2.66 / 3.69 at 2 / 4 / 8 threads;
+at N = 2000 `f` = 0.63 gives 1.46 / 1.90 / 2.23. The ceiling with unlimited threads is 6.0 and 2.7.
+Reading: networks of simple neurons are bounded by the serial remainder (stimuli, spike lists, clock,
+recording) and by the cost of one fork per stage; heavy neurons and large synapse counts have
+the largest bound and are the ones that gain. The normalisation pass is limited by memory bandwidth before it
+reaches its bound.
+
 ## Threads or processes
 
-For parameter searches (Optuna trials, seeds, sweeps) run one single-thread process per trial: no
-thread overhead and no spinning workers, and the scaling is close to linear while the working sets fit
-in the cache. Large working sets share the memory bandwidth: 12 independent processes reach 11.9
-times the throughput of one on small models and 4.6 times on large ones
-[measured, `cpu_decision/out/summary_throughput.csv`]. Use threads when one simulation is too slow
-and the model is large enough to pass the table above, or when a single long run must finish sooner.
+A *thread* shares the memory of one Julia process: with `julia -t 8` one simulation uses eight cores, each
+working on a chunk of the same populations. A *process* is a separate Julia instance with its own copy of
+the model: eight processes run eight different simulations at once and do not communicate.
 
-A job that mixes both (`-t 4` threads per trial, several trials at once) needs the core count of
-the cluster job to match `trials x threads`; otherwise workers compete and the spinning makes it slower than
-serial.
+This matters for Optuna. Every trial is an independent simulation, so the natural parallelism of a search
+is one single-thread process per trial (Optuna workers, SLURM array jobs): no fork cost, no spinning workers
+and no serial remainder, so the throughput grows with the number of processes while the working sets fit in the
+cache. Large working sets share the memory bandwidth: 12 independent processes reach 11.9 times the
+throughput of one process on small models and 4.6 times on large ones
+[measured, `cpu_decision/out/summary_throughput.csv`]. Threads make one trial finish sooner, not more trials
+finish per hour; they pay when one simulation is large enough to pass the tables above (heavy neurons, tens of
+thousands of neurons or millions of synapses) and its run time is the bottleneck.
+
+A job that mixes both (`-t 4` per trial, several trials at once) needs `trials x threads` cores in the cluster
+request; otherwise workers compete for cores and, because they spin, the runs become slower than serial.
 
 ## Threading and results
 
