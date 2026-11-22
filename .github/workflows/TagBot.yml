@@ -4,6 +4,23 @@ on:
     types:
       - created
   workflow_dispatch:
+    inputs:
+      lookback:
+        description: "[DEPRECATED] No longer has any effect"
+        default: "3"
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  deployments: read
+  issues: read
+  discussions: read
+  packages: read
+  pages: read
+  pull-requests: read
+  repository-projects: read
+  security-events: read
+  statuses: read
 jobs:
   TagBot:
     if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
@@ -11,5 +28,7 @@ jobs:
     steps:
       - uses: JuliaRegistries/TagBot@v1
         with:
+          # The repositories default to read-only workflow tokens; `contents: write` above lets
+          # TagBot push tags and create releases. No SSH key: a tag on a commit that changes a
+          # workflow file is refused and must be pushed by hand (TagBot prints the command).
           token: ${{ secrets.GITHUB_TOKEN }}
-          ssh: ${{ secrets.DOCUMENTER_KEY }}

@@ -14,6 +14,7 @@ pages = [
         "Populations" => "populations.md",
         "Stimuli" => "stimuli.md",
         "Running simulations" => "simulation.md",
+        "Threads and multicore" => "threads.md",
         "Recordings" => "recordings.md",
         "Plasticity" => "plasticity.md",
         "Visualization (SNNPlots)" => "visualization.md",
